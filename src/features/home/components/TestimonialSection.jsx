@@ -1,93 +1,247 @@
 import React from 'react';
-import { Check, CheckCheck, MessageCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { Users, Star, Clock, CircleCheck, MapPin, CheckCheck, MessageCircle } from 'lucide-react';
 import styles from './TestimonialSection.module.css';
+import { translations } from '../../../data/translations';
 
 const TestimonialSection = () => {
-    const testimonials = [
-        {
-            id: 1,
-            name: 'Robert van Dijk',
-            location: 'Jordaan',
-            rating: 5,
-            messages: [
-                { text: 'Goed nieuws over je woning!', time: 'Nu', isMe: false },
-                { text: 'Wauw dat is snel! 🎉', time: 'Nu', isMe: true },
-            ]
-        },
-        {
-            id: 2,
-            name: 'Maria Santos',
-            location: 'De Pijp',
-            rating: 5,
-            messages: [
-                { text: 'Goed nieuws over je woning!', time: 'Nu', isMe: false },
-                { text: 'Alle 4?? Fantastisch! 💪', time: 'Nu', isMe: true },
-            ]
-        },
-        {
-            id: 3,
-            name: 'Jan Willem Bakker',
-            location: 'Noord',
-            rating: 5,
-            messages: [
-                { text: 'Goed nieuws over je woning!', time: 'Nu', isMe: false },
-                { text: 'Echt waar?! Omg 🤩', time: 'Nu', isMe: true },
-            ]
-        }
-    ];
+    const currentLang = useSelector((state) => state.ui.language);
+    const t = translations.home[currentLang] || translations.home.en;
 
     return (
         <section className={styles.section}>
             <div className={styles.container}>
-                <h2 className={styles.title}>Echte gesprekken die wij hebben gevoerd met onze verhuur klanten</h2>
-                <p className={styles.subtitle}>Lees hoe wij onze verhuurders helpen via WhatsApp</p>
-
-                <div className={styles.grid}>
-                    {testimonials.map((t) => (
-                        <div key={t.id} className={styles.card}>
-                            <div className={styles.header}>
-                                <div className={styles.avatar}>{t.name.charAt(0)}</div>
-                                <div className={styles.userInfo}>
-                                    <div className={styles.nameRow}>
-                                        <span className={styles.name}>{t.name}</span>
-                                        <span className={styles.verified}>✓</span>
-                                    </div>
-                                    <div className={styles.statusRow}>
-                                        <span className={styles.online}>● Online</span>
-                                        <span className={styles.location}>{t.location}</span>
-                                    </div>
-                                </div>
-                                <div className={styles.rating}>★ {t.rating}</div>
-                            </div>
-
-                            <div className={styles.chatBody}>
-                                {t.messages.map((msg, idx) => (
-                                    <div key={idx} className={`${styles.message} ${msg.isMe ? styles.messageMe : styles.messageOther}`}>
-                                        <div className={styles.bubble}>
-                                            {msg.text}
-                                            <div className={styles.meta}>
-                                                <span>{msg.time}</span>
-                                                {msg.isMe && <CheckCheck size={12} />}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className={styles.footer}>
-                                <MessageCircle size={16} />
-                                <span>13 berichten</span>
-                                <span className={styles.date}>Oktober 2024</span>
-                            </div>
-                        </div>
-                    ))}
+                {/* Stats Row */}
+                <div className={styles.statsRow}>
+                    <div className={styles.statItem}>
+                        <Users className={styles.statIconMyrtle} />
+                        <span className={styles.statText}>{t.testimonialsStatsLandlords}</span>
+                    </div>
+                    <div className={styles.statItem}>
+                        <Star className={styles.statIconOrange} />
+                        <span className={styles.statText}>{t.testimonialsStatsRating}</span>
+                    </div>
+                    <div className={styles.statItem}>
+                        <Clock className={styles.statIconGreen} />
+                        <span className={styles.statText}>{t.testimonialsStatsTime}</span>
+                    </div>
                 </div>
 
-                <div className={styles.cta}>
-                    <p>Word onze volgende tevreden klant</p>
-                    <div className={styles.buttonGroup}>
-                        <button className={`${styles.btn} ${styles.btnGreen}`}>Start als verhuurder</button>
-                        <button className={`${styles.btn} ${styles.btnGreenOutline}`}>Vind uw droomhuis</button>
+                {/* Header */}
+                <div className={styles.header}>
+                    <h2 className={styles.title}>{t.testimonialsTitle}</h2>
+                    <p className={styles.subtitle}>{t.testimonialsSubtitle}</p>
+                    <p className={styles.helperText}>{t.testimonialsHelper}</p>
+                </div>
+
+                {/* Grid */}
+                <div className={styles.grid}>
+                    {/* Card 1: Robert van Dijk */}
+                    <div className={styles.card}>
+                        <div className={styles.cardHeader}>
+                            <div className={styles.userInfo}>
+                                <span className={styles.avatar}>
+                                    <img className={styles.avatarImg} alt="Robert van Dijk" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=600&fit=crop&crop=face" />
+                                </span>
+                                <div className={styles.userDetails}>
+                                    <div className={styles.userNameWrapper}>
+                                        <h3 className={styles.userName}>Robert van Dijk</h3>
+                                        <CircleCheck className={styles.verifiedIcon} />
+                                    </div>
+                                    <div className={styles.statusWrapper}>
+                                        <div className={styles.statusDot}></div>
+                                        <span className={styles.statusText}>Online</span>
+                                    </div>
+                                    <div className={styles.locationWrapper}>
+                                        <MapPin className={styles.locationIcon} />
+                                        <span className={styles.locationText}>Jordaan</span>
+                                    </div>
+                                </div>
+                                <div className={styles.ratingWrapper}>
+                                    <Star className={styles.ratingIcon} />
+                                    <span className={styles.ratingText}>5</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className={styles.cardBody}>
+                            <div className={styles.messageReceived}>
+                                <div className={styles.messageAvatar}>
+                                    <img src="/lovable-uploads/d3f956c0-2da2-44ab-8095-bc7dd334edcd.png" alt="ApartmentHub" className={styles.messageAvatarImg} />
+                                </div>
+                                <div className={styles.messageBubbleReceived}>
+                                    <p className={styles.messageText}>🎉 Goed nieuws over je woning!</p>
+                                    <div className={styles.messageMeta}>
+                                        <span className={styles.messageTime}>Nu</span>
+                                        <CheckCheck className={styles.readIcon} />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className={styles.messageSent}>
+                                <div className={styles.messageBubbleSent}>
+                                    <p className={styles.messageTextWhite}>Wauw dat is snel! 🎉</p>
+                                    <div className={styles.messageMetaEnd}>
+                                        <span className={styles.messageTimeWhite}>Nu</span>
+                                        <CheckCheck className={styles.readIconWhite} />
+                                    </div>
+                                </div>
+                                <span className={styles.avatarSmall}>
+                                    <img className={styles.avatarImg} alt="Robert van Dijk" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=600&fit=crop&crop=face" />
+                                </span>
+                            </div>
+                            <div className={styles.cardFooter}>
+                                <div className={styles.footerItem}>
+                                    <MessageCircle className={styles.footerIcon} />
+                                    <span className={styles.footerText}>10 berichten</span>
+                                </div>
+                                <div className={styles.footerItem}>
+                                    <Clock className={styles.footerIcon} />
+                                    <span className={styles.footerText}>December 2024</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className={styles.hoverOverlay}></div>
+                    </div>
+
+                    {/* Card 2: Maria Santos */}
+                    <div className={styles.card}>
+                        <div className={styles.cardHeader}>
+                            <div className={styles.userInfo}>
+                                <span className={styles.avatar}>
+                                    <span className={styles.avatarPlaceholder}>MS</span>
+                                </span>
+                                <div className={styles.userDetails}>
+                                    <div className={styles.userNameWrapper}>
+                                        <h3 className={styles.userName}>Maria Santos</h3>
+                                        <CircleCheck className={styles.verifiedIcon} />
+                                    </div>
+                                    <div className={styles.statusWrapper}>
+                                        <div className={styles.statusDot}></div>
+                                        <span className={styles.statusText}>Online</span>
+                                    </div>
+                                    <div className={styles.locationWrapper}>
+                                        <MapPin className={styles.locationIcon} />
+                                        <span className={styles.locationText}>De Pijp</span>
+                                    </div>
+                                </div>
+                                <div className={styles.ratingWrapper}>
+                                    <Star className={styles.ratingIcon} />
+                                    <span className={styles.ratingText}>5</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className={styles.cardBody}>
+                            <div className={styles.messageReceived}>
+                                <div className={styles.messageAvatar}>
+                                    <img src="/lovable-uploads/d3f956c0-2da2-44ab-8095-bc7dd334edcd.png" alt="ApartmentHub" className={styles.messageAvatarImg} />
+                                </div>
+                                <div className={styles.messageBubbleReceived}>
+                                    <p className={styles.messageText}>🎉 Goed nieuws over je woning!</p>
+                                    <div className={styles.messageMeta}>
+                                        <span className={styles.messageTime}>Nu</span>
+                                        <CheckCheck className={styles.readIcon} />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className={styles.messageSent}>
+                                <div className={styles.messageBubbleSent}>
+                                    <p className={styles.messageTextWhite}>Alle 4?? Fantastisch! 💪</p>
+                                    <div className={styles.messageMetaEnd}>
+                                        <span className={styles.messageTimeWhite}>Nu</span>
+                                        <CheckCheck className={styles.readIconWhite} />
+                                    </div>
+                                </div>
+                                <span className={styles.avatarSmall}>
+                                    <span className={styles.avatarPlaceholderSmall}>MS</span>
+                                </span>
+                            </div>
+                            <div className={styles.cardFooter}>
+                                <div className={styles.footerItem}>
+                                    <MessageCircle className={styles.footerIcon} />
+                                    <span className={styles.footerText}>13 berichten</span>
+                                </div>
+                                <div className={styles.footerItem}>
+                                    <Clock className={styles.footerIcon} />
+                                    <span className={styles.footerText}>November 2024</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className={styles.hoverOverlay}></div>
+                    </div>
+
+                    {/* Card 3: Jan Willem Bakker */}
+                    <div className={styles.card}>
+                        <div className={styles.cardHeader}>
+                            <div className={styles.userInfo}>
+                                <span className={styles.avatar}>
+                                    <img className={styles.avatarImg} alt="Jan Willem Bakker" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=600&fit=crop&crop=face" />
+                                </span>
+                                <div className={styles.userDetails}>
+                                    <div className={styles.userNameWrapper}>
+                                        <h3 className={styles.userName}>Jan Willem Bakker</h3>
+                                        <CircleCheck className={styles.verifiedIcon} />
+                                    </div>
+                                    <div className={styles.statusWrapper}>
+                                        <div className={styles.statusDot}></div>
+                                        <span className={styles.statusText}>Online</span>
+                                    </div>
+                                    <div className={styles.locationWrapper}>
+                                        <MapPin className={styles.locationIcon} />
+                                        <span className={styles.locationText}>Noord</span>
+                                    </div>
+                                </div>
+                                <div className={styles.ratingWrapper}>
+                                    <Star className={styles.ratingIcon} />
+                                    <span className={styles.ratingText}>5</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className={styles.cardBody}>
+                            <div className={styles.messageReceived}>
+                                <div className={styles.messageAvatar}>
+                                    <img src="/lovable-uploads/d3f956c0-2da2-44ab-8095-bc7dd334edcd.png" alt="ApartmentHub" className={styles.messageAvatarImg} />
+                                </div>
+                                <div className={styles.messageBubbleReceived}>
+                                    <p className={styles.messageText}>🎉 Goed nieuws over je woning!</p>
+                                    <div className={styles.messageMeta}>
+                                        <span className={styles.messageTime}>Nu</span>
+                                        <CheckCheck className={styles.readIcon} />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className={styles.messageSent}>
+                                <div className={styles.messageBubbleSent}>
+                                    <p className={styles.messageTextWhite}>Echt waar?! Omg 😊</p>
+                                    <div className={styles.messageMetaEnd}>
+                                        <span className={styles.messageTimeWhite}>Nu</span>
+                                        <CheckCheck className={styles.readIconWhite} />
+                                    </div>
+                                </div>
+                                <span className={styles.avatarSmall}>
+                                    <img className={styles.avatarImg} alt="Jan Willem Bakker" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=600&fit=crop&crop=face" />
+                                </span>
+                            </div>
+                            <div className={styles.cardFooter}>
+                                <div className={styles.footerItem}>
+                                    <MessageCircle className={styles.footerIcon} />
+                                    <span className={styles.footerText}>13 berichten</span>
+                                </div>
+                                <div className={styles.footerItem}>
+                                    <Clock className={styles.footerIcon} />
+                                    <span className={styles.footerText}>Oktober 2024</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className={styles.hoverOverlay}></div>
+                    </div>
+                </div>
+
+                {/* CTA */}
+                <div className={styles.ctaContainer}>
+                    <p className={styles.ctaText}>{t.testimonialsCtaText}</p>
+                    <div className={styles.ctaButtons}>
+                        <Link to={currentLang === 'nl' ? "/nl/rent-out" : "/en/rent-out"} className={styles.ctaBtn}>{t.testimonialsCtaLandlord}</Link>
+                        <Link to={currentLang === 'nl' ? "/nl/rent-in" : "/en/rent-in"} className={styles.ctaBtn}>{t.testimonialsCtaTenant}</Link>
                     </div>
                 </div>
             </div>

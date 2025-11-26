@@ -3,6 +3,7 @@ import { createSlice } from '@reduxjs/toolkit';
 const initialState = {
     isMobileMenuOpen: false,
     theme: 'light',
+    language: 'en',
 };
 
 const uiSlice = createSlice({
@@ -18,8 +19,11 @@ const uiSlice = createSlice({
         closeMobileMenu: (state) => {
             state.isMobileMenuOpen = false;
         },
+        setLanguage: (state, action) => {
+            state.language = action.payload;
+        },
     },
 });
 
-export const { toggleMobileMenu, setTheme, closeMobileMenu } = uiSlice.actions;
+export const { toggleMobileMenu, setTheme, closeMobileMenu, setLanguage } = uiSlice.actions;
 export default uiSlice.reducer;

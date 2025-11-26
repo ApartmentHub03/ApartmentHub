@@ -1,40 +1,72 @@
 import React from 'react';
-import { Home, Heart, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { House, ArrowRight, Heart, Users, Clock, TrendingUp } from 'lucide-react';
 import styles from './HeroSection.module.css';
+import logoImage from '../../../assets/5a9afd14-27a5-40d8-a185-fac727f64fdf.png';
+import { translations } from '../../../data/translations';
 
 const HeroSection = () => {
+    const currentLang = useSelector((state) => state.ui.language);
+    const t = translations.home[currentLang] || translations.home.en;
+
     return (
-        <section className={styles.hero}>
+        <section className={styles.heroSection}>
+            <div className={styles.bgGradientOverlay}></div>
+            <div className={styles.blob1}></div>
+            <div className={styles.blob2}></div>
+
             <div className={styles.container}>
-                <div className={styles.iconWrapper}>
-                    <Home size={32} className={styles.icon} />
+                <div className={styles.logoContainer}>
+                    <div className={styles.logoWrapper}>
+                        <img
+                            src={logoImage}
+                            alt="ApartmentHub Logo"
+                            className={styles.logoIcon}
+                        />
+                    </div>
                 </div>
 
-                <h1 className={styles.title}>
-                    <span className={styles.textGray}>Jouw </span>
-                    <span className={styles.textOrange}>perfecte thuis</span>
-                    <br />
-                    <span className={styles.textGreen}>Begint</span>
-                    <span className={styles.textGray}> hier</span>
-                </h1>
+                <div className={styles.contentWrapper}>
+                    <h1 className={styles.headline}>
+                        <span className={styles.gradientText1}>{t.heroTitle1}</span>
+                        <span className={styles.gradientText2}>{t.heroTitle2}</span>
+                    </h1>
+                </div>
 
-                <p className={styles.subtitle}>
-                    Verhuren of huren, wij regelen het<br />
-                    Huren of verhuren? ApartmentHub maakt het makkelijk.
-                </p>
+                <p className={styles.subtext1}>{t.heroSubtext1}</p>
+                <p className={styles.subtext2}>{t.heroSubtext2}</p>
 
-                <div className={styles.buttonGroup}>
-                    <button className={`${styles.btn} ${styles.btnGreen}`}>
-                        <Home size={20} />
-                        <span>Eigendom verhuren</span>
-                        <ArrowRight size={20} />
-                    </button>
+                <div className={styles.actionButtons}>
+                    <Link to={currentLang === 'nl' ? "/nl/rent-out" : "/en/rent-out"} className={`${styles.btn} ${styles.btnPrimary}`}>
+                        <House className={styles.btnIcon} />
+                        <span>{t.ctaRentOut}</span>
+                        <ArrowRight className={styles.arrowIcon} />
+                    </Link>
+                    <Link to={currentLang === 'nl' ? "/nl/rent-in" : "/en/rent-in"} className={`${styles.btn} ${styles.btnSecondary}`}>
+                        <Heart className={styles.btnIcon} />
+                        <span>{t.ctaRentIn}</span>
+                        <ArrowRight className={styles.arrowIcon} />
+                    </Link>
+                </div>
 
-                    <button className={`${styles.btn} ${styles.btnOrange}`}>
-                        <Heart size={20} />
-                        <span>Ik zoek een huis</span>
-                        <ArrowRight size={20} />
-                    </button>
+                <div className={styles.statsContainer}>
+                    <div className={styles.statsBox}>
+                        <div className={`${styles.statItem} ${styles.groupHoverPrimary}`}>
+                            <Users className={styles.statIcon} />
+                            <span className={styles.statText}>{t.statsClients}</span>
+                        </div>
+                        <div className={styles.divider}></div>
+                        <div className={`${styles.statItem} ${styles.groupHoverOrange}`}>
+                            <Clock className={styles.statIcon} />
+                            <span className={styles.statText}>{t.statsSupport}</span>
+                        </div>
+                        <div className={styles.dividerLg}></div>
+                        <div className={`${styles.statItem} ${styles.groupHoverPrimary} ${styles.hiddenLg}`}>
+                            <TrendingUp className={styles.statIcon} />
+                            <span className={styles.statText}>{t.statsService}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
