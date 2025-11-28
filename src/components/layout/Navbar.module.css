@@ -4,8 +4,9 @@
   z-index: 50;
   background-color: white;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  /* shadow-sm */
   border-bottom: 1px solid #f3f4f6;
-  /* gray-100 */
+  /* border-gray-100 */
 }
 
 .container {
@@ -62,7 +63,7 @@
   /* w-8 */
   height: 2rem;
   /* h-8 */
-  background-color: var(--color-primary-green);
+  background-color: #009B8A;
   /* bg-myrtle */
   border-radius: 9999px;
   /* rounded-full */
@@ -78,7 +79,7 @@
 }
 
 .logoIconWrapper:hover {
-  background-color: var(--color-primary-orange);
+  background-color: #FF8C00;
   /* hover:bg-orange */
   transform: scale(1.1);
   /* hover:scale-110 */
@@ -102,7 +103,6 @@
   /* h-5 */
   object-fit: contain;
   filter: brightness(0) invert(1);
-  color: white;
   transition: transform 300ms;
 }
 
@@ -172,44 +172,17 @@
 }
 
 .navLink:hover {
-  color: var(--color-primary-green);
+  color: #009B8A;
   /* hover:text-myrtle */
   background-color: #f9fafb;
   /* hover:bg-gray-50 */
 }
 
 .activeNavLink {
-  background-color: #F5FFFA;
-  /* bg-mintcream */
-  color: var(--color-primary-green);
+  background-color: #e5e7eb;
+  /* gray-200 */
+  color: #009B8A;
   /* text-myrtle */
-}
-
-.langWrapper {
-  position: relative;
-}
-
-.langBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  /* w-8 */
-  height: 2rem;
-  /* h-8 */
-  border-radius: 0.5rem;
-  /* rounded-lg */
-  font-size: 1.125rem;
-  /* text-lg */
-  background: none;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.15s;
-}
-
-.langBtn:hover {
-  background-color: #f9fafb;
-  /* hover:bg-gray-50 */
 }
 
 .mobileActions {
@@ -289,8 +262,9 @@
 .mobileNavLink:hover,
 .mobileNavLink.active {
   background-color: #f9fafb;
-  color: var(--color-primary-green);
+  color: #009B8A;
 }
+
 /* Language Switcher */
 .languageContainer {
   position: relative;
@@ -301,17 +275,22 @@
   align-items: center;
   justify-content: center;
   width: 2rem;
+  /* w-8 */
   height: 2rem;
+  /* h-8 */
   border-radius: 0.5rem;
+  /* rounded-lg */
   font-size: 1.125rem;
+  /* text-lg */
   background: none;
   border: none;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.15s;
 }
 
 .languageButton:hover {
-  background-color: #F9FAFB; /* gray-50 */
+  background-color: #f9fafb;
+  /* hover:bg-gray-50 */
 }
 
 .languageDropdown {
@@ -320,9 +299,11 @@
   top: 100%;
   margin-top: 0.5rem;
   background-color: white;
-  border: 1px solid #E5E7EB; /* gray-200 */
+  border: 1px solid #E5E7EB;
+  /* gray-200 */
   border-radius: 0.5rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  /* shadow-lg */
   z-index: 50;
   min-width: 150px;
   overflow: hidden;
@@ -334,21 +315,26 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem 1rem;
-  font-size: 0.875rem; /* text-sm */
+  font-size: 0.875rem;
+  /* text-sm */
   background: none;
   border: none;
   cursor: pointer;
   transition: background-color 0.2s;
-  color: #374151; /* gray-700 */
+  color: #374151;
+  /* gray-700 */
   text-align: left;
 }
 
 .dropdownItem:hover {
-  background-color: #F9FAFB; /* gray-50 */
+  background-color: #F9FAFB;
+  /* gray-50 */
 }
 
 .dropdownItemActive {
-  background-color: #F5FFFA; /* mintcream */
-  color: #007a6d; /* myrtle */
+  background-color: #F5FFFA;
+  /* mintcream */
+  color: #009B8A;
+  /* myrtle */
   font-weight: 500;
 }

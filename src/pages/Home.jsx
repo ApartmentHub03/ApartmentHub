@@ -5,17 +5,17 @@ import WhyChooseUsSection from '../features/home/components/WhyChooseUsSection';
 import NeighborhoodSection from '../features/home/components/NeighborhoodSection';
 import TestimonialSection from '../features/home/components/TestimonialSection';
 
+import styles from './Home.module.css';
+
 const Home = () => {
     return (
-        <main className="flex-grow">
-            <div className="min-h-screen bg-white">
-                <HeroSection />
-                <ServiceSection />
-                <WhyChooseUsSection />
-                <NeighborhoodSection />
-                <TestimonialSection />
-            </div>
-        </main>
+        <div className={styles.container}>
+            <HeroSection />
+            <ServiceSection />
+            <WhyChooseUsSection />
+            <NeighborhoodSection />
+            <TestimonialSection />
+        </div>
     );
 };
 

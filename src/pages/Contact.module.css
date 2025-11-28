@@ -1,13 +1,12 @@
 .page {
     min-height: 100vh;
-    background-color: var(--color-white);
+    background-color: white;
 }
 
 .heroSection {
     background: linear-gradient(to bottom right, #F0FFF4, #ffffff);
     padding-top: 4rem;
     padding-bottom: 4rem;
-    text-align: center;
 }
 
 .heroContainer {
@@ -17,6 +16,7 @@
     margin-right: auto;
     padding-left: 1rem;
     padding-right: 1rem;
+    text-align: center;
 }
 
 @media (min-width: 640px) {
@@ -38,7 +38,8 @@
     /* text-4xl */
     line-height: 2.5rem;
     font-weight: 700;
-    color: var(--color-text-dark);
+    color: #111827;
+    /* gray-900 */
     margin-bottom: 1.5rem;
 }
 
@@ -53,7 +54,8 @@
 .heroSubtitle {
     font-size: 1.25rem;
     /* text-xl */
-    color: var(--color-text-gray);
+    color: #4B5563;
+    /* gray-600 */
 }
 
 .contentSection {
@@ -100,7 +102,8 @@
     font-size: 1.875rem;
     /* text-3xl */
     font-weight: 700;
-    color: var(--color-text-dark);
+    color: #111827;
+    /* gray-900 */
     margin-bottom: 2rem;
 }
 
@@ -120,7 +123,8 @@
     font-size: 0.875rem;
     /* text-sm */
     font-weight: 500;
-    color: var(--color-text-gray);
+    color: #374151;
+    /* gray-700 */
     margin-bottom: 0.5rem;
 }
 
@@ -129,6 +133,7 @@
     width: 100%;
     padding: 0.75rem 1rem;
     border: 1px solid #d1d5db;
+    /* gray-300 */
     border-radius: 0.75rem;
     /* rounded-xl */
     outline: none;
@@ -138,7 +143,7 @@
 .formGroup input:focus,
 .formGroup textarea:focus {
     border-color: transparent;
-    box-shadow: 0 0 0 2px var(--color-primary-green);
+    box-shadow: 0 0 0 2px hsl(var(--myrtle));
 }
 
 .formGroup textarea {
@@ -147,7 +152,7 @@
 
 .submitBtn {
     width: 100%;
-    background-color: var(--color-primary-green);
+    background-color: hsl(var(--myrtle));
     color: white;
     padding: 0.75rem 1.5rem;
     border-radius: 0.75rem;
@@ -163,7 +168,7 @@
 }
 
 .submitBtn:hover {
-    background-color: var(--color-primary-green-dark);
+    background-color: hsl(var(--myrtle) / 0.9);
 }
 
 .submitBtn:disabled {
@@ -183,7 +188,8 @@
     font-size: 1.5rem;
     /* text-2xl */
     font-weight: 700;
-    color: var(--color-text-dark);
+    color: #111827;
+    /* gray-900 */
     margin-bottom: 2rem;
 }
 
@@ -211,15 +217,16 @@
 }
 
 .iconWrapper.email {
-    background-color: var(--color-primary-green);
+    background-color: hsl(var(--myrtle));
 }
 
 .iconWrapper.whatsapp {
     background-color: #22c55e;
+    /* green-500 */
 }
 
 .iconWrapper.office {
-    background-color: var(--color-primary-orange);
+    background-color: hsl(var(--orange));
 }
 
 .icon {
@@ -230,29 +237,34 @@
 
 .infoContent h4 {
     font-weight: 600;
-    color: var(--color-text-dark);
+    color: #111827;
+    /* gray-900 */
     margin-bottom: 0.25rem;
 }
 
 .infoContent p {
-    color: var(--color-text-gray);
+    color: #4B5563;
+    /* gray-600 */
 }
 
 .infoContent .subtext {
     font-size: 0.875rem;
     /* text-sm */
     color: #6b7280;
+    /* gray-500 */
 }
 
 .socials {
     margin-top: 2rem;
     padding-top: 2rem;
     border-top: 1px solid #e5e7eb;
+    /* gray-200 */
 }
 
 .socialsTitle {
     font-weight: 600;
-    color: var(--color-text-dark);
+    color: #111827;
+    /* gray-900 */
     margin-bottom: 1rem;
 }
 
@@ -262,13 +274,14 @@
 }
 
 .socialLink {
-    color: var(--color-text-gray);
+    color: #4B5563;
+    /* gray-600 */
     text-decoration: none;
     transition: color 0.2s;
 }
 
 .socialLink:hover {
-    color: var(--color-primary-green);
+    color: hsl(var(--myrtle));
 }
 
 .successMessage {
@@ -279,7 +292,7 @@
 }
 
 .successIcon {
-    color: var(--color-primary-green);
+    color: hsl(var(--myrtle));
     margin-bottom: 1rem;
 }
 
@@ -294,8 +307,8 @@
 .resetBtn {
     margin-top: 1rem;
     background-color: transparent;
-    border: 1px solid var(--color-primary-green);
-    color: var(--color-primary-green);
+    border: 1px solid hsl(var(--myrtle));
+    color: hsl(var(--myrtle));
     padding: 0.5rem 1rem;
     border-radius: 0.5rem;
     cursor: pointer;
@@ -303,6 +316,6 @@
 }
 
 .resetBtn:hover {
-    background-color: var(--color-primary-green);
+    background-color: hsl(var(--myrtle));
     color: white;
 }

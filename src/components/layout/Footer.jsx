@@ -1,8 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import styles from './Footer.module.css';
+import { translations } from '../../data/translations';
 
 const Footer = () => {
+    const currentLang = useSelector((state) => state.ui.language);
+    const t = translations.footer[currentLang] || translations.footer.en;
+    const langPrefix = currentLang === 'nl' ? '/nl' : '/en';
+
     return (
         <footer className={styles.footer}>
             <div className={styles.container}>
@@ -15,35 +21,35 @@ const Footer = () => {
                             <span className={styles.brandName}>ApartmentHub</span>
                         </div>
                         <p className={styles.description}>
-                            Lovable homes deserve lovable service. We help connect property owners with tenants through our trusted platform.
+                            {t.description}
                         </p>
                         <p className={styles.email}>
-                            Email: <a href="mailto:hello@apartmenthub.com" className={styles.emailLink}>hello@apartmenthub.com</a>
+                            {t.emailLabel} <a href="mailto:hello@apartmenthub.com" className={styles.emailLink}>hello@apartmenthub.com</a>
                         </p>
                     </div>
 
                     <div>
-                        <h3 className={styles.heading}>Quick Links</h3>
+                        <h3 className={styles.heading}>{t.quickLinks}</h3>
                         <ul className={styles.linkList}>
-                            <li><Link to="/en/rent-out" className={styles.link}>Rent Out</Link></li>
-                            <li><Link to="/en/rent-in" className={styles.link}>Rent In</Link></li>
-                            <li><Link to="/en/about-us" className={styles.link}>About Us</Link></li>
-                            <li><Link to="/en/faq" className={styles.link}>FAQ</Link></li>
-                            <li><Link to="/en/terms-and-conditions" className={styles.link}>Terms & Conditions</Link></li>
-                            <li><Link to="/en/privacy-policy" className={styles.link}>Privacy Policy</Link></li>
+                            <li><Link to={`${langPrefix}/rent-out`} className={styles.link}>{t.linkRentOut}</Link></li>
+                            <li><Link to={`${langPrefix}/rent-in`} className={styles.link}>{t.linkRentIn}</Link></li>
+                            <li><Link to={`${langPrefix}/about-us`} className={styles.link}>{t.linkAbout}</Link></li>
+                            <li><Link to={`${langPrefix}/faq`} className={styles.link}>{t.linkFaq}</Link></li>
+                            <li><Link to={`${langPrefix}/terms-and-conditions`} className={styles.link}>{t.linkTerms}</Link></li>
+                            <li><Link to={`${langPrefix}/privacy-policy`} className={styles.link}>{t.linkPrivacy}</Link></li>
                         </ul>
                     </div>
 
                     <div>
-                        <h3 className={styles.heading}>Newsletter</h3>
+                        <h3 className={styles.heading}>{t.newsletter}</h3>
                         <form className={styles.form}>
                             <input
                                 type="email"
-                                placeholder="Enter your email"
+                                placeholder={t.emailPlaceholder}
                                 className={styles.input}
                                 required
                             />
-                            <button type="submit" className={styles.button}>Subscribe</button>
+                            <button type="submit" className={styles.button}>{t.subscribe}</button>
                         </form>
                     </div>
                 </div>
@@ -67,7 +73,7 @@ const Footer = () => {
                             LinkedIn
                         </a>
                     </div>
-                    <p className={styles.copyright}>© 2024 ApartmentHub. All rights reserved.</p>
+                    <p className={styles.copyright}>{t.copyright}</p>
                 </div>
             </div>
         </footer>

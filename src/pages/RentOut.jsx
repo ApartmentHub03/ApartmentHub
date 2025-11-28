@@ -1,14 +1,30 @@
 import React from 'react';
+import useCounter from '../hooks/useCounter';
+import useInView from '../hooks/useInView';
 import { useSelector } from 'react-redux';
 import { Shield, FileText, MapPin, ChevronDown, Calculator, Search, Heart, UserCheck, Euro, Calendar, TrendingUp, Camera, Clock, CheckCircle } from 'lucide-react';
 import styles from './RentOut.module.css';
 import { translations } from '../data/translations';
 
 import rentoutImage from '../assets/rentout.jpg';
+import logoImage from '../assets/5a9afd14-27a5-40d8-a185-fac727f64fdf.png';
 
 const RentOut = () => {
     const currentLang = useSelector((state) => state.ui.language);
     const t = translations.rentOut[currentLang] || translations.rentOut.en;
+
+    const [statsRef, statsInView] = useInView({ threshold: 0.2, triggerOnce: true });
+
+    const countMonth = useCounter(847, 2000, statsInView);
+    const countDays = useCounter(12, 2000, statsInView);
+    const countSat = useCounter(98, 2000, statsInView);
+    const countService = useCounter(24, 2000, statsInView);
+
+    const [impactRef, impactInView] = useInView({ threshold: 0.2, triggerOnce: true });
+
+    const countIncome = useCounter(10164, 2500, impactInView);
+    const countHours = useCounter(180, 2500, impactInView);
+    const countLegal = useCounter(100, 2500, impactInView);
 
     return (
         <div className={styles.pageContainer}>
@@ -272,31 +288,31 @@ const RentOut = () => {
                         <p className={styles.sectionSubtitle}>{t.numbersSubtitle}</p>
                     </div>
 
-                    <div className={styles.statsGrid}>
+                    <div className={styles.statsGrid} ref={statsRef}>
                         <div className={styles.statItem}>
                             <div className={styles.statIconBoxOrange}>
-                                <div className={styles.statValue}>€847</div>
+                                <div className={styles.statValue}>€{countMonth}</div>
                             </div>
                             <h4 className={styles.statLabel}>{t.statMonth}</h4>
                             <p className={styles.statDesc}>{t.statMonthDesc}</p>
                         </div>
                         <div className={styles.statItem}>
                             <div className={styles.statIconBoxGreen}>
-                                <div className={styles.statValue}>12</div>
+                                <div className={styles.statValue}>{countDays}</div>
                             </div>
                             <h4 className={styles.statLabel}>{t.statDays}</h4>
                             <p className={styles.statDesc}>{t.statDaysDesc}</p>
                         </div>
                         <div className={styles.statItem}>
                             <div className={styles.statIconBoxLightGreen}>
-                                <div className={styles.statValue}>98%</div>
+                                <div className={styles.statValue}>{countSat}%</div>
                             </div>
                             <h4 className={styles.statLabel}>{t.statSat}</h4>
                             <p className={styles.statDesc}>{t.statSatDesc}</p>
                         </div>
                         <div className={styles.statItem}>
                             <div className={styles.statIconBoxPurple}>
-                                <div className={styles.statValue}>24/7</div>
+                                <div className={styles.statValue}>{countService}/7</div>
                             </div>
                             <h4 className={styles.statLabel}>{t.statService}</h4>
                             <p className={styles.statDesc}>{t.statServiceDesc}</p>
@@ -305,11 +321,11 @@ const RentOut = () => {
 
                     <div className={styles.impactCard}>
                         <h3 className={styles.impactTitle}>{t.impactTitle}</h3>
-                        <div className={styles.impactGrid}>
+                        <div className={styles.impactGrid} ref={impactRef}>
                             <div className={styles.impactItem}>
                                 <div className={styles.impactBoxOrange}>
                                     <Euro className={styles.impactIconOrange} />
-                                    <div className={styles.impactValueOrange}>€10.164</div>
+                                    <div className={styles.impactValueOrange}>€{countIncome.toLocaleString('de-DE')}</div>
                                     <div className={styles.impactLabel}>{t.impactIncome}</div>
                                 </div>
                                 <p className={styles.impactDesc}>{t.impactIncomeDesc}</p>
@@ -317,7 +333,7 @@ const RentOut = () => {
                             <div className={styles.impactItem}>
                                 <div className={styles.impactBoxGreen}>
                                     <Calendar className={styles.impactIconGreen} />
-                                    <div className={styles.impactValueGreen}>180</div>
+                                    <div className={styles.impactValueGreen}>{countHours}</div>
                                     <div className={styles.impactLabel}>{t.impactHours}</div>
                                 </div>
                                 <p className={styles.impactDesc}>{t.impactHoursDesc}</p>
@@ -325,7 +341,7 @@ const RentOut = () => {
                             <div className={styles.impactItem}>
                                 <div className={styles.impactBoxLightGreen}>
                                     <Shield className={styles.impactIconLightGreen} />
-                                    <div className={styles.impactValueLightGreen}>100%</div>
+                                    <div className={styles.impactValueLightGreen}>{countLegal}%</div>
                                     <div className={styles.impactLabel}>{t.impactLegal}</div>
                                 </div>
                                 <p className={styles.impactDesc}>{t.impactLegalDesc}</p>
@@ -504,8 +520,11 @@ const RentOut = () => {
 
                         <div className={styles.finalFormCol}>
                             <div className={styles.finalFormCard}>
+                                <div className={styles.formBlurCircle}></div>
                                 <div className={styles.formHeader}>
-                                    <div className={styles.formLogo}>AH</div>
+                                    <div className={styles.formLogoWrapper}>
+                                        <img src={logoImage} alt="ApartmentHub Logo" className={styles.formLogoImage} />
+                                    </div>
                                     <h3 className={styles.formTitle}>{t.formTitle}</h3>
                                     <p className={styles.formSubtitle}>{t.formSubtitle}</p>
                                 </div>

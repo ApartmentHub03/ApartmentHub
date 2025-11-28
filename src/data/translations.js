@@ -23,11 +23,11 @@ export const translations = {
         en: {
             heroTitle1: "Your perfect home",
             heroTitle2: "Starts here",
-            heroSubtext1: "Rent out or rent in, we handle it",
-            heroSubtext2: "Renting or letting? ApartmentHub makes it easy.",
-            ctaRentOut: "Rent Out Property",
+            heroSubtext1: "Rent out or rent in, we've got you",
+            heroSubtext2: "Rent out or rent in? ApartmentHub makes it easy.",
+            ctaRentOut: "I want to rent out my property",
             ctaRentIn: "I'm looking for a home",
-            statsClients: "2500+ happy clients",
+            statsClients: "2500+ satisfied clients",
             statsSupport: "24/7 support",
             statsService: "Premium service",
 
@@ -51,7 +51,7 @@ export const translations = {
             neighborhoodsTitle: "Discover Amsterdam's Neighborhoods",
             neighborhoodsAction: "Discover more",
 
-            testimonialsStatsLandlords: "500+ happy landlords",
+            testimonialsStatsLandlords: "500+ satisfied landlords",
             testimonialsStatsRating: "4.8/5 average rating",
             testimonialsStatsTime: "3 days average rental time",
             testimonialsTitle: "Real conversations we've had with our rental clients",
@@ -61,15 +61,14 @@ export const translations = {
             testimonialsCtaLandlord: "Start as landlord",
             testimonialsCtaTenant: "Find your dream home",
 
-            // Neighborhood descriptions
             descCentrum: "The historic heart of Amsterdam with iconic canals and monuments",
-            descJordaan: "Charming district with narrow streets, authentic brown cafes and art galleries",
-            descDePijp: "Lively neighborhood known for the Albert Cuyp Market and vibrant nightlife",
-            descOost: "Multicultural district with parks and emerging food scene",
+            descJordaan: "Charming neighborhood with narrow streets, authentic brown cafes and art galleries",
+            descDePijp: "Vibrant area known for the Albert Cuyp Market and bustling nightlife",
+            descOost: "Multicultural neighborhood with parks and emerging food scene",
             descNoord: "Creative hub with industrial charm and green spaces",
             descOudZuid: "Prestigious with museums and the Vondelpark",
-            descZuidas: "Modern business district with international appeal",
-            descZeeburg: "Water-rich with relaxed atmosphere on the IJ",
+            descZuidas: "Modern business district with international flair",
+            descZeeburg: "Water-rich with relaxed atmosphere by the IJ",
             descNieuwWest: "Diverse and green with modern amenities",
         },
         nl: {
@@ -113,7 +112,6 @@ export const translations = {
             testimonialsCtaLandlord: "Start als verhuurder",
             testimonialsCtaTenant: "Vind uw droomhuis",
 
-            // Neighborhood descriptions
             descCentrum: "Het historische hart van Amsterdam met iconische grachten en monumenten",
             descJordaan: "Charmante wijk met smalle straatjes, authentieke bruine cafés en kunstgalerijen",
             descDePijp: "Levendige buurt bekend om de Albert Cuyp Markt en bruisend nachtleven",
@@ -441,60 +439,92 @@ export const translations = {
             qrTitle: "Scan to Chat",
             qrDesc: "Scan this QR code with your phone to start a WhatsApp conversation with our housing experts immediately.",
             btnWhatsapp: "Contact us on WhatsApp",
+
+            phoneMockup: {
+                price: "Price: € 2,255,- Excl. Utilities per month",
+                bedrooms: "Bedrooms: 2",
+                squareMeters: "Square meters: 57",
+                additionalNote: "Additional note: ONLY PEOPLE THAT ARE DUTCH AND EMPLOYED",
+                inPersonViewing: "🏠 In person viewing (Preferred):",
+                facetimeViewing: "📱 facetime viewing:",
+                scheduleInstruction: "Click on one of the following links to schedule a viewing.",
+                quickReplyQuestions: "I have Questions",
+                quickReplyUnsubscribe: "Unsubscribe",
+                userReply: "I would like a viewing",
+                agentReply1: "please schedule the viewing with the link in the listing",
+                userReply2: "thank you I have scheduled tomorrow at 15:15",
+                agentReply2: "Perfect, see you there :)"
+            },
         },
         nl: {
-            heroTitle: "Vind Je Perfecte Huis",
-            heroSubtitle: "Laat ons je helpen je ideale huurwoning te vinden via onze persoonlijke WhatsApp-service",
+            heroTitle: "Vind Jouw Perfecte Huis",
+            heroSubtitle: "Laat ons je helpen jouw ideale huurwoning te ontdekken via onze persoonlijke WhatsApp service",
 
             guideBadge: "Gratis Download",
-            guideTitle: "Complete Amsterdam Verhuurgids 2024",
-            guideDesc: "Ontvang onze uitgebreide gids van 32 pagina's boordevol insider tips, buurtinzichten en juridisch advies om je perfecte huurwoning in Amsterdam te bemachtigen.",
+            guideTitle: "Volledige Amsterdam Huur Gids 2024",
+            guideDesc: "Ontvang onze uitgebreide 32-pagina gids vol met insider tips, wijk inzichten en juridisch advies om jouw perfecte huurwoning in Amsterdam te bemachtigen.",
 
-            feature1Title: "Buurtgids",
+            feature1Title: "Wijk Gids",
             feature1Desc: "Gedetailleerde inzichten in de beste huurwijken van Amsterdam",
             feature2Title: "Juridische Bescherming",
-            feature2Desc: "Ken je rechten als huurder en vermijd veelvoorkomende valkuilen",
-            feature3Title: "Sollicitatietips",
-            feature3Desc: "Onderscheid je van andere kandidaten met bewezen strategieën",
+            feature2Desc: "Ken je rechten als huurder en voorkom veelvoorkomende valkuilen",
+            feature3Title: "Aanmeldings Tips",
+            feature3Desc: "Val op tussen andere kandidaten met bewezen strategieën",
             feature4Title: "Documentatie Checklist",
-            feature4Desc: "Volledige lijst van vereiste documenten voor huuraanvragen",
+            feature4Desc: "Volledige lijst van vereiste documenten voor huurverzoeken",
 
             statDownloads: "1.247 downloads",
-            statUpdated: "Geüpdatet voor 2024",
+            statUpdated: "Bijgewerkt voor 2024",
             statFree: "100% Gratis",
             btnDownload: "Download Gratis Gids (PDF)",
 
             trustedTitle: "Vertrouwd door Duizenden",
-            trustedSubtitle: "We hebben duizenden mensen geholpen hun droomhuis te vinden in Amsterdam en daarbuiten. Sluit je aan bij onze succesverhalen!",
-            trustedStat1Label: "Mensen geholpen aan woonruimte",
-            trustedStat2Label: "Slagingspercentage binnen 30 dagen",
+            trustedSubtitle: "We hebben duizenden mensen geholpen hun droomhuis te vinden in Amsterdam en daarbuiten. Word onderdeel van onze succesverhalen!",
+            trustedStat1Label: "Mensen geholpen bij het vinden van woonruimte",
+            trustedStat2Label: "Succespercentage binnen 30 dagen",
             trustedStat3Label: "Gemiddelde klantbeoordeling",
             trustedStat4Label: "WhatsApp ondersteuning beschikbaar",
 
             howItWorksTitle: "Hoe Het Werkt",
             howItWorks1Title: "Start een Chat",
-            howItWorks1Desc: "Stuur ons een WhatsApp-bericht met je woonwensen",
+            howItWorks1Desc: "Stuur ons een WhatsApp bericht met jouw woonwensen",
             howItWorks2Title: "Wij Zoeken",
-            howItWorks2Desc: "Ons team zoekt in ons netwerk naar woningen die aan je criteria voldoen",
-            howItWorks3Title: "Vind Je Huis",
-            howItWorks3Desc: "We presenteren geschikte opties en regelen bezichtigingen",
+            howItWorks2Desc: "Ons team doorzoekt ons netwerk naar woningen die passen bij jouw criteria",
+            howItWorks3Title: "Vind Jouw Huis",
+            howItWorks3Desc: "We presenteren je geschikte opties en regelen bezichtigingen",
 
-            phoneTitle: "Start Je Huizenjacht",
-            phoneContentTitle: "Simpel, Persoonlijk, Effectief",
-            phoneContentDesc: "Sla het eindeloze scrollen door verhuurwebsites over. Ons team biedt persoonlijke service via WhatsApp en matcht je met woningen die echt bij je wensen en budget passen.",
-            phoneBenefit1: "Direct contact met onze wooneexperts",
-            phoneBenefit2: "Toegang tot exclusief aanbod dat niet online staat",
-            phoneBenefit3: "Ondersteuning gedurende het hele verhuurproces",
+            phoneTitle: "Begin Jouw Woningzoektocht",
+            phoneContentTitle: "Eenvoudig, Persoonlijk, Effectief",
+            phoneContentDesc: "Geen eindeloos scrollen door huurwebsites meer. Ons team biedt persoonlijke service via WhatsApp en matcht je met woningen die écht passen bij jouw behoeften en budget.",
+            phoneBenefit1: "Directe communicatie met onze woonexperts",
+            phoneBenefit2: "Toegang tot exclusieve woningen die niet online staan",
+            phoneBenefit3: "Ondersteuning tijdens het gehele huurproces",
 
             qrTitle: "Scan om te Chatten",
-            qrDesc: "Scan deze QR-code met je telefoon om direct een WhatsApp-gesprek te starten met onze wooneexperts.",
+            qrDesc: "Scan deze QR-code met je telefoon om direct een WhatsApp gesprek te starten met onze woonexperts.",
             btnWhatsapp: "Neem contact op via WhatsApp",
+
+            phoneMockup: {
+                price: "Prijs: € 2.255,- Excl. Voorzieningen per maand",
+                bedrooms: "Slaapkamers: 2",
+                squareMeters: "Vierkante meters: 57",
+                additionalNote: "Extra notitie: ALLEEN NEDERLANDERS EN WERKENDEN",
+                inPersonViewing: "🏠 Persoonlijke bezichtiging (Voorkeur):",
+                facetimeViewing: "📱 FaceTime bezichtiging:",
+                scheduleInstruction: "Klik op een van de volgende links om een bezichtiging in te plannen.",
+                quickReplyQuestions: "Ik heb vragen",
+                quickReplyUnsubscribe: "Uitschrijven",
+                userReply: "Ik wil graag een bezichtiging",
+                agentReply1: "plan de bezichtiging in via de link in de advertentie",
+                userReply2: "dankjewel ik heb voor morgen om 15:15 ingepland",
+                agentReply2: "Perfect, tot dan :)"
+            },
         }
     },
     neighborhoods: {
         en: {
-            title: "Explore Amsterdam's Neighborhoods",
-            subtitle: "Discover the unique character and charm of each district to find the perfect place for you.",
+            title: "Neighborhoods",
+            subtitle: "Discover Amsterdam's diverse neighborhoods and find your perfect area",
             readMore: "Read More",
         },
         nl: {
@@ -709,6 +739,37 @@ export const translations = {
             infoOfficeText: "Beschikbaar op afspraak",
 
             socialsTitle: "Volg ons",
+        }
+    },
+    footer: {
+        en: {
+            description: "Lovable homes deserve lovable service. We help connect property owners with tenants through our trusted platform.",
+            emailLabel: "Email:",
+            quickLinks: "Quick Links",
+            linkRentOut: "Rent Out",
+            linkRentIn: "Rent In",
+            linkAbout: "About Us",
+            linkFaq: "FAQ",
+            linkTerms: "Terms & Conditions",
+            linkPrivacy: "Privacy Policy",
+            newsletter: "Newsletter",
+            emailPlaceholder: "Enter your email",
+            subscribe: "Subscribe",
+            copyright: "© 2024 ApartmentHub. All rights reserved."
+        },
+        nl: {
+            description: "Lovable homes deserve lovable service. We helpen eigenaren van eigendommen verbinden met huurders via ons vertrouwde platform en werkwijze.",
+            emailLabel: "E-mail:",
+            quickLinks: "Snelle Links",
+            linkRentOut: "Verhuren",
+            linkRentIn: "Huren",
+            linkAbout: "Over Ons",
+            linkFaq: "FAQ",
+            linkTerms: "Privacyverklaring",
+            newsletter: "Nieuwsbrief",
+            emailPlaceholder: "Vul uw e-mail in",
+            subscribe: "Abonneren",
+            copyright: "© 2024 ApartmentHub. Alle rechten voorbehouden."
         }
     }
 };

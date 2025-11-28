@@ -84,7 +84,7 @@ const Navbar = () => {
                         className={`${styles.dropdownItem} ${currentLang === 'nl' ? styles.dropdownItemActive : ''}`}
                         onClick={() => selectLang('nl')}
                     >
-                        <span>🇳🇱</span><span>Nederlands</span>
+                        <span>🇳🇱</span><span>Dutch</span>
                     </button>
                     <button
                         className={`${styles.dropdownItem} ${currentLang === 'en' ? styles.dropdownItemActive : ''}`}

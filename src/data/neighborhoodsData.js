@@ -10,19 +10,107 @@ export const neighborhoodsData = {
                 "Historic canal ring (UNESCO World Heritage)",
                 "Central Station transportation hub",
                 "Countless museums, cafés, and shops"
-            ]
+            ],
+            marketData: {
+                indicators: [
+                    { label: "Rental Growth (4 years)", value: "+12.8%", subtext: "Average growth", trend: "up", color: "yellow" },
+                    { label: "Purchase Price Growth (4 years)", value: "+37.8%", subtext: "High growth", trend: "up", color: "yellow" },
+                    { label: "Demand Index", value: "10/10", subtext: "Very high demand", trend: "stable", color: "green" },
+                    { label: "Availability", value: "1/10", subtext: "Very scarce", trend: "down", color: "red" }
+                ],
+                rentalPrices: [
+                    { name: "Studio", price: 2100 },
+                    { name: "1 Bed", price: 2600 },
+                    { name: "2 Bed", price: 3500 },
+                    { name: "3+ Bed", price: 4500 }
+                ],
+                purchasePrices: [
+                    { name: "Studio", price: 520000 },
+                    { name: "1 Bed", price: 610000 },
+                    { name: "2 Bed", price: 820000 },
+                    { name: "3+ Bed", price: 1080000 }
+                ],
+                priceTrend: [
+                    { year: "2020", rent: 2000, buy: 450000 },
+                    { year: "2021", rent: 2100, buy: 500000 },
+                    { year: "2022", rent: 2200, buy: 560000 },
+                    { year: "2023", rent: 2300, buy: 590000 },
+                    { year: "2024", rent: 2400, buy: 620000 }
+                ],
+                demographics: [
+                    { label: "Average Age", value: "29" },
+                    { label: "Students", value: "35%" },
+                    { label: "Families", value: "20%" },
+                    { label: "Professionals", value: "45%" }
+                ]
+            },
+            livability: {
+                scores: [
+                    { label: "Public Transport", value: "10/10", type: "transport" },
+                    { label: "Walkability", value: "10/10", type: "walkability" }
+                ],
+                amenities: [
+                    { label: "Restaurants", count: 120, type: "restaurants" },
+                    { label: "Cafés & Bars", count: 65, type: "cafes" },
+                    { label: "Schools", count: 4, type: "schools" }
+                ]
+            }
         },
         nl: {
             title: "Centrum",
-            description: "Het historische hart van Amsterdam, waar eeuwenoude architectuur moderne stadsleven ontmoet, en een ongeëvenaarde stedelijke ervaring biedt in een van de mooiste stadscentra van Europa.",
-            atmosphere: "Centrum trekt mensen aan die overal middenin willen zitten - toeristen, jonge professionals en stedelingen die gedijen op energie en gemak. Hier wonen betekent op loopafstand zijn van grote attracties, restaurants en het nachtleven.",
+            description: "Het historische hart van Amsterdam, waar eeuwenoude architectuur moderne stadsleven ontmoet en een ongeëvenaarde stedelijke ervaring biedt in een van Europa's mooiste stadscentra.",
+            atmosphere: "Centrum trekt mensen aan die in het centrum van alles willen zijn - toeristen, jonge professionals en stadsmensen die gedijen op energie en gemak. Hier wonen betekent op loopafstand van belangrijke attracties, restaurants en uitgaansgelegenheden.",
             highlights: [
                 "De Dam en het Koninklijk Paleis",
-                "Historisch gebied de Wallen",
+                "Historische Rosse Buurt",
                 "Historische grachtengordel (UNESCO Werelderfgoed)",
                 "Centraal Station vervoersknooppunt",
                 "Talloze musea, cafés en winkels"
-            ]
+            ],
+            marketData: {
+                indicators: [
+                    { label: "Huurgroei (4 jaar)", value: "+12.8%", subtext: "Gemiddelde groei", trend: "up", color: "yellow" },
+                    { label: "Koopprijsgroei (4 jaar)", value: "+37.8%", subtext: "Hoge groei", trend: "up", color: "yellow" },
+                    { label: "Vraag Index", value: "10/10", subtext: "Zeer hoge vraag", trend: "stable", color: "green" },
+                    { label: "Beschikbaarheid", value: "1/10", subtext: "Zeer schaars", trend: "down", color: "red" }
+                ],
+                rentalPrices: [
+                    { name: "Studio", price: 2100 },
+                    { name: "1 Slaapkamer", price: 2600 },
+                    { name: "2 Slaapkamers", price: 3500 },
+                    { name: "3+ Slaapkamers", price: 4500 }
+                ],
+                purchasePrices: [
+                    { name: "Studio", price: 520000 },
+                    { name: "1 Slaapkamer", price: 610000 },
+                    { name: "2 Slaapkamers", price: 820000 },
+                    { name: "3+ Slaapkamers", price: 1080000 }
+                ],
+                priceTrend: [
+                    { year: "2020", rent: 2000, buy: 450000 },
+                    { year: "2021", rent: 2100, buy: 500000 },
+                    { year: "2022", rent: 2200, buy: 560000 },
+                    { year: "2023", rent: 2300, buy: 590000 },
+                    { year: "2024", rent: 2400, buy: 620000 }
+                ],
+                demographics: [
+                    { label: "Gemiddelde Leeftijd", value: "29" },
+                    { label: "Studenten", value: "35%" },
+                    { label: "Gezinnen", value: "20%" },
+                    { label: "Professionals", value: "45%" }
+                ]
+            },
+            livability: {
+                scores: [
+                    { label: "Openbaar Vervoer", value: "10/10", type: "transport" },
+                    { label: "Loopvriendelijkheid", value: "10/10", type: "walkability" }
+                ],
+                amenities: [
+                    { label: "Restaurants", count: 120, type: "restaurants" },
+                    { label: "Cafés & Bars", count: 65, type: "cafes" },
+                    { label: "Scholen", count: 4, type: "schools" }
+                ]
+            }
         }
     },
     noord: {
@@ -62,7 +150,51 @@ export const neighborhoodsData = {
                 "Noordermarkt for organic produce and antiques",
                 "Historic hofjes (hidden courtyards)",
                 "Vibrant art gallery scene"
-            ]
+            ],
+            marketData: {
+                indicators: [
+                    { label: "Rental Growth (4 years)", value: "+13.5%", subtext: "Average growth", trend: "up", color: "yellow" },
+                    { label: "Purchase Price Growth (4 years)", value: "+38.1%", subtext: "High growth", trend: "up", color: "yellow" },
+                    { label: "Demand Index", value: "10/10", subtext: "Very high demand", trend: "stable", color: "green" },
+                    { label: "Availability", value: "2/10", subtext: "Very scarce", trend: "down", color: "red" }
+                ],
+                rentalPrices: [
+                    { name: "Studio", price: 1600 },
+                    { name: "1 Bed", price: 2200 },
+                    { name: "2 Bed", price: 2800 },
+                    { name: "3+ Bed", price: 3500 }
+                ],
+                purchasePrices: [
+                    { name: "Studio", price: 450000 },
+                    { name: "1 Bed", price: 550000 },
+                    { name: "2 Bed", price: 750000 },
+                    { name: "3+ Bed", price: 950000 }
+                ],
+                priceTrend: [
+                    { year: "2020", rent: 1500, buy: 420000 },
+                    { year: "2021", rent: 1600, buy: 460000 },
+                    { year: "2022", rent: 1800, buy: 510000 },
+                    { year: "2023", rent: 2000, buy: 550000 },
+                    { year: "2024", rent: 2200, buy: 600000 }
+                ],
+                demographics: [
+                    { label: "Average Age", value: "35" },
+                    { label: "Students", value: "15%" },
+                    { label: "Families", value: "45%" },
+                    { label: "Professionals", value: "40%" }
+                ]
+            },
+            livability: {
+                scores: [
+                    { label: "Public Transport", value: "8/10", type: "transport" },
+                    { label: "Walkability", value: "10/10", type: "walkability" }
+                ],
+                amenities: [
+                    { label: "Restaurants", count: 78, type: "restaurants" },
+                    { label: "Cafés & Bars", count: 35, type: "cafes" },
+                    { label: "Schools", count: 6, type: "schools" }
+                ]
+            }
         },
         nl: {
             title: "Jordaan",
@@ -74,7 +206,51 @@ export const neighborhoodsData = {
                 "Noordermarkt voor biologische producten en antiek",
                 "Historische hofjes (verborgen binnenplaatsen)",
                 "Levendige kunstgaleriescene"
-            ]
+            ],
+            marketData: {
+                indicators: [
+                    { label: "Huurgroei (4 jaar)", value: "+13.5%", subtext: "Gemiddelde groei", trend: "up", color: "yellow" },
+                    { label: "Koopprijsgroei (4 jaar)", value: "+38.1%", subtext: "Hoge groei", trend: "up", color: "yellow" },
+                    { label: "Vraag Index", value: "10/10", subtext: "Zeer hoge vraag", trend: "stable", color: "green" },
+                    { label: "Beschikbaarheid", value: "2/10", subtext: "Zeer schaars", trend: "down", color: "red" }
+                ],
+                rentalPrices: [
+                    { name: "Studio", price: 1600 },
+                    { name: "1 Slaapkamer", price: 2200 },
+                    { name: "2 Slaapkamers", price: 2800 },
+                    { name: "3+ Slaapkamers", price: 3500 }
+                ],
+                purchasePrices: [
+                    { name: "Studio", price: 450000 },
+                    { name: "1 Slaapkamer", price: 550000 },
+                    { name: "2 Slaapkamers", price: 750000 },
+                    { name: "3+ Slaapkamers", price: 950000 }
+                ],
+                priceTrend: [
+                    { year: "2020", rent: 1500, buy: 420000 },
+                    { year: "2021", rent: 1600, buy: 460000 },
+                    { year: "2022", rent: 1800, buy: 510000 },
+                    { year: "2023", rent: 2000, buy: 550000 },
+                    { year: "2024", rent: 2200, buy: 600000 }
+                ],
+                demographics: [
+                    { label: "Gemiddelde Leeftijd", value: "35" },
+                    { label: "Studenten", value: "15%" },
+                    { label: "Gezinnen", value: "45%" },
+                    { label: "Professionals", value: "40%" }
+                ]
+            },
+            livability: {
+                scores: [
+                    { label: "Openbaar Vervoer", value: "8/10", type: "transport" },
+                    { label: "Loopvriendelijkheid", value: "10/10", type: "walkability" }
+                ],
+                amenities: [
+                    { label: "Restaurants", count: 78, type: "restaurants" },
+                    { label: "Cafés & Bars", count: 35, type: "cafes" },
+                    { label: "Scholen", count: 6, type: "schools" }
+                ]
+            }
         }
     },
     oost: {

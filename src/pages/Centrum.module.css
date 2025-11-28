@@ -69,7 +69,7 @@
 }
 
 .backLink:hover {
-    color: hsla(var(--myrtle), 0.8);
+    color: hsl(var(--myrtle) / 0.8);
 }
 
 .headerCard {
@@ -313,7 +313,7 @@
 }
 
 .primaryButton:hover {
-    background-color: hsla(var(--orange), 0.9);
+    background-color: hsl(var(--orange) / 0.9);
     /* hover:bg-orange/90 */
 }
 
@@ -334,6 +334,6 @@
 }
 
 .secondaryButton:hover {
-    background-color: hsla(var(--myrtle), 0.9);
+    background-color: hsl(var(--myrtle) / 0.9);
     /* hover:bg-myrtle/90 */
 }

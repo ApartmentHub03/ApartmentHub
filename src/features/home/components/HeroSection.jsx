@@ -6,6 +6,8 @@ import styles from './HeroSection.module.css';
 import logoImage from '../../../assets/5a9afd14-27a5-40d8-a185-fac727f64fdf.png';
 import { translations } from '../../../data/translations';
 
+import ChatWidget from './ChatWidget';
+
 const HeroSection = () => {
     const currentLang = useSelector((state) => state.ui.language);
     const t = translations.home[currentLang] || translations.home.en;
@@ -69,6 +71,7 @@ const HeroSection = () => {
                     </div>
                 </div>
             </div>
+            <ChatWidget />
         </section>
     );
 };
