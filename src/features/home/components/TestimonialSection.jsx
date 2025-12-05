@@ -20,6 +20,22 @@ const TestimonialSection = () => {
         setSelectedChat(null);
     };
 
+    // Preview messages for cards
+    const robertPreview = {
+        en: {
+            received: "🎉 Good news about your property!",
+            sent: "Wow that's fast! 🎉",
+            time: "Now",
+            messageCount: "10 messages"
+        },
+        nl: {
+            received: "🎉 Goed nieuws over je woning!",
+            sent: "Wauw dat is snel! 🎉",
+            time: "Nu",
+            messageCount: "10 berichten"
+        }
+    };
+
     const robertData = {
         name: "Robert van Dijk",
         avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=600&fit=crop&crop=face",
@@ -38,6 +54,21 @@ const TestimonialSection = () => {
             { type: 'sent', text: "Definitely! I'm going to tell everyone about you", time: "09:25" },
             { type: 'sent', text: "This is how renting should be - no stress, just results", time: "09:26" }
         ]
+    };
+
+    const mariaPreview = {
+        en: {
+            received: "🎉 Good news about your property!",
+            sent: "All 4?? Fantastic! 💪",
+            time: "Now",
+            messageCount: "13 messages"
+        },
+        nl: {
+            received: "🎉 Goed nieuws over je woning!",
+            sent: "Alle 4?? Fantastisch! 💪",
+            time: "Nu",
+            messageCount: "13 berichten"
+        }
     };
 
     const mariaMessages = {
@@ -73,6 +104,21 @@ const TestimonialSection = () => {
         date: "November 2024",
         rating: 5,
         messages: mariaMessages[currentLang] || mariaMessages.en
+    };
+
+    const janPreview = {
+        en: {
+            received: "🎉 Good news about your property!",
+            sent: "Really?! Omg 😊",
+            time: "Now",
+            messageCount: "13 messages"
+        },
+        nl: {
+            received: "🎉 Goed nieuws over je woning!",
+            sent: "Echt waar?! Omg 😊",
+            time: "Nu",
+            messageCount: "13 berichten"
+        }
     };
 
     const janMessages = {
@@ -167,18 +213,18 @@ const TestimonialSection = () => {
                                     <img src={chatLogoImage} alt="ApartmentHub" className={styles.messageAvatarImg} />
                                 </div>
                                 <div className={styles.messageBubbleReceived}>
-                                    <p className={styles.messageText}>🎉 Goed nieuws over je woning!</p>
+                                    <p className={styles.messageText}>{robertPreview[currentLang]?.received}</p>
                                     <div className={styles.messageMeta}>
-                                        <span className={styles.messageTime}>Nu</span>
+                                        <span className={styles.messageTime}>{robertPreview[currentLang]?.time}</span>
                                         <CheckCheck className={styles.readIcon} />
                                     </div>
                                 </div>
                             </div>
                             <div className={styles.messageSent}>
                                 <div className={styles.messageBubbleSent}>
-                                    <p className={styles.messageTextWhite}>Wauw dat is snel! 🎉</p>
+                                    <p className={styles.messageTextWhite}>{robertPreview[currentLang]?.sent}</p>
                                     <div className={styles.messageMetaEnd}>
-                                        <span className={styles.messageTimeWhite}>Nu</span>
+                                        <span className={styles.messageTimeWhite}>{robertPreview[currentLang]?.time}</span>
                                         <CheckCheck className={styles.readIconWhite} />
                                     </div>
                                 </div>
@@ -189,7 +235,7 @@ const TestimonialSection = () => {
                             <div className={styles.cardFooter}>
                                 <div className={styles.footerItem}>
                                     <MessageCircle className={styles.footerIcon} />
-                                    <span className={styles.footerText}>10 berichten</span>
+                                    <span className={styles.footerText}>{robertPreview[currentLang]?.messageCount}</span>
                                 </div>
                                 <div className={styles.footerItem}>
                                     <Clock className={styles.footerIcon} />
@@ -233,18 +279,18 @@ const TestimonialSection = () => {
                                     <img src={chatLogoImage} alt="ApartmentHub" className={styles.messageAvatarImg} />
                                 </div>
                                 <div className={styles.messageBubbleReceived}>
-                                    <p className={styles.messageText}>🎉 Goed nieuws over je woning!</p>
+                                    <p className={styles.messageText}>{mariaPreview[currentLang]?.received}</p>
                                     <div className={styles.messageMeta}>
-                                        <span className={styles.messageTime}>Nu</span>
+                                        <span className={styles.messageTime}>{mariaPreview[currentLang]?.time}</span>
                                         <CheckCheck className={styles.readIcon} />
                                     </div>
                                 </div>
                             </div>
                             <div className={styles.messageSent}>
                                 <div className={styles.messageBubbleSent}>
-                                    <p className={styles.messageTextWhite}>Alle 4?? Fantastisch! 💪</p>
+                                    <p className={styles.messageTextWhite}>{mariaPreview[currentLang]?.sent}</p>
                                     <div className={styles.messageMetaEnd}>
-                                        <span className={styles.messageTimeWhite}>Nu</span>
+                                        <span className={styles.messageTimeWhite}>{mariaPreview[currentLang]?.time}</span>
                                         <CheckCheck className={styles.readIconWhite} />
                                     </div>
                                 </div>
@@ -255,7 +301,7 @@ const TestimonialSection = () => {
                             <div className={styles.cardFooter}>
                                 <div className={styles.footerItem}>
                                     <MessageCircle className={styles.footerIcon} />
-                                    <span className={styles.footerText}>13 berichten</span>
+                                    <span className={styles.footerText}>{mariaPreview[currentLang]?.messageCount}</span>
                                 </div>
                                 <div className={styles.footerItem}>
                                     <Clock className={styles.footerIcon} />
@@ -299,18 +345,18 @@ const TestimonialSection = () => {
                                     <img src={chatLogoImage} alt="ApartmentHub" className={styles.messageAvatarImg} />
                                 </div>
                                 <div className={styles.messageBubbleReceived}>
-                                    <p className={styles.messageText}>🎉 Goed nieuws over je woning!</p>
+                                    <p className={styles.messageText}>{janPreview[currentLang]?.received}</p>
                                     <div className={styles.messageMeta}>
-                                        <span className={styles.messageTime}>Nu</span>
+                                        <span className={styles.messageTime}>{janPreview[currentLang]?.time}</span>
                                         <CheckCheck className={styles.readIcon} />
                                     </div>
                                 </div>
                             </div>
                             <div className={styles.messageSent}>
                                 <div className={styles.messageBubbleSent}>
-                                    <p className={styles.messageTextWhite}>Echt waar?! Omg 😊</p>
+                                    <p className={styles.messageTextWhite}>{janPreview[currentLang]?.sent}</p>
                                     <div className={styles.messageMetaEnd}>
-                                        <span className={styles.messageTimeWhite}>Nu</span>
+                                        <span className={styles.messageTimeWhite}>{janPreview[currentLang]?.time}</span>
                                         <CheckCheck className={styles.readIconWhite} />
                                     </div>
                                 </div>
@@ -321,7 +367,7 @@ const TestimonialSection = () => {
                             <div className={styles.cardFooter}>
                                 <div className={styles.footerItem}>
                                     <MessageCircle className={styles.footerIcon} />
-                                    <span className={styles.footerText}>13 berichten</span>
+                                    <span className={styles.footerText}>{janPreview[currentLang]?.messageCount}</span>
                                 </div>
                                 <div className={styles.footerItem}>
                                     <Clock className={styles.footerIcon} />
