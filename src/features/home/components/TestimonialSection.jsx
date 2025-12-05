@@ -40,15 +40,60 @@ const TestimonialSection = () => {
         ]
     };
 
+    const mariaMessages = {
+        en: [
+            { type: 'received', text: "Maria, update on your portfolio: all 4 properties are now rented! 🏠🏠🏠🏠", time: "14:30" },
+            { type: 'sent', text: "All 4?? Seriously??", time: "14:31" },
+            { type: 'received', text: "The last apartment in De Pijp was rented today", time: "14:31", sender: "ApartmentHub" },
+            { type: 'sent', text: "That's fantastic! I'm really impressed by your professionalism...", time: "14:33" },
+            { type: 'sent', text: "Other agents had been stringing me along for months", time: "14:34" },
+            { type: 'received', text: "All at top price: €1850, €2100, €1950 and €2300", time: "14:35", sender: "ApartmentHub" },
+            { type: 'received', text: "Total €8200 per month! All tenants are screened and have permanent contracts", time: "14:36", sender: "ApartmentHub" },
+            { type: 'sent', text: "8200??? Wow that's more than I hoped for", time: "14:37" },
+            { type: 'sent', text: "This is exactly what I needed! Finally an agent who understands how to work with investors", time: "14:39" },
+            { type: 'sent', text: "The monthly reports are also super useful btw", time: "14:40" },
+            { type: 'received', text: "Great! We'll keep you informed of everything. How do you like the portfolio management service?", time: "14:42", sender: "ApartmentHub" },
+            { type: 'sent', text: "Excellent! Transparent communication, low vacancy, quality tenants...", time: "14:44" },
+            { type: 'sent', text: "this is really how it should be. I'll definitely recommend you", time: "14:45" }
+        ],
+        nl: [
+            { type: 'received', text: "Maria, update over je portfolio: alle 4 panden zijn nu verhuurd! 🏠🏠🏠🏠", time: "14:30" },
+            { type: 'sent', text: "Alle 4?? Serieus??", time: "14:31" },
+            { type: 'received', text: "Het laatste appartement in De Pijp is vandaag gegaan", time: "14:31", sender: "ApartmentHub" },
+            { type: 'sent', text: "Dat is fantastisch! Ik ben echt onder de indruk van jullie professionaliteit...", time: "14:33" },
+            { type: 'sent', text: "Andere makelaars hadden me maanden aan het lijntje gehouden", time: "14:34" },
+            { type: 'received', text: "Fijn dat we konden helpen. Kun je het laatste contract nog ondertekenen? Dan zal de check in van dat appartement plaats vinden en zijn we klaar.", time: "14:35", sender: "ApartmentHub" }
+        ]
+    };
+
     const mariaData = {
         name: "Maria Santos",
         avatarPlaceholder: "MS",
         location: "De Pijp",
         date: "November 2024",
         rating: 5,
-        messages: [
+        messages: mariaMessages[currentLang] || mariaMessages.en
+    };
+
+    const janMessages = {
+        en: [
+            { type: 'received', text: "Jan Willem, your apartment in Noord is rented! 🎉", time: "16:45" },
+            { type: 'sent', text: "Really?! Omg I can't believe it", time: "16:46" },
+            { type: 'received', text: "The young couple will sign the contract on Tuesday for €1650 per month", time: "16:47", sender: "ApartmentHub" },
+            { type: 'sent', text: "I'm so relieved... I was really afraid I would make mistakes as a beginner", time: "16:49" },
+            { type: 'sent', text: "You guys have been so helpful!", time: "16:50" },
+            { type: 'received', text: "You did it perfectly! All documents are in order, rent price is market conform", time: "16:52", sender: "ApartmentHub" },
+            { type: 'received', text: "And the tenants are well screened. Your uncle would have been proud ❤️", time: "16:53", sender: "ApartmentHub" },
+            { type: 'sent', text: "Thank you, that means a lot to me...", time: "16:55" },
+            { type: 'sent', text: "Without your guidance I never would have dared to do this", time: "16:56" },
+            { type: 'sent', text: "You've really made renting accessible", time: "16:57" },
+            { type: 'received', text: "That's what we're here for! Do you feel more confident about the whole rental process now?", time: "16:59", sender: "ApartmentHub" },
+            { type: 'sent', text: "Absolutely! From complete beginner to confident landlord in just a few weeks", time: "17:01" },
+            { type: 'sent', text: "I wouldn't know how I would have managed without you", time: "17:02" }
+        ],
+        nl: [
             { type: 'received', text: "🎉 Goed nieuws over je woning!", time: "Nu" },
-            { type: 'sent', text: "Alle 4?? Fantastisch! 💪", time: "Nu" }
+            { type: 'sent', text: "Echt waar?! Omg 😊", time: "Nu" }
         ]
     };
 
@@ -58,10 +103,7 @@ const TestimonialSection = () => {
         location: "Noord",
         date: "Oktober 2024",
         rating: 5,
-        messages: [
-            { type: 'received', text: "🎉 Goed nieuws over je woning!", time: "Nu" },
-            { type: 'sent', text: "Echt waar?! Omg 😊", time: "Nu" }
-        ]
+        messages: janMessages[currentLang] || janMessages.en
     };
 
     return (

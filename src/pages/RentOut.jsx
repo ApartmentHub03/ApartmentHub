@@ -1,68 +1,116 @@
-import React from 'react';
-import useCounter from '../hooks/useCounter';
-import useInView from '../hooks/useInView';
+import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Shield, FileText, MapPin, ChevronDown, Calculator, Search, Heart, UserCheck, Euro, Calendar, TrendingUp, Camera, Clock, CheckCircle } from 'lucide-react';
-import styles from './RentOut.module.css';
 import { translations } from '../data/translations';
+import AnimatedCounter from '../components/common/AnimatedCounter';
+import RentalCalculator from '../components/common/RentalCalculator';
+import YouTubeEmbed from '../components/common/YouTubeEmbed';
+import useInView from '../hooks/useInView';
+import {
+    Shield, Search, Heart, UserCheck, Euro, Calendar,
+    Camera, CheckCircle, TrendingUp, MessageSquare,
+    MapPin, FileText, Clock, ArrowRight
+} from 'lucide-react';
+import styles from './RentOut.module.css';
 
-import rentoutImage from '../assets/rentout.jpg';
+// Import images
+import rentoutHeroImage from '../assets/rentout.jpg';
 import logoImage from '../assets/5a9afd14-27a5-40d8-a185-fac727f64fdf.png';
+
+// TODO: Replace with actual YouTube video ID
+const VERHUREN_VIDEO_ID = '';
+
+// Placeholder images for verhuren sections - using Unsplash
+const verhurenDetectiveImage = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80';
+const verhurenMarketingImage = 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80';
+const verhurenMatchImage = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80';
 
 const RentOut = () => {
     const currentLang = useSelector((state) => state.ui.language);
     const t = translations.rentOut[currentLang] || translations.rentOut.en;
 
+    // Contact form state for the bottom section
+    const [contactFormData, setContactFormData] = useState({
+        address: '',
+        postalCode: '',
+        email: '',
+        phone: ''
+    });
+    const [contactSubmitted, setContactSubmitted] = useState(false);
+
+    // Property details form state for the rental advice section
+    const [propertyDetailsSubmitted, setPropertyDetailsSubmitted] = useState(false);
+
+    // For animated stats
     const [statsRef, statsInView] = useInView({ threshold: 0.2, triggerOnce: true });
-
-    const countMonth = useCounter(847, 2000, statsInView);
-    const countDays = useCounter(12, 2000, statsInView);
-    const countSat = useCounter(98, 2000, statsInView);
-    const countService = useCounter(24, 2000, statsInView);
-
     const [impactRef, impactInView] = useInView({ threshold: 0.2, triggerOnce: true });
 
-    const countIncome = useCounter(10164, 2500, impactInView);
-    const countHours = useCounter(180, 2500, impactInView);
-    const countLegal = useCounter(100, 2500, impactInView);
+    const handleContactFormInputChange = (field, value) => {
+        setContactFormData(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const handleContactFormSubmit = (e) => {
+        e.preventDefault();
+        console.log('Contact form data:', contactFormData);
+        setContactSubmitted(true);
+    };
+
+    const handlePropertyDetailsSubmit = (formData) => {
+        console.log('Property details form data:', formData);
+        setPropertyDetailsSubmitted(true);
+    };
+
+    const resetPropertyDetailsForm = () => {
+        setPropertyDetailsSubmitted(false);
+    };
 
     return (
         <div className={styles.pageContainer}>
+            {/* Hero Section */}
             <section className={styles.heroSection}>
                 <div className={styles.heroContainer}>
                     <div className={styles.heroBadge}>
                         <Shield className={styles.badgeIcon} />
                         {t.heroBadge}
                     </div>
+
                     <h1 className={styles.heroTitle}>
                         <span className={styles.textOrange}>{t.heroTitle1}</span><br />
                         <span className={styles.textBlack}>{t.heroTitle2}</span>
                     </h1>
+
                     <p className={styles.heroSubtitle}>
                         {t.heroSubtitle}
                     </p>
-                    <div className={styles.heroCta}>
-                        <button className={styles.brochureBtn}>
-                            <FileText className={styles.btnIcon} />
-                            {t.heroBtn}
-                        </button>
+
+                    {/* YouTube Video */}
+                    <div style={{ maxWidth: '56rem', margin: '2rem auto 0' }}>
+                        <YouTubeEmbed
+                            videoId={VERHUREN_VIDEO_ID}
+                            title="Zorgeloos Verhuren met ApartmentHub"
+                            className="shadow-2xl"
+                        />
                     </div>
                 </div>
             </section>
 
+            {/* Price Check / Rental Advice Section */}
             <section className={styles.priceCheckSection}>
                 <div className={styles.container}>
                     <div className={styles.priceCheckGrid}>
                         <div className={styles.imageCol}>
                             <div className={styles.imageWrapper}>
                                 <img
-                                    src={rentoutImage}
-                                    alt="Amsterdam Street"
+                                    src={rentoutHeroImage}
+                                    alt="Verhuren met ApartmentHub"
                                     className={styles.sectionImage}
                                     loading="lazy"
                                 />
                             </div>
                         </div>
+
                         <div className={styles.formCol}>
                             <div className={styles.formContent}>
                                 <h2 className={styles.sectionTitle}>{t.priceCheckTitle}</h2>
@@ -75,86 +123,11 @@ const RentOut = () => {
                                         </div>
                                     </div>
 
-                                    <form className={styles.calcForm}>
-                                        <div className={styles.formGrid}>
-                                            <div className={styles.fullWidth}>
-                                                <label className={styles.label}>
-                                                    <MapPin className={styles.labelIcon} /> {t.labelAddress} *
-                                                </label>
-                                                <input className={styles.input} placeholder="Damrak 123, Amsterdam" required />
-                                            </div>
-                                            <div>
-                                                <label className={styles.label}>{t.labelPostal} *</label>
-                                                <input className={styles.input} placeholder="1012 JS" required />
-                                            </div>
-                                            <div>
-                                                <label className={styles.label}>{t.labelM2} *</label>
-                                                <input type="number" className={styles.input} placeholder="85" required />
-                                            </div>
-                                        </div>
-
-                                        <div className={styles.formGrid}>
-                                            <div>
-                                                <label className={styles.label}>{t.labelRooms} *</label>
-                                                <div className={styles.selectWrapper}>
-                                                    <select className={styles.select}>
-                                                        <option value="1">1</option>
-                                                        <option value="2">2</option>
-                                                        <option value="3">3</option>
-                                                        <option value="4">4</option>
-                                                        <option value="5">5+</option>
-                                                    </select>
-                                                    <ChevronDown className={styles.selectIcon} />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className={styles.label}>{t.labelInterior} *</label>
-                                                <div className={styles.selectWrapper}>
-                                                    <select className={styles.select}>
-                                                        <option value="shell">{t.optShell}</option>
-                                                        <option value="unfurnished">{t.optUnfurnished}</option>
-                                                        <option value="partlyFurnished">{t.optPartlyFurnished}</option>
-                                                        <option value="furnished">{t.optFurnished}</option>
-                                                    </select>
-                                                    <ChevronDown className={styles.selectIcon} />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className={styles.formGrid}>
-                                            <div>
-                                                <label className={styles.label}>{t.labelCondition} *</label>
-                                                <div className={styles.selectWrapper}>
-                                                    <select className={styles.select}>
-                                                        <option value="brandNew">{t.optNew}</option>
-                                                        <option value="average">{t.optAverage}</option>
-                                                        <option value="belowAverage">{t.optBelowAverage}</option>
-                                                    </select>
-                                                    <ChevronDown className={styles.selectIcon} />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className={styles.label}>{t.labelName} *</label>
-                                                <input className={styles.input} placeholder="First and last name" required />
-                                            </div>
-                                        </div>
-
-                                        <div className={styles.formGrid}>
-                                            <div>
-                                                <label className={styles.label}>{t.labelEmail} *</label>
-                                                <input type="email" className={styles.input} placeholder="your.email@example.com" required />
-                                            </div>
-                                            <div>
-                                                <label className={styles.label}>{t.labelPhone} *</label>
-                                                <input type="tel" className={styles.input} placeholder="+31 6 12345678" required />
-                                            </div>
-                                        </div>
-
-                                        <button type="submit" className={styles.submitBtn}>
-                                            <Calculator className={styles.btnIcon} />
-                                            {t.btnCalculate}
-                                        </button>
-                                    </form>
+                                    <RentalCalculator
+                                        onSubmit={handlePropertyDetailsSubmit}
+                                        onReset={resetPropertyDetailsForm}
+                                        submitted={propertyDetailsSubmitted}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -162,6 +135,7 @@ const RentOut = () => {
                 </div>
             </section>
 
+            {/* Behind the Scenes / Story Section */}
             <section className={styles.storySection}>
                 <div className={styles.storyBgLeft}></div>
                 <div className={styles.storyBgRight}></div>
@@ -177,6 +151,7 @@ const RentOut = () => {
                         </p>
                     </div>
 
+                    {/* Step 1 */}
                     <div className={styles.stepRow}>
                         <div className={styles.stepContent}>
                             <div className={styles.stepCard}>
@@ -202,7 +177,7 @@ const RentOut = () => {
                         </div>
                         <div className={styles.stepImageCol}>
                             <div className={styles.stepImageWrapper}>
-                                <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80" alt="Property Analysis" className={styles.stepImage} />
+                                <img src={verhurenDetectiveImage} alt="Property Analysis" className={styles.stepImage} />
                                 <div className={styles.floatBadgeTopRight}>
                                     <div className={styles.floatBadgeText}>+15%</div>
                                     <div className={styles.floatBadgeSub}>more value</div>
@@ -211,10 +186,11 @@ const RentOut = () => {
                         </div>
                     </div>
 
+                    {/* Step 2 */}
                     <div className={styles.stepRowReverse}>
                         <div className={styles.stepImageCol}>
                             <div className={styles.stepImageWrapper}>
-                                <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80" alt="Marketing Magic" className={styles.stepImage} />
+                                <img src={verhurenMarketingImage} alt="Marketing Magic" className={styles.stepImage} />
                                 <div className={styles.floatBadgeBottomLeft}>
                                     <div className={styles.floatBadgeText}>72h</div>
                                     <div className={styles.floatBadgeSub}>to 1st viewing</div>
@@ -245,6 +221,7 @@ const RentOut = () => {
                         </div>
                     </div>
 
+                    {/* Step 3 */}
                     <div className={styles.stepRow}>
                         <div className={styles.stepContent}>
                             <div className={styles.stepCard}>
@@ -270,7 +247,7 @@ const RentOut = () => {
                         </div>
                         <div className={styles.stepImageCol}>
                             <div className={styles.stepImageWrapper}>
-                                <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80" alt="Perfect Match" className={styles.stepImage} />
+                                <img src={verhurenMatchImage} alt="Perfect Match" className={styles.stepImage} />
                                 <div className={styles.floatBadgeTopRightGreen}>
                                     <div className={styles.floatBadgeText}>98%</div>
                                     <div className={styles.floatBadgeSub}>happy matches</div>
@@ -281,6 +258,130 @@ const RentOut = () => {
                 </div>
             </section>
 
+            {/* Services & Pricing Section */}
+            <section style={{
+                padding: '5rem 0',
+                background: 'linear-gradient(to bottom right, var(--color-primary-green), rgba(0, 155, 138, 0.9))'
+            }}>
+                <div className={styles.container}>
+                    <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+                        <h2 style={{ fontSize: '2.25rem', fontWeight: '700', color: 'white', marginBottom: '1rem' }}>
+                            {currentLang === 'nl' ? 'Wat bieden wij aan?' : 'What do we offer?'}
+                        </h2>
+                        <div style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            background: 'rgba(255, 107, 53, 0.2)',
+                            padding: '0.75rem 1.5rem',
+                            borderRadius: '9999px'
+                        }}>
+                            <Euro style={{ width: '1.25rem', height: '1.25rem', color: '#ff6b35' }} />
+                            <span style={{ color: 'white', fontWeight: '700', fontSize: '1.25rem' }}>
+                                €1.000,- <span style={{ fontWeight: '400', color: 'rgba(255, 255, 255, 0.8)' }}>
+                                    {currentLang === 'nl' ? 'excl. BTW' : 'excl. VAT'}
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* 2-column grid layout */}
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                        gap: '1rem',
+                        maxWidth: '800px',
+                        margin: '0 auto'
+                    }}>
+                        {[
+                            { icon: MessageSquare, text: currentLang === 'nl' ? 'Gratis advies' : 'Free advice' },
+                            { icon: Camera, text: currentLang === 'nl' ? "Gratis foto's & video" : 'Free photos & video' },
+                            { icon: UserCheck, text: currentLang === 'nl' ? 'Huurder screenings' : 'Tenant screenings' },
+                            { icon: TrendingUp, text: currentLang === 'nl' ? 'Adverteren op Funda & Pararius' : 'Advertising on Funda & Pararius' },
+                            { icon: UserCheck, text: currentLang === 'nl' ? 'Hulp bij onderhandelingen' : 'Assistance with negotiations' },
+                            { icon: MapPin, text: currentLang === 'nl' ? 'Distributie naar internationale relocators' : 'Distribution to international relocators' },
+                            { icon: FileText, text: currentLang === 'nl' ? 'Huurcontract' : 'Rental contract' },
+                            { icon: Calendar, text: currentLang === 'nl' ? 'Bezichtigingen 7 dagen per week' : 'Property showings 7 days a week' },
+                        ].map((service, index) => {
+                            const IconComponent = service.icon;
+                            return (
+                                <div
+                                    key={index}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '1rem',
+                                        background: 'rgba(255, 255, 255, 0.1)',
+                                        padding: '1rem 1.5rem',
+                                        borderRadius: '0.75rem',
+                                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                                        transition: 'all 0.3s'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                                        e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                                        e.currentTarget.style.boxShadow = 'none';
+                                    }}
+                                >
+                                    <div style={{
+                                        width: '2.5rem',
+                                        height: '2.5rem',
+                                        background: 'rgba(255, 107, 53, 0.25)',
+                                        borderRadius: '9999px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexShrink: '0'
+                                    }}>
+                                        <IconComponent style={{ width: '1.25rem', height: '1.25rem', color: '#ff6b35', strokeWidth: 2.5 }} />
+                                    </div>
+                                    <span style={{ color: 'white', fontWeight: '500', fontSize: '0.95rem' }}>{service.text}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div style={{ textAlign: 'center', marginTop: '3rem' }}>
+                        <button
+                            onClick={() => window.open('https://wa.me/31641439378?text=Ik%20wil%20graag%20mijn%20woning%20verhuren', '_blank')}
+                            style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.5rem',
+                                background: '#ff6b35',
+                                color: 'white',
+                                padding: '0.75rem 1.5rem',
+                                fontSize: '1rem',
+                                fontWeight: '700',
+                                borderRadius: '9999px',
+                                transition: 'all 0.5s ease-out',
+                                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                                border: '2px solid rgba(255, 255, 255, 0.2)',
+                                cursor: 'pointer'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = '#ff8c00';
+                                e.currentTarget.style.transform = 'scale(1.1)';
+                                e.currentTarget.style.boxShadow = '0 25px 50px -12px rgba(255, 107, 53, 0.4)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = '#ff6b35';
+                                e.currentTarget.style.transform = 'scale(1)';
+                                e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+                            }}
+                        >
+                            {currentLang === 'nl' ? 'Start Nu' : 'Get Started'}
+                            <ArrowRight style={{ width: '1.25rem', height: '1.25rem' }} />
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            {/* Numbers Section */}
             <section className={styles.numbersSection}>
                 <div className={styles.container}>
                     <div className={styles.sectionHeader}>
@@ -291,28 +392,36 @@ const RentOut = () => {
                     <div className={styles.statsGrid} ref={statsRef}>
                         <div className={styles.statItem}>
                             <div className={styles.statIconBoxOrange}>
-                                <div className={styles.statValue}>€{countMonth}</div>
+                                <div className={styles.statValue}>
+                                    <AnimatedCounter end={847} duration={2000} shouldStart={statsInView} prefix="€" />
+                                </div>
                             </div>
                             <h4 className={styles.statLabel}>{t.statMonth}</h4>
                             <p className={styles.statDesc}>{t.statMonthDesc}</p>
                         </div>
                         <div className={styles.statItem}>
                             <div className={styles.statIconBoxGreen}>
-                                <div className={styles.statValue}>{countDays}</div>
+                                <div className={styles.statValue}>
+                                    <AnimatedCounter end={12} duration={2000} shouldStart={statsInView} />
+                                </div>
                             </div>
                             <h4 className={styles.statLabel}>{t.statDays}</h4>
                             <p className={styles.statDesc}>{t.statDaysDesc}</p>
                         </div>
                         <div className={styles.statItem}>
                             <div className={styles.statIconBoxLightGreen}>
-                                <div className={styles.statValue}>{countSat}%</div>
+                                <div className={styles.statValue}>
+                                    <AnimatedCounter end={98} duration={2000} shouldStart={statsInView} suffix="%" />
+                                </div>
                             </div>
                             <h4 className={styles.statLabel}>{t.statSat}</h4>
                             <p className={styles.statDesc}>{t.statSatDesc}</p>
                         </div>
                         <div className={styles.statItem}>
                             <div className={styles.statIconBoxPurple}>
-                                <div className={styles.statValue}>{countService}/7</div>
+                                <div className={styles.statValue}>
+                                    <AnimatedCounter end={24} duration={2000} shouldStart={statsInView} suffix="/7" />
+                                </div>
                             </div>
                             <h4 className={styles.statLabel}>{t.statService}</h4>
                             <p className={styles.statDesc}>{t.statServiceDesc}</p>
@@ -325,7 +434,9 @@ const RentOut = () => {
                             <div className={styles.impactItem}>
                                 <div className={styles.impactBoxOrange}>
                                     <Euro className={styles.impactIconOrange} />
-                                    <div className={styles.impactValueOrange}>€{countIncome.toLocaleString('de-DE')}</div>
+                                    <div className={styles.impactValueOrange}>
+                                        <AnimatedCounter end={10164} duration={2500} shouldStart={impactInView} prefix="€" />
+                                    </div>
                                     <div className={styles.impactLabel}>{t.impactIncome}</div>
                                 </div>
                                 <p className={styles.impactDesc}>{t.impactIncomeDesc}</p>
@@ -333,7 +444,9 @@ const RentOut = () => {
                             <div className={styles.impactItem}>
                                 <div className={styles.impactBoxGreen}>
                                     <Calendar className={styles.impactIconGreen} />
-                                    <div className={styles.impactValueGreen}>{countHours}</div>
+                                    <div className={styles.impactValueGreen}>
+                                        <AnimatedCounter end={180} duration={2500} shouldStart={impactInView} />
+                                    </div>
                                     <div className={styles.impactLabel}>{t.impactHours}</div>
                                 </div>
                                 <p className={styles.impactDesc}>{t.impactHoursDesc}</p>
@@ -341,7 +454,9 @@ const RentOut = () => {
                             <div className={styles.impactItem}>
                                 <div className={styles.impactBoxLightGreen}>
                                     <Shield className={styles.impactIconLightGreen} />
-                                    <div className={styles.impactValueLightGreen}>{countLegal}%</div>
+                                    <div className={styles.impactValueLightGreen}>
+                                        <AnimatedCounter end={100} duration={2500} shouldStart={impactInView} suffix="%" />
+                                    </div>
                                     <div className={styles.impactLabel}>{t.impactLegal}</div>
                                 </div>
                                 <p className={styles.impactDesc}>{t.impactLegalDesc}</p>
@@ -351,6 +466,7 @@ const RentOut = () => {
                 </div>
             </section>
 
+            {/* Risks Section */}
             <section className={styles.risksSection}>
                 <div className={styles.container}>
                     <div className={styles.sectionHeader}>
@@ -359,6 +475,7 @@ const RentOut = () => {
                     </div>
 
                     <div className={styles.risksGrid}>
+                        {/* Risk 1 */}
                         <div className={styles.riskCard}>
                             <div className={styles.riskRow}>
                                 <div className={styles.riskProblem}>
@@ -387,6 +504,7 @@ const RentOut = () => {
                             </div>
                         </div>
 
+                        {/* Risk 2 */}
                         <div className={styles.riskCard}>
                             <div className={styles.riskRowReverse}>
                                 <div className={styles.riskSolution}>
@@ -415,6 +533,7 @@ const RentOut = () => {
                             </div>
                         </div>
 
+                        {/* Risk 3 */}
                         <div className={styles.riskCard}>
                             <div className={styles.riskRow}>
                                 <div className={styles.riskProblem}>
@@ -466,12 +585,15 @@ const RentOut = () => {
                 </div>
             </section>
 
+            {/* Final Section / Contact Form */}
             <section className={styles.finalSection}>
                 <div className={styles.finalBg}></div>
                 <div className={styles.container}>
                     <div className={styles.finalGrid}>
                         <div className={styles.finalContent}>
-                            <h2 className={styles.finalTitle}>{t.finalTitle1} <span className={styles.textOrange}>{t.finalTitle2}</span></h2>
+                            <h2 className={styles.finalTitle}>
+                                {t.finalTitle1} <span className={styles.textOrange}>{t.finalTitle2}</span>
+                            </h2>
                             <p className={styles.finalSubtitle}>{t.finalSubtitle}</p>
 
                             <div className={styles.benefitsList}>
@@ -528,31 +650,98 @@ const RentOut = () => {
                                     <h3 className={styles.formTitle}>{t.formTitle}</h3>
                                     <p className={styles.formSubtitle}>{t.formSubtitle}</p>
                                 </div>
-                                <form className={styles.finalForm}>
-                                    <div className={styles.formGroup}>
-                                        <label className={styles.formLabel}>{t.formAddress}</label>
-                                        <input className={styles.formInput} placeholder="e.g. Keizersgracht 123, Amsterdam" required />
-                                    </div>
-                                    <div className={styles.formGroup}>
-                                        <label className={styles.formLabel}>{t.formPostal}</label>
-                                        <input className={styles.formInput} placeholder="e.g. 1012 AB" required />
-                                    </div>
-                                    <div className={styles.formRow}>
+                                {!contactSubmitted ? (
+                                    <form onSubmit={handleContactFormSubmit} className={styles.finalForm}>
                                         <div className={styles.formGroup}>
-                                            <label className={styles.formLabel}>{t.formEmail}</label>
-                                            <input type="email" className={styles.formInput} placeholder="your.email@example.com" required />
+                                            <label className={styles.formLabel}>{t.formAddress}</label>
+                                            <input
+                                                className={styles.formInput}
+                                                placeholder="e.g. Keizersgracht 123, Amsterdam"
+                                                value={contactFormData.address}
+                                                onChange={(e) => handleContactFormInputChange('address', e.target.value)}
+                                                required
+                                            />
                                         </div>
                                         <div className={styles.formGroup}>
-                                            <label className={styles.formLabel}>{t.formPhone}</label>
-                                            <input type="tel" className={styles.formInput} placeholder="+31 6 12345678" required />
+                                            <label className={styles.formLabel}>{t.formPostal}</label>
+                                            <input
+                                                className={styles.formInput}
+                                                placeholder="e.g. 1012 AB"
+                                                value={contactFormData.postalCode}
+                                                onChange={(e) => handleContactFormInputChange('postalCode', e.target.value)}
+                                                required
+                                            />
                                         </div>
+                                        <div className={styles.formRow}>
+                                            <div className={styles.formGroup}>
+                                                <label className={styles.formLabel}>{t.formEmail}</label>
+                                                <input
+                                                    type="email"
+                                                    className={styles.formInput}
+                                                    placeholder="your.email@example.com"
+                                                    value={contactFormData.email}
+                                                    onChange={(e) => handleContactFormInputChange('email', e.target.value)}
+                                                    required
+                                                />
+                                            </div>
+                                            <div className={styles.formGroup}>
+                                                <label className={styles.formLabel}>{t.formPhone}</label>
+                                                <input
+                                                    type="tel"
+                                                    className={styles.formInput}
+                                                    placeholder="+31 6 12345678"
+                                                    value={contactFormData.phone}
+                                                    onChange={(e) => handleContactFormInputChange('phone', e.target.value)}
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                        <button type="submit" className={styles.finalSubmitBtn}>
+                                            <span>{t.formBtn}</span>
+                                            <TrendingUp className={styles.btnIcon} />
+                                        </button>
+                                        <p className={styles.formDisclaimer}>{t.formDisclaimer}</p>
+                                    </form>
+                                ) : (
+                                    <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+                                        <div style={{
+                                            width: '5rem',
+                                            height: '5rem',
+                                            background: 'linear-gradient(to bottom right, rgba(0, 155, 138, 0.1), rgba(255, 165, 0, 0.1))',
+                                            borderRadius: '9999px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            margin: '0 auto 1.5rem'
+                                        }}>
+                                            <CheckCircle style={{ width: '2.5rem', height: '2.5rem', color: 'var(--color-primary-green)' }} />
+                                        </div>
+                                        <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#111827', marginBottom: '1rem' }}>
+                                            Thank you!
+                                        </h3>
+                                        <p style={{ color: '#4b5563', marginBottom: '1.5rem', lineHeight: '1.625' }}>
+                                            We've received your information and will contact you within 24 hours.
+                                        </p>
+                                        <button
+                                            onClick={() => {
+                                                setContactSubmitted(false);
+                                                setContactFormData({ address: '', postalCode: '', email: '', phone: '' });
+                                            }}
+                                            style={{
+                                                background: 'linear-gradient(to right, var(--color-primary-orange), var(--color-primary-green))',
+                                                color: 'white',
+                                                padding: '0.75rem 2rem',
+                                                borderRadius: '0.75rem',
+                                                fontWeight: '500',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.3s'
+                                            }}
+                                        >
+                                            Submit Another Property
+                                        </button>
                                     </div>
-                                    <button type="submit" className={styles.finalSubmitBtn}>
-                                        <span>{t.formBtn}</span>
-                                        <TrendingUp className={styles.btnIcon} />
-                                    </button>
-                                    <p className={styles.formDisclaimer}>{t.formDisclaimer}</p>
-                                </form>
+                                )}
                             </div>
                         </div>
                     </div>
