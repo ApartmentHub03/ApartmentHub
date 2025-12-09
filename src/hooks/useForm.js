@@ -37,7 +37,6 @@ export const useForm = (submitAction) => {
             // In a real app, you would call the API here
             // const response = await api.post('/contact', formData);
 
-            console.log('Form Submitted:', formData);
             dispatch(submitSuccess(formData));
 
             // Optional: Reset form

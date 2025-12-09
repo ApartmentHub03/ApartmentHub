@@ -17,10 +17,10 @@ import rentoutHeroImage from '../assets/rentout.jpg';
 import logoImage from '../assets/5a9afd14-27a5-40d8-a185-fac727f64fdf.png';
 import rentOutVideo from '../assets/Apartmenthub Rent out.mov';
 
-// Placeholder images for verhuren sections - using Unsplash
-const verhurenDetectiveImage = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80';
-const verhurenMarketingImage = 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80';
-const verhurenMatchImage = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80';
+// Import images for story section steps
+import verhurenDetectiveImage from '../assets/RentOut1.jpg';
+import verhurenMarketingImage from '../assets/rentout2.jpg';
+import verhurenMatchImage from '../assets/rentout3.jpg';
 
 const RentOut = () => {
     const currentLang = useSelector((state) => state.ui.language);
@@ -54,12 +54,12 @@ const RentOut = () => {
 
     const handleContactFormSubmit = (e) => {
         e.preventDefault();
-        console.log('Contact form data:', contactFormData);
+        // Form data would be sent to backend here
         setContactSubmitted(true);
     };
 
     const handlePropertyDetailsSubmit = (formData) => {
-        console.log('Property details form data:', formData);
+        // Property details would be sent to backend here
         setPropertyDetailsSubmitted(true);
     };
 
@@ -97,7 +97,7 @@ const RentOut = () => {
                         </button>
                     </div>
 
-                    {/* Video */}
+                    {/* Optimized Video with lazy loading */}
                     <div style={{ maxWidth: '56rem', margin: '2rem auto 0' }}>
                         <video
                             src={rentOutVideo}
@@ -107,10 +107,10 @@ const RentOut = () => {
                                 boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
                             }}
                             controls
-                            autoPlay
                             muted
                             loop
                             playsInline
+                            preload="metadata"
                         >
                             Your browser does not support the video tag.
                         </video>
@@ -139,12 +139,6 @@ const RentOut = () => {
                                 <p className={styles.sectionDesc}>{t.priceCheckDesc}</p>
 
                                 <div className={styles.calculatorCard}>
-                                    <div className={styles.calcVisual}>
-                                        <div className={styles.calcVisualInner}>
-                                            <div className={styles.calcText}>((√...-...) × ...) ÷ ... + ... ^...</div>
-                                        </div>
-                                    </div>
-
                                     <RentalCalculator
                                         onSubmit={handlePropertyDetailsSubmit}
                                         onReset={resetPropertyDetailsForm}

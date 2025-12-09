@@ -435,12 +435,14 @@
     display: grid;
     grid-template-columns: 1fr;
     gap: 2rem;
+    /* gap-8 */
     margin-bottom: 2rem;
 }
 
 @media (min-width: 1280px) {
     .chartSection {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        /* xl:grid-cols-2 */
     }
 }
 
@@ -644,4 +646,11 @@
     font-weight: 600;
     color: #111827;
     margin-bottom: 1rem;
+}
+
+.spaceY8 {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    /* space-y-8 */
 }

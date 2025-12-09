@@ -82,7 +82,7 @@ const NeighborhoodDetail = () => {
                             </div>
                         )}
                         {activeTab === 'market' && neighborhood.marketData && (
-                            <div>
+                            <div className={styles.spaceY8}>
                                 <h2 className={styles.sectionTitle}>{currentLang === 'nl' ? `Marktindicatoren voor ${neighborhood.title}` : `Market Indicators for ${neighborhood.title}`}</h2>
                                 <div className={styles.marketGrid}>
                                     {neighborhood.marketData.indicators.map((indicator, index) => (

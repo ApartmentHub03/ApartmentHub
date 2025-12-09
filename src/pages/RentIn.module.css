@@ -867,7 +867,7 @@
     border-radius: 1rem;
     border-bottom-left-radius: 0.125rem;
     padding: 0.75rem;
-    max-width: 80%;
+    max-width: 95%;
 }
 
 .sentBubble {
@@ -876,7 +876,7 @@
     border-radius: 1rem;
     border-bottom-right-radius: 0.125rem;
     padding: 0.75rem;
-    max-width: 80%;
+    max-width: 95%;
 }
 
 .msgTextBold {

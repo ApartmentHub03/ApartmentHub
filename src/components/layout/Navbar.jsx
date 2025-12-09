@@ -69,7 +69,7 @@ const Navbar = () => {
         }
     };
 
-    const LanguageSwitcher = () => (
+    const LanguageSwitcher = React.memo(() => (
         <div className={styles.languageContainer}>
             <button
                 className={styles.languageButton}
@@ -95,7 +95,7 @@ const Navbar = () => {
                 </div>
             )}
         </div>
-    );
+    ));
 
     return (
         <nav className={styles.navbar}>

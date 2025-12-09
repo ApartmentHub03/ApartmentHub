@@ -12,7 +12,7 @@ const BrochureModal = ({ isOpen, onClose }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log('Brochure request:', formData);
+        // Brochure data would be sent to backend here
 
         // Open the PDF in a new tab
         window.open('/src/assets/amsterdam-rental-guide-2024.pdf', '_blank');

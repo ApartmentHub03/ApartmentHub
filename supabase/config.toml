@@ -1,0 +1,7 @@
+project_id = "vordjtqtqrzvqvuzogop"
+
+[functions.analyze-rental-price]
+verify_jwt = false
+
+[functions.send-loi-email]
+verify_jwt = false

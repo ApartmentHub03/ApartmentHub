@@ -539,28 +539,28 @@ export const translations = {
             subtitle: "Find answers to common questions about our services",
 
             q1: "How does ApartmentHub work for landlords?",
-            a1: "We handle the entire rental process for you. From professional photography and listing creation to tenant screening and contract management. We ensure you get the best rental price and reliable tenants without the hassle.",
+            a1: "We provide a comprehensive rental value assessment of your property, help you find quality tenants through our network, and support you throughout the entire rental process. Our service includes professional photography, tenant screening, and legal documentation assistance.",
 
             q2: "Is there a fee for the rental value assessment?",
-            a2: "No, our rental value assessment is completely free and non-binding. We provide you with a detailed report on the potential rental income of your property.",
+            a2: "The initial rental value assessment is completely free. We only charge a success-based fee when we successfully match you with a tenant and the rental agreement is signed.",
 
             q3: "How do I find a rental property through ApartmentHub?",
-            a3: "You can browse our available listings on the 'Rent In' page. Once you find a property you like, you can schedule a viewing directly through our platform.",
+            a3: "Simply contact us via WhatsApp with your housing requirements including budget, preferred location, and move-in date. Our team will search our network and present you with suitable options that match your criteria.",
 
             q4: "What areas do you cover?",
-            a4: "We currently focus on the Greater Amsterdam area, including all major neighborhoods like Centrum, Zuid, West, Oost, and Noord, as well as surrounding municipalities.",
+            a4: "We primarily focus on Amsterdam and surrounding areas, but we're expanding our network throughout the Netherlands. Contact us to check if we can help in your specific area.",
 
             q5: "How long does it typically take to find a tenant or property?",
-            a5: "On average, we find a suitable tenant within 12 days of listing. For tenants, it depends on the specific requirements, but we have new listings daily.",
+            a5: "For landlords, we typically find quality tenants within 2-4 weeks. For tenants, the timeline varies based on your specific requirements and budget, but most clients find their perfect home within 3-6 weeks.",
 
             q6: "Do you help with the rental agreement and legal aspects?",
-            a6: "Yes, we provide legally watertight rental agreements compliant with Dutch housing laws. We also advise on all legal obligations and rights for both parties.",
+            a6: "Yes, we provide support with rental agreements, tenant screening, and ensure all legal requirements are met. We work with legal professionals to ensure both landlords and tenants are protected.",
 
             q7: "What makes ApartmentHub different from other rental platforms?",
-            a7: "We combine technology with personal service. Our data-driven approach ensures accurate pricing, while our dedicated team provides support throughout the entire rental period, not just until the contract is signed.",
+            a7: "We provide personalized, human-to-human service rather than automated platforms. Every client gets direct access to our team via WhatsApp or phone, and we focus on building lasting relationships rather than just completing transactions.",
 
             q8: "Can I contact you outside of business hours?",
-            a8: "Yes, our support team is available for emergencies 24/7. For general inquiries, you can email or WhatsApp us anytime, and we'll respond as soon as possible.",
+            a8: "While our office hours are Monday-Friday 9AM-6PM, you can always send us a WhatsApp message anytime. We'll respond as soon as possible, usually within a few hours even outside business hours.",
 
             contactTitle: "Still have questions?",
             contactSubtitle: "Can't find the answer you're looking for? Our team is here to help.",
@@ -572,28 +572,28 @@ export const translations = {
             subtitle: "Vind antwoorden op veelgestelde vragen over onze diensten",
 
             q1: "Hoe werkt ApartmentHub voor verhuurders?",
-            a1: "Wij regelen het gehele verhuurproces voor u. Van professionele fotografie en advertentiecreatie tot huurdersscreening en contractbeheer. Wij zorgen dat u de beste huurprijs en betrouwbare huurders krijgt zonder gedoe.",
+            a1: "We bieden een uitgebreide huurwaarde inschatting van uw eigendom, helpen u kwaliteitshuurders te vinden via ons netwerk, en ondersteunen u tijdens het hele verhuurproces. Onze service omvat professionele fotografie, huurder screening en juridische documentatie ondersteuning.",
 
-            q2: "Zijn er kosten verbonden aan de huurwaardebepaling?",
-            a2: "Nee, onze huurwaardebepaling is volledig gratis en vrijblijvend. Wij voorzien u van een gedetailleerd rapport over de potentiële huurinkomsten van uw woning.",
+            q2: "Zijn er kosten verbonden aan de huurwaarde inschatting?",
+            a2: "De initiële huurwaarde inschatting is volledig gratis. We rekenen alleen een op succes gebaseerde vergoeding wanneer we u succesvol matchen met een huurder en de huurovereenkomst is getekend.",
 
             q3: "Hoe vind ik een huurwoning via ApartmentHub?",
-            a3: "U kunt ons beschikbare aanbod bekijken op de 'Huren' pagina. Zodra u een woning vindt die u leuk vindt, kunt u direct via ons platform een bezichtiging inplannen.",
+            a3: "Neem gewoon contact op via WhatsApp met uw woonwensen inclusief budget, voorkeurslocatie en verhuisdatum. Ons team doorzoekt ons netwerk en presenteert u geschikte opties die passen bij uw criteria.",
 
             q4: "Welke gebieden dekken jullie?",
-            a4: "Wij richten ons momenteel op Groot-Amsterdam, inclusief alle grote wijken zoals Centrum, Zuid, West, Oost en Noord, evenals omliggende gemeenten.",
+            a4: "We richten ons voornamelijk op Amsterdam en omgeving, maar breiden ons netwerk uit door heel Nederland. Neem contact op om te controleren of we kunnen helpen in uw specifieke gebied.",
 
-            q5: "Hoe lang duurt het gemiddeld om een huurder of woning te vinden?",
-            a5: "Gemiddeld vinden wij binnen 12 dagen na plaatsing een geschikte huurder. Voor huurders hangt het af van de specifieke wensen, maar we hebben dagelijks nieuw aanbod.",
+            q5: "Hoe lang duurt het meestal om een huurder of woning te vinden?",
+            a5: "Voor verhuurders vinden we meestal binnen 2-4 weken kwaliteitshuurders. Voor huurders varieert de tijdlijn op basis van uw specifieke eisen en budget, maar de meeste klanten vinden hun perfecte huis binnen 3-6 weken.",
 
             q6: "Helpen jullie met het huurcontract en juridische aspecten?",
-            a6: "Ja, wij zorgen voor juridisch waterdichte huurcontracten die voldoen aan de Nederlandse huurwetgeving. Ook adviseren wij over alle wettelijke verplichtingen en rechten voor beide partijen.",
+            a6: "Ja, we bieden ondersteuning bij huurovereenkomsten, huurder screening en zorgen ervoor dat aan alle juridische vereisten wordt voldaan. We werken samen met juridische professionals om zowel verhuurders als huurders te beschermen.",
 
-            q7: "Wat maakt ApartmentHub anders dan andere verhuurplatforms?",
-            a7: "Wij combineren technologie met persoonlijke service. Onze datagedreven aanpak zorgt voor een nauwkeurige prijsstelling, terwijl ons toegewijde team ondersteuning biedt gedurende de gehele huurperiode, niet alleen tot het contract getekend is.",
+            q7: "Wat maakt ApartmentHub anders dan andere verhuurplatformen?",
+            a7: "We bieden gepersonaliseerde, mens-tot-mens service in plaats van geautomatiseerde platforms. Elke klant krijgt directe toegang tot ons team via WhatsApp of telefoon, en we richten ons op het opbouwen van duurzame relaties in plaats van alleen transacties af te ronden.",
 
             q8: "Kan ik buiten kantooruren contact opnemen?",
-            a8: "Ja, ons supportteam is 24/7 bereikbaar voor noodgevallen. Voor algemene vragen kunt u ons altijd mailen of appen, wij reageren dan zo snel mogelijk.",
+            a8: "Hoewel onze kantooruren maandag-vrijdag 9:00-18:00 zijn, kunt u altijd een WhatsApp bericht sturen. We reageren zo snel mogelijk, meestal binnen enkele uren, zelfs buiten kantooruren.",
 
             contactTitle: "Nog steeds vragen?",
             contactSubtitle: "Kunt u het antwoord niet vinden? Ons team staat voor u klaar.",

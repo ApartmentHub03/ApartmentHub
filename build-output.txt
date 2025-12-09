@@ -1,0 +1,104 @@
+
+> client@0.0.0 build
+> vite build
+
+vite v7.2.4 building client environment for production...
+transforming...
+✓ 2485 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                                         1.17 kB │ gzip:  0.52 kB
+dist/assets/pdf/amsterdam-rental-guide-2024-CvJIZDMs.pdf               12.56 kB
+dist/assets/images/chatlogo-Clskd41H.png                               46.89 kB
+dist/assets/images/RentOut1-Cs7uNLvF.jpg                               66.03 kB
+dist/assets/images/rentout3-NtKwDxhs.jpg                               76.28 kB
+dist/assets/images/about2-CFpwr_hu.jpg                                 77.06 kB
+dist/assets/images/about-7UQ-kdS7.jpg                                 100.33 kB
+dist/assets/images/rentout2-CIR3eR_z.jpg                              116.89 kB
+dist/assets/images/zuidas-neighborhood-BS6cve9Y-BS6cve9Y.jpg          139.01 kB
+dist/assets/images/oud-zuid-neighborhood-B-g-rFNe-B-g-rFNe.jpg        145.19 kB
+dist/assets/images/zeeburg-neighborhood-BtRlc8ql-BtRlc8ql.jpg         146.94 kB
+dist/assets/images/centrum-neighborhood-8xGBhlo4-8xGBhlo4.jpg         181.00 kB
+dist/assets/images/rentout--xRVxTO1.jpg                               191.22 kB
+dist/assets/images/nieuw-west-neighborhood-DhzrAv7H-DhzrAv7H.jpg      192.07 kB
+dist/assets/images/oost-neighborhood-D0P6YpX3-D0P6YpX3.jpg          1,505.38 kB
+dist/assets/images/noord-neighborhood-C3afdJ-w-C3afdJ-w.jpg         1,518.32 kB
+dist/assets/images/de-pijp-neighborhood-CerLEEUD-CerLEEUD.jpg       1,803.58 kB
+dist/assets/images/jordaan-neighborhood-D10TAM1c-D10TAM1c.jpg       1,850.13 kB
+dist/assets/mp4/homepage-video-oTK_tJ-O-oTK_tJ-O.mp4                9,424.46 kB
+dist/assets/mov/Apartmenthub Rent out-CB5e3uaK.mov                234,178.18 kB
+dist/assets/css/Neighborhoods-CKPmaId3.css                              2.06 kB │ gzip:  0.81 kB
+dist/assets/css/FAQ-B784_4oG.css                                        3.55 kB │ gzip:  0.95 kB
+dist/assets/css/Contact-SUjuaO7r.css                                    4.32 kB │ gzip:  1.25 kB
+dist/assets/css/About-xoB3a2c3.css                                      6.57 kB │ gzip:  1.38 kB
+dist/assets/css/index-DNLFqGIg.css                                      7.84 kB │ gzip:  2.19 kB
+dist/assets/css/NeighborhoodDetail-DiGvTyZn.css                         8.08 kB │ gzip:  2.03 kB
+dist/assets/css/RentIn-BJgwg5bP.css                                    15.53 kB │ gzip:  3.45 kB
+dist/assets/css/RentOut-B5s9Wswm.css                                   28.96 kB │ gzip:  5.40 kB
+dist/assets/css/Home-CdtQXUBD.css                                      30.06 kB │ gzip:  5.39 kB
+dist/assets/js/nieuw-west-neighborhood-DhzrAv7H-zJOW3ZNA.js             0.63 kB │ gzip:  0.28 kB
+dist/assets/js/Neighborhoods--7MUU4VQ.js                                1.76 kB │ gzip:  0.78 kB
+dist/assets/js/FAQ-tEzZ_91i.js                                          3.58 kB │ gzip:  1.59 kB
+dist/assets/js/About-8fAbOk-8.js                                        4.91 kB │ gzip:  1.16 kB
+dist/assets/js/Contact-C0gDsr_R.js                                      5.65 kB │ gzip:  2.23 kB
+dist/assets/js/RentIn-9W-Wsoc6.js                                      20.49 kB │ gzip:  4.13 kB
+dist/assets/js/redux-vendor-DrUG3GMa.js                                28.51 kB │ gzip: 10.42 kB
+dist/assets/js/Home-B_BUjlMG.js                                        34.25 kB │ gzip:  7.75 kB
+dist/assets/js/NeighborhoodDetail-B5zJB6sy.js                          36.59 kB │ gzip:  9.08 kB
+dist/assets/js/react-vendor-BYNgM61A.js                                44.31 kB │ gzip: 15.56 kB
+dist/assets/js/RentOut-pDuzT5gO.js                                    223.38 kB │ gzip: 55.12 kB
+dist/assets/js/index-L2452vKp.js                                      227.43 kB │ gzip: 73.66 kB
+dist/assets/js/ui-vendor-CJ-G1Xog.js                                  326.72 kB │ gzip: 92.43 kB
+✓ built in 14.69s
+
+✨ [vite-plugin-compression]:algorithm=gzip - compressed file successfully: 
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/css/FAQ-B784_4oG.css.gz                  3.47kb / gzip: 0.92kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/css/NeighborhoodDetail-DiGvTyZn.css.gz   7.89kb / gzip: 1.97kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/css/Contact-SUjuaO7r.css.gz              4.22kb / gzip: 1.22kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/css/About-xoB3a2c3.css.gz                6.42kb / gzip: 1.35kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/css/index-DNLFqGIg.css.gz                7.66kb / gzip: 2.13kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/css/RentIn-BJgwg5bP.css.gz               15.16kb / gzip: 3.34kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/css/Neighborhoods-CKPmaId3.css.gz        2.01kb / gzip: 0.79kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/About-8fAbOk-8.js.gz                  4.80kb / gzip: 1.13kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/Contact-C0gDsr_R.js.gz                5.51kb / gzip: 2.18kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/Neighborhoods--7MUU4VQ.js.gz          1.72kb / gzip: 0.76kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/css/Home-CdtQXUBD.css.gz                 29.36kb / gzip: 5.20kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/css/RentOut-B5s9Wswm.css.gz              28.29kb / gzip: 5.21kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/RentIn-9W-Wsoc6.js.gz                 20.00kb / gzip: 4.02kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/FAQ-tEzZ_91i.js.gz                    3.49kb / gzip: 1.55kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/Home-B_BUjlMG.js.gz                   33.45kb / gzip: 7.52kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/index.html.gz                                   1.14kb / gzip: 0.51kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/NeighborhoodDetail-B5zJB6sy.js.gz     35.73kb / gzip: 8.83kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/redux-vendor-DrUG3GMa.js.gz           27.84kb / gzip: 10.17kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/react-vendor-BYNgM61A.js.gz           43.27kb / gzip: 15.17kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/RentOut-pDuzT5gO.js.gz                218.15kb / gzip: 53.65kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/index-L2452vKp.js.gz                  222.10kb / gzip: 71.81kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/ui-vendor-CJ-G1Xog.js.gz              319.06kb / gzip: 90.07kb
+
+
+
+✨ [vite-plugin-compression]:algorithm=brotliCompress - compressed file successfully: 
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/css/About-xoB3a2c3.css.br                6.42kb / brotliCompress: 1.11kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/css/Contact-SUjuaO7r.css.br              4.22kb / brotliCompress: 0.99kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/css/FAQ-B784_4oG.css.br                  3.47kb / brotliCompress: 0.76kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/css/Neighborhoods-CKPmaId3.css.br        2.01kb / brotliCompress: 0.64kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/css/NeighborhoodDetail-DiGvTyZn.css.br   7.89kb / brotliCompress: 1.67kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/css/RentIn-BJgwg5bP.css.br               15.16kb / brotliCompress: 2.86kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/About-8fAbOk-8.js.br                  4.80kb / brotliCompress: 0.96kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/css/index-DNLFqGIg.css.br                7.66kb / brotliCompress: 1.83kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/css/Home-CdtQXUBD.css.br                 29.36kb / brotliCompress: 4.55kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/FAQ-tEzZ_91i.js.br                    3.49kb / brotliCompress: 1.36kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/css/RentOut-B5s9Wswm.css.br              28.29kb / brotliCompress: 4.59kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/Neighborhoods--7MUU4VQ.js.br          1.72kb / brotliCompress: 0.67kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/Contact-C0gDsr_R.js.br                5.51kb / brotliCompress: 1.83kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/RentIn-9W-Wsoc6.js.br                 20.00kb / brotliCompress: 3.43kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/Home-B_BUjlMG.js.br                   33.45kb / brotliCompress: 6.36kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/NeighborhoodDetail-B5zJB6sy.js.br     35.73kb / brotliCompress: 7.43kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/index.html.br                                   1.14kb / brotliCompress: 0.36kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/redux-vendor-DrUG3GMa.js.br           27.84kb / brotliCompress: 9.30kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/react-vendor-BYNgM61A.js.br           43.27kb / brotliCompress: 13.58kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/RentOut-pDuzT5gO.js.br                218.15kb / brotliCompress: 46.21kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/ui-vendor-CJ-G1Xog.js.br              319.06kb / brotliCompress: 75.94kb
+dist//home/akshat-baranwal/Desktop/ApartmentHub/assets/js/index-L2452vKp.js.br                  222.10kb / brotliCompress: 62.02kb
+
+

@@ -66,8 +66,8 @@ const WhatsAppMockupSection = ({ translations, onWhatsAppClick }) => {
                                     </div>
 
                                     <div className={styles.quickReplies}>
-                                        <button className={styles.replyBtn}>{t.phoneMockup.quickReplyQuestions}</button>
-                                        <button className={styles.replyBtn}>{t.phoneMockup.quickReplyUnsubscribe}</button>
+                                        <button className={styles.replyBtn}>{"< "}{t.phoneMockup.quickReplyQuestions}</button>
+                                        <button className={styles.replyBtn}>{"< "}{t.phoneMockup.quickReplyUnsubscribe}</button>
                                     </div>
 
                                     <div className={styles.messageSent}>
@@ -97,13 +97,6 @@ const WhatsAppMockupSection = ({ translations, onWhatsAppClick }) => {
                                             <p className={styles.msgTime}>17:59</p>
                                         </div>
                                     </div>
-                                </div>
-
-                                <div className={styles.inputArea}>
-                                    <div className={styles.inputPlus}>+</div>
-                                    <div className={styles.inputField}>Message</div>
-                                    <div className={styles.inputIcon}></div>
-                                    <div className={styles.inputIcon}></div>
                                 </div>
 
                                 <div className={styles.homeIndicator}></div>
