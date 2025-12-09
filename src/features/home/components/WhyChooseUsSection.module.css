@@ -1,17 +1,21 @@
 .section {
-    padding: 5rem 0;
+    padding: 4rem 0;
+    /* py-16 */
     margin: 0 1rem;
+    /* mx-4 */
 }
 
 @media (min-width: 640px) {
     .section {
         margin: 0 1.5rem;
+        /* sm:mx-6 */
     }
 }
 
 @media (min-width: 1024px) {
     .section {
         margin: 0 2rem;
+        /* lg:mx-8 */
     }
 }
 

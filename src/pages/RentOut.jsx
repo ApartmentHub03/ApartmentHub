@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { translations } from '../data/translations';
 import AnimatedCounter from '../components/common/AnimatedCounter';
 import RentalCalculator from '../components/common/RentalCalculator';
-import YouTubeEmbed from '../components/common/YouTubeEmbed';
+import BrochureModal from '../components/common/BrochureModal';
 import useInView from '../hooks/useInView';
 import {
     Shield, Search, Heart, UserCheck, Euro, Calendar,
@@ -15,9 +15,7 @@ import styles from './RentOut.module.css';
 // Import images
 import rentoutHeroImage from '../assets/rentout.jpg';
 import logoImage from '../assets/5a9afd14-27a5-40d8-a185-fac727f64fdf.png';
-
-// TODO: Replace with actual YouTube video ID
-const VERHUREN_VIDEO_ID = '';
+import rentOutVideo from '../assets/Apartmenthub Rent out.mov';
 
 // Placeholder images for verhuren sections - using Unsplash
 const verhurenDetectiveImage = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80';
@@ -39,6 +37,9 @@ const RentOut = () => {
 
     // Property details form state for the rental advice section
     const [propertyDetailsSubmitted, setPropertyDetailsSubmitted] = useState(false);
+
+    // Brochure modal state
+    const [isBrochureModalOpen, setIsBrochureModalOpen] = useState(false);
 
     // For animated stats
     const [statsRef, statsInView] = useInView({ threshold: 0.2, triggerOnce: true });
@@ -85,13 +86,34 @@ const RentOut = () => {
                         {t.heroSubtitle}
                     </p>
 
-                    {/* YouTube Video */}
+                    {/* Free Brochure Button */}
+                    <div className={styles.brochureButtonWrapper}>
+                        <button
+                            onClick={() => setIsBrochureModalOpen(true)}
+                            className={styles.brochureButton}
+                        >
+                            <FileText className={styles.brochureIcon} />
+                            Free Brochure
+                        </button>
+                    </div>
+
+                    {/* Video */}
                     <div style={{ maxWidth: '56rem', margin: '2rem auto 0' }}>
-                        <YouTubeEmbed
-                            videoId={VERHUREN_VIDEO_ID}
-                            title="Zorgeloos Verhuren met ApartmentHub"
-                            className="shadow-2xl"
-                        />
+                        <video
+                            src={rentOutVideo}
+                            style={{
+                                width: '100%',
+                                borderRadius: '1rem',
+                                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                            }}
+                            controls
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                        >
+                            Your browser does not support the video tag.
+                        </video>
                     </div>
                 </div>
             </section>
@@ -258,128 +280,7 @@ const RentOut = () => {
                 </div>
             </section>
 
-            {/* Services & Pricing Section */}
-            <section style={{
-                padding: '5rem 0',
-                background: 'linear-gradient(to bottom right, var(--color-primary-green), rgba(0, 155, 138, 0.9))'
-            }}>
-                <div className={styles.container}>
-                    <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-                        <h2 style={{ fontSize: '2.25rem', fontWeight: '700', color: 'white', marginBottom: '1rem' }}>
-                            {currentLang === 'nl' ? 'Wat bieden wij aan?' : 'What do we offer?'}
-                        </h2>
-                        <div style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            background: 'rgba(255, 107, 53, 0.2)',
-                            padding: '0.75rem 1.5rem',
-                            borderRadius: '9999px'
-                        }}>
-                            <Euro style={{ width: '1.25rem', height: '1.25rem', color: '#ff6b35' }} />
-                            <span style={{ color: 'white', fontWeight: '700', fontSize: '1.25rem' }}>
-                                €1.000,- <span style={{ fontWeight: '400', color: 'rgba(255, 255, 255, 0.8)' }}>
-                                    {currentLang === 'nl' ? 'excl. BTW' : 'excl. VAT'}
-                                </span>
-                            </span>
-                        </div>
-                    </div>
 
-                    {/* 2-column grid layout */}
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                        gap: '1rem',
-                        maxWidth: '800px',
-                        margin: '0 auto'
-                    }}>
-                        {[
-                            { icon: MessageSquare, text: currentLang === 'nl' ? 'Gratis advies' : 'Free advice' },
-                            { icon: Camera, text: currentLang === 'nl' ? "Gratis foto's & video" : 'Free photos & video' },
-                            { icon: UserCheck, text: currentLang === 'nl' ? 'Huurder screenings' : 'Tenant screenings' },
-                            { icon: TrendingUp, text: currentLang === 'nl' ? 'Adverteren op Funda & Pararius' : 'Advertising on Funda & Pararius' },
-                            { icon: UserCheck, text: currentLang === 'nl' ? 'Hulp bij onderhandelingen' : 'Assistance with negotiations' },
-                            { icon: MapPin, text: currentLang === 'nl' ? 'Distributie naar internationale relocators' : 'Distribution to international relocators' },
-                            { icon: FileText, text: currentLang === 'nl' ? 'Huurcontract' : 'Rental contract' },
-                            { icon: Calendar, text: currentLang === 'nl' ? 'Bezichtigingen 7 dagen per week' : 'Property showings 7 days a week' },
-                        ].map((service, index) => {
-                            const IconComponent = service.icon;
-                            return (
-                                <div
-                                    key={index}
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '1rem',
-                                        background: 'rgba(255, 255, 255, 0.1)',
-                                        padding: '1rem 1.5rem',
-                                        borderRadius: '0.75rem',
-                                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                                        transition: 'all 0.3s'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-                                        e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                                        e.currentTarget.style.boxShadow = 'none';
-                                    }}
-                                >
-                                    <div style={{
-                                        width: '2.5rem',
-                                        height: '2.5rem',
-                                        background: 'rgba(255, 107, 53, 0.25)',
-                                        borderRadius: '9999px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        flexShrink: '0'
-                                    }}>
-                                        <IconComponent style={{ width: '1.25rem', height: '1.25rem', color: '#ff6b35', strokeWidth: 2.5 }} />
-                                    </div>
-                                    <span style={{ color: 'white', fontWeight: '500', fontSize: '0.95rem' }}>{service.text}</span>
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    <div style={{ textAlign: 'center', marginTop: '3rem' }}>
-                        <button
-                            onClick={() => window.open('https://wa.me/31641439378?text=Ik%20wil%20graag%20mijn%20woning%20verhuren', '_blank')}
-                            style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '0.5rem',
-                                background: '#ff6b35',
-                                color: 'white',
-                                padding: '0.75rem 1.5rem',
-                                fontSize: '1rem',
-                                fontWeight: '700',
-                                borderRadius: '9999px',
-                                transition: 'all 0.5s ease-out',
-                                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                                border: '2px solid rgba(255, 255, 255, 0.2)',
-                                cursor: 'pointer'
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.background = '#ff8c00';
-                                e.currentTarget.style.transform = 'scale(1.1)';
-                                e.currentTarget.style.boxShadow = '0 25px 50px -12px rgba(255, 107, 53, 0.4)';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.background = '#ff6b35';
-                                e.currentTarget.style.transform = 'scale(1)';
-                                e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
-                            }}
-                        >
-                            {currentLang === 'nl' ? 'Start Nu' : 'Get Started'}
-                            <ArrowRight style={{ width: '1.25rem', height: '1.25rem' }} />
-                        </button>
-                    </div>
-                </div>
-            </section>
 
             {/* Numbers Section */}
             <section className={styles.numbersSection}>
@@ -588,7 +489,7 @@ const RentOut = () => {
             {/* Final Section / Contact Form */}
             <section className={styles.finalSection}>
                 <div className={styles.finalBg}></div>
-                <div className={styles.container}>
+                <div className={styles.wideContainer}>
                     <div className={styles.finalGrid}>
                         <div className={styles.finalContent}>
                             <h2 className={styles.finalTitle}>
@@ -747,6 +648,12 @@ const RentOut = () => {
                     </div>
                 </div>
             </section>
+
+            {/* Brochure Modal */}
+            <BrochureModal
+                isOpen={isBrochureModalOpen}
+                onClose={() => setIsBrochureModalOpen(false)}
+            />
         </div>
     );
 };

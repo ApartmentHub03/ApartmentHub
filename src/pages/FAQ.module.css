@@ -4,7 +4,7 @@
 }
 
 .heroSection {
-    background: linear-gradient(to bottom right, #F0FFF4, #ffffff);
+    background: linear-gradient(to bottom right, #f0fdf4, #ffffff);
     padding-top: 4rem;
     padding-bottom: 4rem;
 }
@@ -155,8 +155,7 @@
 .contactSection {
     padding-top: 4rem;
     padding-bottom: 4rem;
-    background-color: #F0FFF4;
-    /* mintcream */
+    background-color: #eff4f2;
 }
 
 .contactContainer {

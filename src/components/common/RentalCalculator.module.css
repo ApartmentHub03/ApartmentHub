@@ -1,0 +1,61 @@
+.calculatorForm {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.formInput {
+    width: 100%;
+    border-radius: 0.375rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white !important;
+    height: 2.75rem;
+    outline: none;
+}
+
+.formInput::placeholder {
+    color: white !important;
+    opacity: 1 !important;
+}
+
+.formSelect {
+    width: 100%;
+    border-radius: 0.375rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white !important;
+    height: 2.75rem;
+    outline: none;
+    appearance: none;
+}
+
+.formSelect option {
+    background-color: white !important;
+    color: black !important;
+    padding: 0.5rem;
+}
+
+.formSelect option:hover,
+.formSelect option:checked {
+    background-color: var(--color-primary-orange) !important;
+    color: black !important;
+}
+
+.formInput:focus,
+.formSelect:focus {
+    border-color: var(--color-primary-orange);
+    box-shadow: 0 0 0 2px rgba(255, 125, 40, 0.2);
+}
+
+.formLabel {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: white;
+    margin-bottom: 0.375rem;
+}

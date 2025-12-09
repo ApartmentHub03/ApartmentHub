@@ -1,5 +1,6 @@
 .section {
     padding: 4rem 0;
+    /* py-16 */
     background-color: white;
 }
 
@@ -212,4 +213,5 @@
 .gradientRight {
     right: 0;
     background: linear-gradient(to left, white, transparent);
+    display: none;
 }

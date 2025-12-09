@@ -1,5 +1,7 @@
+
 import React from 'react';
 import { MapPin, Calculator, ChevronDown } from 'lucide-react';
+import styles from './RentalCalculator.module.css';
 
 const RentalCalculator = ({ onSubmit, onReset, submitted }) => {
     const [formData, setFormData] = React.useState({
@@ -122,7 +124,8 @@ const RentalCalculator = ({ onSubmit, onReset, submitted }) => {
                     value={formData.address}
                     onChange={(e) => handleInputChange('address', e.target.value)}
                     placeholder="Damrak 123, Amsterdam"
-                    style={inputStyle}
+
+                    className={styles.formInput} style={inputStyle}
                     onFocus={(e) => e.target.style.borderColor = 'var(--color-primary-orange)'}
                     onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'}
                     required
@@ -138,7 +141,7 @@ const RentalCalculator = ({ onSubmit, onReset, submitted }) => {
                         value={formData.postalCode}
                         onChange={(e) => handleInputChange('postalCode', e.target.value)}
                         placeholder="1012 JS"
-                        style={inputStyle}
+                        className={styles.formInput} style={inputStyle}
                         onFocus={(e) => e.target.style.borderColor = 'var(--color-primary-orange)'}
                         onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'}
                         required
@@ -151,7 +154,7 @@ const RentalCalculator = ({ onSubmit, onReset, submitted }) => {
                         value={formData.squareMeters}
                         onChange={(e) => handleInputChange('squareMeters', e.target.value)}
                         placeholder="85"
-                        style={inputStyle}
+                        className={styles.formInput} style={inputStyle}
                         onFocus={(e) => e.target.style.borderColor = 'var(--color-primary-orange)'}
                         onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'}
                         required
@@ -166,7 +169,7 @@ const RentalCalculator = ({ onSubmit, onReset, submitted }) => {
                     <select
                         value={formData.rooms}
                         onChange={(e) => handleInputChange('rooms', e.target.value)}
-                        style={{ ...inputStyle, appearance: 'none' }}
+                        className={styles.formSelect} style={{ ...inputStyle, appearance: 'none' }}
                         required
                     >
                         <option value="1">1</option>
@@ -182,7 +185,7 @@ const RentalCalculator = ({ onSubmit, onReset, submitted }) => {
                     <select
                         value={formData.interior}
                         onChange={(e) => handleInputChange('interior', e.target.value)}
-                        style={{ ...inputStyle, appearance: 'none' }}
+                        className={styles.formSelect} style={{ ...inputStyle, appearance: 'none' }}
                         required
                     >
                         <option value="shell">Shell</option>
@@ -201,7 +204,7 @@ const RentalCalculator = ({ onSubmit, onReset, submitted }) => {
                     <select
                         value={formData.condition}
                         onChange={(e) => handleInputChange('condition', e.target.value)}
-                        style={{ ...inputStyle, appearance: 'none' }}
+                        className={styles.formSelect} style={{ ...inputStyle, appearance: 'none' }}
                         required
                     >
                         <option value="brandNew">New</option>
@@ -217,7 +220,7 @@ const RentalCalculator = ({ onSubmit, onReset, submitted }) => {
                         value={formData.name}
                         onChange={(e) => handleInputChange('name', e.target.value)}
                         placeholder="First and last name"
-                        style={inputStyle}
+                        className={styles.formInput} style={inputStyle}
                         onFocus={(e) => e.target.style.borderColor = 'var(--color-primary-orange)'}
                         onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'}
                         required
@@ -234,7 +237,7 @@ const RentalCalculator = ({ onSubmit, onReset, submitted }) => {
                         value={formData.email}
                         onChange={(e) => handleInputChange('email', e.target.value)}
                         placeholder="your.email@example.com"
-                        style={inputStyle}
+                        className={styles.formInput} style={inputStyle}
                         onFocus={(e) => e.target.style.borderColor = 'var(--color-primary-orange)'}
                         onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'}
                         required
@@ -247,7 +250,7 @@ const RentalCalculator = ({ onSubmit, onReset, submitted }) => {
                         value={formData.phone}
                         onChange={(e) => handleInputChange('phone', e.target.value)}
                         placeholder="+31 6 12345678"
-                        style={inputStyle}
+                        className={styles.formInput} style={inputStyle}
                         onFocus={(e) => e.target.style.borderColor = 'var(--color-primary-orange)'}
                         onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'}
                         required
@@ -274,7 +277,7 @@ const RentalCalculator = ({ onSubmit, onReset, submitted }) => {
                     border: 'none',
                     cursor: 'pointer'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 140, 0, 0.9)'}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 125, 40, 0.9)'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-orange)'}
             >
                 <Calculator style={{ width: '1.25rem', height: '1.25rem' }} />

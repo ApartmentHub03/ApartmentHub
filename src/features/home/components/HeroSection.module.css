@@ -4,7 +4,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(to bottom right, var(--color-white), rgba(240, 253, 244, 0.2), rgba(0, 155, 138, 0.05));
+    background: linear-gradient(to bottom right, var(--color-white), rgba(240, 253, 244, 0.2), rgba(255, 125, 40, 0.05));
+    /* Reduced orange tint from 0.08 to 0.05 */
     position: relative;
     overflow: hidden;
 }
@@ -12,7 +13,8 @@
 .bgGradientOverlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to bottom right, rgba(0, 155, 138, 0.05), transparent, rgba(255, 140, 0, 0.1));
+    background: linear-gradient(to bottom right, rgba(0, 155, 138, 0.03), transparent, rgba(255, 125, 40, 0.1));
+    /* Reduced orange opacity from 0.15 to 0.1 */
     animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
@@ -23,7 +25,7 @@
     left: 2.5rem;
     width: 8rem;
     height: 8rem;
-    background: linear-gradient(to bottom right, rgba(0, 155, 138, 0.2), rgba(255, 140, 0, 0.2));
+    background: linear-gradient(to bottom right, rgba(0, 155, 138, 0.2), rgba(255, 125, 40, 0.2));
     border-radius: 9999px;
     filter: blur(64px);
     animation: pulse 4s ease-in-out infinite;
@@ -36,7 +38,7 @@
     right: 4rem;
     width: 10rem;
     height: 10rem;
-    background: linear-gradient(to top left, rgba(255, 140, 0, 0.15), rgba(0, 155, 138, 0.15));
+    background: linear-gradient(to top left, rgba(255, 125, 40, 0.15), rgba(0, 155, 138, 0.15));
     border-radius: 9999px;
     filter: blur(64px);
     animation: pulse 6s ease-in-out infinite reverse;
@@ -111,21 +113,25 @@
 }
 
 .contentWrapper {
-    margin-bottom: 3rem;
+    margin-bottom: 1.5rem;
+    /* Reduced from 3rem to 1.5rem */
     position: relative;
     z-index: 20;
     opacity: 0;
     animation: fadeIn 0.7s ease-out forwards;
-    padding-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    /* Reduced from 1rem */
 }
 
 .headline {
     font-size: 2.25rem;
     font-weight: 700;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
+    /* Reduced from 2rem to 1rem */
     line-height: 1.3;
     overflow: visible;
-    padding-bottom: 0.5rem;
+    padding-bottom: 0.25rem;
+    /* Reduced from 0.5rem */
 }
 
 @media (min-width: 768px) {
@@ -155,8 +161,9 @@
 
 .gradientText1 {
     display: block;
-    margin-bottom: 1.5rem;
-    background-image: linear-gradient(to right, #497772, hsl(25, 100%, 60%));
+    margin-bottom: 0.75rem;
+    /* Reduced from 1.5rem to make gap between lines smaller */
+    background-image: linear-gradient(to right, #497772, hsl(var(--orange)), hsl(var(--orange)));
     background-clip: text;
     -webkit-background-clip: text;
     color: transparent;
@@ -170,7 +177,7 @@
 
 .gradientText2 {
     display: block;
-    background-image: linear-gradient(to right, hsl(25, 95%, 53%), #497772, hsl(25, 95%, 53%));
+    background-image: linear-gradient(to right, hsl(var(--orange)), #497772, hsl(var(--orange)));
     background-clip: text;
     -webkit-background-clip: text;
     color: transparent;
@@ -197,8 +204,9 @@
 
 .subtext2 {
     font-size: 1.125rem;
-    color: var(--color-text-gray);
-    margin-bottom: 3rem;
+    color: #9CA3AF;
+    margin-bottom: 2rem;
+    /* Reduced from 3rem to 2rem */
     max-width: 64rem;
     margin-left: auto;
     margin-right: auto;
@@ -213,7 +221,8 @@
 @media (min-width: 768px) {
     .subtext2 {
         font-size: 1.5rem;
-        margin-bottom: 4rem;
+        margin-bottom: 2.5rem;
+        /* Reduced from 4rem */
     }
 }
 
@@ -283,21 +292,27 @@
 }
 
 .btnPrimary {
-    background-image: linear-gradient(to right, var(--color-primary-green), var(--color-primary-green), var(--color-primary-orange));
+    background-image: linear-gradient(to right, #497772, #497772, hsl(var(--orange)));
+    /* Using exact teal/green color from original design */
+}
+
+.btnPrimary span {
+    color: white;
 }
 
 .btnPrimary:hover {
-    background-image: linear-gradient(to right, var(--color-primary-orange), var(--color-primary-orange));
-    box-shadow: 0 25px 50px -12px rgba(255, 140, 0, 0.3);
+    background-image: linear-gradient(to right, hsl(var(--orange)), hsl(var(--orange)), hsl(var(--orange)));
+    box-shadow: 0 25px 50px -12px hsla(var(--orange), 0.3);
 }
 
 .btnSecondary {
-    background-image: linear-gradient(to right, var(--color-primary-orange), var(--color-primary-orange));
+    background-image: linear-gradient(to right, hsl(var(--orange)), hsl(var(--orange)), hsl(var(--orange)));
 }
 
 .btnSecondary:hover {
-    background-image: linear-gradient(to right, var(--color-primary-green), var(--color-primary-green), var(--color-primary-orange));
-    box-shadow: 0 25px 50px -12px rgba(0, 155, 138, 0.3);
+    background-image: linear-gradient(to right, #497772, #497772, hsl(var(--orange)));
+    /* Same teal/green to orange gradient as primary button */
+    box-shadow: 0 25px 50px -12px hsla(var(--orange), 0.3);
 }
 
 .btnIcon {
@@ -341,7 +356,8 @@
 
 /* Stats Section */
 .statsContainer {
-    margin-top: 3rem;
+    margin-top: 2rem;
+    /* Reduced from 3rem to 2rem */
     position: relative;
     z-index: 20;
     opacity: 0;
@@ -350,7 +366,8 @@
 
 @media (min-width: 768px) {
     .statsContainer {
-        margin-top: 6rem;
+        margin-top: 3rem;
+        /* Reduced from 6rem to 3rem */
     }
 }
 

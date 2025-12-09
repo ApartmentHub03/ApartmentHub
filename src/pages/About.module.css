@@ -365,7 +365,7 @@
 .iconWrapper {
     width: 4rem;
     height: 4rem;
-    background-color: rgba(0, 155, 138, 0.2);
+    background-color: #e9ebe4;
     border-radius: 9999px;
     display: flex;
     align-items: center;
@@ -416,6 +416,8 @@
     padding: 2rem;
     text-align: center;
     color: white;
+    max-width: 56rem;
+    margin: 0 auto;
 }
 
 @media (min-width: 768px) {

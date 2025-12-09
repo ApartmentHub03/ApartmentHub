@@ -1,8 +1,8 @@
 .section {
     padding: 4rem 0;
     /* py-16 */
-    background-color: white;
-    /* bg-white (snippet implies white or default) */
+    background-color: #f9fafb;
+    /* bg-gray-50 */
 }
 
 .container {

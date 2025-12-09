@@ -106,6 +106,64 @@
     }
 }
 
+/* Brochure Button */
+.brochureButtonWrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+    .brochureButtonWrapper {
+        margin-bottom: 3rem;
+    }
+}
+
+.brochureButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: linear-gradient(to right, rgba(0, 155, 138, 0.8), #497772);
+    /* Bright green to darker teal */
+    color: white;
+    padding: 0.5rem 1.5rem;
+    /* Increased horizontal from 1rem to 1.5rem */
+    font-size: 0.875rem;
+    /* Reduced from 1rem */
+    font-weight: 700;
+    border-radius: 9999px;
+    transition: all 0.5s ease-out;
+    box-shadow: 0 20px 25px -5px rgba(73, 119, 114, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    min-height: 44px;
+}
+
+.brochureButton:hover {
+    background: linear-gradient(to right, var(--color-primary-orange), rgba(255, 125, 40, 0.8));
+    /* Added gradient to hover */
+    transform: scale(1.1);
+    box-shadow: 0 25px 50px -12px rgba(255, 125, 40, 0.4);
+}
+
+@media (min-width: 768px) {
+    .brochureButton {
+        padding: 0.625rem 2rem;
+        /* Increased horizontal from 1.25rem to 2rem */
+        font-size: 1rem;
+        /* Reduced from 1.125rem */
+    }
+}
+
+.brochureIcon {
+    width: 1.25rem;
+    height: 1.25rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+
 .heroCta {
     display: flex;
     justify-content: center;
@@ -132,9 +190,9 @@
 }
 
 .brochureBtn:hover {
-    background: linear-gradient(to right, var(--color-primary-orange), rgba(255, 165, 0, 0.8));
+    background: linear-gradient(to right, var(--color-primary-orange), rgba(255, 125, 40, 0.8));
     transform: scale(1.1);
-    box-shadow: 0 25px 50px -12px rgba(255, 165, 0, 0.4);
+    box-shadow: 0 25px 50px -12px rgba(255, 125, 40, 0.4);
 }
 
 @media (min-width: 768px) {
@@ -175,6 +233,24 @@
 
 @media (min-width: 1024px) {
     .container {
+        padding: 0 2rem;
+    }
+}
+
+.wideContainer {
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+@media (min-width: 640px) {
+    .wideContainer {
+        padding: 0 1.5rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .wideContainer {
         padding: 0 2rem;
     }
 }
@@ -259,7 +335,8 @@
 .sectionTitle {
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--color-primary-green);
+    color: #009B8A;
+    /* Changed to exact teal from original design */
     margin-bottom: 1rem;
 }
 
@@ -275,7 +352,8 @@
 }
 
 .calculatorCard {
-    background: linear-gradient(to bottom right, var(--color-primary-green), rgba(0, 155, 138, 0.9));
+    background: linear-gradient(to bottom right, hsl(174, 58%, 39%), hsl(174, 58%, 37%));
+    /* Vibrant teal matching original - sat 58%, lightness 39% */
     padding: 1.5rem;
     border-radius: 1rem;
     flex: 1;
@@ -284,30 +362,85 @@
     justify-content: center;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     border: 2px solid rgba(0, 0, 0, 0.3);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 2px 0 rgba(0, 0, 0, 0.3);
+    /* Added shadow similar to original */
 }
 
 .calcVisual {
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: rgba(150, 200, 190, 0.35);
+    /* More green-tinted background matching original */
     backdrop-filter: blur(4px);
     border-radius: 0.75rem;
     padding: 1rem;
     margin-bottom: 1rem;
     border: 2px solid rgba(0, 0, 0, 0.3);
-    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1);
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1), 0 2px 0 rgba(0, 0, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+    /* Added ring effect */
+    outline: 1px solid rgba(0, 0, 0, 0.2);
+    outline-offset: -1px;
+}
+
+/* Nested inner border */
+.calcVisual::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 0.75rem;
+    pointer-events: none;
 }
 
 .calcVisualInner {
     padding: 0;
+    position: relative;
+    z-index: 10;
+}
+
+/* Gradient overlay */
+.calcVisualInner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.2), transparent, rgba(0, 0, 0, 0.05));
+    pointer-events: none;
+    border-radius: 0.75rem;
 }
 
 .calcText {
     text-align: center;
     padding: 0.5rem;
     font-family: monospace;
-    color: rgba(var(--color-primary-green), 0.5);
+    color: rgba(0, 155, 138, 0.5);
+    /* text-myrtle/50 */
     background-color: rgba(255, 255, 255, 0.3);
+    /* bg-white/30 */
     border-radius: 0.5rem;
-    border: 1px dashed rgba(var(--color-primary-green), 0.2);
+    /* rounded-lg */
+    border: 1px dashed rgba(0, 155, 138, 0.2);
+    /* border-dashed border-myrtle/20 */
+    backdrop-filter: blur(2px);
+    font-size: 0.875rem;
+    /* text-sm */
+}
+
+/* Output area wrapper */
+.calcVisual .relative {
+    min-height: 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Border above output area */
+.calcVisual .relative>div:first-child {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(0, 155, 138, 0.1);
 }
 
 .calcForm {
@@ -366,14 +499,15 @@
 }
 
 .input::placeholder {
-    color: rgba(255, 255, 255, 0.6);
+    color: white;
+    /* Bright white placeholder text */
 }
 
 .input:focus,
 .select:focus {
     outline: none;
     border-color: var(--color-primary-orange);
-    box-shadow: 0 0 0 2px rgba(255, 165, 0, 0.2);
+    box-shadow: 0 0 0 2px rgba(255, 125, 40, 0.2);
 }
 
 .selectWrapper {
@@ -397,8 +531,17 @@
 }
 
 .select option {
-    background-color: #374151;
-    color: white;
+    background-color: white;
+    color: black;
+    /* Black text for dropdown options */
+    padding: 0.5rem;
+}
+
+.select option:checked,
+.select option:hover {
+    background-color: var(--color-primary-orange);
+    color: black;
+    /* Black text on orange background */
 }
 
 .submitBtn {
@@ -420,13 +563,13 @@
 }
 
 .submitBtn:hover {
-    background-color: rgba(255, 140, 0, 0.9);
+    background-color: rgba(255, 125, 40, 0.9);
 }
 
 /* Story Section */
 .storySection {
     padding: 5rem 0;
-    background: linear-gradient(to bottom right, #f9fafb, white, rgba(255, 165, 0, 0.05));
+    background: linear-gradient(to bottom right, #f9fafb, white, rgba(255, 125, 40, 0.05));
     position: relative;
     overflow: hidden;
 }
@@ -437,7 +580,7 @@
     left: 2.5rem;
     width: 20rem;
     height: 20rem;
-    background-color: rgba(255, 165, 0, 0.05);
+    background-color: rgba(255, 125, 40, 0.05);
     border-radius: 9999px;
     filter: blur(64px);
 }
@@ -538,7 +681,7 @@
 .stepIconWrapperOrange {
     width: 3rem;
     height: 3rem;
-    background-color: rgba(255, 165, 0, 0.2);
+    background-color: rgba(255, 125, 40, 0.2);
     border-radius: 9999px;
     display: flex;
     align-items: center;
@@ -583,7 +726,7 @@
 }
 
 .stepListOrange {
-    background-color: rgba(255, 165, 0, 0.05);
+    background-color: rgba(255, 125, 40, 0.05);
     padding: 1rem;
     border-radius: 0.75rem;
 }
@@ -840,7 +983,7 @@
 }
 
 .impactBoxOrange {
-    background-color: rgba(255, 165, 0, 0.1);
+    background-color: rgba(255, 125, 40, 0.1);
     padding: 1.5rem;
     border-radius: 1rem;
     margin-bottom: 1rem;
@@ -914,7 +1057,7 @@
 /* Risks Section */
 .risksSection {
     padding: 5rem 0;
-    background: linear-gradient(to bottom right, rgba(0, 155, 138, 0.05), rgba(255, 165, 0, 0.05));
+    background: linear-gradient(to bottom right, rgba(0, 155, 138, 0.05), rgba(255, 125, 40, 0.05));
     position: relative;
     overflow: hidden;
 }
@@ -1114,7 +1257,7 @@
 /* Final Section */
 .finalSection {
     padding: 5rem 0;
-    background: linear-gradient(to bottom right, rgba(0, 155, 138, 0.05), white, rgba(255, 165, 0, 0.05));
+    background: linear-gradient(to bottom right, rgba(0, 155, 138, 0.05), white, rgba(255, 125, 40, 0.05));
     position: relative;
     overflow: hidden;
 }
@@ -1197,7 +1340,7 @@
 .benefitIconBoxOrange {
     width: 3rem;
     height: 3rem;
-    background-color: rgba(255, 165, 0, 0.1);
+    background-color: rgba(255, 125, 40, 0.1);
     border-radius: 9999px;
     display: flex;
     align-items: center;
@@ -1271,7 +1414,7 @@
     right: 0;
     width: 8rem;
     height: 8rem;
-    background: linear-gradient(to bottom right, rgba(255, 165, 0, 0.1), rgba(0, 155, 138, 0.1));
+    background: linear-gradient(to bottom right, rgba(255, 125, 40, 0.1), rgba(0, 155, 138, 0.1));
     border-radius: 9999px;
     filter: blur(48px);
     pointer-events: none;
@@ -1370,12 +1513,14 @@
     background-color: var(--color-primary-green);
     color: white;
     font-weight: 600;
+    font-size: 1.0625rem;
     border-radius: 0.75rem;
     transition: all 0.3s;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     border: none;
     cursor: pointer;
 }
+
 
 .finalSubmitBtn:hover {
     background-color: var(--color-primary-orange);

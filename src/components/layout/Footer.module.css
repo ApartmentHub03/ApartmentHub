@@ -150,8 +150,8 @@
 
 .input {
     width: 100%;
-    padding: 0.5rem 0.75rem;
-    /* px-3 py-2 */
+    padding: 0.75rem 0.75rem;
+    /* Increased padding to match original */
     background-color: #1f2937;
     /* bg-gray-800 */
     border: 1px solid #374151;
@@ -159,12 +159,16 @@
     border-radius: 0.5rem;
     /* rounded-lg */
     color: white;
+    font-family: Inter, sans-serif;
+    font-size: 1rem;
+    /* Increased font size */
     outline: none;
 }
 
 .input::placeholder {
     color: #9ca3af;
     /* placeholder-gray-400 */
+    font-family: Inter, sans-serif;
 }
 
 .input:focus {
@@ -177,19 +181,22 @@
     background-color: var(--color-primary-orange);
     /* bg-orange */
     color: white;
-    padding: 0.5rem 1rem;
-    /* px-4 py-2 */
+    padding: 0.75rem 1rem;
+    /* Increased padding to match original */
     border-radius: 0.5rem;
     /* rounded-lg */
     font-weight: 500;
     /* font-medium */
+    font-family: Inter, sans-serif;
+    font-size: 1rem;
+    /* Increased font size */
     border: none;
     cursor: pointer;
     transition: background-color 0.2s;
 }
 
 .button:hover {
-    background-color: rgba(255, 140, 0, 0.9);
+    background-color: rgba(255, 125, 40, 0.9);
     /* hover:bg-orange/90 */
 }
 

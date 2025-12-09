@@ -4,7 +4,7 @@
 }
 
 .heroSection {
-    background: linear-gradient(to bottom right, #F0FFF4, #ffffff);
+    background: linear-gradient(to bottom right, #e9ebe4, #ffffff);
     padding-top: 4rem;
     padding-bottom: 4rem;
 }
@@ -121,10 +121,9 @@
 .formGroup label {
     display: block;
     font-size: 0.875rem;
-    /* text-sm */
     font-weight: 500;
     color: #374151;
-    /* gray-700 */
+    /* text-gray-700 */
     margin-bottom: 0.5rem;
 }
 
@@ -133,11 +132,27 @@
     width: 100%;
     padding: 0.75rem 1rem;
     border: 1px solid #d1d5db;
-    /* gray-300 */
+    /* border-gray-300 */
     border-radius: 0.75rem;
     /* rounded-xl */
+    color: #111827;
+    /* gray-900 (input text usually darker) */
+    background-color: transparent;
+    font-size: 1rem;
+    /* gray-900 (input text usually darker) */
+    background-color: transparent;
+    font-size: 1rem;
+    font-family: inherit;
+    /* Ensure font consistency */
     outline: none;
     transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.formGroup input::placeholder,
+.formGroup textarea::placeholder {
+    color: #9ca3af;
+    /* gray-400 - lighter text */
+    font-family: inherit;
 }
 
 .formGroup input:focus,
@@ -154,10 +169,13 @@
     width: 100%;
     background-color: hsl(var(--myrtle));
     color: white;
-    padding: 0.75rem 1.5rem;
+    padding: 1rem 2rem;
     border-radius: 0.75rem;
     /* rounded-xl */
-    font-weight: 500;
+    font-weight: 600;
+    /* Slightly bolder for larger button */
+    font-size: 1.125rem;
+    /* Increased text size */
     border: none;
     cursor: pointer;
     transition: background-color 0.2s;
@@ -177,7 +195,7 @@
 }
 
 .infoCard {
-    background-color: #F0FFF4;
+    background-color: #e9ebe4;
     /* mintcream */
     padding: 2rem;
     border-radius: 1rem;

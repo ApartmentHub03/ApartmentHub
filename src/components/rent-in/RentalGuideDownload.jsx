@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Home, Shield, Users, CheckCircle, Download, Play } from 'lucide-react';
+import { FileText, Home, Shield, Users, CheckCircle, Download } from 'lucide-react';
 import styles from '../../pages/RentIn.module.css';
 import rentalGuide from '../../assets/amsterdam-rental-guide-2024.pdf';
 
@@ -85,13 +85,47 @@ const RentalGuideDownload = ({ translations }) => {
                     </div>
 
                     <div className={styles.guideVisual}>
-                        <div className={styles.videoPlaceholder}>
-                            <div className={styles.videoPlayButton}>
-                                <Play style={{ width: '3rem', height: '3rem', color: 'white' }} />
+                        <div className={styles.docStack}>
+                            <div className={styles.docStackHeader}>
+                                <div className={styles.docStackGradientBar}></div>
+                                <div className={styles.docStackGrayBarLg}></div>
+                                <div className={styles.docStackGrayBarMd}></div>
                             </div>
-                            <div className={styles.videoOverlay}>
-                                <p className={styles.videoText}>Video komt binnenkort</p>
+                            <div className={styles.docStackBody}>
+                                <div className={styles.docStackRow}>
+                                    <div className={styles.docStackRowHeader}>
+                                        <div className={`${styles.docStackIconBox} ${styles.bgMyrtleTwenty}`}></div>
+                                        <div className={`${styles.docStackRowTitleLine} ${styles.wTwoThirds}`}></div>
+                                    </div>
+                                    <div className={styles.docStackRowLines}>
+                                        <div className={`${styles.docStackLine} ${styles.wFull}`}></div>
+                                        <div className={`${styles.docStackLine} ${styles.wFiveSixths}`}></div>
+                                        <div className={`${styles.docStackLine} ${styles.wFourFifths}`}></div>
+                                    </div>
+                                </div>
+                                <div className={styles.docStackRow}>
+                                    <div className={styles.docStackRowHeader}>
+                                        <div className={`${styles.docStackIconBox} ${styles.bgOrangeTwenty}`}></div>
+                                        <div className={`${styles.docStackRowTitleLine} ${styles.wThreeFifths}`}></div>
+                                    </div>
+                                    <div className={styles.docStackRowLines}>
+                                        <div className={`${styles.docStackLine} ${styles.wFull}`}></div>
+                                        <div className={`${styles.docStackLine} ${styles.wFourFifths}`}></div>
+                                    </div>
+                                </div>
+                                <div className={styles.docStackRow}>
+                                    <div className={styles.docStackRowHeader}>
+                                        <div className={`${styles.docStackIconBox} ${styles.bgMyrtleTwenty}`}></div>
+                                        <div className={`${styles.docStackRowTitleLine} ${styles.wHalf}`}></div>
+                                    </div>
+                                    <div className={styles.docStackRowLines}>
+                                        <div className={`${styles.docStackLine} ${styles.wFiveSixths}`}></div>
+                                        <div className={`${styles.docStackLine} ${styles.wFull}`}></div>
+                                        <div className={`${styles.docStackLine} ${styles.wThreeQuarters}`}></div>
+                                    </div>
+                                </div>
                             </div>
+                            <div className={styles.docStackBadge}>32 Pages</div>
                         </div>
                     </div>
                 </div>

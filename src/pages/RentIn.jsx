@@ -26,9 +26,7 @@ const RentIn = () => {
     const [selectedTime, setSelectedTime] = useState('');
 
     // Event handlers
-    const handleWhatsAppClick = () => {
-        window.open('https://api.whatsapp.com/send/?phone=31658975449&text&type=phone_number&app_absent=0', '_blank');
-    };
+
 
     const handleBookingLink = (type) => {
         // Switch to calendar view in the phone mockup
@@ -81,7 +79,7 @@ const RentIn = () => {
                 phoneView={phoneView}
                 selectedDate={selectedDate}
                 selectedTime={selectedTime}
-                onWhatsAppClick={handleWhatsAppClick}
+
                 onBackToWhatsApp={handleBackToWhatsApp}
                 onDateSelect={handleDateSelect}
                 onTimeSelect={handleTimeSelect}

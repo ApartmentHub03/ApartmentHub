@@ -57,7 +57,7 @@ export const translations = {
             testimonialsTitle: "Real conversations we've had with our rental clients",
             testimonialsSubtitle: "Read how we help our landlords via WhatsApp",
             testimonialsHelper: "Click on a conversation to read the full review",
-            testimonialsCtaText: "Become our next happy client",
+            testimonialsCtaText: "Become our next satisfied customer",
             testimonialsCtaLandlord: "Start as landlord",
             testimonialsCtaTenant: "Find your dream home",
 
@@ -525,12 +525,12 @@ export const translations = {
         en: {
             title: "Neighborhoods",
             subtitle: "Discover Amsterdam's diverse neighborhoods and find your perfect area",
-            readMore: "Read More",
+            readMore: "Discover More",
         },
         nl: {
             title: "Ontdek de Wijken van Amsterdam",
             subtitle: "Ontdek het unieke karakter en de charme van elk stadsdeel om de perfecte plek voor jou te vinden.",
-            readMore: "Lees Meer",
+            readMore: "Ontdek Meer",
         }
     },
     faq: {
