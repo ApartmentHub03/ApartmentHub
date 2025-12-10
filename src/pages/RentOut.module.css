@@ -680,8 +680,25 @@
     gap: 0.25rem;
 }
 
+.stepContent {
+    order: 2;
+}
+
+@media (min-width: 1024px) {
+    .stepContent {
+        order: 0;
+    }
+}
+
 .stepImageCol {
     position: relative;
+    order: 1;
+}
+
+@media (min-width: 1024px) {
+    .stepImageCol {
+        order: 0;
+    }
 }
 
 .stepImageWrapper {
