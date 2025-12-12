@@ -1342,12 +1342,12 @@
 }
 
 .solutionBoxBlue {
-    background-color: white;
-    /* User requested White */
+    background-color: #f6f8f8;
+    /* Myrtle-50 (Calculated) */
     padding: 1.5rem;
     border-radius: 1rem;
-    border: 1px solid #f3f4f6;
-    /* Gray-100 to match other white boxes */
+    border: 1px solid #dbe4e3;
+    /* Myrtle-200 (Calculated) */
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
 }
 
@@ -1360,7 +1360,8 @@
 .solutionIconGreen {
     width: 2rem;
     height: 2rem;
-    color: var(--color-primary-green);
+    color: #16a34a;
+    /* Tailwind green-600 */
     margin-right: 0.75rem;
 }
 
@@ -1383,7 +1384,8 @@
 .solutionTitleGreen {
     font-size: 1.125rem;
     font-weight: 600;
-    color: var(--color-primary-green-dark);
+    color: #14532d;
+    /* Tailwind green-900 */
 }
 
 .solutionTitleOrange {
@@ -1404,7 +1406,8 @@
     list-style: none;
     padding: 0;
     margin: 0;
-    color: var(--color-primary-green);
+    color: #15803d;
+    /* Tailwind green-700 */
     display: flex;
     flex-direction: column;
     gap: 0.5rem;

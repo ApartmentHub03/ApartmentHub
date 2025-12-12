@@ -397,7 +397,7 @@ export const translations = {
             heroSubtitle: "Let us help you discover your ideal rental property through our personalized WhatsApp service",
 
             guideBadge: "Free Download",
-            guideTitle: "Complete Amsterdam Rental Guide 2024",
+            guideTitle: "Complete Amsterdam Rental Guide 2025",
             guideDesc: "Get our comprehensive 32-page guide packed with insider tips, neighborhood insights, and legal advice to secure your perfect rental in Amsterdam.",
 
             feature1Title: "Neighborhood Guide",
