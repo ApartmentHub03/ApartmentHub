@@ -52,8 +52,8 @@ export const translations = {
             neighborhoodsAction: "Discover more",
 
             testimonialsStatsLandlords: "2500+ satisfied landlords",
-            testimonialsStatsRating: "4.8/5 average rating",
-            testimonialsStatsTime: "3 days average rental time",
+            testimonialsStatsRating: "4.9/5 average rating",
+            testimonialsStatsTime: "5 days average rental time",
             testimonialsTitle: "Real conversations we've had with our rental clients",
             testimonialsSubtitle: "Read how we help our landlords via WhatsApp",
             testimonialsHelper: "Click on a conversation to read the full review",
@@ -103,8 +103,8 @@ export const translations = {
             neighborhoodsAction: "Ontdek meer",
 
             testimonialsStatsLandlords: "2500+ tevreden verhuurders",
-            testimonialsStatsRating: "4.8/5 gemiddelde beoordeling",
-            testimonialsStatsTime: "3 dagen gemiddelde verhuur tijd",
+            testimonialsStatsRating: "4.9/5 gemiddelde beoordeling",
+            testimonialsStatsTime: "5 dagen gemiddelde verhuur tijd",
             testimonialsTitle: "Echte gesprekken die wij hebben gevoerd met onze verhuur klanten",
             testimonialsSubtitle: "Lees hoe wij onze verhuurders helpen via WhatsApp",
             testimonialsHelper: "Klik op een gesprek om de volledige review te lezen",
