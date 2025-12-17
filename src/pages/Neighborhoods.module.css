@@ -5,9 +5,16 @@
 
 .heroSection {
     position: relative;
-    padding-top: 5rem;
-    padding-bottom: 5rem;
+    padding-top: 2.5rem;
+    padding-bottom: 2.5rem;
     background: linear-gradient(to bottom right, #f9fafb, #f3f4f6);
+}
+
+@media (min-width: 768px) {
+    .heroSection {
+        padding-top: 5rem;
+        padding-bottom: 5rem;
+    }
 }
 
 .container {
@@ -62,19 +69,27 @@
 }
 
 .gridSection {
-    padding-top: 4rem;
-    padding-bottom: 4rem;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+    .gridSection {
+        padding-top: 4rem;
+        padding-bottom: 4rem;
+    }
 }
 
 .grid {
     display: grid;
     grid-template-columns: repeat(1, minmax(0, 1fr));
-    gap: 2rem;
+    gap: 1rem;
 }
 
 @media (min-width: 768px) {
     .grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 2rem;
     }
 }
 

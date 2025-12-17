@@ -1,0 +1,187 @@
+.card {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    transition: box-shadow 0.3s ease;
+    border: 2px solid transparent;
+    /* Placeholder for gradient border logic if needed */
+    background: linear-gradient(white, white) padding-box,
+        linear-gradient(135deg, hsl(var(--myrtle)), hsl(var(--orange))) border-box;
+    border: 2px solid transparent;
+}
+
+.card:hover {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.cardHeader {
+    background: linear-gradient(to right, rgba(73, 119, 114, 0.1), rgba(243, 107, 25, 0.05), rgba(73, 119, 114, 0.1));
+    border-bottom: 2px solid rgba(73, 119, 114, 0.2);
+    padding: 1.5rem 2rem;
+}
+
+.cardTitle {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: hsl(var(--myrtle));
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+}
+
+.cardContent {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    grid-template-areas:
+        "bid date"
+        "advance motivation";
+}
+
+@media (min-width: 768px) {
+    .grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.formItem {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.label {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #111827;
+    min-height: 1.5rem;
+    /* Ensure consistent height with smallLabel */
+    display: flex;
+    align-items: center;
+}
+
+.smallLabel {
+    font-size: 0.875rem;
+    /* text-sm */
+    font-weight: 500;
+    /* font-medium */
+    color: #111827;
+    min-height: 1.5rem;
+    /* Match label height to align inputs */
+    display: flex;
+    align-items: center;
+    line-height: 1.5rem;
+}
+
+.inputWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.currencyPrefix {
+    position: absolute;
+    left: 1rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: hsl(var(--myrtle));
+    pointer-events: none;
+    transform: translateY(-50%);
+    top: 50%;
+}
+
+.bidInput {
+    padding-left: 3rem;
+    font-size: 1rem;
+    font-weight: 700;
+    height: 4.25rem;
+    /* 2.5rem (date) + 0.5rem (gap) + 1.25rem (desc) */
+    border: 2px solid #e5e7eb;
+    border-radius: 0.5rem;
+    width: 100%;
+}
+
+.bidInput:focus {
+    outline: none;
+    border-color: hsl(var(--myrtle));
+    box-shadow: 0 0 0 4px rgba(73, 119, 114, 0.1);
+}
+
+.calendarIcon {
+    position: absolute;
+    left: 0.75rem;
+    width: 1rem;
+    height: 1rem;
+    color: #6b7280;
+    pointer-events: none;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.dateInput {
+    padding-left: 2.5rem;
+    height: 2.5rem;
+    /* Match UI text-sm h-10 roughly? Ref says h-10 (2.5rem) */
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    width: 100%;
+    padding-right: 1rem;
+}
+
+.dateInput:focus {
+    outline: none;
+    border-color: hsl(var(--myrtle));
+}
+
+.select {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    background-color: white;
+    font-size: 0.875rem;
+}
+
+.select:focus {
+    outline: none;
+    border-color: hsl(var(--myrtle));
+}
+
+.textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    resize: none;
+}
+
+.textarea:focus {
+    outline: none;
+    border-color: hsl(var(--myrtle));
+}
+
+.description {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.message {
+    font-size: 0.875rem;
+    color: #ef4444;
+}
+
+.charCount {
+    text-align: right;
+    font-size: 0.75rem;
+    color: #6b7280;
+}

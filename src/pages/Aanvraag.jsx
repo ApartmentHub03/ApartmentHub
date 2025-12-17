@@ -1,587 +1,409 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import {
-    LogOut, FileText, Euro, Calendar, Plus, ChevronDown,
-    AlertCircle, MessageCircle, Send, Clock, HelpCircle
-} from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { setLanguage } from '../features/ui/uiSlice';
+import { LogOut, CheckCircle, Plus, AlertCircle } from 'lucide-react';
 import { translations } from '../data/translations';
-import { getDocumentStatus } from '../services/documentenApi';
-import WorkStatusSelector from '../components/aanvraag/WorkStatusSelector';
-import RentalFAQ from '../components/aanvraag/RentalFAQ';
-import InlineDocumentUpload from '../components/aanvraag/InlineDocumentUpload';
-import MultiFileDocumentUpload from '../components/aanvraag/MultiFileDocumentUpload';
-import {
-    documentsByWorkStatus,
-    tenantOnlyDocuments,
-    documentTypeLabels
-} from '../config/documentRequirements';
+import RentalConditionsSidebar from '../components/aanvraag/RentalConditionsSidebar';
+import BidSection from '../components/aanvraag/BidSection';
+import TenantFormSection from '../components/aanvraag/TenantFormSection';
+import GuarantorFormSection from '../components/aanvraag/GuarantorFormSection';
+import AddPersonModal from '../components/aanvraag/AddPersonModal';
+import UploadChoiceModal from '../components/aanvraag/UploadChoiceModal';
 import styles from './Aanvraag.module.css';
+
+// Mock Data / Services (Replacements for API calls in reference)
+const mockPand = {
+    adres: "Ceintuurbaan 123, Amsterdam",
+    voorwaarden: {
+        huurprijs: 2100,
+        waarborgsom: 4200,
+        servicekosten: "G/W/E exclusief",
+        beschikbaar: "01-03-2025",
+        minBod: 2100,
+        maxBod: 4200
+    }
+};
 
 const Aanvraag = () => {
     const navigate = useNavigate();
-    const { token, logout, phoneNumber } = useAuth();
+    const location = useLocation();
+    const dispatch = useDispatch();
     const currentLang = useSelector((state) => state.ui.language);
+
+    // Sync language with URL
+    useEffect(() => {
+        const path = location.pathname.toLowerCase();
+        if (path.includes('aanvraag') && currentLang !== 'nl') {
+            dispatch(setLanguage('nl'));
+        } else if (path.includes('application') && currentLang !== 'en') {
+            dispatch(setLanguage('en'));
+        }
+    }, [location.pathname, dispatch, currentLang]);
     const t = translations.aanvraag[currentLang] || translations.aanvraag.nl;
+    const tNav = translations.nav[currentLang] || translations.nav.en; // fallback
 
+    // State
     const [loading, setLoading] = useState(true);
-    const [submitting, setSubmitting] = useState(false);
-    const [expandedTenant, setExpandedTenant] = useState(true);
+    const [data, setData] = useState(null); // { pand, personen: [], dossierCompleet }
+    const [bidAmount, setBidAmount] = useState(0);
+    const [startDate, setStartDate] = useState("");
+    const [motivation, setMotivation] = useState("");
+    const [monthsAdvance, setMonthsAdvance] = useState(0);
+    const [tenantProgress, setTenantProgress] = useState({}); // { persoonId: { overallProgress, ... } }
 
-    // Form state
-    const [bidAmount, setBidAmount] = useState('2100');
-    const [startDate, setStartDate] = useState('');
-    const [monthsAdvance, setMonthsAdvance] = useState('0');
-    const [motivation, setMotivation] = useState('');
+    // Modals
+    const [showAddPersonModal, setShowAddPersonModal] = useState(false);
+    const [showUploadChoiceModal, setShowUploadChoiceModal] = useState(false);
+    const [addPersonRole, setAddPersonRole] = useState("Medehuurder"); // "Medehuurder" | "Garantsteller"
+    const [selectedUploadMethod, setSelectedUploadMethod] = useState(null);
+    const [selectedTenantForGuarantor, setSelectedTenantForGuarantor] = useState(null);
 
-    // Tenant form
-    const [fullName, setFullName] = useState('Jan Jansen');
-    const [email, setEmail] = useState('');
-    const [workStatus, setWorkStatus] = useState('');
-    const [currentAddress, setCurrentAddress] = useState('');
-    const [postcode, setPostcode] = useState('');
-    const [currentCity, setCurrentCity] = useState('');
-    const [grossIncome, setGrossIncome] = useState('');
-    const [uploadedDocuments, setUploadedDocuments] = useState({});
+    // Initial Load
+    useEffect(() => {
+        // Simulate fetch
+        setTimeout(() => {
+            const initialPerson = {
+                persoonId: "p1",
+                naam: "Jan Jansen", // Mock user name
+                email: "user@example.com",
+                telefoon: "0612345678",
+                rol: "Hoofdhuurder",
+                documenten: [], // {type, status, file}
+                docsCompleet: false
+            };
 
-    // Handle single file upload
-    const handleFileUpload = (docType, file) => {
-        setUploadedDocuments(prev => ({
+            setData({
+                pand: mockPand,
+                personen: [initialPerson],
+                dossierCompleet: false
+            });
+            setBidAmount(mockPand.voorwaarden.huurprijs);
+            setLoading(false);
+        }, 1000);
+    }, []);
+
+    const calculateProgress = () => {
+        if (!data) return 0;
+
+        // Bid section contributes 30%
+        const hasBid = bidAmount > 0 && startDate !== "";
+        const bidProgress = hasBid ? 30 : 0;
+
+        // Tenant forms contribute 70%
+        const tenantIds = Object.keys(tenantProgress);
+        if (tenantIds.length === 0) return bidProgress;
+
+        const totalTenantProgress = tenantIds.reduce((sum, id) => {
+            return sum + (tenantProgress[id]?.overallProgress || 0);
+        }, 0);
+        const avgTenantProgress = totalTenantProgress / tenantIds.length;
+        const tenantContribution = Math.round((avgTenantProgress / 100) * 70);
+
+        return Math.min(100, bidProgress + tenantContribution);
+    };
+
+    const handleFormDataChange = (persoonId, formDataUpdate) => {
+        setTenantProgress(prev => ({
             ...prev,
-            [docType]: file
+            [persoonId]: formDataUpdate
         }));
     };
 
-    // Handle multi file upload
-    const handleMultiFileUpload = (docType, files) => {
-        setUploadedDocuments(prev => ({
-            ...prev,
-            [docType]: files
-        }));
+    const progress = calculateProgress();
+
+    // Check if all tenants have completed required documents
+    const isAllDocsComplete = () => {
+        const tenantIds = Object.keys(tenantProgress);
+        if (tenantIds.length === 0) return false;
+        return tenantIds.every(id => tenantProgress[id]?.isDocsComplete === true);
     };
 
-    // Handle file removal
-    const handleRemoveFile = (docType, index = null) => {
-        setUploadedDocuments(prev => {
-            if (index === null) {
-                // Single file removal
-                const newState = { ...prev };
-                delete newState[docType];
-                return newState;
-            } else {
-                // Multi file removal
-                const currentFiles = prev[docType] || [];
-                const newFiles = currentFiles.filter((_, i) => i !== index);
-                return {
-                    ...prev,
-                    [docType]: newFiles
-                };
+    // Check if form is ready to submit
+    const canSubmit = bidAmount > 0 && startDate !== '' && isAllDocsComplete();
+
+    // Handlers
+    const handleDocumentUpload = (persoonId, type, fileOrFiles) => {
+        // Update local state
+        const updatedPersonen = data.personen.map(p => {
+            if (p.persoonId === persoonId) {
+                const newDocs = [...(p.documenten || [])];
+                const existingIdx = newDocs.findIndex(d => d.type === type);
+
+                // Check if it's a multi-file upload (array of files)
+                const isMultiFile = Array.isArray(fileOrFiles);
+
+                if (existingIdx >= 0) {
+                    if (isMultiFile) {
+                        newDocs[existingIdx] = { ...newDocs[existingIdx], status: 'ontvangen', files: fileOrFiles };
+                    } else {
+                        newDocs[existingIdx] = { ...newDocs[existingIdx], status: 'ontvangen', file: fileOrFiles };
+                    }
+                } else {
+                    if (isMultiFile) {
+                        newDocs.push({ type, status: 'ontvangen', files: fileOrFiles });
+                    } else {
+                        newDocs.push({ type, status: 'ontvangen', file: fileOrFiles });
+                    }
+                }
+                // Recalculate completeness
+                return { ...p, documenten: newDocs, docsCompleet: newDocs.length >= 1 };
+            }
+            return p;
+        });
+        setData({ ...data, personen: updatedPersonen });
+    };
+
+    const handleAddCoTenant = () => {
+        const medehuurders = data.personen.filter(p => p.rol === 'Medehuurder');
+        if (medehuurders.length >= 2) {
+            alert("Max co-tenants reached");
+            return;
+        }
+        setAddPersonRole("Medehuurder");
+        setShowUploadChoiceModal(true);
+    };
+
+    const handleAddGuarantor = (tenantId) => {
+        const garantstellers = data.personen.filter(p => p.rol === 'Garantsteller');
+        if (garantstellers.length >= 2) {
+            alert("Max guarantors reached");
+            return;
+        }
+        setSelectedTenantForGuarantor(tenantId);
+        setAddPersonRole("Garantsteller");
+        setShowUploadChoiceModal(true);
+    };
+
+    const handleUploadMethodSelected = (method) => {
+        setSelectedUploadMethod(method);
+        // If self, we add person immediately with placeholder or ask name? 
+        // Ref says: if self, directly add with placeholder name? 
+        // "Directly add person with placeholder name" -> await handleAddPersonSubmit
+        // Or show modal? Ref code:
+        /*
+          if (method === "self") {
+            const placeholderName = ...
+             handleAddPersonSubmit(placeholderName, ...);
+          } else {
+             setShowAddPersonModal(true);
+          }
+        */
+        // Let's just show the modal for both to keep it simple and allow entering name
+        setShowAddPersonModal(true);
+    };
+
+    const handleAddPersonSubmit = async (name, whatsapp) => {
+        // Mock API call
+        const newPerson = {
+            persoonId: `p${Date.now()}`,
+            naam: name,
+            rol: addPersonRole,
+            email: "",
+            telefoon: whatsapp,
+            documenten: [],
+            docsCompleet: false,
+            linkedToPersoonId: addPersonRole === 'Garantsteller' ? selectedTenantForGuarantor : undefined
+        };
+
+        setData({
+            ...data,
+            personen: [...data.personen, newPerson]
+        });
+    };
+
+    const handleRemovePerson = (persoonId) => {
+        setData({
+            ...data,
+            personen: data.personen.filter(p => p.persoonId !== persoonId)
+        });
+    };
+
+    const handleSubmit = () => {
+        // Validation
+        if (!bidAmount || !startDate) {
+            alert(currentLang === 'en' ? 'Please complete the bid section' : 'Vul de biedingsectie in');
+            return;
+        }
+
+        // Navigate to Letter of Intent page with form data
+        console.log("Submitting", { bidAmount, startDate, data });
+        const letterPath = currentLang === 'en' ? '/en/letter-of-intent' : '/letter-of-intent';
+        navigate(letterPath, {
+            state: {
+                bidAmount,
+                startDate,
+                motivation,
+                monthsAdvance,
+                tenantData: data,
+                property: data.pand
             }
         });
     };
 
-    const conditions = {
-        huurprijs: 2100,
-        waarborgsom: 4200,
-        servicekosten: 'G/W/E exclusief',
-        beschikbaar: '01-03-2025'
-    };
-
-    // Check if all required fields are filled
-    const isFormValid = bidAmount && startDate && fullName && email && workStatus && grossIncome;
-
-    const progress = isFormValid ? 100 : 0;
-
-    useEffect(() => {
-        // Simulate loading
-        const timer = setTimeout(() => setLoading(false), 500);
-        return () => clearTimeout(timer);
-    }, []);
-
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
-
-    const handleSubmit = async () => {
-        setSubmitting(true);
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        navigate('/letter-of-intent', {
-            state: { bidAmount, startDate, motivation, conditions }
-        });
-    };
-
-    if (loading) {
-        return (
-            <div className={styles.page}>
-                <div className={styles.container} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
-                    Loading...
-                </div>
-            </div>
-        );
+    if (loading || !data) {
+        return <div className="p-8 text-center">Loading...</div>;
     }
 
+    const alleHuurders = data.personen.filter(p => p.rol === 'Hoofdhuurder' || p.rol === 'Medehuurder');
+    const garantstellers = data.personen.filter(p => p.rol === 'Garantsteller');
+
     return (
-        <div className={styles.page}>
-            {/* Header */}
-            <div className={styles.header}>
-                <div className={styles.headerContainer}>
-                    <div className={styles.headerLeft}>
-                        <span className={styles.propertyLink}>📍 Centrurbaan 123, Amsterdam</span>
+        <div className={styles.pageContainer}>
+            <div className={styles.headerContainer}>
+                <div className={styles.container}>
+                    <div className={styles.topBar}>
+                        <p className={styles.addressText}>📍 {data.pand.adres}</p>
+                        <div className={styles.headerButtons}>
+                            <button className={styles.changeButton} onClick={() => navigate('/appartementen')}>
+                                {currentLang === 'en' ? 'Change Apartment' : 'Wijzig Appartement'}
+                            </button>
+                            <button className={styles.logoutButton} onClick={() => alert('Logout')}>
+                                <LogOut size={14} />
+                                {t.logout}
+                            </button>
+                        </div>
                     </div>
-                    <div className={styles.headerButtons}>
-                        <button className={styles.headerBtn}>
-                            {currentLang === 'en' ? 'Choose another apartment' : 'Ander appartement kiezen'}
-                        </button>
-                        <button className={styles.headerBtn} onClick={handleLogout}>
-                            <LogOut size={16} />
-                            {currentLang === 'en' ? 'Log out' : 'Uitloggen'}
-                        </button>
+
+                    <h1 className={styles.pageTitle}>{currentLang === 'en' ? 'Rental Application' : 'Huur aanvraag'}</h1>
+
+                    <div className={styles.progressContainer}>
+                        <div className={styles.progressLabelRow}>
+                            <span className={styles.progressLabel}>{currentLang === 'en' ? 'Progress' : 'Voortgang'}</span>
+                            <span className={styles.progressValue}>{progress}%</span>
+                        </div>
+                        <div className={styles.progressBarTrack}>
+                            <div className={styles.progressBarFill} style={{ width: `${progress}%` }}></div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div className={styles.container}>
-                <h1 className={styles.pageTitle}>
-                    {currentLang === 'en' ? 'Rental Application' : 'Huurapplicatie'}
-                </h1>
-
-                {/* Progress */}
-                <div className={styles.progressSection}>
-                    <div className={styles.progressTop}>
-                        <span className={styles.progressLabel}>
-                            {currentLang === 'en' ? 'Progress' : 'Voortgang'}
-                        </span>
-                        <span className={styles.progressValue}>{progress}%</span>
+                {/* Success Alert if complete */}
+                {data.dossierCompleet && (
+                    <div className={styles.successAlert}>
+                        <CheckCircle className={styles.alertIcon} />
+                        <p className={styles.alertText}>
+                            {currentLang === 'en' ? 'Application complete! You can now submit.' : 'Aanvraag compleet! Je kunt nu indienen.'}
+                        </p>
                     </div>
-                    <div className={styles.progressBar}>
-                        <div className={styles.progressFill} style={{ width: `${progress}%` }} />
-                    </div>
-                </div>
+                )}
 
                 <div className={styles.mainLayout}>
-                    {/* Sidebar */}
-                    <div className={styles.sidebar}>
-                        {/* Rental Conditions */}
-                        <div className={styles.sidebarCard}>
-                            <div className={styles.sidebarHeader}>
-                                <FileText size={18} />
-                                <h3 className={styles.sidebarTitle}>
-                                    {currentLang === 'en' ? 'Rental Conditions' : 'Huurvoorwaarden'}
-                                </h3>
-                            </div>
-                            <div className={styles.sidebarContent}>
-                                <div className={styles.priceSection}>
-                                    <div className={styles.priceIcon}>
-                                        <Euro size={24} />
-                                    </div>
-                                    <div className={styles.priceDetails}>
-                                        <p className={styles.priceLabel}>
-                                            {currentLang === 'en' ? 'Minimum rent price' : 'Minimale huurprijs'}
-                                        </p>
-                                        <p className={styles.priceValue}>€{conditions.huurprijs}</p>
-                                        <p className={styles.priceUnit}>
-                                            {currentLang === 'en' ? 'per month' : 'per maand'}
-                                        </p>
-                                    </div>
-                                </div>
+                    <RentalConditionsSidebar conditions={data.pand.voorwaarden} address={data.pand.adres} />
 
-                                <div className={styles.detailRow}>
-                                    <span className={styles.detailLabel}>
-                                        <Euro size={14} />
-                                        {currentLang === 'en' ? 'Deposit' : 'Waarborgsom'}
-                                    </span>
-                                    <span className={styles.detailValue}>€{conditions.waarborgsom}</span>
-                                </div>
-                                <div className={styles.detailRow}>
-                                    <span className={styles.detailLabel}>
-                                        {currentLang === 'en' ? 'Service costs' : 'Servicekosten'}
-                                    </span>
-                                    <span className={styles.detailValue}>{conditions.servicekosten}</span>
-                                </div>
-                                <div className={styles.detailRow}>
-                                    <span className={styles.detailLabel}>
-                                        <Calendar size={14} />
-                                        {currentLang === 'en' ? 'Available from' : 'Beschikbaar voor'}
-                                    </span>
-                                    <span className={styles.detailValue}>{conditions.beschikbaar}</span>
-                                </div>
+                    <div className={styles.contentColumn}>
+                        {/* Step 1: Bid */}
+                        <div className={styles.stepContainer}>
+                            <div className={styles.stepHeader}>
+                                <div className={styles.stepNumber}>1</div>
+                                <h2 className={styles.stepTitle}>{currentLang === 'en' ? 'Your Bid' : 'Jouw Bod'}</h2>
                             </div>
+                            <BidSection
+                                conditions={data.pand.voorwaarden}
+                                bidAmount={bidAmount}
+                                startDate={startDate}
+                                motivation={motivation}
+                                monthsAdvance={monthsAdvance}
+                                onBidAmountChange={setBidAmount}
+                                onStartDateChange={setStartDate}
+                                onMotivationChange={setMotivation}
+                                onMonthsAdvanceChange={setMonthsAdvance}
+                            />
                         </div>
 
-                        {/* FAQ */}
-                        <div className={styles.faqCard}>
-                            <div className={styles.faqHeader}>
-                                <HelpCircle size={18} />
-                                {currentLang === 'en' ? 'Frequently asked questions' : 'Veelgestelde vragen'}
+                        {/* Step 2: Details */}
+                        <div className={styles.stepContainer}>
+                            <div className={styles.stepHeader}>
+                                <div className={styles.stepNumber}>2</div>
+                                <h2 className={styles.stepTitle}>{currentLang === 'en' ? 'Details' : 'Gegevens'}</h2>
                             </div>
-                            <RentalFAQ lang={currentLang} />
-                        </div>
-                    </div>
 
-                    {/* Main Content */}
-                    <div className={styles.content}>
-                        {/* Bid Section */}
-                        <div className={styles.sectionHeader}>
-                            <span className={styles.sectionNumber}>1</span>
-                            <h2 className={styles.sectionTitle}>
-                                {currentLang === 'en' ? 'Your bid' : 'Jouw bod'}
-                            </h2>
-                        </div>
-                        <div className={styles.bidCard}>
-                            <div className={styles.bidCardHeader}>
-                                <h3 className={styles.bidCardTitle}>
-                                    <span>💰</span>
-                                    <span>{currentLang === 'en' ? 'Place your bid' : 'Plaats jouw bod'}</span>
-                                </h3>
-                            </div>
-                            <div className={styles.bidCardContent}>
-                                <div className={styles.bidGrid}>
-                                    <div className={styles.inputGroup}>
-                                        <label className={styles.inputLabel}>
-                                            💶 {currentLang === 'en' ? 'Bid per month' : 'Bod per maand'}
-                                            <span className={styles.required}>*</span>
-                                        </label>
-                                        <div className={styles.inputWrapper}>
-                                            <span className={styles.currencyPrefix}>€</span>
-                                            <input
-                                                type="number"
-                                                className={`${styles.input} ${styles.inputWithPrefix} ${styles.bidInput}`}
-                                                value={bidAmount}
-                                                onChange={(e) => setBidAmount(e.target.value)}
-                                                placeholder="2100"
+                            <div className={styles.listsContainer}>
+                                {alleHuurders.map((huurder) => {
+                                    const linkedGuarantor = garantstellers.find(g => g.linkedToPersoonId === huurder.persoonId);
+
+                                    return (
+                                        <div key={huurder.persoonId} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                            <TenantFormSection
+                                                persoon={huurder}
+                                                onDocumentUpload={handleDocumentUpload}
+                                                onRemove={handleRemovePerson}
+                                                onFormDataChange={handleFormDataChange}
+                                                showUploadChoice={true}
                                             />
-                                        </div>
-                                        <span className={styles.inputHint}>
-                                            {currentLang === 'en'
-                                                ? 'The higher, the more attractive to the owner.'
-                                                : 'Hoe hoger, hoe aantrekkelijker voor de eigenaar.'}
-                                        </span>
-                                    </div>
 
-                                    <div className={styles.inputGroup}>
-                                        <label className={styles.inputLabel}>
-                                            {currentLang === 'en' ? 'Desired start date' : 'Gewenste startdatum'}
-                                            <span className={styles.required}>*</span>
-                                        </label>
-                                        <div className={styles.inputWrapper}>
-                                            <Calendar size={16} className={styles.inputIcon} />
-                                            <input
-                                                type="date"
-                                                className={`${styles.input} ${styles.inputWithIcon}`}
-                                                value={startDate}
-                                                onChange={(e) => setStartDate(e.target.value)}
-                                            />
-                                        </div>
-                                        <span className={styles.inputHint}>
-                                            {currentLang === 'en'
-                                                ? `Earliest possible: ${conditions.beschikbaar}. Later = more attractive.`
-                                                : `Vroegst mogelijk: ${conditions.beschikbaar}. Later = minder aantrekkelijk.`}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className={styles.inputGroup} style={{ marginTop: '1.5rem' }}>
-                                    <label className={styles.inputLabel}>
-                                        {currentLang === 'en' ? 'Months rent in advance' : 'Maanden huur vooruit betalen'}
-                                    </label>
-                                    <select
-                                        className={styles.select}
-                                        value={monthsAdvance}
-                                        onChange={(e) => setMonthsAdvance(e.target.value)}
-                                    >
-                                        <option value="0">0 {currentLang === 'en' ? 'months' : 'maanden'}</option>
-                                        <option value="1">1 {currentLang === 'en' ? 'month' : 'maand'}</option>
-                                        <option value="2">2 {currentLang === 'en' ? 'months' : 'maanden'}</option>
-                                        <option value="3">3 {currentLang === 'en' ? 'months' : 'maanden'}</option>
-                                        <option value="6">6 {currentLang === 'en' ? 'months' : 'maanden'}</option>
-                                        <option value="12">12 {currentLang === 'en' ? 'months' : 'maanden'}</option>
-                                    </select>
-                                    <span className={styles.inputHint}>
-                                        {currentLang === 'en'
-                                            ? 'The more in advance, the more attractive.'
-                                            : 'Hoe meer vooruit, hoe aantrekkelijker.'}
-                                    </span>
-                                </div>
-
-                                <div className={styles.inputGroup} style={{ marginTop: '1.5rem' }}>
-                                    <label className={styles.inputLabel}>
-                                        {currentLang === 'en' ? 'Motivation (optional)' : 'Motivatie (optioneel)'}
-                                    </label>
-                                    <textarea
-                                        className={styles.textarea}
-                                        value={motivation}
-                                        onChange={(e) => setMotivation(e.target.value)}
-                                        placeholder={currentLang === 'en'
-                                            ? 'Why do you want to live here? What makes you a suitable tenant?'
-                                            : 'Waarom wil je hier wonen? Wat maakt jou een geschikte huurder?'}
-                                        maxLength={500}
-                                    />
-                                    <div className={styles.charCount}>
-                                        {motivation.length}/500 {currentLang === 'en' ? 'characters' : 'karakters'}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Tenant Details Section */}
-                        <div className={styles.sectionHeader}>
-                            <span className={styles.sectionNumber}>2</span>
-                            <h2 className={styles.sectionTitle}>
-                                {currentLang === 'en' ? 'Your details' : 'Jouw gegevens'}
-                            </h2>
-                        </div>
-                        <div className={styles.detailsCard}>
-                            {/* Main Tenant Card */}
-                            <div className={styles.tenantCard}>
-                                <div
-                                    className={styles.tenantHeader}
-                                    onClick={() => setExpandedTenant(!expandedTenant)}
-                                >
-                                    <div className={styles.tenantInfo}>
-                                        <div className={styles.tenantAvatar}>👤</div>
-                                        <div className={styles.tenantDetails}>
-                                            <span className={styles.tenantRole}>
-                                                {currentLang === 'en' ? 'MAIN TENANT' : 'HOOFDHUURDER'}
-                                            </span>
-                                            <span className={styles.tenantName}>{fullName || 'Jan Jansen'}</span>
-                                        </div>
-                                    </div>
-                                    <div className={styles.tenantRight}>
-                                        <div className={styles.docStatus}>
-                                            <span className={styles.docStatusLabel}>
-                                                {currentLang === 'en' ? 'Documents' : 'Documenten'}
-                                            </span>
-                                            <span className={`${styles.docStatusBadge} ${styles.badgeMissing}`}>
-                                                0% 🔴 {currentLang === 'en' ? 'Missing' : 'Ontbreekt'}
-                                            </span>
-                                        </div>
-                                        <ChevronDown
-                                            size={20}
-                                            className={`${styles.expandIcon} ${expandedTenant ? styles.expandIconOpen : ''}`}
-                                        />
-                                    </div>
-                                </div>
-
-                                {expandedTenant && (
-                                    <div className={styles.tenantBody}>
-                                        <div className={styles.formGrid}>
-                                            <div className={styles.inputGroup}>
-                                                <label className={styles.inputLabel}>
-                                                    {currentLang === 'en' ? 'Full name' : 'Volledige naam'}
-                                                    <span className={styles.required}>*</span>
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    className={styles.input}
-                                                    value={fullName}
-                                                    onChange={(e) => setFullName(e.target.value)}
-                                                    placeholder="Jan Jansen"
-                                                />
-                                            </div>
-
-                                            <div className={styles.inputGroup}>
-                                                <label className={styles.inputLabel}>
-                                                    {currentLang === 'en' ? 'Email address' : 'E-mailadres'}
-                                                    <span className={styles.required}>*</span>
-                                                </label>
-                                                <input
-                                                    type="email"
-                                                    className={styles.input}
-                                                    value={email}
-                                                    onChange={(e) => setEmail(e.target.value)}
-                                                    placeholder="jan@voorbeeld.nl"
-                                                />
-                                            </div>
-
-                                            <div className={`${styles.inputGroup} ${styles.formGridFull}`}>
-                                                <label className={styles.inputLabel}>
-                                                    💼 {currentLang === 'en' ? 'Work status' : 'Werk situatie'}
-                                                    <span className={styles.required}>*</span>
-                                                </label>
-                                                <div className={styles.workStatusSection}>
-                                                    <WorkStatusSelector
-                                                        value={workStatus}
-                                                        onChange={setWorkStatus}
-                                                        lang={currentLang}
+                                            {linkedGuarantor && (
+                                                <div className={styles.guarantorWrapper}>
+                                                    <GuarantorFormSection
+                                                        guarantors={[linkedGuarantor]}
+                                                        onDocumentUpload={handleDocumentUpload}
+                                                        onRemove={handleRemovePerson}
                                                     />
-                                                </div>
-                                            </div>
-
-                                            <div className={styles.inputGroup}>
-                                                <label className={styles.inputLabel}>
-                                                    {currentLang === 'en' ? 'Current address' : 'Huidige adres'}
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    className={styles.input}
-                                                    value={currentAddress}
-                                                    onChange={(e) => setCurrentAddress(e.target.value)}
-                                                    placeholder="Straatnaam 123"
-                                                />
-                                            </div>
-
-                                            <div className={styles.inputGroup}>
-                                                <label className={styles.inputLabel}>
-                                                    {currentLang === 'en' ? 'Postcode' : 'Postcode'}
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    className={styles.input}
-                                                    value={postcode}
-                                                    onChange={(e) => setPostcode(e.target.value)}
-                                                    placeholder="1234 AB"
-                                                />
-                                            </div>
-
-                                            <div className={styles.inputGroup}>
-                                                <label className={styles.inputLabel}>
-                                                    {currentLang === 'en' ? 'Current city' : 'Huidige woonplaats'}
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    className={styles.input}
-                                                    value={currentCity}
-                                                    onChange={(e) => setCurrentCity(e.target.value)}
-                                                    placeholder="Amsterdam"
-                                                />
-                                            </div>
-
-                                            <div className={styles.inputGroup}>
-                                                <label className={styles.inputLabel}>
-                                                    {currentLang === 'en' ? 'Gross annual income' : 'Bruto jaarinkomen'}
-                                                    <span className={styles.required}>*</span>
-                                                </label>
-                                                <div className={styles.inputWrapper}>
-                                                    <span className={styles.currencyPrefix}>€</span>
-                                                    <input
-                                                        type="number"
-                                                        className={`${styles.input} ${styles.inputWithPrefix}`}
-                                                        value={grossIncome}
-                                                        onChange={(e) => setGrossIncome(e.target.value)}
-                                                        placeholder="45000"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Required Documents */}
-                                        <div className={styles.documentsSection}>
-                                            <h4 className={styles.documentsTitle}>
-                                                📎 {currentLang === 'en' ? 'Required documents' : 'Benodigde documenten'}
-                                            </h4>
-
-                                            {!workStatus ? (
-                                                <div className={styles.documentsNote}>
-                                                    <AlertCircle size={16} />
-                                                    {currentLang === 'en'
-                                                        ? 'Select your work status first to see which documents are required.'
-                                                        : 'Selecteer eerst je werk situatie om te zien welke documenten nodig zijn.'}
-                                                </div>
-                                            ) : (
-                                                <div className={styles.uploadStack}>
-                                                    {(documentsByWorkStatus[workStatus] || []).map((doc) => {
-                                                        const docLabel = documentTypeLabels[currentLang]?.[doc.type]?.name || doc.type;
-                                                        const docDesc = documentTypeLabels[currentLang]?.[doc.type]?.description || doc.description;
-                                                        const uploaded = uploadedDocuments[doc.type];
-
-                                                        if (doc.multiFile) {
-                                                            return (
-                                                                <MultiFileDocumentUpload
-                                                                    key={doc.type}
-                                                                    documentType={docLabel}
-                                                                    description={docDesc}
-                                                                    verplicht={doc.verplicht}
-                                                                    maxFiles={doc.maxFiles}
-                                                                    minFiles={doc.minFiles}
-                                                                    uploadedFiles={Array.isArray(uploaded) ? uploaded : []}
-                                                                    onUpload={(files) => handleMultiFileUpload(doc.type, files)}
-                                                                    onRemove={(index) => handleRemoveFile(doc.type, index)}
-                                                                    lang={currentLang}
-                                                                />
-                                                            );
-                                                        }
-
-                                                        return (
-                                                            <InlineDocumentUpload
-                                                                key={doc.type}
-                                                                documentType={docLabel}
-                                                                description={docDesc}
-                                                                verplicht={doc.verplicht}
-                                                                status={uploaded ? 'ontvangen' : 'ontbreekt'}
-                                                                fileName={uploaded?.name}
-                                                                onUpload={(file) => handleFileUpload(doc.type, file)}
-                                                                onRemove={() => handleRemoveFile(doc.type)}
-                                                                lang={currentLang}
-                                                            />
-                                                        );
-                                                    })}
-
-                                                    {/* Tenant Only Documents (Optional) */}
-                                                    {tenantOnlyDocuments.map((doc) => {
-                                                        const docLabel = documentTypeLabels[currentLang]?.[doc.type]?.name || doc.type;
-                                                        const docDesc = documentTypeLabels[currentLang]?.[doc.type]?.description || doc.description;
-                                                        const uploaded = uploadedDocuments[doc.type];
-
-                                                        return (
-                                                            <InlineDocumentUpload
-                                                                key={doc.type}
-                                                                documentType={docLabel}
-                                                                description={docDesc}
-                                                                verplicht={doc.verplicht}
-                                                                status={uploaded ? 'ontvangen' : 'ontbreekt'}
-                                                                fileName={uploaded?.name}
-                                                                onUpload={(file) => handleFileUpload(doc.type, file)}
-                                                                onRemove={() => handleRemoveFile(doc.type)}
-                                                                lang={currentLang}
-                                                            />
-                                                        );
-                                                    })}
                                                 </div>
                                             )}
+
+                                            {!linkedGuarantor && garantstellers.length < 2 && (
+                                                <button
+                                                    className={styles.addGuarantorButton}
+                                                    onClick={() => handleAddGuarantor(huurder.persoonId)}
+                                                >
+                                                    <Plus size={16} />
+                                                    {currentLang === 'en'
+                                                        ? `Add Guarantor for ${huurder.naam}`
+                                                        : `Garantsteller toevoegen voor ${huurder.naam}`}
+                                                </button>
+                                            )}
                                         </div>
+                                    );
+                                })}
 
-                                        <button
-                                            className={styles.collapseBtn}
-                                            onClick={() => setExpandedTenant(false)}
-                                        >
-                                            <ChevronDown size={16} />
-                                            {currentLang === 'en' ? 'Collapse' : 'Inklappen'}
-                                        </button>
+                                <button
+                                    className={styles.addCoTenantButton}
+                                    onClick={handleAddCoTenant}
+                                    disabled={alleHuurders.length >= 2}
+                                >
+                                    <div className={styles.addCoTenantContent}>
+                                        <div className={styles.plusIconWrapper}>
+                                            <Plus size={20} />
+                                        </div>
+                                        <span>
+                                            {alleHuurders.length >= 2
+                                                ? (currentLang === 'en' ? 'Max co-tenants reached' : 'Max aantal medehuurders bereikt')
+                                                : (currentLang === 'en' ? 'Add Co-Tenant' : 'Medehuurder Toevoegen')}
+                                        </span>
                                     </div>
-                                )}
+                                </button>
                             </div>
-
-                            {/* Add guarantor link */}
-                            <button className={styles.addPersonLink}>
-                                <Plus size={16} />
-                                {currentLang === 'en'
-                                    ? `Add guarantor for ${fullName || 'Jan Jansen'}`
-                                    : `Voeg garantsteller toe voor ${fullName || 'Jan Jansen'}`}
-                            </button>
-
-                            {/* Add co-tenant button */}
-                            <button className={styles.addCoTenantBtn}>
-                                <Plus size={16} />
-                                {currentLang === 'en' ? 'Add co-tenant' : 'Voeg medehuurder toe'}
-                            </button>
-
-                            {/* Submit Button */}
-                            <button
-                                className={`${styles.submitBtn} ${!isFormValid ? styles.submitBtnDisabled : ''}`}
-                                onClick={handleSubmit}
-                                disabled={submitting || !isFormValid}
-                            >
-                                {submitting ? '...' : '✓'}
-                                {submitting
-                                    ? (currentLang === 'en' ? 'Submitting...' : 'Indienen...')
-                                    : (currentLang === 'en' ? 'Submit Application' : 'Aanvraag Indienen')}
-                            </button>
                         </div>
+
+                        <button
+                            className={styles.submitButton}
+                            onClick={handleSubmit}
+                            disabled={!canSubmit}
+                        >
+                            <CheckCircle size={24} />
+                            {currentLang === 'en' ? 'Submit Application' : 'Aanvraag Versturen'}
+                        </button>
                     </div>
                 </div>
             </div>
+
+            <UploadChoiceModal
+                open={showUploadChoiceModal}
+                onOpenChange={setShowUploadChoiceModal}
+                role={addPersonRole}
+                onSelfUpload={() => handleUploadMethodSelected('self')}
+                onSendLink={() => handleUploadMethodSelected('whatsapp')}
+            />
+
+            <AddPersonModal
+                open={showAddPersonModal}
+                onOpenChange={setShowAddPersonModal}
+                role={addPersonRole}
+                onSubmit={handleAddPersonSubmit}
+            />
         </div>
     );
 };

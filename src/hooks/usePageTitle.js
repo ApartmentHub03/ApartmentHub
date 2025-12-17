@@ -47,6 +47,8 @@ const usePageTitle = () => {
             titleKey = 'about';
         } else if (normalizedPath.includes('contact')) {
             titleKey = 'contact';
+        } else if (normalizedPath.includes('application') || normalizedPath.includes('aanvraag')) {
+            titleKey = 'aanvraag'; // Assuming 'aanvraag' key exists or will use fallback, checking translations.js next might be needed but likely 'aanvraag' structure exists given component name
         } else {
             // Fallback for unknown routes or catch-all
             titleKey = 'home';

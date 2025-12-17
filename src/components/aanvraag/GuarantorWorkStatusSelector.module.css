@@ -1,0 +1,103 @@
+.container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.optionButton {
+    flex: 1;
+    min-width: 150px;
+    height: auto;
+    padding: 1.5rem 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    font-family: inherit;
+    border-radius: 0.5rem;
+    transition: all 0.3s;
+    background: white;
+}
+
+/* Outline state (default) */
+.optionButtonOutline {
+    border: 2px solid #e5e7eb;
+    color: #374151;
+}
+
+.optionButtonOutline:hover {
+    border-color: hsl(var(--myrtle));
+    color: hsl(var(--myrtle));
+    transform: scale(1.05);
+}
+
+.optionButtonOutline .iconWrapper {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+/* Selected state */
+.optionButtonSelected {
+    border: 2px solid transparent;
+    color: white;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.optionButtonSelected:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Gradients for selected state */
+.employeeGradient {
+    background: linear-gradient(to bottom right, hsl(var(--myrtle)), hsl(var(--myrtle) / 0.9));
+}
+
+.entrepreneurGradient {
+    background: linear-gradient(to bottom right, hsl(var(--orange)), hsl(var(--orange) / 0.9));
+}
+
+.retireeGradient {
+    background: linear-gradient(to bottom right, #6b7280, #4b5563);
+    /* gray-500 to gray-600 */
+}
+
+.unemployedGradient {
+    background: linear-gradient(to bottom right, #ef4444, #dc2626);
+    /* red-500 to red-600 */
+}
+
+.iconWrapper {
+    padding: 0.75rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s;
+}
+
+.optionButtonSelected .iconWrapper {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.icon {
+    width: 2rem;
+    height: 2rem;
+}
+
+.labelContainer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.emoji {
+    font-size: 1.5rem;
+}
+
+.labelText {
+    font-size: 1rem;
+    font-weight: 700;
+}

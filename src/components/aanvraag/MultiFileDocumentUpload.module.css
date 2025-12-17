@@ -1,0 +1,475 @@
+/* MultiFileDocumentUpload.module.css */
+
+.uploadCard {
+    position: relative;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    transition: all 0.2s;
+}
+
+.uploadCard:hover {
+    border-color: hsl(var(--myrtle) / 0.5);
+    background-color: #fafafa;
+}
+
+.uploadCardDragging {
+    border-color: hsl(var(--myrtle));
+    background: linear-gradient(to bottom right, rgba(73, 119, 114, 0.05), rgba(243, 107, 25, 0.05));
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Received/Completed state - matches InlineDocumentUpload */
+.uploadCardReceived {
+    background: linear-gradient(to right, #f0fdf4, #ecfdf5);
+    border: 1px solid #86efac;
+    border-radius: 0.75rem;
+    padding: 1rem 1.25rem;
+}
+
+.contentWrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.iconWrapperReceived {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: #dcfce7;
+}
+
+.iconReceived {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #16a34a;
+}
+
+.textContainer {
+    flex: 1;
+    min-width: 0;
+}
+
+.titleReceived {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #14532d;
+    margin: 0;
+}
+
+.receivedSubtitle {
+    font-size: 0.875rem;
+    color: #15803d;
+    margin: 0.25rem 0 0 0;
+}
+
+.fileListCompact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    margin-top: 0.5rem;
+}
+
+.fileItemCompact {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.fileIconSmall {
+    width: 0.875rem;
+    height: 0.875rem;
+    color: #15803d;
+}
+
+.fileNameCompact {
+    font-size: 0.8125rem;
+    color: #15803d;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fileSizeCompact {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.removeButtonCompact {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: none;
+    background: transparent;
+    color: #9ca3af;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all 0.2s;
+    padding: 0;
+}
+
+.removeButtonCompact:hover {
+    background-color: #fee2e2;
+    color: #ef4444;
+}
+
+.removeIconSmall {
+    width: 0.75rem;
+    height: 0.75rem;
+}
+
+.uploadMoreHintCompact {
+    font-size: 0.75rem;
+    color: #15803d;
+    margin: 0.5rem 0 0 0;
+}
+
+.cursorPointer {
+    cursor: pointer;
+}
+
+.changeButton {
+    height: 2rem;
+    padding: 0 0.75rem;
+    font-size: 0.8125rem;
+    border: 1px solid #e5e7eb;
+    background: white;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    pointer-events: none;
+    transition: background-color 0.2s;
+}
+
+.changeButton:hover {
+    background: #f9fafb;
+}
+
+.changeIcon {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+/* Icon Wrapper */
+.iconWrapper {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.iconWrapperRequired {
+    background: rgba(243, 107, 25, 0.1);
+}
+
+.iconWrapperOptional {
+    background: #f3f4f6;
+}
+
+/* Icons */
+.icon {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.iconRequired {
+    color: #f97316;
+}
+
+.iconOptional {
+    color: #9ca3af;
+}
+
+.iconReceived {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #16a34a;
+}
+
+/* Text Container */
+.textContainer {
+    flex: 1;
+    min-width: 0;
+}
+
+.titleRow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+}
+
+.optionalBadge {
+    font-size: 0.75rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    background-color: #e5e7eb;
+    color: #4b5563;
+    font-weight: 500;
+}
+
+.description {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin: 0.25rem 0 0 0;
+}
+
+.dragText {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin: 0.5rem 0 0 0;
+}
+
+/* Upload Button */
+.uploadLabelWrapper {
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.uploadButton {
+    background: linear-gradient(to right, hsl(var(--myrtle)), hsl(var(--myrtle) / 0.9));
+    color: white;
+    font-weight: 600;
+    font-size: 0.875rem;
+    height: 2.5rem;
+    padding: 0 1.25rem;
+    border-radius: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    pointer-events: none;
+}
+
+.uploadButton:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.uploadIcon {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Footer */
+.footer {
+    display: flex;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-top: 0.75rem;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.footerIcon {
+    width: 0.75rem;
+    height: 0.75rem;
+}
+
+/* Hidden Input */
+.hiddenInput {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* --- Completed / File List Layout --- */
+.completedContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.statusHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+}
+
+.statusHeaderComplete {
+    background: #f0fdf4;
+    border-color: #86efac;
+}
+
+.statusHeaderIncomplete {
+    background: #fff;
+    border-color: #e5e7eb;
+}
+
+.statusInfo {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.statusIconWrapper {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.statusIconWrapperComplete {
+    background: #dcfce7;
+}
+
+.statusIconWrapperIncomplete {
+    background: rgba(243, 107, 25, 0.1);
+}
+
+.statusTitle {
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 0.125rem 0;
+}
+
+.statusTitleComplete {
+    color: #14532d;
+}
+
+.statusTitleIncomplete {
+    color: #111827;
+}
+
+.statusSubtitle {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin: 0;
+}
+
+.statusSubtitleComplete {
+    color: #15803d;
+}
+
+.statusSubtitleIncomplete {
+    color: #6b7280;
+}
+
+.checkMark {
+    color: #16a34a;
+    font-weight: 600;
+}
+
+.uploadButtonSmall {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    background: white;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s;
+    pointer-events: none;
+}
+
+.uploadButtonSmall:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+}
+
+.fileList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.fileItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+}
+
+.fileInfo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.fileIcon {
+    width: 1rem;
+    height: 1rem;
+    color: #6b7280;
+}
+
+.fileName {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.fileSize {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+.removeButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: none;
+    background: transparent;
+    color: #9ca3af;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.removeButton:hover {
+    background-color: #fee2e2;
+    color: #ef4444;
+}
+
+.removeIcon {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+.uploadMoreHint {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin: 0;
+}

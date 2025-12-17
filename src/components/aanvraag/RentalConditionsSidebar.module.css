@@ -1,0 +1,163 @@
+.sidebar {
+    width: 100%;
+}
+
+@media (min-width: 1024px) {
+    .sidebar {
+        width: 20rem;
+        flex-shrink: 0;
+        position: sticky;
+        top: 6rem;
+        height: fit-content;
+        z-index: 10;
+        align-self: flex-start;
+    }
+}
+
+.card {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    transition: box-shadow 0.3s ease;
+    border: 2px solid #e5e7eb;
+}
+
+.card:hover {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.cardHeader {
+    background: linear-gradient(to right, hsl(var(--myrtle)), hsl(var(--myrtle) / 0.8));
+    color: white;
+    padding: 1rem 1.5rem;
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+}
+
+.cardTitle {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cardContent {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.priceSection {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.iconWrapper {
+    padding: 0.75rem;
+}
+
+.icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    color: hsl(var(--myrtle));
+}
+
+.priceDetails {
+    flex: 1;
+}
+
+.priceLabel {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6b7280;
+    margin: 0;
+}
+
+.priceValue {
+    font-size: 2.25rem;
+    font-weight: 900;
+    color: hsl(var(--myrtle));
+    margin: 0.25rem 0;
+    line-height: 1.1;
+}
+
+.priceUnit {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6b7280;
+    margin: 0;
+}
+
+.costSection {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.costRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.costLabel {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.costValue {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.availabilitySection {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 0.75rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.calendarIcon {
+    width: 1rem;
+    height: 1rem;
+    color: #6b7280;
+    margin-top: 0.125rem;
+}
+
+.availabilityDetails {
+    flex: 1;
+}
+
+.availabilityLabel {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin: 0;
+}
+
+.availabilityValue {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #111827;
+    margin: 0;
+}
+
+.faqWrapper {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .faqWrapper {
+        display: block;
+        margin-top: 3rem;
+        /* "give more space" */
+    }
+}

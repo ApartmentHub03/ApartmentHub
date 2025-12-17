@@ -1,64 +1,100 @@
 .container {
     display: flex;
-    gap: 0.75rem;
+    flex-wrap: wrap;
+    gap: 1rem;
 }
 
-.button {
+.optionButton {
     flex: 1;
+    min-width: 150px;
+    height: auto;
+    padding: 1.5rem 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
-    padding: 1rem 0.75rem;
-    border: 2px solid #e5e7eb;
-    border-radius: 0.5rem;
-    background: white;
+    gap: 0.75rem;
     cursor: pointer;
-    transition: all 0.2s;
     font-family: inherit;
+    border-radius: 0.5rem;
+    transition: all 0.3s;
+    background: white;
 }
 
-.button:hover {
-    border-color: #d1d5db;
-    background: #f9fafb;
+/* Outline state (default) */
+.optionButtonOutline {
+    border: 2px solid #e5e7eb;
+    color: #374151;
 }
 
-.buttonActive {
-    border-color: hsl(var(--myrtle));
-    background: hsl(var(--myrtle) / 0.05);
+/* Orange on hover */
+.optionButtonOutline:hover {
+    border-color: hsl(var(--orange));
+    background: linear-gradient(to bottom right, hsl(var(--orange)), hsl(var(--orange) / 0.9));
+    color: white;
+    transform: scale(1.05);
+    box-shadow: 0 10px 15px -3px rgba(243, 107, 25, 0.3);
 }
 
-.buttonActive:hover {
-    border-color: hsl(var(--myrtle));
-    background: hsl(var(--myrtle) / 0.08);
+.optionButtonOutline:hover .iconWrapper {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.optionButtonOutline .iconWrapper {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+/* Selected state - Myrtle (teal) for all */
+.optionButtonSelected {
+    border: 2px solid transparent;
+    color: white;
+    background: linear-gradient(to bottom right, hsl(var(--myrtle)), hsl(var(--myrtle) / 0.9));
+    box-shadow: 0 20px 25px -5px rgba(73, 119, 114, 0.3), 0 10px 10px -5px rgba(73, 119, 114, 0.15);
+}
+
+.optionButtonSelected:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 15px -3px rgba(73, 119, 114, 0.4);
+}
+
+/* Override gradient classes - all selected states use myrtle now */
+.studentGradient,
+.employeeGradient,
+.entrepreneurGradient {
+    background: linear-gradient(to bottom right, hsl(var(--myrtle)), hsl(var(--myrtle) / 0.9));
+}
+
+.iconWrapper {
+    padding: 0.75rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+
+.optionButtonSelected .iconWrapper {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
 }
 
 .icon {
     width: 2rem;
     height: 2rem;
+}
+
+.labelContainer {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 0.5rem;
 }
 
-.iconStudent {
-    color: #3b82f6;
+.emoji {
+    font-size: 1.5rem;
 }
 
-.iconEmployee {
-    color: hsl(var(--orange));
-}
-
-.iconEntrepreneur {
-    color: #8b5cf6;
-}
-
-.iconRetiree {
-    color: #6b7280;
-}
-
-.label {
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: #374151;
+.labelText {
+    font-size: 1rem;
+    font-weight: 700;
 }

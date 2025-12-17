@@ -1,11 +1,8 @@
-
 import React, { useState } from 'react';
-import Button from '../ui/Button';
-import Badge from '../ui/Badge';
-import { Upload, CheckCircle, AlertCircle, File, X } from 'lucide-react';
-import { toast } from 'sonner';
+import { useSelector } from 'react-redux';
+import { Upload, CheckCircle, AlertCircle, File, RefreshCw } from 'lucide-react';
 import { translations } from '../../data/translations';
-import styles from './DocumentUpload.module.css';
+import styles from './InlineDocumentUpload.module.css';
 
 const InlineDocumentUpload = ({
     documentType,
@@ -14,151 +11,120 @@ const InlineDocumentUpload = ({
     status,
     fileName,
     onUpload,
-    onRemove,
-    lang = 'nl'
+    onRemove
 }) => {
+    const currentLang = useSelector((state) => state.ui.language);
+    const t = translations.aanvraag[currentLang] || translations.aanvraag.nl;
     const [isDragging, setIsDragging] = useState(false);
     const [uploading, setUploading] = useState(false);
-
-    const uploadText = (key) => {
-        try {
-            return translations.documents[lang].upload[key];
-        } catch (e) {
-            return translations.documents['nl'].upload[key] || key;
-        }
-    };
 
     const handleDrop = (e) => {
         e.preventDefault();
         setIsDragging(false);
-
         const file = e.dataTransfer.files[0];
-        if (file) {
-            handleFileUpload(file);
-        }
+        if (file) handleUpload(file);
     };
 
     const handleFileSelect = (e) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            handleFileUpload(file);
-        }
+        const file = e.target.files[0];
+        if (file) handleUpload(file);
     };
 
-    const handleFileUpload = async (file) => {
-        // Validate file type
+    const handleUpload = (file) => {
         const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
         if (!allowedTypes.includes(file.type)) {
-            toast.error(uploadText('invalidFileType'));
+            alert('Invalid file type');
             return;
         }
 
-        // Validate file size (10MB)
         if (file.size > 10 * 1024 * 1024) {
-            toast.error(uploadText('fileTooLarge'));
+            alert('File too large');
             return;
         }
 
         setUploading(true);
-
-        // Simulating upload/extraction delay
         setTimeout(() => {
             onUpload(file);
             setUploading(false);
         }, 800);
     };
 
-    if (status === "ontvangen" && fileName) {
+    if (status === 'ontvangen') {
         return (
-            <div className={`${styles.container} ${styles.complete}`}>
-                <div className={`${styles.iconWrapper} ${styles.iconComplete}`}>
-                    <CheckCircle className={styles.statusIcon} />
-                </div>
-                <div className={styles.content}>
-                    <div className={styles.header}>
-                        <p className={styles.title}>{documentType}</p>
-                        <span className={`${styles.badge} ${styles.badgeComplete}`}>
-                            {uploadText('complete')}
-                        </span>
+            <div className={styles.uploadCardReceived}>
+                <div className={styles.contentWrapper}>
+                    <div className={styles.iconWrapperReceived}>
+                        <CheckCircle className={styles.iconReceived} />
                     </div>
-                    <p className={styles.description}>{fileName}</p>
-                </div>
-                {onRemove && (
-                    <div className={styles.actions}>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={onRemove}
-                            className="bg-red-50 text-red-600 hover:bg-red-100"
-                        >
-                            <X className="h-4 w-4" />
-                        </Button>
+                    <div className={styles.textContainer}>
+                        <p className={styles.titleReceived}>{documentType}</p>
+                        <p className={styles.receivedFilename}>
+                            <File className={styles.iconSmall} />
+                            {fileName || 'Document uploaded'}
+                        </p>
                     </div>
-                )}
+                    <label className={styles.cursorPointer}>
+                        <input
+                            type="file"
+                            className={styles.hiddenInput}
+                            accept=".pdf,.jpg,.jpeg,.png,.webp"
+                            onChange={handleFileSelect}
+                            disabled={uploading}
+                        />
+                        <button type="button" className={styles.changeButton} disabled={uploading}>
+                            <RefreshCw className={styles.iconSmall} />
+                            Change
+                        </button>
+                    </label>
+                </div>
             </div>
         );
     }
 
     return (
         <div
+            className={`${styles.uploadCard} ${isDragging ? styles.uploadCardDragging : ''}`}
             onDragOver={(e) => {
                 e.preventDefault();
                 setIsDragging(true);
             }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
-            className={`${styles.container} ${isDragging ? styles.dragging : ''}`}
         >
-            <div className={`${styles.iconWrapper} ${verplicht ? styles.iconRequired : styles.iconDefault}`}>
-                {verplicht ? (
-                    <AlertCircle className={styles.statusIcon} />
-                ) : (
-                    <Upload className={styles.statusIcon} />
-                )}
-            </div>
-
-            <div className={styles.content}>
-                <div className={styles.header}>
-                    <p className={styles.title}>{documentType}</p>
-                    {!verplicht && (
-                        <span className={`${styles.badge} ${styles.badgeOptional}`}>
-                            {uploadText('optional')}
-                        </span>
-                    )}
+            <div className={styles.contentWrapper}>
+                <div className={`${styles.iconWrapper} ${verplicht ? styles.iconWrapperRequired : styles.iconWrapperOptional}`}>
+                    <AlertCircle className={`${styles.icon} ${verplicht ? styles.iconRequired : styles.iconOptional}`} />
                 </div>
-
-                {description && <p className={styles.description}>{description}</p>}
-
-                <div className={styles.metaInfo}>
-                    <div className={styles.metaRow}>
-                        <Upload className={styles.metaIcon} />
-                        <span className={styles.uploadStatus}>
-                            {uploading ? uploadText('uploading') : uploadText('dragOrClick')}
-                        </span>
+                <div className={styles.textContainer}>
+                    <div className={styles.titleRow}>
+                        <p className={styles.title}>{documentType}</p>
+                        {!verplicht && (
+                            <span className={styles.optionalBadge}>optional</span>
+                        )}
                     </div>
-                    <div className={styles.metaRow}>
-                        <File className={styles.metaIcon} />
-                        <span>{uploadText('fileTypes')} • Max 10MB</span>
-                    </div>
+                    {description && <p className={styles.description}>{description}</p>}
+                    <p className={styles.dragText}>
+                        📎 Drag files or click to upload
+                    </p>
                 </div>
-            </div>
-
-            <div className={styles.actions}>
-                <label className={styles.uploadButtonLabel}>
+                <label className={styles.uploadLabelWrapper}>
                     <input
                         type="file"
-                        className={styles.fileInput}
+                        className={styles.hiddenInput}
                         accept=".pdf,.jpg,.jpeg,.png,.webp"
                         onChange={handleFileSelect}
                         disabled={uploading}
                     />
-                    <div className={styles.uploadButton}>
-                        <Upload className={styles.metaIcon} />
-                        <span>Upload</span>
-                    </div>
+                    <button type="button" className={styles.uploadButton} disabled={uploading}>
+                        <Upload className={styles.uploadIcon} />
+                        Upload
+                    </button>
                 </label>
             </div>
+            <p className={styles.footer}>
+                <File className={styles.footerIcon} />
+                PDF, JPG, PNG, WEBP - Max 10MB
+            </p>
         </div>
     );
 };

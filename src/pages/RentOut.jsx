@@ -15,7 +15,7 @@ import styles from './RentOut.module.css';
 // Import images
 import rentoutHeroImage from '../assets/verhuren-hero-BNLyqM_Y.jpg';
 import logoImage from '../assets/5a9afd14-27a5-40d8-a185-fac727f64fdf.png';
-import rentOutVideo from '../assets/Apartmenthub Rent out.mp4';
+import rentOutVideo from '../assets/Apartmenthub Rent out-1.mp4';
 
 // Import images for story section steps
 import verhurenDetectiveImage from '../assets/verhuren-detective-new-C-o8nHsh.jpg';

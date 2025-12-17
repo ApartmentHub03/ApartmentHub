@@ -1,44 +1,63 @@
 import React from 'react';
-import { GraduationCap, Briefcase, Building2 } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import { GraduationCap, Briefcase, Users } from 'lucide-react';
+import { translations } from '../../data/translations';
 import styles from './WorkStatusSelector.module.css';
 
-const workStatuses = [
-    { id: 'student', icon: GraduationCap, iconClass: 'iconStudent' },
-    { id: 'werknemer', icon: Briefcase, iconClass: 'iconEmployee' },
-    { id: 'ondernemer', icon: Building2, iconClass: 'iconEntrepreneur' },
-];
+const WorkStatusSelector = ({ selected, onChange }) => {
+    const currentLang = useSelector((state) => state.ui.language);
+    const t = translations.aanvraag[currentLang] || translations.aanvraag.nl;
 
-const labels = {
-    nl: {
-        student: 'Student',
-        werknemer: 'Werknemer',
-        ondernemer: 'Ondernemer',
-    },
-    en: {
-        student: 'Student',
-        werknemer: 'Employee',
-        ondernemer: 'Entrepreneur',
-    }
-};
-
-const WorkStatusSelector = ({ value, onChange, lang = 'nl' }) => {
-    const t = labels[lang] || labels.nl;
+    const options = [
+        {
+            value: "student",
+            label: currentLang === 'en' ? 'Student' : 'Student',
+            emoji: "🎓",
+            icon: GraduationCap,
+            gradientClass: styles.studentGradient
+        },
+        {
+            value: "werknemer",
+            label: currentLang === 'en' ? 'Employee' : 'Werknemer',
+            emoji: "💼",
+            icon: Briefcase,
+            gradientClass: styles.employeeGradient
+        },
+        {
+            value: "ondernemer",
+            label: currentLang === 'en' ? 'Entrepreneur' : 'Ondernemer',
+            emoji: "🏢",
+            icon: Users,
+            gradientClass: styles.entrepreneurGradient
+        }
+    ];
 
     return (
         <div className={styles.container}>
-            {workStatuses.map(({ id, icon: Icon, iconClass }) => (
-                <button
-                    key={id}
-                    type="button"
-                    className={`${styles.button} ${value === id ? styles.buttonActive : ''}`}
-                    onClick={() => onChange(id)}
-                >
-                    <div className={`${styles.icon} ${styles[iconClass]}`}>
-                        <Icon size={24} />
-                    </div>
-                    <span className={styles.label}>{t[id]}</span>
-                </button>
-            ))}
+            {options.map((option) => {
+                const Icon = option.icon;
+                const isSelected = selected === option.value;
+                const buttonClass = isSelected
+                    ? `${styles.optionButton} ${styles.optionButtonSelected} ${option.gradientClass}`
+                    : `${styles.optionButton} ${styles.optionButtonOutline}`;
+
+                return (
+                    <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => onChange(option.value)}
+                        className={buttonClass}
+                    >
+                        <div className={styles.iconWrapper}>
+                            <Icon className={styles.icon} />
+                        </div>
+                        <div className={styles.labelContainer}>
+                            <span className={styles.emoji}>{option.emoji}</span>
+                            <span className={styles.labelText}>{option.label}</span>
+                        </div>
+                    </button>
+                );
+            })}
         </div>
     );
 };

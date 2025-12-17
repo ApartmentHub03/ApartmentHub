@@ -1,0 +1,272 @@
+.card {
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: 2px solid #e5e7eb;
+    overflow: hidden;
+    transition: all 0.3s;
+}
+
+.card:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.cardHeader {
+    padding: 1.5rem;
+    cursor: pointer;
+    background: transparent;
+    transition: background-color 0.3s;
+}
+
+.cardHeader:hover {
+    background-color: rgba(243, 244, 246, 0.7);
+}
+
+.headerContent {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.personInfo {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.avatar {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 9999px;
+    /* full rounded */
+    padding: 0.75rem;
+    /* p-3 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    /* text-3xl */
+    color: white;
+    background: linear-gradient(to bottom right, hsl(var(--orange)), hsl(var(--orange) / 0.9));
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.personDetails {
+    display: flex;
+    flex-direction: column;
+}
+
+.title {
+    font-size: 1.125rem;
+    /* text-lg */
+    font-weight: 700;
+    color: #111827;
+}
+
+.personName {
+    font-size: 1rem;
+    /* text-base */
+    font-weight: 500;
+    color: #6b7280;
+}
+
+.statusContainer {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.statusText {
+    text-align: right;
+}
+
+.statusLabel {
+    font-size: 0.875rem;
+    /* text-sm */
+    font-weight: 700;
+    color: #6b7280;
+    margin: 0;
+}
+
+.statusPercentage {
+    font-size: 1.125rem;
+    /* text-lg */
+    font-weight: 700;
+    margin: 0;
+}
+
+.percentageComplete {
+    color: #16a34a;
+    /* text-green-600 */
+}
+
+.percentageIncomplete {
+    color: hsl(var(--orange));
+}
+
+.statusBadge {
+    font-size: 0.875rem;
+    /* text-sm */
+    padding: 0.375rem 0.75rem;
+    /* py-1.5 px-3 */
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: white;
+    font-weight: 600;
+}
+
+.badgeComplete {
+    background-color: #16a34a;
+    /* bg-green-600 */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.badgeIncomplete {
+    background-color: hsl(var(--orange));
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.dropdownIcon {
+    width: 1.5rem;
+    height: 1.5rem;
+    color: #111827;
+    /* default text color */
+}
+
+.cardContent {
+    padding: 1.5rem;
+    padding-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.formItem {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #111827;
+}
+
+.input {
+    height: 2.5rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    width: 100%;
+}
+
+.inputWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.currencyPrefix {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6b7280;
+}
+
+.inputWithPrefix {
+    padding-left: 1.75rem;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.documentsSection {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.sectionTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.workStatusWarning {
+    background: rgba(243, 244, 246, 0.5);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.statusContext {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 0.75rem;
+}
+
+.actions {
+    display: flex;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.removeButton {
+    flex: 1;
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.collapseButton {
+    flex: 1;
+    background: transparent;
+    color: #111827;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.collapseButton:hover {
+    background: #f3f4f6;
+    border-radius: 0.375rem;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: .5;
+    }
+}

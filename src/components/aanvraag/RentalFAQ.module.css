@@ -1,3 +1,39 @@
+.container {
+    background: rgba(255, 255, 255, 0.5);
+    /* "tint of the box" */
+    border-radius: 1rem;
+    box-shadow: none;
+    /* "light as possible" */
+    padding: 1.5rem;
+    border: 1px solid rgba(229, 231, 235, 0.5);
+    backdrop-filter: blur(4px);
+    /* optional: for a nice glass effect if supported, fits "tint" */
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: hsl(var(--myrtle));
+    margin: 0 0 1rem 0;
+    white-space: nowrap;
+    /* "this is in one line" */
+}
+
+.iconWrapper {
+    color: hsl(var(--myrtle));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.headerIcon {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
 .accordion {
     display: flex;
     flex-direction: column;
@@ -24,10 +60,12 @@
     cursor: pointer;
     text-align: left;
     font-family: inherit;
+    justify-content: flex-start;
+    /* Ensure left align */
 }
 
-.trigger:hover {
-    color: hsl(var(--myrtle));
+.trigger:hover .question {
+    color: #111827;
 }
 
 .question {
@@ -35,6 +73,8 @@
     font-weight: 500;
     color: #374151;
     flex: 1;
+    text-align: left;
+    /* Explicitly left align text */
 }
 
 .chevron {

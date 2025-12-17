@@ -1049,6 +1049,70 @@ export const translations = {
     }
 };
 
+
+translations.tenantForm = {
+    en: {
+        fullName: "Full name",
+        email: "Email address",
+        phone: "Phone number",
+        workStatus: "Work status",
+        currentAddress: "Current address",
+        postcode: "Postcode",
+        city: "Current city",
+        income: "Gross annual income",
+        documentsTitle: "Required documents",
+        removeTenant: "Remove Co-Tenant",
+        collapse: "Collapse",
+        expand: "Expand",
+        newTenant: "New Tenant",
+        documentsComplete: "Documents complete",
+        documents: "documents",
+        pleaseSelectWorkStatus: "Please select a work status first.",
+        uploadSelf: "Upload yourself",
+        uploadSelfDesc: "Drag & drop files",
+        sendLink: "Send Link",
+        sendLinkDesc: "Send upload link to {{name}}",
+        whatsappSent: "WhatsApp Link Sent!",
+        whatsappSentDesc: "{{name}} has received a link to upload documents safely.",
+        chooseOther: "Choose other method",
+        forRole: "For",
+        changeMethod: "Change",
+        student: "Student",
+        employee: "Employee",
+        entrepreneur: "Entrepreneur"
+    },
+    nl: {
+        fullName: "Volledige naam",
+        email: "E-mailadres",
+        phone: "Telefoonnummer",
+        workStatus: "Werkstatus",
+        currentAddress: "Huidig adres",
+        postcode: "Postcode",
+        city: "Huidige woonplaats",
+        income: "Bruto jaarinkomen",
+        documentsTitle: "Benodigde documenten",
+        removeTenant: "Medehuurder verwijderen",
+        collapse: "Inklappen",
+        expand: "Uitklappen",
+        newTenant: "Nieuwe Huurder",
+        documentsComplete: "Documenten compleet",
+        documents: "documenten",
+        pleaseSelectWorkStatus: "Selecteer eerst een werkstatus.",
+        uploadSelf: "Zelf uploaden",
+        uploadSelfDesc: "Sleep bestanden hierheen",
+        sendLink: "Link versturen",
+        sendLinkDesc: "Stuur uploadlink naar {{name}}",
+        whatsappSent: "WhatsApp Link Verstuurd!",
+        whatsappSentDesc: "{{name}} heeft een link ontvangen om documenten veilig te uploaden.",
+        chooseOther: "Kies andere methode",
+        forRole: "Voor",
+        changeMethod: "Wijzig",
+        student: "Student",
+        employee: "Werknemer",
+        entrepreneur: "Ondernemer"
+    }
+};
+
 translations.documents = {
     en: {
         upload: {
@@ -1112,6 +1176,27 @@ translations.documents = {
     }
 };
 
+translations.uploadChoice = {
+    en: {
+        title: "Add {{role}}",
+        subtitle: "How would you like to add this person?",
+        uploadSelf: "Upload yourself",
+        uploadSelfDesc: "Drag & drop files",
+        sendLink: "Send Link",
+        sendLinkDesc: "Send upload link to {{role}}",
+        forRole: "For {{role}}"
+    },
+    nl: {
+        title: "{{role}} Toevoegen",
+        subtitle: "Hoe wil je deze persoon toevoegen?",
+        uploadSelf: "Zelf uploaden",
+        uploadSelfDesc: "Sleep & zet neer", // or "Bestanden slepen"
+        sendLink: "Stuur Link",
+        sendLinkDesc: "Stuur upload link naar {{role}}",
+        forRole: "Voor {{role}}"
+    }
+};
+
 translations.multiFileUpload = {
     en: {
         maxFilesError: "You can upload a maximum of {{max}} files.",
@@ -1125,7 +1210,11 @@ translations.multiFileUpload = {
         optional: "Optional",
         uploading: "Uploading...",
         uploadMinMax: "Upload between {{min}} and {{max}} files",
-        fileTypesPerFile: "PDF, JPG, PNG per file"
+        fileTypesPerFile: "PDF, JPG, PNG per file",
+        dragAction: "Drag & drop or click to upload",
+        noFileChosen: "No file chosen",
+        buttonUpload: "Upload",
+        formats: "PDF, JPG, PNG (max 10MB)"
     },
     nl: {
         maxFilesError: "Je kunt maximaal {{max}} bestanden uploaden.",
@@ -1139,6 +1228,10 @@ translations.multiFileUpload = {
         optional: "Optioneel",
         uploading: "Uploaden...",
         uploadMinMax: "Upload tussen {{min}} en {{max}} bestanden",
-        fileTypesPerFile: "PDF, JPG, PNG per bestand"
+        fileTypesPerFile: "PDF, JPG, PNG per bestand",
+        dragAction: "Sleep of klik om te uploaden",
+        noFileChosen: "Geen bestand gekozen",
+        buttonUpload: "Upload",
+        formats: "PDF, JPG, PNG (max 10MB)"
     }
 };
