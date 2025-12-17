@@ -24,7 +24,7 @@ const Login = lazy(() => import('./pages/Login'));
 const AppartementenSelectie = lazy(() => import('./pages/AppartementenSelectie'));
 const Aanvraag = lazy(() => import('./pages/Aanvraag'));
 const LetterOfIntent = lazy(() => import('./pages/LetterOfIntent'));
-const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
 const TermsAndConditions = lazy(() => import('./pages/TermsAndConditions'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
@@ -88,15 +88,17 @@ function App() {
                 <Route path="contact" element={<Contact />} />
 
                 {/* Legal pages */}
-                <Route path="privacyverklaring" element={<PrivacyPolicy />} />
-                <Route path="privacy-policy" element={<PrivacyPolicy />} />
-                <Route path="en/privacy-policy" element={<PrivacyPolicy />} />
-                <Route path="nl/privacyverklaring" element={<PrivacyPolicy />} />
+                <Route path="privacyverklaring" element={<PrivacyPage />} />
+                <Route path="privacy-policy" element={<PrivacyPage />} />
+                <Route path="en/privacy-policy" element={<PrivacyPage />} />
+                <Route path="nl/privacyverklaring" element={<PrivacyPage />} />
+                <Route path="nl/privacy-policy" element={<PrivacyPage />} />
 
                 <Route path="algemene-voorwaarden" element={<TermsAndConditions />} />
                 <Route path="terms-and-conditions" element={<TermsAndConditions />} />
                 <Route path="en/terms-and-conditions" element={<TermsAndConditions />} />
                 <Route path="nl/algemene-voorwaarden" element={<TermsAndConditions />} />
+                <Route path="nl/terms-and-conditions" element={<TermsAndConditions />} />
 
                 {/* Login page (with navbar) */}
                 <Route path="login" element={<Login />} />

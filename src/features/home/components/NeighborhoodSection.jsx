@@ -4,8 +4,7 @@ import { useSelector } from 'react-redux';
 import { ArrowRight } from 'lucide-react';
 import styles from './NeighborhoodSection.module.css';
 import { translations } from '../../../data/translations';
-import MarketIndicators from '../../../components/common/MarketIndicators';
-import { marketDataService } from '../../../data/marketData';
+
 
 // Import images
 import centrumImg from '../../../assets/centrum-neighborhood-8xGBhlo4.jpg';
@@ -225,11 +224,7 @@ const NeighborhoodSection = () => {
                     <div className={styles.gradientLeft}></div>
                     <div className={styles.gradientRight}></div>
                 </div>
-                <MarketIndicators
-                    trends={marketDataService.getAmsterdamAverages().marketTrends}
-                    neighborhood="Amsterdam"
-                    isNL={currentLang === 'nl'}
-                />
+
             </div>
         </section>
     );
