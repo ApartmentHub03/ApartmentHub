@@ -29,8 +29,28 @@
 
 .contentWrapper {
     display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+}
+
+.topRow {
+    display: flex;
     align-items: flex-start;
     gap: 1rem;
+}
+
+/* Desktop: row layout with button on right */
+@media (min-width: 640px) {
+    .contentWrapper {
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: space-between;
+    }
+
+    .topRow {
+        flex: 1;
+    }
 }
 
 /* Icon Wrapper */

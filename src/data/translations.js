@@ -860,9 +860,9 @@ export const translations = {
             characters: "characters",
             tenantTitle: "Tenant Information",
             mainTenant: "Main Tenant",
-            coTenant: "Co-Tenant",
+            coTenant: "Co-tenant",
             guarantor: "Guarantor",
-            addCoTenant: "Add Co-Tenant",
+            addCoTenant: "Add Co-tenant",
             addGuarantor: "Add Guarantor",
             documents: "Documents",
             complete: "Complete",
@@ -899,9 +899,9 @@ export const translations = {
             characters: "tekens",
             tenantTitle: "Huurder Informatie",
             mainTenant: "Hoofdhuurder",
-            coTenant: "Medehuurder",
+            coTenant: "Mede-huurder",
             guarantor: "Garantsteller",
-            addCoTenant: "Medehuurder Toevoegen",
+            addCoTenant: "Mede-huurder Toevoegen",
             addGuarantor: "Garantsteller Toevoegen",
             documents: "Documenten",
             complete: "Compleet",
@@ -1182,7 +1182,7 @@ translations.documents = {
 
 translations.uploadChoice = {
     en: {
-        title: "Add {{role}}",
+        title: "Add Co-tenant",
         subtitle: "How would you like to add this person?",
         uploadSelf: "Upload yourself",
         uploadSelfDesc: "Drag & drop files",

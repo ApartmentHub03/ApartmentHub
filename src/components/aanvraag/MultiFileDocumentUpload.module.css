@@ -28,10 +28,68 @@
     padding: 1rem 1.25rem;
 }
 
+/* Partial upload state - Orange theme */
+.uploadCardPartial {
+    background: linear-gradient(to right, #fff7ed, #ffedd5);
+    border: 1px solid #fdba74;
+    border-radius: 0.75rem;
+    padding: 1rem 1.25rem;
+}
+
+.iconWrapperPartial {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: rgba(243, 107, 25, 0.15);
+}
+
+.iconPartial {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #f36b19;
+}
+
+.titlePartial {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #9a3412;
+    margin: 0;
+}
+
+.partialSubtitle {
+    font-size: 0.875rem;
+    color: #ea580c;
+    margin: 0.25rem 0 0 0;
+}
+
 .contentWrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+}
+
+.topRow {
     display: flex;
     align-items: flex-start;
     gap: 1rem;
+}
+
+/* Desktop: row layout with button on right */
+@media (min-width: 640px) {
+    .contentWrapper {
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: space-between;
+    }
+
+    .topRow {
+        flex: 1;
+    }
 }
 
 .iconWrapperReceived {

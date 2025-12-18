@@ -53,15 +53,17 @@ const InlineDocumentUpload = ({
         return (
             <div className={styles.uploadCardReceived}>
                 <div className={styles.contentWrapper}>
-                    <div className={styles.iconWrapperReceived}>
-                        <CheckCircle className={styles.iconReceived} />
-                    </div>
-                    <div className={styles.textContainer}>
-                        <p className={styles.titleReceived}>{documentType}</p>
-                        <p className={styles.receivedFilename}>
-                            <File className={styles.iconSmall} />
-                            {fileName || 'Document uploaded'}
-                        </p>
+                    <div className={styles.topRow}>
+                        <div className={styles.iconWrapperReceived}>
+                            <CheckCircle className={styles.iconReceived} />
+                        </div>
+                        <div className={styles.textContainer}>
+                            <p className={styles.titleReceived}>{documentType}</p>
+                            <p className={styles.receivedFilename}>
+                                <File className={styles.iconSmall} />
+                                {fileName || 'Document uploaded'}
+                            </p>
+                        </div>
                     </div>
                     <label className={styles.cursorPointer}>
                         <input
@@ -92,20 +94,22 @@ const InlineDocumentUpload = ({
             onDrop={handleDrop}
         >
             <div className={styles.contentWrapper}>
-                <div className={`${styles.iconWrapper} ${verplicht ? styles.iconWrapperRequired : styles.iconWrapperOptional}`}>
-                    <AlertCircle className={`${styles.icon} ${verplicht ? styles.iconRequired : styles.iconOptional}`} />
-                </div>
-                <div className={styles.textContainer}>
-                    <div className={styles.titleRow}>
-                        <p className={styles.title}>{documentType}</p>
-                        {!verplicht && (
-                            <span className={styles.optionalBadge}>optional</span>
-                        )}
+                <div className={styles.topRow}>
+                    <div className={`${styles.iconWrapper} ${verplicht ? styles.iconWrapperRequired : styles.iconWrapperOptional}`}>
+                        <AlertCircle className={`${styles.icon} ${verplicht ? styles.iconRequired : styles.iconOptional}`} />
                     </div>
-                    {description && <p className={styles.description}>{description}</p>}
-                    <p className={styles.dragText}>
-                        📎 Drag files or click to upload
-                    </p>
+                    <div className={styles.textContainer}>
+                        <div className={styles.titleRow}>
+                            <p className={styles.title}>{documentType}</p>
+                            {!verplicht && (
+                                <span className={styles.optionalBadge}>optional</span>
+                            )}
+                        </div>
+                        {description && <p className={styles.description}>{description}</p>}
+                        <p className={styles.dragText}>
+                            📎 Drag files or click to upload
+                        </p>
+                    </div>
                 </div>
                 <label className={styles.uploadLabelWrapper}>
                     <input

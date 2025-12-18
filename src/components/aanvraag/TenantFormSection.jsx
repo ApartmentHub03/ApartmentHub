@@ -109,6 +109,14 @@ const TenantFormSection = ({
         onDocumentUpload(persoon.persoonId, type, files);
     };
 
+    const handleMultiFileRemove = (type, indexToRemove) => {
+        const docData = getDoc(type);
+        if (docData?.files) {
+            const newFiles = docData.files.filter((_, idx) => idx !== indexToRemove);
+            onDocumentUpload(persoon.persoonId, type, newFiles);
+        }
+    };
+
     // Progress for display
     const completedDocs = requiredDocuments.filter(d => d.verplicht && isDocUploaded(d.type)).length;
     const totalRequiredDocs = requiredDocuments.filter(d => d.verplicht).length;
@@ -301,7 +309,7 @@ const TenantFormSection = ({
                                                     maxFiles={doc.maxFiles}
                                                     uploadedFiles={files}
                                                     onUpload={(f) => handleMultiFileUpload(doc.type, f)}
-                                                    onRemove={(idx) => { }}
+                                                    onRemove={(idx) => handleMultiFileRemove(doc.type, idx)}
                                                 />
                                             );
                                         }
