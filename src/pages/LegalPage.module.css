@@ -94,8 +94,6 @@
     color: hsl(var(--foreground));
 }
 
-.tableRow {}
-
 .tableRowAlt {
     background-color: hsl(var(--muted) / 0.5);
 }
