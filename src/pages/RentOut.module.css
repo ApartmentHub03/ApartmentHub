@@ -596,6 +596,12 @@
     }
 }
 
+@media (min-width: 1024px) {
+    .stepRow {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
 .stepRowReverse {
     display: grid;
     grid-template-columns: 1fr;
@@ -608,6 +614,12 @@
     .stepRowReverse {
         gap: 4rem;
         margin-bottom: 5rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .stepRowReverse {
+        grid-template-columns: 1fr 1fr;
     }
 }
 
