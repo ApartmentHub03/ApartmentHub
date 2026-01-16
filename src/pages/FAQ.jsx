@@ -110,7 +110,7 @@ const FAQ = () => {
                             <span>{t.btnWhatsapp}</span>
                         </a>
                         <a
-                            href="mailto:hello@apartmenthub.com"
+                            href="mailto:info@apartmenthub.nl"
                             className={styles.emailBtn}
                         >
                             <Mail className={styles.btnIcon} />

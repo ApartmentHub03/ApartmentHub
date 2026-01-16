@@ -109,7 +109,7 @@ const Contact = () => {
                                     </div>
                                     <div className={styles.infoContent}>
                                         <h4>{t.infoEmailTitle}</h4>
-                                        <p>hello@apartmenthub.com</p>
+                                        <p>info@apartmenthub.nl</p>
                                         <p className={styles.subtext}>{t.infoEmailText}</p>
                                     </div>
                                 </div>

@@ -348,7 +348,10 @@ const RentOut = () => {
                     </div>
 
                     <div className={styles.offerCtaWrapper}>
-                        <button className={styles.getStartedBtn}>
+                        <button
+                            className={styles.getStartedBtn}
+                            onClick={() => document.getElementById('start-analysis').scrollIntoView({ behavior: 'smooth' })}
+                        >
                             {currentLang === 'nl' ? 'Start Nu' : 'Get Started'}
                             <ArrowRight className={styles.btnArrowIcon} />
                         </button>
@@ -616,7 +619,7 @@ const RentOut = () => {
                         </div>
 
                         <div className={styles.finalFormCol}>
-                            <div className={styles.finalFormCard}>
+                            <div id="start-analysis" className={styles.finalFormCard}>
                                 <div className={styles.formBlurCircle}></div>
                                 <div className={styles.formHeader}>
                                     <div className={styles.formLogoWrapper}>

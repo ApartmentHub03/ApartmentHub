@@ -32,7 +32,7 @@ const PrivacyPolicy = () => {
                     <ul className={styles.contactList}>
                         <li>{isNL ? 'KvK-nummer' : 'Chamber of Commerce number'}: 74255142</li>
                         <li>Website: www.apartmenthub.com</li>
-                        <li>{isNL ? 'E-mailadres' : 'Email address'}: hello@apartmenthub.nl</li>
+                        <li>{isNL ? 'E-mailadres' : 'Email address'}: info@apartmenthub.nl</li>
                         <li>{isNL ? 'Adres' : 'Address'}: Van Baerlestraat 62-2, 1071 BA Amsterdam</li>
                     </ul>
                 </section>
@@ -301,7 +301,7 @@ const PrivacyPolicy = () => {
                             ? 'U kunt een verzoek indienen via e-mail: '
                             : 'You can submit a request via email: '
                         }
-                        <a href="mailto:hello@apartmenthub.nl" className={styles.link}>hello@apartmenthub.nl</a>.
+                        <a href="mailto:info@apartmenthub.nl" className={styles.link}>info@apartmenthub.nl</a>.
                     </p>
                     <p className={styles.paragraphMt}>
                         {isNL
@@ -321,7 +321,7 @@ const PrivacyPolicy = () => {
                             ? 'Apartmenthub neemt passende technische en organisatorische maatregelen om misbruik, verlies, onbevoegde toegang, ongewenste openbaarmaking of ongeoorloofde wijziging van uw gegevens te voorkomen. Denkt u dat uw gegevens niet goed beveiligd zijn of vermoedt u misbruik? Neem dan contact op via '
                             : 'Apartmenthub takes appropriate technical and organizational measures to prevent misuse, loss, unauthorized access, unwanted disclosure or unauthorized modification of your data. If you think your data is not properly secured or suspect misuse, please contact us at '
                         }
-                        <a href="mailto:hello@apartmenthub.nl" className={styles.link}>hello@apartmenthub.nl</a>.
+                        <a href="mailto:info@apartmenthub.nl" className={styles.link}>info@apartmenthub.nl</a>.
                     </p>
                 </section>
             </div>

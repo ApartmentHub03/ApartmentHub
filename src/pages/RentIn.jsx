@@ -62,6 +62,7 @@ const RentIn = () => {
             <HeroSection
                 title={t.heroTitle}
                 subtitle={t.heroSubtitle}
+                translations={t}
             />
 
             {/* Rental Guide Download Section */}

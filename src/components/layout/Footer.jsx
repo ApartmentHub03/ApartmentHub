@@ -24,7 +24,7 @@ const Footer = () => {
                             {t.description}
                         </p>
                         <p className={styles.email}>
-                            {t.emailLabel} <a href="mailto:hello@apartmenthub.com" className={styles.emailLink}>hello@apartmenthub.com</a>
+                            {t.emailLabel} <a href="mailto:info@apartmenthub.nl" className={styles.emailLink}>info@apartmenthub.nl</a>
                         </p>
                     </div>
 

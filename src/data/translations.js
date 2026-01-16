@@ -400,6 +400,11 @@ export const translations = {
             heroTitle: "Find Your Perfect Home",
             heroSubtitle: "Let us help you discover your ideal rental property through our personalized WhatsApp service",
 
+            rentInHeroTitle: "Looking for a rental property?",
+            rentInHeroSubtitle: "Send us a WhatsApp message and we'll gladly help you",
+            responseTime: "Average response within 1 minute",
+            whatsappBtn: "Start conversation on WhatsApp",
+
             guideBadge: "Free Download",
             guideTitle: "Complete Amsterdam Rental Guide 2025",
             guideDesc: "Get our comprehensive 32-page guide packed with insider tips, neighborhood insights, and legal advice to secure your perfect rental in Amsterdam.",
@@ -463,6 +468,11 @@ export const translations = {
         nl: {
             heroTitle: "Vind Jouw Perfecte Huis",
             heroSubtitle: "Laat ons je helpen jouw ideale huurwoning te ontdekken via onze persoonlijke WhatsApp service",
+
+            rentInHeroTitle: "Op zoek naar een huurwoning?",
+            rentInHeroSubtitle: "Stuur ons een WhatsApp-bericht en wij helpen je graag",
+            responseTime: "Gemiddelde reactie binnen 1 minuut",
+            whatsappBtn: "Start gesprek op WhatsApp",
 
             guideBadge: "Gratis Download",
             guideTitle: "Volledige Amsterdam Huur Gids 2024",
@@ -982,7 +992,7 @@ export const translations = {
                 rights: "Your Rights",
                 rightsText: "You have the right to access, correct, or delete your personal data at any time.",
                 contact: "Contact Us",
-                contactText: "For privacy-related inquiries, please contact us at privacy@apartmenthub.com"
+                contactText: "For privacy-related inquiries, please contact us at info@apartmenthub.nl"
             }
         },
         nl: {
@@ -999,7 +1009,7 @@ export const translations = {
                 rights: "Uw Rechten",
                 rightsText: "U heeft het recht om uw persoonlijke gegevens op elk moment in te zien, te corrigeren of te verwijderen.",
                 contact: "Contact",
-                contactText: "Voor privacy-gerelateerde vragen kunt u contact opnemen via privacy@apartmenthub.com"
+                contactText: "Voor privacy-gerelateerde vragen kunt u contact opnemen via info@apartmenthub.nl"
             }
         }
     },

@@ -8,17 +8,23 @@ const WhatsAppIcon = ({ className }) => (
     </svg>
 );
 
-const HeroSection = ({ title, subtitle }) => {
+const HeroSection = ({ title, subtitle, translations }) => {
+    // Use translations for hero text, with fallbacks
+    const heroTitle = translations?.rentInHeroTitle || title || "Looking for a rental property?";
+    const heroSubtitle = translations?.rentInHeroSubtitle || subtitle || "Send us a WhatsApp message and we'll gladly help you";
+    const responseTimeText = translations?.responseTime || "Average response within 1 minute";
+    const whatsappBtnText = translations?.whatsappBtn || "Start conversation on WhatsApp";
+
     return (
         <section className={styles.heroSection}>
             <div className={styles.heroContainer}>
-                <h1 className={styles.heroTitle}>Looking for a rental property?</h1>
-                <p className={styles.heroSubtitle}>Send us a WhatsApp message and we'll gladly help you</p>
+                <h1 className={styles.heroTitle}>{heroTitle}</h1>
+                <p className={styles.heroSubtitle}>{heroSubtitle}</p>
 
                 {/* Average Response Time Badge */}
                 <div className={styles.responseTimeBadge}>
                     <Clock className={styles.clockIcon} />
-                    <span>Average response within 1 minute</span>
+                    <span>{responseTimeText}</span>
                 </div>
 
                 {/* WhatsApp Button */}
@@ -29,7 +35,7 @@ const HeroSection = ({ title, subtitle }) => {
                     className={styles.whatsappHeroBtn}
                 >
                     <WhatsAppIcon className={styles.whatsappBtnIcon} />
-                    <span>Start conversation on WhatsApp</span>
+                    <span>{whatsappBtnText}</span>
                 </a>
             </div>
         </section>
