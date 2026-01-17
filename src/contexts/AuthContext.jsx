@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { sendWhatsAppCode, verifyWhatsAppCode } from '../services/authApi';
+import { sendLoginEvent } from '../services/webhookService';
 
 const AuthContext = createContext(undefined);
 
@@ -9,7 +10,6 @@ export const AuthProvider = ({ children }) => {
     const [dossierId, setDossierId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Load session from localStorage on mount
     useEffect(() => {
         const storedToken = localStorage.getItem('auth_token');
         const storedPhone = localStorage.getItem('auth_phone');
@@ -35,10 +35,11 @@ export const AuthProvider = ({ children }) => {
             setPhoneNumber(phone);
             setDossierId(result.dossier_id);
 
-            // Store in localStorage
             localStorage.setItem('auth_token', result.token);
             localStorage.setItem('auth_phone', phone);
             localStorage.setItem('dossier_id', result.dossier_id);
+
+            sendLoginEvent(phone, result.dossier_id);
 
             return { ok: true };
         }

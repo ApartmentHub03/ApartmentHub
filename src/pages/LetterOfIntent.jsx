@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { CheckCircle, MessageCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useAuth } from '../contexts/AuthContext';
+import { sendLetterOfIntentEvent } from '../services/webhookService';
 import Button from '../components/ui/Button';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
@@ -124,6 +125,18 @@ const LetterOfIntent = () => {
 
         try {
             await new Promise(resolve => setTimeout(resolve, 1500));
+
+            await sendLetterOfIntentEvent({
+                bidAmount: bidData.amount,
+                startDate: bidData.startDate,
+                motivation,
+                monthsAdvance: bidData.monthsAdvance,
+                tenantData: dossier,
+                property: propertyInfo,
+                conditionsAccepted: acceptedAllConditions,
+                brokerFeeAccepted: acceptedBrokerFee,
+                phoneNumber
+            });
 
             setIsConfirmed(true);
 

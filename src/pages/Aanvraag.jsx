@@ -12,7 +12,6 @@ import AddPersonModal from '../components/aanvraag/AddPersonModal';
 import UploadChoiceModal from '../components/aanvraag/UploadChoiceModal';
 import styles from './Aanvraag.module.css';
 
-// Mock Data / Services (Replacements for API calls in reference)
 const mockPand = {
     adres: "Ceintuurbaan 123, Amsterdam",
     voorwaarden: {
@@ -31,7 +30,6 @@ const Aanvraag = () => {
     const dispatch = useDispatch();
     const currentLang = useSelector((state) => state.ui.language);
 
-    // Sync language with URL
     useEffect(() => {
         const path = location.pathname.toLowerCase();
         if (path.includes('aanvraag') && currentLang !== 'nl') {
@@ -41,35 +39,31 @@ const Aanvraag = () => {
         }
     }, [location.pathname, dispatch, currentLang]);
     const t = translations.aanvraag[currentLang] || translations.aanvraag.nl;
-    const tNav = translations.nav[currentLang] || translations.nav.en; // fallback
+    const tNav = translations.nav[currentLang] || translations.nav.en;
 
-    // State
     const [loading, setLoading] = useState(true);
-    const [data, setData] = useState(null); // { pand, personen: [], dossierCompleet }
+    const [data, setData] = useState(null);
     const [bidAmount, setBidAmount] = useState(0);
     const [startDate, setStartDate] = useState("");
     const [motivation, setMotivation] = useState("");
     const [monthsAdvance, setMonthsAdvance] = useState(0);
-    const [tenantProgress, setTenantProgress] = useState({}); // { persoonId: { overallProgress, ... } }
+    const [tenantProgress, setTenantProgress] = useState({});
 
-    // Modals
     const [showAddPersonModal, setShowAddPersonModal] = useState(false);
     const [showUploadChoiceModal, setShowUploadChoiceModal] = useState(false);
-    const [addPersonRole, setAddPersonRole] = useState("Medehuurder"); // "Medehuurder" | "Garantsteller"
+    const [addPersonRole, setAddPersonRole] = useState("Medehuurder");
     const [selectedUploadMethod, setSelectedUploadMethod] = useState(null);
     const [selectedTenantForGuarantor, setSelectedTenantForGuarantor] = useState(null);
 
-    // Initial Load
     useEffect(() => {
-        // Simulate fetch
         setTimeout(() => {
             const initialPerson = {
                 persoonId: "p1",
-                naam: "Jan Jansen", // Mock user name
+                naam: "Jan Jansen",
                 email: "user@example.com",
                 telefoon: "0612345678",
                 rol: "Hoofdhuurder",
-                documenten: [], // {type, status, file}
+                documenten: [],
                 docsCompleet: false
             };
 
@@ -86,11 +80,9 @@ const Aanvraag = () => {
     const calculateProgress = () => {
         if (!data) return 0;
 
-        // Bid section contributes 30%
         const hasBid = bidAmount > 0 && startDate !== "";
         const bidProgress = hasBid ? 30 : 0;
 
-        // Tenant forms contribute 70%
         const tenantIds = Object.keys(tenantProgress);
         if (tenantIds.length === 0) return bidProgress;
 
@@ -112,25 +104,19 @@ const Aanvraag = () => {
 
     const progress = calculateProgress();
 
-    // Check if all tenants have completed required documents
     const isAllDocsComplete = () => {
         const tenantIds = Object.keys(tenantProgress);
         if (tenantIds.length === 0) return false;
         return tenantIds.every(id => tenantProgress[id]?.isDocsComplete === true);
     };
 
-    // Check if form is ready to submit
     const canSubmit = bidAmount > 0 && startDate !== '' && isAllDocsComplete();
 
-    // Handlers
     const handleDocumentUpload = (persoonId, type, fileOrFiles) => {
-        // Update local state
         const updatedPersonen = data.personen.map(p => {
             if (p.persoonId === persoonId) {
                 const newDocs = [...(p.documenten || [])];
                 const existingIdx = newDocs.findIndex(d => d.type === type);
-
-                // Check if it's a multi-file upload (array of files)
                 const isMultiFile = Array.isArray(fileOrFiles);
 
                 if (existingIdx >= 0) {
@@ -146,7 +132,6 @@ const Aanvraag = () => {
                         newDocs.push({ type, status: 'ontvangen', file: fileOrFiles });
                     }
                 }
-                // Recalculate completeness
                 return { ...p, documenten: newDocs, docsCompleet: newDocs.length >= 1 };
             }
             return p;
@@ -177,24 +162,10 @@ const Aanvraag = () => {
 
     const handleUploadMethodSelected = (method) => {
         setSelectedUploadMethod(method);
-        // If self, we add person immediately with placeholder or ask name? 
-        // Ref says: if self, directly add with placeholder name? 
-        // "Directly add person with placeholder name" -> await handleAddPersonSubmit
-        // Or show modal? Ref code:
-        /*
-          if (method === "self") {
-            const placeholderName = ...
-             handleAddPersonSubmit(placeholderName, ...);
-          } else {
-             setShowAddPersonModal(true);
-          }
-        */
-        // Let's just show the modal for both to keep it simple and allow entering name
         setShowAddPersonModal(true);
     };
 
     const handleAddPersonSubmit = async (name, whatsapp) => {
-        // Mock API call
         const newPerson = {
             persoonId: `p${Date.now()}`,
             naam: name,
@@ -220,13 +191,11 @@ const Aanvraag = () => {
     };
 
     const handleSubmit = () => {
-        // Validation
         if (!bidAmount || !startDate) {
             alert(currentLang === 'en' ? 'Please complete the bid section' : 'Vul de biedingsectie in');
             return;
         }
 
-        // Navigate to Letter of Intent page with form data
         console.log("Submitting", { bidAmount, startDate, data });
         const letterPath = currentLang === 'en' ? '/en/letter-of-intent' : '/letter-of-intent';
         navigate(letterPath, {
@@ -280,7 +249,7 @@ const Aanvraag = () => {
             </div>
 
             <div className={styles.container}>
-                {/* Success Alert if complete */}
+
                 {data.dossierCompleet && (
                     <div className={styles.successAlert}>
                         <CheckCircle className={styles.alertIcon} />
@@ -294,7 +263,7 @@ const Aanvraag = () => {
                     <RentalConditionsSidebar conditions={data.pand.voorwaarden} address={data.pand.adres} />
 
                     <div className={styles.contentColumn}>
-                        {/* Step 1: Bid */}
+
                         <div className={styles.stepContainer}>
                             <div className={styles.stepHeader}>
                                 <div className={styles.stepNumber}>1</div>
@@ -313,7 +282,7 @@ const Aanvraag = () => {
                             />
                         </div>
 
-                        {/* Step 2: Details */}
+
                         <div className={styles.stepContainer}>
                             <div className={styles.stepHeader}>
                                 <div className={styles.stepNumber}>2</div>
