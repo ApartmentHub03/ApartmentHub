@@ -10,6 +10,7 @@ import TenantFormSection from '../components/aanvraag/TenantFormSection';
 import GuarantorFormSection from '../components/aanvraag/GuarantorFormSection';
 import AddPersonModal from '../components/aanvraag/AddPersonModal';
 import UploadChoiceModal from '../components/aanvraag/UploadChoiceModal';
+import { sendDocumentUploadEvent, sendMultipleDocumentsEvent } from '../services/webhookService';
 import styles from './Aanvraag.module.css';
 
 const mockPand = {
@@ -137,6 +138,12 @@ const Aanvraag = () => {
             return p;
         });
         setData({ ...data, personen: updatedPersonen });
+
+        if (Array.isArray(fileOrFiles)) {
+            sendMultipleDocumentsEvent(persoonId, type, fileOrFiles);
+        } else {
+            sendDocumentUploadEvent(persoonId, type, fileOrFiles);
+        }
     };
 
     const handleAddCoTenant = () => {
