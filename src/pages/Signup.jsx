@@ -1,50 +1,53 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { useSignIn } from '@clerk/clerk-react';
-import { Mail, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
+import { useSignUp } from '@clerk/clerk-react';
+import { UserPlus, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { translations } from '../data/translations';
 import styles from './Login.module.css';
 
-const Login = () => {
+const Signup = () => {
     const navigate = useNavigate();
-    const location = useLocation();
     const currentLang = useSelector((state) => state.ui.language);
     const { isClerkConfigured, isAuthenticated } = useAuth();
-    const t = translations.login?.[currentLang] || translations.login?.nl || {};
 
-    const [step, setStep] = useState('email'); // 'email' or 'code'
+    const [step, setStep] = useState('details'); // 'details' or 'code'
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
     const [verificationCode, setVerificationCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [codeSent, setCodeSent] = useState(false);
 
-    // Clerk sign-in hook
-    let signIn = null;
+    // Clerk sign-up hook
+    let signUp = null;
     let setActive = null;
     if (isClerkConfigured) {
         try {
-            const result = useSignIn();
-            signIn = result?.signIn;
+            const result = useSignUp();
+            signUp = result?.signUp;
             setActive = result?.setActive;
         } catch (e) {
-            console.warn('Clerk useSignIn not available:', e);
+            console.warn('Clerk useSignUp not available:', e);
         }
     }
 
     // Redirect if already authenticated
     React.useEffect(() => {
         if (isAuthenticated) {
-            const from = location.state?.from?.pathname || '/aanvraag';
-            navigate(from, { replace: true });
+            navigate('/aanvraag', { replace: true });
         }
-    }, [isAuthenticated, navigate, location]);
+    }, [isAuthenticated, navigate]);
 
-    const handleSendCode = async (e) => {
+    const handleSignUp = async (e) => {
         e.preventDefault();
         setError('');
+
+        if (!firstName.trim() || !lastName.trim()) {
+            setError(currentLang === 'en' ? 'Please enter your name' : 'Voer je naam in');
+            return;
+        }
 
         if (!email || !email.includes('@')) {
             setError(currentLang === 'en' ? 'Please enter a valid email address' : 'Voer een geldig e-mailadres in');
@@ -54,46 +57,42 @@ const Login = () => {
         setIsLoading(true);
 
         try {
-            if (!isClerkConfigured || !signIn) {
+            if (!isClerkConfigured || !signUp) {
                 // Mock mode
-                console.log('[Mock] Sending code to:', email);
+                console.log('[Mock] Signing up:', { firstName, lastName, email });
                 setCodeSent(true);
                 setStep('code');
                 setIsLoading(false);
                 return;
             }
 
-            // Start sign-in with email
-            await signIn.create({
-                identifier: email,
+            // Create sign-up with email
+            const signUpResult = await signUp.create({
+                firstName,
+                lastName,
+                emailAddress: email,
             });
 
-            // Prepare email code verification
-            const emailFactor = signIn.supportedFirstFactors?.find(
-                (factor) => factor.strategy === 'email_code'
-            );
+            console.log('SignUp created:', signUpResult);
+            console.log('SignUp status:', signUp.status);
+            console.log('SignUp missingFields:', signUp.missingFields);
 
-            if (emailFactor) {
-                await signIn.prepareFirstFactor({
-                    strategy: 'email_code',
-                    emailAddressId: emailFactor.emailAddressId,
-                });
-                setCodeSent(true);
-                setStep('code');
-            } else {
-                setError(currentLang === 'en'
-                    ? 'Email not found. Please sign up first.'
-                    : 'E-mail niet gevonden. Registreer eerst.');
-            }
+            // Prepare email verification
+            await signUp.prepareEmailAddressVerification({
+                strategy: 'email_code',
+            });
+
+            setCodeSent(true);
+            setStep('code');
         } catch (err) {
-            console.error('Error sending code:', err);
-            if (err.errors?.[0]?.code === 'form_identifier_not_found') {
+            console.error('Error signing up:', err);
+            if (err.errors?.[0]?.code === 'form_identifier_exists') {
                 setError(currentLang === 'en'
-                    ? 'Email not found. Please sign up first.'
-                    : 'E-mail niet gevonden. Registreer eerst.');
+                    ? 'Email already registered. Please sign in instead.'
+                    : 'E-mail is al geregistreerd. Log in.');
             } else {
                 setError(err.errors?.[0]?.longMessage || err.message ||
-                    (currentLang === 'en' ? 'Failed to send code' : 'Kon code niet versturen'));
+                    (currentLang === 'en' ? 'Sign up failed' : 'Registratie mislukt'));
             }
         } finally {
             setIsLoading(false);
@@ -112,11 +111,10 @@ const Login = () => {
         setIsLoading(true);
 
         try {
-            if (!isClerkConfigured || !signIn) {
+            if (!isClerkConfigured || !signUp) {
                 // Mock mode - accept code "123456"
                 if (verificationCode === '123456') {
-                    const from = location.state?.from?.pathname || '/aanvraag';
-                    navigate(from, { replace: true });
+                    navigate('/aanvraag', { replace: true });
                 } else {
                     setError(currentLang === 'en' ? 'Invalid code' : 'Ongeldige code');
                 }
@@ -124,35 +122,58 @@ const Login = () => {
                 return;
             }
 
-            const result = await signIn.attemptFirstFactor({
-                strategy: 'email_code',
+            const result = await signUp.attemptEmailAddressVerification({
                 code: verificationCode,
             });
 
-            console.log('Login verification result:', result.status, result);
+            console.log('Verification result:', result.status, result);
+            console.log('Missing fields:', JSON.stringify(result.missingFields));
 
             if (result.status === 'complete') {
-                // Login successful, activate session
+                // Sign-up successful, activate session
                 if (setActive && result.createdSessionId) {
                     await setActive({ session: result.createdSessionId });
                 }
                 // Navigate immediately
-                const from = location.state?.from?.pathname || '/aanvraag';
-                navigate(from, { replace: true });
+                navigate('/aanvraag', { replace: true });
+            } else if (result.status === 'missing_requirements') {
+                // Check if we have a session already (email verified successfully)
+                if (result.createdSessionId) {
+                    // Activate whatever session we have and proceed
+                    if (setActive) {
+                        await setActive({ session: result.createdSessionId });
+                    }
+                    navigate('/aanvraag', { replace: true });
+                } else {
+                    // Log missing fields for debugging
+                    console.log('Cannot complete signup, missing:', result.missingFields);
+                    setError(currentLang === 'en'
+                        ? `Please try with a different email address. Your current email may already be registered.`
+                        : `Probeer een ander e-mailadres. Dit e-mailadres is mogelijk al geregistreerd.`);
+                }
             } else {
                 setError(currentLang === 'en' ? 'Verification failed' : 'Verificatie mislukt');
             }
         } catch (err) {
             console.error('Error verifying code:', err);
+            const errorCode = err.errors?.[0]?.code;
             const errorMessage = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message;
-            setError(errorMessage || (currentLang === 'en' ? 'Invalid code' : 'Ongeldige code'));
+
+            // Handle already verified case - user might already exist
+            if (errorCode === 'verification_already_verified' || errorMessage?.includes('already been verified')) {
+                setError(currentLang === 'en'
+                    ? 'This email is already verified. Try signing in instead.'
+                    : 'Dit e-mailadres is al geverifieerd. Probeer in te loggen.');
+            } else {
+                setError(errorMessage || (currentLang === 'en' ? 'Invalid code' : 'Ongeldige code'));
+            }
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleBackToEmail = () => {
-        setStep('email');
+    const handleBackToDetails = () => {
+        setStep('details');
         setVerificationCode('');
         setError('');
         setCodeSent(false);
@@ -167,20 +188,50 @@ const Login = () => {
             <div className={styles.container}>
                 <div className={styles.card}>
                     <div className={styles.iconWrapper}>
-                        <Mail size={28} />
+                        <UserPlus size={28} />
                     </div>
 
                     <h1 className={styles.title}>
-                        {currentLang === 'en' ? 'Sign In' : 'Inloggen'}
+                        {currentLang === 'en' ? 'Create Account' : 'Account aanmaken'}
                     </h1>
                     <p className={styles.subtitle}>
                         {currentLang === 'en'
-                            ? 'Enter your email to receive a verification code'
-                            : 'Voer je e-mailadres in om een verificatiecode te ontvangen'}
+                            ? 'Enter your details to create an account'
+                            : 'Voer je gegevens in om een account aan te maken'}
                     </p>
 
-                    {step === 'email' ? (
-                        <form onSubmit={handleSendCode} className={styles.form}>
+                    {step === 'details' ? (
+                        <form onSubmit={handleSignUp} className={styles.form}>
+                            <div className={styles.nameRow}>
+                                <div>
+                                    <label className={styles.inputLabel}>
+                                        {currentLang === 'en' ? 'First name' : 'Voornaam'}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className={styles.input}
+                                        placeholder={currentLang === 'en' ? 'John' : 'Jan'}
+                                        value={firstName}
+                                        onChange={(e) => setFirstName(e.target.value)}
+                                        required
+                                        autoFocus
+                                    />
+                                </div>
+                                <div>
+                                    <label className={styles.inputLabel}>
+                                        {currentLang === 'en' ? 'Last name' : 'Achternaam'}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className={styles.input}
+                                        placeholder={currentLang === 'en' ? 'Doe' : 'Jansen'}
+                                        value={lastName}
+                                        onChange={(e) => setLastName(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
                             <div>
                                 <label className={styles.inputLabel}>
                                     {currentLang === 'en' ? 'Email address' : 'E-mailadres'}
@@ -193,7 +244,6 @@ const Login = () => {
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         required
-                                        autoFocus
                                     />
                                 </div>
                             </div>
@@ -211,14 +261,14 @@ const Login = () => {
                                 disabled={isLoading}
                             >
                                 {isLoading
-                                    ? (currentLang === 'en' ? 'Sending...' : 'Versturen...')
-                                    : (currentLang === 'en' ? 'Send verification code' : 'Stuur verificatiecode')}
+                                    ? (currentLang === 'en' ? 'Creating account...' : 'Account aanmaken...')
+                                    : (currentLang === 'en' ? 'Create account' : 'Account aanmaken')}
                             </button>
 
                             <div className={styles.signupLink}>
-                                {currentLang === 'en' ? "Don't have an account? " : 'Nog geen account? '}
-                                <Link to="/signup">
-                                    {currentLang === 'en' ? 'Sign up' : 'Registreren'}
+                                {currentLang === 'en' ? 'Already have an account? ' : 'Heb je al een account? '}
+                                <Link to="/login">
+                                    {currentLang === 'en' ? 'Sign in' : 'Inloggen'}
                                 </Link>
                             </div>
 
@@ -234,7 +284,7 @@ const Login = () => {
                             <button
                                 type="button"
                                 className={styles.backButton}
-                                onClick={handleBackToEmail}
+                                onClick={handleBackToDetails}
                             >
                                 <ArrowLeft size={16} />
                                 {currentLang === 'en' ? 'Back' : 'Terug'}
@@ -282,7 +332,7 @@ const Login = () => {
                                 >
                                     {isLoading
                                         ? (currentLang === 'en' ? 'Verifying...' : 'Verifiëren...')
-                                        : (currentLang === 'en' ? 'Verify' : 'Verifiëren')}
+                                        : (currentLang === 'en' ? 'Verify & Complete' : 'Verifiëren & Voltooien')}
                                 </button>
                             </form>
 
@@ -300,4 +350,4 @@ const Login = () => {
     );
 };
 
-export default Login;
+export default Signup;

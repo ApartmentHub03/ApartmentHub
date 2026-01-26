@@ -27,6 +27,7 @@ const TenantFormSection = ({
     const [formData, setFormData] = useState({
         naam: persoon.naam || '',
         email: persoon.email || '',
+        telefoon: persoon.telefoon || '',
         adres: persoon.adres || '',
         postcode: persoon.postcode || '',
         woonplaats: persoon.woonplaats || '',
@@ -38,6 +39,26 @@ const TenantFormSection = ({
     const [uploadMethod, setUploadMethod] = useState(null);
     const [workStatus, setWorkStatus] = useState(persoon.werkstatus || null);
 
+    // Sync formData and workStatus when persoon prop changes (e.g., when data loads from DB)
+    useEffect(() => {
+        // Only update if persoon has meaningful data (has supabaseId or has name/email filled)
+        // This prevents overwriting user input during initial render
+        if (persoon.supabaseId || persoon.naam || persoon.email) {
+            setFormData({
+                naam: persoon.naam || '',
+                email: persoon.email || '',
+                telefoon: persoon.telefoon || '',
+                adres: persoon.adres || '',
+                postcode: persoon.postcode || '',
+                woonplaats: persoon.woonplaats || '',
+                inkomen: persoon.inkomen != null && persoon.inkomen !== '' ? persoon.inkomen.toString() : ''
+            });
+            if (persoon.werkstatus) {
+                setWorkStatus(persoon.werkstatus);
+            }
+        }
+    }, [persoon.persoonId, persoon.supabaseId, persoon.naam, persoon.email, persoon.telefoon, persoon.adres, persoon.postcode, persoon.woonplaats, persoon.inkomen, persoon.werkstatus]);
+
     // Derived
     const requiredDocuments = getRequiredDocuments(workStatus, 'tenant');
     const getDoc = (type) => (persoon.documenten || []).find(d => d.type === type);
@@ -46,18 +67,19 @@ const TenantFormSection = ({
         return doc && doc.status === 'ontvangen';
     };
 
-    // Calculate form completion (required fields: name, email, workStatus, income)
+    // Calculate form completion (required fields: name, email, phone, workStatus, income)
     const calculateFormProgress = useCallback(() => {
         const requiredFields = [
             { key: 'naam', filled: formData.naam.trim() !== '' },
             { key: 'email', filled: formData.email.trim() !== '' },
+            { key: 'telefoon', filled: formData.telefoon.trim() !== '' },
             { key: 'workStatus', filled: workStatus !== null },
             { key: 'inkomen', filled: formData.inkomen.toString().trim() !== '' }
         ];
 
         const filledCount = requiredFields.filter(f => f.filled).length;
         return Math.round((filledCount / requiredFields.length) * 100);
-    }, [formData.naam, formData.email, formData.inkomen, workStatus]);
+    }, [formData.naam, formData.email, formData.telefoon, formData.inkomen, workStatus]);
 
     // Calculate document completion
     const calculateDocProgress = useCallback(() => {
@@ -83,6 +105,11 @@ const TenantFormSection = ({
             onFormDataChangeRef.current(persoon.persoonId, {
                 naam: formData.naam,
                 email: formData.email,
+                telefoon: formData.telefoon,
+                adres: formData.adres,
+                postcode: formData.postcode,
+                woonplaats: formData.woonplaats,
+                inkomen: formData.inkomen,
                 workStatus,
                 formProgress,
                 docProgress,
@@ -91,7 +118,7 @@ const TenantFormSection = ({
                 isDocsComplete: docProgress === 100
             });
         }
-    }, [formProgress, docProgress, overallProgress, persoon.persoonId, formData.naam, formData.email, workStatus]);
+    }, [formProgress, docProgress, overallProgress, persoon.persoonId, formData.naam, formData.email, formData.telefoon, formData.adres, formData.postcode, formData.woonplaats, formData.inkomen, workStatus]);
 
     const handleInputChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -193,6 +220,20 @@ const TenantFormSection = ({
                                 placeholder="john@example.com"
                                 value={formData.email}
                                 onChange={(e) => handleInputChange('email', e.target.value)}
+                            />
+                        </div>
+
+                        {/* Phone Number */}
+                        <div className={styles.formGroup}>
+                            <label className={styles.formLabel}>
+                                {currentLang === 'en' ? 'Phone number' : 'Telefoonnummer'} *
+                            </label>
+                            <input
+                                type="tel"
+                                className={styles.formInput}
+                                placeholder="+31 6 12345678"
+                                value={formData.telefoon}
+                                onChange={(e) => handleInputChange('telefoon', e.target.value)}
                             />
                         </div>
 

@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { setLanguage } from '../features/ui/uiSlice';
 import { LogOut, CheckCircle, Plus, AlertCircle } from 'lucide-react';
 import { translations } from '../data/translations';
+import { useAuth } from '../contexts/AuthContext';
+import { loadAanvraagData, saveAanvraagData } from '../services/aanvraagDataService';
+import { uploadDocument, deleteDocument } from '../services/documentStorageService';
+import { sendTenantDataEvent, sendDocumentUploadEvent, sendMultipleDocumentsEvent } from '../services/webhookService';
 import RentalConditionsSidebar from '../components/aanvraag/RentalConditionsSidebar';
 import BidSection from '../components/aanvraag/BidSection';
 import TenantFormSection from '../components/aanvraag/TenantFormSection';
@@ -29,6 +33,8 @@ const Aanvraag = () => {
     const location = useLocation();
     const dispatch = useDispatch();
     const currentLang = useSelector((state) => state.ui.language);
+    const { logout, dossierId } = useAuth();
+    const [saveStatus, setSaveStatus] = useState('idle'); // 'idle', 'saving', 'saved', 'error'
 
     useEffect(() => {
         const path = location.pathname.toLowerCase();
@@ -55,27 +61,135 @@ const Aanvraag = () => {
     const [selectedUploadMethod, setSelectedUploadMethod] = useState(null);
     const [selectedTenantForGuarantor, setSelectedTenantForGuarantor] = useState(null);
 
+    // Load saved data on mount
     useEffect(() => {
-        setTimeout(() => {
-            const initialPerson = {
-                persoonId: "p1",
-                naam: "Jan Jansen",
-                email: "user@example.com",
-                telefoon: "0612345678",
-                rol: "Hoofdhuurder",
-                documenten: [],
-                docsCompleet: false
-            };
+        const loadData = async () => {
+            if (!dossierId) {
+                setLoading(false);
+                return;
+            }
 
-            setData({
-                pand: mockPand,
-                personen: [initialPerson],
-                dossierCompleet: false
-            });
-            setBidAmount(mockPand.voorwaarden.huurprijs);
+            const result = await loadAanvraagData(dossierId);
+
+            if (result.ok && result.data) {
+                // Load saved data
+                setBidAmount(result.data.bidAmount || mockPand.voorwaarden.huurprijs);
+                setStartDate(result.data.startDate || '');
+                setMotivation(result.data.motivation || '');
+                setMonthsAdvance(result.data.monthsAdvance || 0);
+
+                const personen = result.data.personen?.length > 0
+                    ? result.data.personen
+                    : [{
+                        persoonId: "p1",
+                        naam: "",
+                        email: "",
+                        telefoon: "",
+                        rol: "Hoofdhuurder",
+                        documenten: [],
+                        docsCompleet: false
+                    }];
+
+                setData({
+                    pand: mockPand,
+                    personen,
+                    dossierCompleet: false
+                });
+            } else {
+                // No saved data, use defaults
+                const initialPerson = {
+                    persoonId: "p1",
+                    naam: "",
+                    email: "",
+                    telefoon: "",
+                    rol: "Hoofdhuurder",
+                    documenten: [],
+                    docsCompleet: false
+                };
+
+                setData({
+                    pand: mockPand,
+                    personen: [initialPerson],
+                    dossierCompleet: false
+                });
+                setBidAmount(mockPand.voorwaarden.huurprijs);
+            }
+
             setLoading(false);
-        }, 1000);
-    }, []);
+        };
+
+        loadData();
+    }, [dossierId]);
+
+    // Auto-save with debouncing
+    const saveTimeoutRef = useRef(null);
+
+    const autoSave = useCallback(async () => {
+        if (!dossierId || !data) return;
+
+        setSaveStatus('saving');
+
+        const formData = {
+            bidAmount,
+            startDate,
+            motivation,
+            monthsAdvance,
+            propertyAddress: data.pand?.adres || '',
+            personen: data.personen || []
+        };
+
+        const result = await saveAanvraagData(dossierId, formData);
+
+        // After successful DB save, also send data to n8n (fire-and-forget so webhook failures never block saving).
+        if (result.ok) {
+            const personen = (data.personen || []);
+
+            personen.forEach((p) => {
+                // Avoid PII in logs; webhook payload itself may contain PII and is required by product.
+                sendTenantDataEvent({
+                    personId: p.supabaseId || p.persoonId,
+                    naam: p.naam,
+                    email: p.email,
+                    adres: p.adres,
+                    postcode: p.postcode,
+                    woonplaats: p.woonplaats,
+                    inkomen: p.inkomen,
+                    workStatus: p.werkstatus,
+                    rol: p.rol,
+                    telefoon: p.telefoon
+                }).catch(() => { });
+            });
+        }
+
+        if (result.ok) {
+            setSaveStatus('saved');
+            setTimeout(() => setSaveStatus('idle'), 2000);
+        } else {
+            setSaveStatus('error');
+            console.error('Auto-save failed:', result.error);
+        }
+    }, [dossierId, data, bidAmount, startDate, motivation, monthsAdvance]);
+
+    // Trigger auto-save when data changes
+    useEffect(() => {
+        if (loading || !data) return; // Don't save during initial load
+
+        // Clear existing timeout
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+
+        // Set new timeout
+        saveTimeoutRef.current = setTimeout(() => {
+            autoSave();
+        }, 2000); // 2 second debounce
+
+        return () => {
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+        };
+    }, [bidAmount, startDate, motivation, monthsAdvance, data, loading, autoSave]);
 
     const calculateProgress = () => {
         if (!data) return 0;
@@ -107,10 +221,14 @@ const Aanvraag = () => {
                 if (p.persoonId === persoonId) {
                     return {
                         ...p,
-                        naam: formDataUpdate.naam || p.naam,
-                        email: formDataUpdate.email || p.email,
-                        werkstatus: formDataUpdate.workStatus || p.werkstatus,
-                        inkomen: formDataUpdate.inkomen || p.inkomen
+                        naam: formDataUpdate.naam !== undefined ? formDataUpdate.naam : p.naam,
+                        email: formDataUpdate.email !== undefined ? formDataUpdate.email : p.email,
+                        telefoon: formDataUpdate.telefoon !== undefined ? formDataUpdate.telefoon : p.telefoon,
+                        adres: formDataUpdate.adres !== undefined ? formDataUpdate.adres : p.adres,
+                        postcode: formDataUpdate.postcode !== undefined ? formDataUpdate.postcode : p.postcode,
+                        woonplaats: formDataUpdate.woonplaats !== undefined ? formDataUpdate.woonplaats : p.woonplaats,
+                        werkstatus: formDataUpdate.workStatus !== undefined ? formDataUpdate.workStatus : p.werkstatus,
+                        inkomen: formDataUpdate.inkomen !== undefined ? formDataUpdate.inkomen : p.inkomen
                     };
                 }
                 return p;
@@ -129,31 +247,184 @@ const Aanvraag = () => {
 
     const canSubmit = bidAmount > 0 && startDate !== '' && isAllDocsComplete();
 
-    const handleDocumentUpload = (persoonId, type, fileOrFiles) => {
+    const handleDocumentUpload = async (persoonId, type, fileOrFiles) => {
+        // Handle both single file and array of files
+        // For multi-file uploads, fileOrFiles is an array that may contain:
+        // - Already uploaded document objects (with id, fileName, etc.)
+        // - New File objects to upload
+        const allItems = Array.isArray(fileOrFiles) ? fileOrFiles : [fileOrFiles];
+
+        // Separate File objects (new uploads) from document objects (already uploaded)
+        const filesToUpload = allItems.filter(item => item instanceof File);
+        const existingDocs = allItems.filter(item => !(item instanceof File) && item && typeof item === 'object');
+
+        // Find the person
+        const persoon = data.personen.find(p => p.persoonId === persoonId);
+        if (!persoon) {
+            console.error('Cannot upload: person not found');
+            alert('Person not found. Please refresh the page.');
+            return;
+        }
+
+        // Ensure person has a supabaseId - create in database if needed
+        let persoonSupabaseId = persoon.supabaseId;
+        if (!persoonSupabaseId) {
+            // Check if person has minimum required data
+            if (!persoon.naam || !persoon.email || !persoon.telefoon) {
+                alert('Please fill out at least name, email, and phone number before uploading documents');
+                return;
+            }
+
+            // Create person in database
+            setSaveStatus('saving');
+            const nameParts = (persoon.naam || '').trim().split(' ');
+            const voornaam = nameParts[0] || '';
+            const achternaam = nameParts.slice(1).join(' ') || '';
+
+            const persoonData = {
+                dossier_id: dossierId,
+                type: persoon.rol === 'Hoofdhuurder' ? 'tenant' :
+                    persoon.rol === 'Medehuurder' ? 'co_tenant' : 'guarantor',
+                voornaam,
+                achternaam,
+                email: persoon.email || null,
+                telefoon: persoon.telefoon || null,
+                werk_status: persoon.werkstatus || null,
+                bruto_maandinkomen: persoon.inkomen ? parseFloat(persoon.inkomen) : null,
+                huidige_adres: persoon.adres || null,
+                postcode: persoon.postcode || null,
+                woonplaats: persoon.woonplaats || null,
+                rol: persoon.rol,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            const { supabase } = await import('../integrations/supabase/client');
+            if (supabase) {
+                const { data: newPersoon, error: insertError } = await supabase
+                    .from('personen')
+                    .insert(persoonData)
+                    .select('id')
+                    .single();
+
+                if (insertError) {
+                    console.error('Error creating person:', insertError);
+                    setSaveStatus('error');
+                    alert(`Failed to save person: ${insertError.message}`);
+                    return;
+                }
+
+                persoonSupabaseId = newPersoon.id;
+
+                // Update state with the new supabaseId
+                setData(prevData => {
+                    if (!prevData) return prevData;
+                    const updatedPersonen = prevData.personen.map(p => {
+                        if (p.persoonId === persoonId) {
+                            return { ...p, supabaseId: persoonSupabaseId };
+                        }
+                        return p;
+                    });
+                    return { ...prevData, personen: updatedPersonen };
+                });
+            } else {
+                // Mock mode - use a mock ID
+                persoonSupabaseId = 'mock-' + Date.now();
+            }
+        }
+
+        // Upload new files to Supabase
+        const uploadedDocs = [];
+        if (filesToUpload.length > 0) {
+            for (const file of filesToUpload) {
+                setSaveStatus('saving');
+                const result = await uploadDocument(persoonSupabaseId, dossierId, type, file);
+
+                if (result.ok) {
+                    uploadedDocs.push(result.document);
+                } else {
+                    console.error('Upload failed:', result.error);
+                    setSaveStatus('error');
+                    alert(`Upload failed: ${result.error}`);
+                    return;
+                }
+            }
+        }
+
+        // After successful upload, also send upload event(s) to n8n (fire-and-forget so webhook never blocks uploads).
+        if (filesToUpload.length > 0) {
+            console.log('[Aanvraag] Sending document upload to webhook:', {
+                personId: persoonSupabaseId,
+                type,
+                fileCount: filesToUpload.length
+            });
+
+            if (filesToUpload.length === 1) {
+                sendDocumentUploadEvent(persoonSupabaseId, type, filesToUpload[0])
+                    .then(() => console.log('[Aanvraag] ✓ Webhook call successful'))
+                    .catch((err) => console.error('[Aanvraag] ✗ Webhook call failed:', err));
+            } else {
+                sendMultipleDocumentsEvent(persoonSupabaseId, type, filesToUpload)
+                    .then(() => console.log('[Aanvraag] ✓ Webhook call successful'))
+                    .catch((err) => console.error('[Aanvraag] ✗ Webhook call failed:', err));
+            }
+        } else {
+            console.log('[Aanvraag] No new files to upload to webhook (only existing docs)');
+        }
+
+        // Check if this is a multi-file document type
+        // Multi-file if: existing doc has files array, or we're uploading multiple files, or we have existing docs
+        const docData = persoon.documenten?.find(d => d.type === type);
+        const isMultiFile = docData?.files !== undefined ||
+            (filesToUpload.length > 1) ||
+            (existingDocs.length > 0) ||
+            (filesToUpload.length === 1 && existingDocs.length > 0);
+
+        // Update local state with uploaded documents
         const updatedPersonen = data.personen.map(p => {
             if (p.persoonId === persoonId) {
                 const newDocs = [...(p.documenten || [])];
-                const existingIdx = newDocs.findIndex(d => d.type === type);
-                const isMultiFile = Array.isArray(fileOrFiles);
+                const existingDocIdx = newDocs.findIndex(d => d.type === type);
 
-                if (existingIdx >= 0) {
-                    if (isMultiFile) {
-                        newDocs[existingIdx] = { ...newDocs[existingIdx], status: 'ontvangen', files: fileOrFiles };
+                if (isMultiFile) {
+                    // Multi-file document: store as array of files
+                    const allFiles = [...existingDocs, ...uploadedDocs];
+                    const docEntry = {
+                        type,
+                        files: allFiles,
+                        status: allFiles.length > 0 ? 'ontvangen' : 'ontbreekt'
+                    };
+
+                    if (existingDocIdx >= 0) {
+                        newDocs[existingDocIdx] = docEntry;
                     } else {
-                        newDocs[existingIdx] = { ...newDocs[existingIdx], status: 'ontvangen', file: fileOrFiles };
+                        newDocs.push(docEntry);
                     }
                 } else {
-                    if (isMultiFile) {
-                        newDocs.push({ type, status: 'ontvangen', files: fileOrFiles });
-                    } else {
-                        newDocs.push({ type, status: 'ontvangen', file: fileOrFiles });
+                    // Single-file document: store as single file
+                    if (uploadedDocs.length > 0) {
+                        const docEntry = {
+                            ...uploadedDocs[0],
+                            type,
+                            status: 'ontvangen'
+                        };
+
+                        if (existingDocIdx >= 0) {
+                            newDocs[existingDocIdx] = docEntry;
+                        } else {
+                            newDocs.push(docEntry);
+                        }
                     }
                 }
+
                 return { ...p, documenten: newDocs, docsCompleet: newDocs.length >= 1 };
             }
             return p;
         });
+
         setData({ ...data, personen: updatedPersonen });
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
     };
 
     const handleAddCoTenant = () => {
@@ -207,6 +478,11 @@ const Aanvraag = () => {
         });
     };
 
+    const handleLogout = async () => {
+        await logout();
+        // Clerk's signOut will handle the redirect to /login
+    };
+
     const handleSubmit = () => {
         if (!bidAmount || !startDate) {
             alert(currentLang === 'en' ? 'Please complete the bid section' : 'Vul de biedingsectie in');
@@ -244,14 +520,25 @@ const Aanvraag = () => {
                             <button className={styles.changeButton} onClick={() => navigate('/appartementen')}>
                                 {currentLang === 'en' ? 'Change Apartment' : 'Wijzig Appartement'}
                             </button>
-                            <button className={styles.logoutButton} onClick={() => alert('Logout')}>
+                            <button className={styles.logoutButton} onClick={handleLogout}>
                                 <LogOut size={14} />
                                 {t.logout}
                             </button>
                         </div>
                     </div>
 
-                    <h1 className={styles.pageTitle}>{currentLang === 'en' ? 'Rental Application' : 'Huur aanvraag'}</h1>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <h1 className={styles.pageTitle}>{currentLang === 'en' ? 'Rental Application' : 'Huur aanvraag'}</h1>
+                        {saveStatus === 'saving' && (
+                            <span style={{ fontSize: '0.875rem', color: '#888' }}>💾 {currentLang === 'en' ? 'Saving...' : 'Opslaan...'}</span>
+                        )}
+                        {saveStatus === 'saved' && (
+                            <span style={{ fontSize: '0.875rem', color: '#10b981' }}>✓ {currentLang === 'en' ? 'Saved' : 'Opgeslagen'}</span>
+                        )}
+                        {saveStatus === 'error' && (
+                            <span style={{ fontSize: '0.875rem', color: '#ef4444' }}>⚠ {currentLang === 'en' ? 'Save failed' : 'Opslaan mislukt'}</span>
+                        )}
+                    </div>
 
                     <div className={styles.progressContainer}>
                         <div className={styles.progressLabelRow}>

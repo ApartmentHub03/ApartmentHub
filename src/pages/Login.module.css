@@ -179,3 +179,27 @@
 .backButton:hover {
     color: #497772;
 }
+
+.nameRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.signupLink {
+    text-align: center;
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 0.5rem;
+}
+
+.signupLink a {
+    color: #497772;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.signupLink a:hover {
+    color: #F36B19;
+    text-decoration: underline;
+}
