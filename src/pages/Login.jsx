@@ -1,38 +1,26 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { useSignIn } from '@clerk/clerk-react';
-import { Mail, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
+import { Phone, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { translations } from '../data/translations';
+import { supabase } from '../integrations/supabase/client';
 import styles from './Login.module.css';
 
 const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const currentLang = useSelector((state) => state.ui.language);
-    const { isClerkConfigured, isAuthenticated } = useAuth();
+    const { isAuthenticated, login } = useAuth();
     const t = translations.login?.[currentLang] || translations.login?.nl || {};
 
-    const [step, setStep] = useState('email'); // 'email' or 'code'
-    const [email, setEmail] = useState('');
+    const [step, setStep] = useState('phone'); // 'phone' or 'code'
+    const [phoneNumber, setPhoneNumber] = useState('+');
     const [verificationCode, setVerificationCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [codeSent, setCodeSent] = useState(false);
-
-    // Clerk sign-in hook
-    let signIn = null;
-    let setActive = null;
-    if (isClerkConfigured) {
-        try {
-            const result = useSignIn();
-            signIn = result?.signIn;
-            setActive = result?.setActive;
-        } catch (e) {
-            console.warn('Clerk useSignIn not available:', e);
-        }
-    }
+    const [testCode, setTestCode] = useState(null);
 
     // Redirect if already authenticated
     React.useEffect(() => {
@@ -42,59 +30,58 @@ const Login = () => {
         }
     }, [isAuthenticated, navigate, location]);
 
+    const formatPhoneNumber = (value) => {
+        // Keep only digits and +
+        let cleaned = value.replace(/[^\d+]/g, '');
+        // Ensure it starts with +
+        if (!cleaned.startsWith('+')) {
+            cleaned = '+' + cleaned;
+        }
+        return cleaned;
+    };
+
     const handleSendCode = async (e) => {
         e.preventDefault();
         setError('');
+        setTestCode(null);
 
-        if (!email || !email.includes('@')) {
-            setError(currentLang === 'en' ? 'Please enter a valid email address' : 'Voer een geldig e-mailadres in');
+        // Validate phone number (should be at least 10 digits after country code)
+        const digitsOnly = phoneNumber.replace(/\D/g, '');
+        if (digitsOnly.length < 10) {
+            setError(currentLang === 'en'
+                ? 'Please enter a valid phone number (e.g., +31612345678)'
+                : 'Voer een geldig telefoonnummer in (bijv. +31612345678)');
             return;
         }
 
         setIsLoading(true);
 
         try {
-            if (!isClerkConfigured || !signIn) {
-                // Mock mode
-                console.log('[Mock] Sending code to:', email);
-                setCodeSent(true);
-                setStep('code');
-                setIsLoading(false);
+            const { data, error: sendError } = await supabase.functions.invoke('auth-send-code', {
+                body: { phone_number: phoneNumber }
+            });
+
+            if (sendError) {
+                throw new Error(sendError.message);
+            }
+
+            if (!data.ok) {
+                setError(currentLang === 'en' ? data.message : data.message_nl);
                 return;
             }
 
-            // Start sign-in with email
-            await signIn.create({
-                identifier: email,
-            });
-
-            // Prepare email code verification
-            const emailFactor = signIn.supportedFirstFactors?.find(
-                (factor) => factor.strategy === 'email_code'
-            );
-
-            if (emailFactor) {
-                await signIn.prepareFirstFactor({
-                    strategy: 'email_code',
-                    emailAddressId: emailFactor.emailAddressId,
-                });
-                setCodeSent(true);
-                setStep('code');
-            } else {
-                setError(currentLang === 'en'
-                    ? 'Email not found. Please sign up first.'
-                    : 'E-mail niet gevonden. Registreer eerst.');
+            // Store test code if returned (development mode)
+            if (data.test_code) {
+                setTestCode(data.test_code);
             }
+
+            setCodeSent(true);
+            setStep('code');
         } catch (err) {
             console.error('Error sending code:', err);
-            if (err.errors?.[0]?.code === 'form_identifier_not_found') {
-                setError(currentLang === 'en'
-                    ? 'Email not found. Please sign up first.'
-                    : 'E-mail niet gevonden. Registreer eerst.');
-            } else {
-                setError(err.errors?.[0]?.longMessage || err.message ||
-                    (currentLang === 'en' ? 'Failed to send code' : 'Kon code niet versturen'));
-            }
+            setError(currentLang === 'en'
+                ? 'Failed to send code. Please try again.'
+                : 'Kon code niet versturen. Probeer het opnieuw.');
         } finally {
             setIsLoading(false);
         }
@@ -112,54 +99,46 @@ const Login = () => {
         setIsLoading(true);
 
         try {
-            if (!isClerkConfigured || !signIn) {
-                // Mock mode - accept code "123456"
-                if (verificationCode === '123456') {
-                    const from = location.state?.from?.pathname || '/aanvraag';
-                    navigate(from, { replace: true });
-                } else {
-                    setError(currentLang === 'en' ? 'Invalid code' : 'Ongeldige code');
+            const { data, error: verifyError } = await supabase.functions.invoke('auth-verify-code', {
+                body: {
+                    phone_number: phoneNumber,
+                    code: verificationCode
                 }
-                setIsLoading(false);
+            });
+
+            if (verifyError) {
+                throw new Error(verifyError.message);
+            }
+
+            if (!data.ok) {
+                setError(currentLang === 'en' ? data.reason : data.reason_nl);
                 return;
             }
 
-            const result = await signIn.attemptFirstFactor({
-                strategy: 'email_code',
-                code: verificationCode,
-            });
+            // Login successful - store auth data
+            login(data.token, data.phone_number, data.dossier_id);
 
-            console.log('Login verification result:', result.status, result);
-
-            if (result.status === 'complete') {
-                // Login successful, activate session
-                if (setActive && result.createdSessionId) {
-                    await setActive({ session: result.createdSessionId });
-                }
-                // Navigate immediately
-                const from = location.state?.from?.pathname || '/aanvraag';
-                navigate(from, { replace: true });
-            } else {
-                setError(currentLang === 'en' ? 'Verification failed' : 'Verificatie mislukt');
-            }
+            // Navigate to target page
+            const from = location.state?.from?.pathname || '/aanvraag';
+            navigate(from, { replace: true });
         } catch (err) {
             console.error('Error verifying code:', err);
-            const errorMessage = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message;
-            setError(errorMessage || (currentLang === 'en' ? 'Invalid code' : 'Ongeldige code'));
+            setError(currentLang === 'en' ? 'Invalid code' : 'Ongeldige code');
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleBackToEmail = () => {
-        setStep('email');
+    const handleBackToPhone = () => {
+        setStep('phone');
         setVerificationCode('');
         setError('');
         setCodeSent(false);
+        setTestCode(null);
     };
 
     const handleTestCodeClick = () => {
-        setVerificationCode('123456');
+        setVerificationCode(testCode || '123456');
     };
 
     return (
@@ -167,7 +146,7 @@ const Login = () => {
             <div className={styles.container}>
                 <div className={styles.card}>
                     <div className={styles.iconWrapper}>
-                        <Mail size={28} />
+                        <Phone size={28} />
                     </div>
 
                     <h1 className={styles.title}>
@@ -175,27 +154,32 @@ const Login = () => {
                     </h1>
                     <p className={styles.subtitle}>
                         {currentLang === 'en'
-                            ? 'Enter your email to receive a verification code'
-                            : 'Voer je e-mailadres in om een verificatiecode te ontvangen'}
+                            ? 'Enter your phone number to receive a verification code via WhatsApp'
+                            : 'Voer je telefoonnummer in om een verificatiecode te ontvangen via WhatsApp'}
                     </p>
 
-                    {step === 'email' ? (
+                    {step === 'phone' ? (
                         <form onSubmit={handleSendCode} className={styles.form}>
                             <div>
                                 <label className={styles.inputLabel}>
-                                    {currentLang === 'en' ? 'Email address' : 'E-mailadres'}
+                                    {currentLang === 'en' ? 'Phone number' : 'Telefoonnummer'}
                                 </label>
                                 <div className={styles.inputWrapper}>
                                     <input
-                                        type="email"
+                                        type="tel"
                                         className={styles.input}
-                                        placeholder="email@example.com"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="+31612345678"
+                                        value={phoneNumber}
+                                        onChange={(e) => setPhoneNumber(formatPhoneNumber(e.target.value))}
                                         required
                                         autoFocus
                                     />
                                 </div>
+                                <p className={styles.inputHint}>
+                                    {currentLang === 'en'
+                                        ? 'Include country code (e.g., +31 for Netherlands)'
+                                        : 'Inclusief landcode (bijv. +31 voor Nederland)'}
+                                </p>
                             </div>
 
                             {error && (
@@ -212,7 +196,7 @@ const Login = () => {
                             >
                                 {isLoading
                                     ? (currentLang === 'en' ? 'Sending...' : 'Versturen...')
-                                    : (currentLang === 'en' ? 'Send verification code' : 'Stuur verificatiecode')}
+                                    : (currentLang === 'en' ? 'Send WhatsApp code' : 'Stuur WhatsApp code')}
                             </button>
 
                             <div className={styles.signupLink}>
@@ -221,20 +205,13 @@ const Login = () => {
                                     {currentLang === 'en' ? 'Sign up' : 'Registreren'}
                                 </Link>
                             </div>
-
-                            {!isClerkConfigured && (
-                                <div className={styles.testModeNote}>
-                                    Test mode: {currentLang === 'en' ? 'Use code' : 'Gebruik code'}{' '}
-                                    <span className={styles.testModeCode} onClick={handleTestCodeClick}>123456</span>
-                                </div>
-                            )}
                         </form>
                     ) : (
                         <div className={styles.form}>
                             <button
                                 type="button"
                                 className={styles.backButton}
-                                onClick={handleBackToEmail}
+                                onClick={handleBackToPhone}
                             >
                                 <ArrowLeft size={16} />
                                 {currentLang === 'en' ? 'Back' : 'Terug'}
@@ -244,8 +221,8 @@ const Login = () => {
                                 <div className={styles.successMessage}>
                                     <CheckCircle size={16} />
                                     {currentLang === 'en'
-                                        ? `Code sent to ${email}`
-                                        : `Code verzonden naar ${email}`}
+                                        ? `WhatsApp code sent to ${phoneNumber}`
+                                        : `WhatsApp code verzonden naar ${phoneNumber}`}
                                 </div>
                             )}
 
@@ -286,10 +263,12 @@ const Login = () => {
                                 </button>
                             </form>
 
-                            {!isClerkConfigured && (
+                            {(testCode || true) && (
                                 <div className={styles.testModeNote}>
-                                    Test mode: {currentLang === 'en' ? 'Use code' : 'Gebruik code'}{' '}
-                                    <span className={styles.testModeCode} onClick={handleTestCodeClick}>123456</span>
+                                    {currentLang === 'en' ? 'Test mode: Use code' : 'Testmodus: Gebruik code'}{' '}
+                                    <span className={styles.testModeCode} onClick={handleTestCodeClick}>
+                                        {testCode || '123456'}
+                                    </span>
                                 </div>
                             )}
                         </div>

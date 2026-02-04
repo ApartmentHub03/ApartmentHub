@@ -1,141 +1,145 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useUser, useClerk } from '@clerk/clerk-react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getOrCreateDossier } from '../services/userDataService';
 import { sendLoginEvent } from '../services/webhookService';
 
 const AuthContext = createContext(undefined);
 
-// Check if Clerk is configured
-const isClerkConfigured = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+// JWT decoder (simple base64 decode for payload)
+function decodeJWT(token) {
+    try {
+        const parts = token.split('.');
+        if (parts.length !== 3) return null;
+        const payload = JSON.parse(atob(parts[1]));
+        return payload;
+    } catch (e) {
+        console.error('Error decoding JWT:', e);
+        return null;
+    }
+}
+
+// Check if token is expired
+function isTokenExpired(token) {
+    const payload = decodeJWT(token);
+    if (!payload || !payload.exp) return true;
+    return Date.now() >= payload.exp * 1000;
+}
 
 export const AuthProvider = ({ children }) => {
-    const [dossierId, setDossierId] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [mockAuth, setMockAuth] = useState({
+    const [authState, setAuthState] = useState({
         token: null,
-        phoneNumber: null
+        phoneNumber: null,
+        dossierId: null,
+        firstName: null,
+        lastName: null,
     });
+    const [isLoading, setIsLoading] = useState(true);
 
-    // Clerk hooks - only available when Clerk is configured
-    let clerkUser = null;
-    let clerkInstance = null;
-    let isClerkLoaded = false;
-
-    if (isClerkConfigured) {
-        try {
-            const userResult = useUser();
-            const clerkResult = useClerk();
-
-            clerkUser = userResult?.user;
-            isClerkLoaded = userResult?.isLoaded;
-            clerkInstance = clerkResult;
-        } catch (e) {
-            console.warn('Clerk hooks not available:', e);
-        }
-    }
-
-    // Effect to handle Clerk user and dossier linking
+    // Load auth state from localStorage on mount
     useEffect(() => {
-        const initializeAuth = async () => {
-            if (isClerkConfigured && isClerkLoaded) {
-                if (clerkUser) {
-                    // User is signed in with Clerk - get their identifier
-                    const phoneNumber = clerkUser.primaryPhoneNumber?.phoneNumber;
-                    const email = clerkUser.primaryEmailAddress?.emailAddress;
-                    const identifier = phoneNumber || email || clerkUser.id;
-
-                    console.log('[Auth] User signed in:', identifier);
-
-                    const result = await getOrCreateDossier(identifier, clerkUser.id);
-                    console.log('[Auth] Dossier result:', result);
-
-                    if (result.ok) {
-                        setDossierId(result.dossierId);
-                        localStorage.setItem('dossier_id', result.dossierId);
-
-                        // Send login event to webhook on first login
-                        if (result.isNew) {
-                            sendLoginEvent(identifier, result.dossierId);
-                        }
-                    } else {
-                        // If Supabase fails (e.g., table doesn't exist), use a mock dossier
-                        console.warn('[Auth] Supabase dossier failed, using mock:', result.error);
-                        const mockDossierId = 'clerk-' + clerkUser.id;
-                        setDossierId(mockDossierId);
-                        localStorage.setItem('dossier_id', mockDossierId);
-                    }
-                }
-                setIsLoading(false);
-            } else if (!isClerkConfigured) {
-                // Mock mode - load from localStorage
+        const loadAuthState = () => {
+            try {
                 const storedToken = localStorage.getItem('auth_token');
                 const storedPhone = localStorage.getItem('auth_phone');
                 const storedDossierId = localStorage.getItem('dossier_id');
+                const storedFirstName = localStorage.getItem('auth_first_name');
+                const storedLastName = localStorage.getItem('auth_last_name');
 
-                if (storedToken && storedPhone) {
-                    setMockAuth({
+                if (storedToken && !isTokenExpired(storedToken)) {
+                    console.log('[Auth] Loaded session from localStorage');
+                    setAuthState({
                         token: storedToken,
-                        phoneNumber: storedPhone
+                        phoneNumber: storedPhone,
+                        dossierId: storedDossierId,
+                        firstName: storedFirstName,
+                        lastName: storedLastName,
                     });
-                    setDossierId(storedDossierId);
+                } else if (storedToken) {
+                    // Token expired, clear storage
+                    console.log('[Auth] Token expired, clearing session');
+                    localStorage.removeItem('auth_token');
+                    localStorage.removeItem('auth_phone');
+                    localStorage.removeItem('dossier_id');
+                    localStorage.removeItem('auth_first_name');
+                    localStorage.removeItem('auth_last_name');
                 }
+            } catch (e) {
+                console.error('[Auth] Error loading auth state:', e);
+            } finally {
                 setIsLoading(false);
             }
         };
 
-        initializeAuth();
-    }, [isClerkLoaded, clerkUser]);
+        loadAuthState();
+    }, []);
 
     /**
-     * Logout
+     * Login - store auth data after successful verification
      */
-    const logout = async () => {
-        if (isClerkConfigured && clerkInstance) {
-            await clerkInstance.signOut({ redirectUrl: '/login' });
-        }
+    const login = useCallback((token, phoneNumber, dossierId, firstName = null, lastName = null) => {
+        console.log('[Auth] Logging in:', phoneNumber, 'Dossier:', dossierId);
 
-        // Clear local storage regardless
-        setMockAuth({ token: null, phoneNumber: null });
-        setDossierId(null);
+        // Store in localStorage
+        localStorage.setItem('auth_token', token);
+        localStorage.setItem('auth_phone', phoneNumber);
+        localStorage.setItem('dossier_id', dossierId);
+        if (firstName) localStorage.setItem('auth_first_name', firstName);
+        if (lastName) localStorage.setItem('auth_last_name', lastName);
+
+        // Update state
+        setAuthState({
+            token,
+            phoneNumber,
+            dossierId,
+            firstName,
+            lastName,
+        });
+
+        // Send login event to webhook
+        sendLoginEvent(phoneNumber, dossierId);
+    }, []);
+
+    /**
+     * Logout - clear all auth data
+     */
+    const logout = useCallback(() => {
+        console.log('[Auth] Logging out');
+
+        // Clear localStorage
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_phone');
         localStorage.removeItem('dossier_id');
-    };
+        localStorage.removeItem('auth_first_name');
+        localStorage.removeItem('auth_last_name');
 
-    // Determine authentication state
-    const isAuthenticated = isClerkConfigured
-        ? !!clerkUser
-        : !!mockAuth.token;
+        // Clear state
+        setAuthState({
+            token: null,
+            phoneNumber: null,
+            dossierId: null,
+            firstName: null,
+            lastName: null,
+        });
+    }, []);
 
-    const phoneNumber = isClerkConfigured
-        ? clerkUser?.primaryPhoneNumber?.phoneNumber
-        : mockAuth.phoneNumber;
-
-    const email = isClerkConfigured
-        ? clerkUser?.primaryEmailAddress?.emailAddress
-        : null;
-
-    const token = isClerkConfigured
-        ? clerkUser?.id
-        : mockAuth.token;
-
-    const userName = isClerkConfigured
-        ? clerkUser?.fullName || clerkUser?.username
+    // Computed values
+    const isAuthenticated = !!authState.token && !isTokenExpired(authState.token);
+    const userName = authState.firstName && authState.lastName
+        ? `${authState.firstName} ${authState.lastName}`
         : null;
 
     return (
         <AuthContext.Provider
             value={{
-                token,
-                phoneNumber,
-                email,
+                token: authState.token,
+                phoneNumber: authState.phoneNumber,
+                dossierId: authState.dossierId,
+                firstName: authState.firstName,
+                lastName: authState.lastName,
                 userName,
-                dossierId,
                 isAuthenticated,
                 isLoading,
-                isClerkConfigured,
-                clerkUser,
-                logout
+                login,
+                logout,
             }}
         >
             {children}

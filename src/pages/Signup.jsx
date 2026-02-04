@@ -1,37 +1,25 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { useSignUp } from '@clerk/clerk-react';
 import { UserPlus, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../integrations/supabase/client';
 import styles from './Login.module.css';
 
 const Signup = () => {
     const navigate = useNavigate();
     const currentLang = useSelector((state) => state.ui.language);
-    const { isClerkConfigured, isAuthenticated } = useAuth();
+    const { isAuthenticated, login } = useAuth();
 
     const [step, setStep] = useState('details'); // 'details' or 'code'
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
-    const [email, setEmail] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('+');
     const [verificationCode, setVerificationCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [codeSent, setCodeSent] = useState(false);
-
-    // Clerk sign-up hook
-    let signUp = null;
-    let setActive = null;
-    if (isClerkConfigured) {
-        try {
-            const result = useSignUp();
-            signUp = result?.signUp;
-            setActive = result?.setActive;
-        } catch (e) {
-            console.warn('Clerk useSignUp not available:', e);
-        }
-    }
+    const [testCode, setTestCode] = useState(null);
 
     // Redirect if already authenticated
     React.useEffect(() => {
@@ -40,60 +28,63 @@ const Signup = () => {
         }
     }, [isAuthenticated, navigate]);
 
+    const formatPhoneNumber = (value) => {
+        // Keep only digits and +
+        let cleaned = value.replace(/[^\d+]/g, '');
+        // Ensure it starts with +
+        if (!cleaned.startsWith('+')) {
+            cleaned = '+' + cleaned;
+        }
+        return cleaned;
+    };
+
     const handleSignUp = async (e) => {
         e.preventDefault();
         setError('');
+        setTestCode(null);
 
         if (!firstName.trim() || !lastName.trim()) {
             setError(currentLang === 'en' ? 'Please enter your name' : 'Voer je naam in');
             return;
         }
 
-        if (!email || !email.includes('@')) {
-            setError(currentLang === 'en' ? 'Please enter a valid email address' : 'Voer een geldig e-mailadres in');
+        // Validate phone number (should be at least 10 digits after country code)
+        const digitsOnly = phoneNumber.replace(/\D/g, '');
+        if (digitsOnly.length < 10) {
+            setError(currentLang === 'en'
+                ? 'Please enter a valid phone number (e.g., +31612345678)'
+                : 'Voer een geldig telefoonnummer in (bijv. +31612345678)');
             return;
         }
 
         setIsLoading(true);
 
         try {
-            if (!isClerkConfigured || !signUp) {
-                // Mock mode
-                console.log('[Mock] Signing up:', { firstName, lastName, email });
-                setCodeSent(true);
-                setStep('code');
-                setIsLoading(false);
+            const { data, error: sendError } = await supabase.functions.invoke('auth-send-code', {
+                body: { phone_number: phoneNumber }
+            });
+
+            if (sendError) {
+                throw new Error(sendError.message);
+            }
+
+            if (!data.ok) {
+                setError(currentLang === 'en' ? data.message : data.message_nl);
                 return;
             }
 
-            // Create sign-up with email
-            const signUpResult = await signUp.create({
-                firstName,
-                lastName,
-                emailAddress: email,
-            });
-
-            console.log('SignUp created:', signUpResult);
-            console.log('SignUp status:', signUp.status);
-            console.log('SignUp missingFields:', signUp.missingFields);
-
-            // Prepare email verification
-            await signUp.prepareEmailAddressVerification({
-                strategy: 'email_code',
-            });
+            // Store test code if returned (development mode)
+            if (data.test_code) {
+                setTestCode(data.test_code);
+            }
 
             setCodeSent(true);
             setStep('code');
         } catch (err) {
             console.error('Error signing up:', err);
-            if (err.errors?.[0]?.code === 'form_identifier_exists') {
-                setError(currentLang === 'en'
-                    ? 'Email already registered. Please sign in instead.'
-                    : 'E-mail is al geregistreerd. Log in.');
-            } else {
-                setError(err.errors?.[0]?.longMessage || err.message ||
-                    (currentLang === 'en' ? 'Sign up failed' : 'Registratie mislukt'));
-            }
+            setError(currentLang === 'en'
+                ? 'Failed to send code. Please try again.'
+                : 'Kon code niet versturen. Probeer het opnieuw.');
         } finally {
             setIsLoading(false);
         }
@@ -111,62 +102,32 @@ const Signup = () => {
         setIsLoading(true);
 
         try {
-            if (!isClerkConfigured || !signUp) {
-                // Mock mode - accept code "123456"
-                if (verificationCode === '123456') {
-                    navigate('/aanvraag', { replace: true });
-                } else {
-                    setError(currentLang === 'en' ? 'Invalid code' : 'Ongeldige code');
+            const { data, error: verifyError } = await supabase.functions.invoke('auth-verify-code', {
+                body: {
+                    phone_number: phoneNumber,
+                    code: verificationCode,
+                    first_name: firstName,
+                    last_name: lastName
                 }
-                setIsLoading(false);
+            });
+
+            if (verifyError) {
+                throw new Error(verifyError.message);
+            }
+
+            if (!data.ok) {
+                setError(currentLang === 'en' ? data.reason : data.reason_nl);
                 return;
             }
 
-            const result = await signUp.attemptEmailAddressVerification({
-                code: verificationCode,
-            });
+            // Signup successful - store auth data
+            login(data.token, data.phone_number, data.dossier_id, firstName, lastName);
 
-            console.log('Verification result:', result.status, result);
-            console.log('Missing fields:', JSON.stringify(result.missingFields));
-
-            if (result.status === 'complete') {
-                // Sign-up successful, activate session
-                if (setActive && result.createdSessionId) {
-                    await setActive({ session: result.createdSessionId });
-                }
-                // Navigate immediately
-                navigate('/aanvraag', { replace: true });
-            } else if (result.status === 'missing_requirements') {
-                // Check if we have a session already (email verified successfully)
-                if (result.createdSessionId) {
-                    // Activate whatever session we have and proceed
-                    if (setActive) {
-                        await setActive({ session: result.createdSessionId });
-                    }
-                    navigate('/aanvraag', { replace: true });
-                } else {
-                    // Log missing fields for debugging
-                    console.log('Cannot complete signup, missing:', result.missingFields);
-                    setError(currentLang === 'en'
-                        ? `Please try with a different email address. Your current email may already be registered.`
-                        : `Probeer een ander e-mailadres. Dit e-mailadres is mogelijk al geregistreerd.`);
-                }
-            } else {
-                setError(currentLang === 'en' ? 'Verification failed' : 'Verificatie mislukt');
-            }
+            // Navigate to application page
+            navigate('/aanvraag', { replace: true });
         } catch (err) {
             console.error('Error verifying code:', err);
-            const errorCode = err.errors?.[0]?.code;
-            const errorMessage = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message;
-
-            // Handle already verified case - user might already exist
-            if (errorCode === 'verification_already_verified' || errorMessage?.includes('already been verified')) {
-                setError(currentLang === 'en'
-                    ? 'This email is already verified. Try signing in instead.'
-                    : 'Dit e-mailadres is al geverifieerd. Probeer in te loggen.');
-            } else {
-                setError(errorMessage || (currentLang === 'en' ? 'Invalid code' : 'Ongeldige code'));
-            }
+            setError(currentLang === 'en' ? 'Invalid code' : 'Ongeldige code');
         } finally {
             setIsLoading(false);
         }
@@ -177,10 +138,11 @@ const Signup = () => {
         setVerificationCode('');
         setError('');
         setCodeSent(false);
+        setTestCode(null);
     };
 
     const handleTestCodeClick = () => {
-        setVerificationCode('123456');
+        setVerificationCode(testCode || '123456');
     };
 
     return (
@@ -234,18 +196,23 @@ const Signup = () => {
 
                             <div>
                                 <label className={styles.inputLabel}>
-                                    {currentLang === 'en' ? 'Email address' : 'E-mailadres'}
+                                    {currentLang === 'en' ? 'Phone number (WhatsApp)' : 'Telefoonnummer (WhatsApp)'}
                                 </label>
                                 <div className={styles.inputWrapper}>
                                     <input
-                                        type="email"
+                                        type="tel"
                                         className={styles.input}
-                                        placeholder="email@example.com"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="+31612345678"
+                                        value={phoneNumber}
+                                        onChange={(e) => setPhoneNumber(formatPhoneNumber(e.target.value))}
                                         required
                                     />
                                 </div>
+                                <p className={styles.inputHint}>
+                                    {currentLang === 'en'
+                                        ? 'Include country code (e.g., +31 for Netherlands)'
+                                        : 'Inclusief landcode (bijv. +31 voor Nederland)'}
+                                </p>
                             </div>
 
                             {error && (
@@ -271,13 +238,6 @@ const Signup = () => {
                                     {currentLang === 'en' ? 'Sign in' : 'Inloggen'}
                                 </Link>
                             </div>
-
-                            {!isClerkConfigured && (
-                                <div className={styles.testModeNote}>
-                                    Test mode: {currentLang === 'en' ? 'Use code' : 'Gebruik code'}{' '}
-                                    <span className={styles.testModeCode} onClick={handleTestCodeClick}>123456</span>
-                                </div>
-                            )}
                         </form>
                     ) : (
                         <div className={styles.form}>
@@ -294,8 +254,8 @@ const Signup = () => {
                                 <div className={styles.successMessage}>
                                     <CheckCircle size={16} />
                                     {currentLang === 'en'
-                                        ? `Code sent to ${email}`
-                                        : `Code verzonden naar ${email}`}
+                                        ? `WhatsApp code sent to ${phoneNumber}`
+                                        : `WhatsApp code verzonden naar ${phoneNumber}`}
                                 </div>
                             )}
 
@@ -336,10 +296,12 @@ const Signup = () => {
                                 </button>
                             </form>
 
-                            {!isClerkConfigured && (
+                            {(testCode || true) && (
                                 <div className={styles.testModeNote}>
-                                    Test mode: {currentLang === 'en' ? 'Use code' : 'Gebruik code'}{' '}
-                                    <span className={styles.testModeCode} onClick={handleTestCodeClick}>123456</span>
+                                    {currentLang === 'en' ? 'Test mode: Use code' : 'Testmodus: Gebruik code'}{' '}
+                                    <span className={styles.testModeCode} onClick={handleTestCodeClick}>
+                                        {testCode || '123456'}
+                                    </span>
                                 </div>
                             )}
                         </div>

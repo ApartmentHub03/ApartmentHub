@@ -8,10 +8,9 @@ import { supabase } from '../integrations/supabase/client';
 /**
  * Get or create a dossier for a user by identifier (email or phone)
  * @param {string} identifier - User's email or phone number
- * @param {string} clerkUserId - Clerk user ID to link
  * @returns {Promise<{ok: boolean, dossierId?: string, isNew?: boolean, error?: string}>}
  */
-export const getOrCreateDossier = async (identifier, clerkUserId = null) => {
+export const getOrCreateDossier = async (identifier) => {
     try {
         if (!supabase) {
             // Mock mode for development without Supabase
@@ -27,23 +26,6 @@ export const getOrCreateDossier = async (identifier, clerkUserId = null) => {
         const isEmail = identifier && identifier.includes('@');
         const searchField = isEmail ? 'email' : 'phone_number';
 
-        // First, try to find an existing dossier by Clerk user ID (most reliable)
-        if (clerkUserId) {
-            const { data: existingByClerk, error: clerkError } = await supabase
-                .from('dossiers')
-                .select('id, status')
-                .eq('clerk_user_id', clerkUserId)
-                .single();
-
-            if (existingByClerk && !clerkError) {
-                return {
-                    ok: true,
-                    dossierId: existingByClerk.id,
-                    isNew: false
-                };
-            }
-        }
-
         // Try to find by email/phone
         const { data: existingDossier, error: fetchError } = await supabase
             .from('dossiers')
@@ -58,13 +40,6 @@ export const getOrCreateDossier = async (identifier, clerkUserId = null) => {
         }
 
         if (existingDossier) {
-            // Update clerk_user_id if provided
-            if (clerkUserId) {
-                await supabase
-                    .from('dossiers')
-                    .update({ clerk_user_id: clerkUserId })
-                    .eq('id', existingDossier.id);
-            }
             return {
                 ok: true,
                 dossierId: existingDossier.id,
@@ -74,7 +49,6 @@ export const getOrCreateDossier = async (identifier, clerkUserId = null) => {
 
         // Create a new dossier
         const insertData = {
-            clerk_user_id: clerkUserId,
             status: 'draft',
             created_at: new Date().toISOString()
         };

@@ -480,7 +480,6 @@ const Aanvraag = () => {
 
     const handleLogout = async () => {
         await logout();
-        // Clerk's signOut will handle the redirect to /login
     };
 
     const handleSubmit = () => {
