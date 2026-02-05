@@ -61,7 +61,7 @@ const Signup = () => {
 
         try {
             const { data, error: sendError } = await supabase.functions.invoke('auth-send-code', {
-                body: { phone_number: phoneNumber }
+                body: { phone_number: phoneNumber, mode: 'signup' }
             });
 
             if (sendError) {

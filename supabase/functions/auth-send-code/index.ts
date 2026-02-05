@@ -69,7 +69,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { phone_number } = await req.json();
+    const { phone_number, mode } = await req.json();
 
     if (!phone_number || phone_number.length < 9) {
       return new Response(
@@ -84,7 +84,7 @@ serve(async (req: Request) => {
 
     // Format phone number to E.164
     const formattedPhone = formatPhoneNumber(phone_number);
-    console.log(`Processing OTP request for: ${formattedPhone}`);
+    console.log(`Processing OTP request for: ${formattedPhone}, mode: ${mode || 'login'}`);
 
     // Generate 6-digit OTP
     const code = generateOTP();
@@ -94,26 +94,48 @@ serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Check if user exists in dossiers table (only existing users can login)
-    const { data: existingUser, error: lookupError } = await supabase
-      .from('dossiers')
-      .select('id')
-      .eq('phone_number', formattedPhone)
-      .single();
+    // Only check for existing user during LOGIN (not signup)
+    if (mode !== 'signup') {
+      const { data: existingUser, error: lookupError } = await supabase
+        .from('dossiers')
+        .select('id')
+        .eq('phone_number', formattedPhone)
+        .single();
 
-    if (lookupError || !existingUser) {
-      console.log(`User not found for phone: ${formattedPhone}`);
-      return new Response(
-        JSON.stringify({
-          ok: false,
-          message: "No account found with this phone number. Please sign up first.",
-          message_nl: "Geen account gevonden met dit telefoonnummer. Registreer je eerst."
-        }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      if (lookupError || !existingUser) {
+        console.log(`User not found for phone: ${formattedPhone}`);
+        return new Response(
+          JSON.stringify({
+            ok: false,
+            message: "No account found with this phone number. Please sign up first.",
+            message_nl: "Geen account gevonden met dit telefoonnummer. Registreer je eerst."
+          }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`User found with dossier ID: ${existingUser.id}`);
+    } else {
+      // During signup, check if user ALREADY exists (prevent duplicate accounts)
+      const { data: existingUser } = await supabase
+        .from('dossiers')
+        .select('id')
+        .eq('phone_number', formattedPhone)
+        .single();
+
+      if (existingUser) {
+        console.log(`User already exists with phone: ${formattedPhone}`);
+        return new Response(
+          JSON.stringify({
+            ok: false,
+            message: "An account with this phone number already exists. Please login instead.",
+            message_nl: "Er bestaat al een account met dit telefoonnummer. Log in."
+          }),
+          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      console.log(`Signup mode: no existing user found, proceeding with OTP`);
     }
-
-    console.log(`User found with dossier ID: ${existingUser.id}`);
 
     // Delete old codes for this phone number
     await supabase
