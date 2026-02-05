@@ -61,17 +61,31 @@ const Login = () => {
                 body: { phone_number: phoneNumber }
             });
 
-            if (sendError) {
-                throw new Error(sendError.message);
-            }
-
-            if (!data.ok) {
-                setError(currentLang === 'en' ? data.message : data.message_nl);
+            // Supabase functions.invoke returns data even on non-2xx if function returns JSON
+            // Check if we got an error response with user-facing message
+            if (data && !data.ok) {
+                // Handle "user not found" error
+                if (data.message?.includes('No account') || data.message_nl?.includes('Geen account')) {
+                    setError(currentLang === 'en' ? data.message : data.message_nl);
+                    return;
+                }
+                setError(currentLang === 'en' ? (data.message || 'An error occurred') : (data.message_nl || 'Er is een fout opgetreden'));
                 return;
             }
 
+            if (sendError) {
+                // Check if it's a "user not found" error (404)
+                if (sendError.message?.includes('non-2xx') || sendError.message?.includes('404')) {
+                    setError(currentLang === 'en'
+                        ? 'No account found with this phone number. Please sign up first.'
+                        : 'Geen account gevonden met dit telefoonnummer. Registreer je eerst.');
+                    return;
+                }
+                throw new Error(sendError.message);
+            }
+
             // Store test code if returned (development mode)
-            if (data.test_code) {
+            if (data?.test_code) {
                 setTestCode(data.test_code);
             }
 
@@ -79,9 +93,16 @@ const Login = () => {
             setStep('code');
         } catch (err) {
             console.error('Error sending code:', err);
-            setError(currentLang === 'en'
-                ? 'Failed to send code. Please try again.'
-                : 'Kon code niet versturen. Probeer het opnieuw.');
+            // Check if error message indicates account not found
+            if (err.message?.includes('non-2xx') || err.message?.includes('404')) {
+                setError(currentLang === 'en'
+                    ? 'No account found with this phone number. Please sign up first.'
+                    : 'Geen account gevonden met dit telefoonnummer. Registreer je eerst.');
+            } else {
+                setError(currentLang === 'en'
+                    ? 'Failed to send code. Please try again.'
+                    : 'Kon code niet versturen. Probeer het opnieuw.');
+            }
         } finally {
             setIsLoading(false);
         }

@@ -94,6 +94,27 @@ serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Check if user exists in dossiers table (only existing users can login)
+    const { data: existingUser, error: lookupError } = await supabase
+      .from('dossiers')
+      .select('id')
+      .eq('phone_number', formattedPhone)
+      .single();
+
+    if (lookupError || !existingUser) {
+      console.log(`User not found for phone: ${formattedPhone}`);
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          message: "No account found with this phone number. Please sign up first.",
+          message_nl: "Geen account gevonden met dit telefoonnummer. Registreer je eerst."
+        }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`User found with dossier ID: ${existingUser.id}`);
+
     // Delete old codes for this phone number
     await supabase
       .from('verification_codes')
