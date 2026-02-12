@@ -4,6 +4,7 @@ import { Mail, MapPin, CheckCircle, AlertCircle } from 'lucide-react';
 import { useForm } from '../hooks/useForm';
 import styles from './Contact.module.css';
 import { translations } from '../data/translations';
+import LocalBusinessSchema from '../components/seo/LocalBusinessSchema';
 
 const WhatsAppIcon = ({ className }) => (
     <svg className={className} fill="currentColor" viewBox="0 0 24 24">
@@ -24,6 +25,7 @@ const Contact = () => {
 
     return (
         <div className={styles.page}>
+            <LocalBusinessSchema />
             <section className={styles.heroSection}>
                 <div className={styles.heroContainer}>
                     <h1 className={styles.heroTitle}>{t.heroTitle}</h1>
