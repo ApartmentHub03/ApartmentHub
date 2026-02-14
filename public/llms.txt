@@ -1,0 +1,18 @@
+# ApartmentHub
+
+> ApartmentHub is the premier real estate agency in Amsterdam, connecting tenants and landlords for seamless rental experiences. We specialize in expat housing, property management, and finding the perfect apartment in Amsterdam's best neighborhoods.
+
+## Core Services
+- [Rent Out Your Property](https://www.apartmenthub.nl/landlords): Full-service property management and rental services for landlords in Amsterdam.
+- [Find an Apartment](https://www.apartmenthub.nl/tenants): Curated rental listings and search services for tenants and expats.
+- [Apartment Listings](https://www.apartmenthub.nl/apartments): Current available apartments for rent in Amsterdam.
+
+## Local Information
+- [Neighborhoods Guide](https://www.apartmenthub.nl/neighborhoods): Detailed guides to Amsterdam's districts including Center, South, West, and De Pijp.
+- [About Us](https://www.apartmenthub.nl/about): Our mission, team, and experience in the Amsterdam real estate market.
+- [FAQ](https://www.apartmenthub.nl/faq): Frequently asked questions about renting, letting, legal requirements, and our process.
+
+## Contact & Legal
+- [Contact Us](https://www.apartmenthub.nl/contact): Get in touch via WhatsApp, email, or visit our office.
+- [Privacy Policy](https://www.apartmenthub.nl/privacy-policy): How we handle your data (GDPR compliant).
+- [Terms and Conditions](https://www.apartmenthub.nl/terms-and-conditions): General terms of service.
