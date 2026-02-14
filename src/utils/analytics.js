@@ -1,24 +1,24 @@
 /**
- * Analytics utility for GA4 + GTM event tracking
+ * Analytics utility for GA4 event tracking via gtag.js
  * 
- * All events are pushed to the GTM dataLayer.
- * GTM then forwards them to GA4 based on your container configuration.
- * 
- * GTM Container ID: Replace GTM-XXXXXXX in index.html with your actual container ID.
- * GA4 Measurement ID: Configure inside GTM (Tags → GA4 Configuration tag).
+ * GA4 Measurement ID: G-GYERTDXNFC
+ * All events are sent directly to GA4 using the gtag() function.
  */
-
-// Initialize dataLayer if not present
-window.dataLayer = window.dataLayer || [];
 
 /**
- * Push a custom event to the GTM dataLayer
+ * Safe wrapper around gtag — won't crash if gtag hasn't loaded yet
+ */
+const safeGtag = (...args) => {
+    if (typeof window.gtag === 'function') {
+        window.gtag(...args);
+    }
+};
+
+/**
+ * Track a custom GA4 event
  */
 export const trackEvent = (eventName, eventParams = {}) => {
-    window.dataLayer.push({
-        event: eventName,
-        ...eventParams,
-    });
+    safeGtag('event', eventName, eventParams);
 };
 
 // ─── Conversion Events ───────────────────────────────────
@@ -85,11 +85,9 @@ export const trackEmailClick = (location) => {
 
 /**
  * Track page view (for SPA navigation)
- * Called automatically if using GTM's History Change trigger,
- * but can also be called manually.
  */
 export const trackPageView = (pagePath, pageTitle) => {
-    trackEvent('page_view', {
+    safeGtag('config', 'G-GYERTDXNFC', {
         page_path: pagePath,
         page_title: pageTitle,
     });
