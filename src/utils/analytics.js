@@ -1,24 +1,43 @@
 /**
- * Analytics utility for GA4 event tracking via gtag.js
+ * Analytics utility for GA4 (direct) + GTM event tracking
  * 
  * GA4 Measurement ID: G-GYERTDXNFC
- * All events are sent directly to GA4 using the gtag() function.
+ * GTM Container ID: GTM-KZBH8MVX
+ * 
+ * Events are sent to:
+ * 1. GA4 directly via gtag()
+ * 2. GTM dataLayer via push() - allowing GTM tags to fire on these events
  */
 
+// Initialize dataLayer
+window.dataLayer = window.dataLayer || [];
+
 /**
- * Safe wrapper around gtag — won't crash if gtag hasn't loaded yet
+ * Safe wrapper around gtag
  */
 const safeGtag = (...args) => {
     if (typeof window.gtag === 'function') {
         window.gtag(...args);
+    } else {
+        // Fallback if gtag didn't load, push arguments to dataLayer manually
+        // which effectively does the same thing for gtag.js
+        window.dataLayer.push(arguments);
     }
 };
 
 /**
- * Track a custom GA4 event
+ * Track a custom event
+ * Sends to both GA4 (direct) and GTM (dataLayer)
  */
 export const trackEvent = (eventName, eventParams = {}) => {
+    // 1. Send to GA4 directly
     safeGtag('event', eventName, eventParams);
+
+    // 2. Push to GTM dataLayer for external tags (ads, pixels, etc.)
+    window.dataLayer.push({
+        event: eventName,
+        ...eventParams
+    });
 };
 
 // ─── Conversion Events ───────────────────────────────────
