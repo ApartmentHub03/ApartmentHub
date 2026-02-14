@@ -3,6 +3,7 @@ import { FileText, Home, Shield, Users, CheckCircle, Download } from 'lucide-rea
 import styles from '../../pages/RentIn.module.css';
 import rentalGuide from '../../assets/amsterdam-rental-guide-2024.pdf';
 import rentInVideo from '../../assets/Apartmenthub rent in.mp4';
+import { trackLeadMagnetDownload } from '../../utils/analytics';
 
 const RentalGuideDownload = ({ translations }) => {
     const t = translations;
@@ -77,6 +78,7 @@ const RentalGuideDownload = ({ translations }) => {
                             href={rentalGuide}
                             download="Amsterdam_Rental_Guide_2024.pdf"
                             className={styles.downloadBtn}
+                            onClick={() => trackLeadMagnetDownload('Amsterdam_Rental_Guide_2024')}
                         >
                             <div className={styles.btnContent}>
                                 <Download className={styles.btnIcon} />

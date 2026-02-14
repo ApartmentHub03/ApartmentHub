@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { ChevronDown, Mail } from 'lucide-react';
 import styles from './FAQ.module.css';
 import { translations } from '../data/translations';
+import { trackWhatsAppClick, trackEmailClick } from '../utils/analytics';
 
 const WhatsAppIcon = ({ className }) => (
     <svg className={className} fill="currentColor" viewBox="0 0 24 24">
@@ -105,6 +106,7 @@ const FAQ = () => {
                             target="_blank"
                             rel="noopener noreferrer"
                             className={styles.whatsappBtn}
+                            onClick={() => trackWhatsAppClick('faq')}
                         >
                             <WhatsAppIcon className={styles.btnIcon} />
                             <span>{t.btnWhatsapp}</span>
@@ -112,6 +114,7 @@ const FAQ = () => {
                         <a
                             href="mailto:info@apartmenthub.nl"
                             className={styles.emailBtn}
+                            onClick={() => trackEmailClick('faq')}
                         >
                             <Mail className={styles.btnIcon} />
                             <span>{t.btnEmail}</span>

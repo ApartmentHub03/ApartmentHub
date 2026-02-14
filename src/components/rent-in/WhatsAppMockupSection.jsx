@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircle, QrCode } from 'lucide-react';
 import styles from '../../pages/RentIn.module.css';
+import { trackWhatsAppClick } from '../../utils/analytics';
 
 const WhatsAppIcon = ({ className }) => (
     <svg className={className} fill="currentColor" viewBox="0 0 24 24">
@@ -140,7 +141,7 @@ const WhatsAppMockupSection = ({ translations, onWhatsAppClick }) => {
                             target="_blank"
                             rel="noopener noreferrer"
                             className={styles.whatsappBtn}
-                            onClick={onWhatsAppClick}
+                            onClick={() => { trackWhatsAppClick('mockup_section'); onWhatsAppClick?.(); }}
                         >
                             <WhatsAppIcon className={styles.whatsappIcon} />
                             <span>{t.btnWhatsapp}</span>

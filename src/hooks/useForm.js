@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { submitStart, submitSuccess, submitFailure, resetForm } from '../features/ui/formSlice';
+import { trackFormSubmit } from '../utils/analytics';
 
 export const useForm = (submitAction) => {
     const dispatch = useDispatch();
@@ -38,6 +39,7 @@ export const useForm = (submitAction) => {
             // const response = await api.post('/contact', formData);
 
             dispatch(submitSuccess(formData));
+            trackFormSubmit('contact_form');
 
             // Optional: Reset form
             // e.target.reset();

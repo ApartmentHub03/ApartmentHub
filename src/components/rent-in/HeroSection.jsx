@@ -1,6 +1,7 @@
 import React from 'react';
 import { Clock } from 'lucide-react';
 import styles from '../../pages/RentIn.module.css';
+import { trackWhatsAppClick } from '../../utils/analytics';
 
 const WhatsAppIcon = ({ className }) => (
     <svg className={className} fill="currentColor" viewBox="0 0 24 24">
@@ -33,6 +34,7 @@ const HeroSection = ({ title, subtitle, translations }) => {
                     target="_blank"
                     rel="noopener noreferrer"
                     className={styles.whatsappHeroBtn}
+                    onClick={() => trackWhatsAppClick('hero')}
                 >
                     <WhatsAppIcon className={styles.whatsappBtnIcon} />
                     <span>{whatsappBtnText}</span>

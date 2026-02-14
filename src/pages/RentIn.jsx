@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { translations } from '../data/translations';
 import styles from './RentIn.module.css';
+import { trackWhatsAppClick } from '../utils/analytics';
 
 // Import new components
 import HeroSection from '../components/rent-in/HeroSection';
@@ -95,6 +96,7 @@ const RentIn = () => {
                 rel="noopener noreferrer"
                 className={styles.floatingWhatsapp}
                 aria-label="Contact us on WhatsApp"
+                onClick={() => trackWhatsAppClick('floating_button')}
             >
                 <WhatsAppIcon className={styles.floatingIcon} />
             </a>
