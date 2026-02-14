@@ -158,7 +158,7 @@ export const loadAanvraagData = async (dossierId) => {
         const transformedPersonen = personen?.map(p => {
             // Get documents for this person and group by type
             const persoonDocsRaw = allDocuments.filter(doc => doc.persoon_id === p.id);
-            
+
             // Group documents by type
             const documentsByType = {};
             persoonDocsRaw.forEach(doc => {
@@ -182,7 +182,7 @@ export const loadAanvraagData = async (dossierId) => {
             const multiFileTypes = allDocTypes
                 .filter(doc => doc.multiFile === true)
                 .map(doc => doc.type);
-            
+
             const persoonDocuments = Object.entries(documentsByType).map(([type, docs]) => {
                 // If it's a known multi-file type OR there are multiple files of this type, treat as multi-file
                 if (multiFileTypes.includes(type) || docs.length > 1) {

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <!-- Homepage -->
+  <url>
+    <loc>https://www.apartmenthub.nl/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.apartmenthub.nl/en" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://www.apartmenthub.nl/nl" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.apartmenthub.nl/" />
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Rent Out / Landlords -->
+  <url>
+    <loc>https://www.apartmenthub.nl/landlords</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.apartmenthub.nl/en/rent-out" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://www.apartmenthub.nl/nl/rent-out" />
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Rent In / Tenants -->
+  <url>
+    <loc>https://www.apartmenthub.nl/tenants</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.apartmenthub.nl/en/rent-in" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://www.apartmenthub.nl/nl/rent-in" />
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Neighborhoods -->
+  <url>
+    <loc>https://www.apartmenthub.nl/neighborhoods</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.apartmenthub.nl/en/neighborhoods" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://www.apartmenthub.nl/nl/neighborhoods" />
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Apartments -->
+  <url>
+    <loc>https://www.apartmenthub.nl/apartments</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.apartmenthub.nl/en/apartments" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://www.apartmenthub.nl/nl/appartementen" />
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- About -->
+  <url>
+    <loc>https://www.apartmenthub.nl/about</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.apartmenthub.nl/en/about-us" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://www.apartmenthub.nl/nl/about-us" />
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- FAQ -->
+  <url>
+    <loc>https://www.apartmenthub.nl/faq</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.apartmenthub.nl/en/faq" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://www.apartmenthub.nl/nl/faq" />
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Discover More -->
+  <url>
+    <loc>https://www.apartmenthub.nl/discover-more</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.apartmenthub.nl/en/discover-more" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://www.apartmenthub.nl/nl/discover-more" />
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Contact -->
+  <url>
+    <loc>https://www.apartmenthub.nl/contact</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.apartmenthub.nl/en/contact" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://www.apartmenthub.nl/nl/contact" />
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Privacy Policy -->
+  <url>
+    <loc>https://www.apartmenthub.nl/privacy-policy</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.apartmenthub.nl/en/privacy-policy" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://www.apartmenthub.nl/nl/privacyverklaring" />
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <!-- Terms and Conditions -->
+  <url>
+    <loc>https://www.apartmenthub.nl/terms-and-conditions</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.apartmenthub.nl/en/terms-and-conditions" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://www.apartmenthub.nl/nl/algemene-voorwaarden" />
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+</urlset>

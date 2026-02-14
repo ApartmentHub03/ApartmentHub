@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getOrCreateDossier } from '../services/userDataService';
 import { sendLoginEvent } from '../services/webhookService';
+import { sendReminderRegistration } from '../services/reminderService';
 
 const AuthContext = createContext(undefined);
 
@@ -96,6 +97,9 @@ export const AuthProvider = ({ children }) => {
 
         // Send login event to webhook
         sendLoginEvent(phoneNumber, dossierId);
+
+        // Register for document completion reminders (n8n handles timing)
+        sendReminderRegistration(phoneNumber, dossierId);
     }, []);
 
     /**
