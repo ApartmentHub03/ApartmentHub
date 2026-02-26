@@ -51,6 +51,10 @@ const Aanvraag = () => {
             dispatch(setLanguage('en'));
         }
     }, [pathname, dispatch, currentLang]);
+
+    // Detect if we're on the general (no-apartment) route
+    const isGeneralRoute = pathname.toLowerCase().includes('aanvraag-general') || pathname.toLowerCase().includes('application-general');
+
     const t = translations.aanvraag[currentLang] || translations.aanvraag.nl;
     const tNav = translations.nav[currentLang] || translations.nav.en;
 
@@ -733,8 +737,8 @@ const Aanvraag = () => {
         setSaveStatus('saving');
         await updateAccountDocumentationStatus('Complete');
 
-        // Link offer to apartment and account
-        if (data.pand?.apartmentId && accountId) {
+        // Link offer to apartment and account (skip on general route)
+        if (!isGeneralRoute && data.pand?.apartmentId && accountId) {
             try {
                 const { supabase: sb } = await import('../integrations/supabase/client');
 
@@ -807,11 +811,15 @@ const Aanvraag = () => {
             <div className={styles.headerContainer}>
                 <div className={styles.container}>
                     <div className={styles.topBar}>
-                        <p className={styles.addressText}>📍 {data.pand.adres}</p>
+                        {!isGeneralRoute && data.pand.adres && (
+                            <p className={styles.addressText}>📍 {data.pand.adres}</p>
+                        )}
                         <div className={styles.headerButtons}>
-                            <button className={styles.changeButton} onClick={() => router.push('/appartementen')}>
-                                {currentLang === 'en' ? 'Change Apartment' : 'Wijzig Appartement'}
-                            </button>
+                            {!isGeneralRoute && (
+                                <button className={styles.changeButton} onClick={() => router.push('/appartementen')}>
+                                    {currentLang === 'en' ? 'Change Apartment' : 'Wijzig Appartement'}
+                                </button>
+                            )}
                             <button className={styles.logoutButton} onClick={handleLogout}>
                                 <LogOut size={14} />
                                 {t.logout}
@@ -856,32 +864,36 @@ const Aanvraag = () => {
                 )}
 
                 <div className={styles.mainLayout}>
-                    <RentalConditionsSidebar conditions={data.pand.voorwaarden} address={data.pand.adres} />
+                    {!isGeneralRoute && (
+                        <RentalConditionsSidebar conditions={data.pand.voorwaarden} address={data.pand.adres} />
+                    )}
 
                     <div className={styles.contentColumn}>
 
-                        <div className={styles.stepContainer}>
-                            <div className={styles.stepHeader}>
-                                <div className={styles.stepNumber}>1</div>
-                                <h2 className={styles.stepTitle}>{currentLang === 'en' ? 'Your Bid' : 'Jouw Bod'}</h2>
+                        {!isGeneralRoute && (
+                            <div className={styles.stepContainer}>
+                                <div className={styles.stepHeader}>
+                                    <div className={styles.stepNumber}>1</div>
+                                    <h2 className={styles.stepTitle}>{currentLang === 'en' ? 'Your Bid' : 'Jouw Bod'}</h2>
+                                </div>
+                                <BidSection
+                                    conditions={data.pand.voorwaarden}
+                                    bidAmount={bidAmount}
+                                    startDate={startDate}
+                                    motivation={motivation}
+                                    monthsAdvance={monthsAdvance}
+                                    onBidAmountChange={setBidAmount}
+                                    onStartDateChange={setStartDate}
+                                    onMotivationChange={setMotivation}
+                                    onMonthsAdvanceChange={setMonthsAdvance}
+                                />
                             </div>
-                            <BidSection
-                                conditions={data.pand.voorwaarden}
-                                bidAmount={bidAmount}
-                                startDate={startDate}
-                                motivation={motivation}
-                                monthsAdvance={monthsAdvance}
-                                onBidAmountChange={setBidAmount}
-                                onStartDateChange={setStartDate}
-                                onMotivationChange={setMotivation}
-                                onMonthsAdvanceChange={setMonthsAdvance}
-                            />
-                        </div>
+                        )}
 
 
                         <div className={styles.stepContainer}>
                             <div className={styles.stepHeader}>
-                                <div className={styles.stepNumber}>2</div>
+                                <div className={styles.stepNumber}>{isGeneralRoute ? '1' : '2'}</div>
                                 <h2 className={styles.stepTitle}>{currentLang === 'en' ? 'Details' : 'Gegevens'}</h2>
                             </div>
 
