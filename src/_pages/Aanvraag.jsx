@@ -131,6 +131,35 @@ const Aanvraag = () => {
                     if (!accError && !accData?.documentation_status) {
                         await sb.from('accounts').update({ documentation_status: 'Pending' }).eq('id', accountId);
                     }
+
+                    // Save the selected apartment to accounts.apartment_selected
+                    if (pand.apartmentId) {
+                        try {
+                            const { data: accForApt } = await sb
+                                .from('accounts')
+                                .select('apartment_selected')
+                                .eq('id', accountId)
+                                .single();
+
+                            const existing = accForApt?.apartment_selected || [];
+                            const alreadySelected = existing.some(a => a.apartment_id === pand.apartmentId);
+
+                            if (!alreadySelected) {
+                                const aptEntry = {
+                                    apartment_id: pand.apartmentId,
+                                    address: pand.adres,
+                                    rental_price: pand.voorwaarden?.huurprijs || null,
+                                    selected_at: new Date().toISOString()
+                                };
+                                await sb.from('accounts').update({
+                                    apartment_selected: [...existing, aptEntry]
+                                }).eq('id', accountId);
+                                console.log('[Aanvraag] ✓ Saved apartment to accounts.apartment_selected');
+                            }
+                        } catch (aptErr) {
+                            console.warn('[Aanvraag] Could not update apartment_selected:', aptErr);
+                        }
+                    }
                 } catch (e) {
                     console.warn('[Aanvraag] Could not load apartment from current_bookings', e);
                 }

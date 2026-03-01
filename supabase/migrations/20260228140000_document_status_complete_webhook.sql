@@ -24,6 +24,7 @@ BEGIN
         'whatsapp_number', NEW.whatsapp_number,
         'email', NEW.email,
         'documentation_status', NEW.documentation_status,
+        'apartment_selected', COALESCE(to_jsonb(NEW.apartment_selected), '[]'::jsonb),
         'timestamp', NOW(),
         'salesforce_account_id', NEW.salesforce_account_id
     );
