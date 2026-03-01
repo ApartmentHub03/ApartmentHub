@@ -1,0 +1,22 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 20
+      arrivalRate: 1
+      rampTo: 10
+      name: "Ramp up"
+    - duration: 30
+      arrivalRate: 10
+      name: "Sustain"
+  defaults:
+    headers:
+      User-Agent: "ApartmentHub-LoadTest/1.0"
+
+scenarios:
+  - name: "Page Loads"
+    flow:
+      - get: { url: "/" }
+      - get: { url: "/nl/appartementen" }
+      - get: { url: "/aanvraag" }
+      - get: { url: "/login" }
+      - get: { url: "/faq" }

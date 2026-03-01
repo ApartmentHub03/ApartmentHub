@@ -1,0 +1,74 @@
+[
+  {
+    "page": "Homepage",
+    "url": "/",
+    "score": 0,
+    "lcp": "N/A",
+    "fid": "N/A",
+    "cls": "N/A",
+    "ttfb": "N/A",
+    "si": "N/A",
+    "tbt": "N/A",
+    "fcp": "N/A"
+  },
+  {
+    "page": "Apartments (NL)",
+    "url": "/nl/appartementen",
+    "score": 0,
+    "lcp": "N/A",
+    "fid": "N/A",
+    "cls": "N/A",
+    "ttfb": "N/A",
+    "si": "N/A",
+    "tbt": "N/A",
+    "fcp": "N/A"
+  },
+  {
+    "page": "Aanvraag Form",
+    "url": "/aanvraag",
+    "score": 0,
+    "lcp": "N/A",
+    "fid": "N/A",
+    "cls": "N/A",
+    "ttfb": "N/A",
+    "si": "N/A",
+    "tbt": "N/A",
+    "fcp": "N/A"
+  },
+  {
+    "page": "Login",
+    "url": "/login",
+    "score": 0,
+    "lcp": "N/A",
+    "fid": "N/A",
+    "cls": "N/A",
+    "ttfb": "N/A",
+    "si": "N/A",
+    "tbt": "N/A",
+    "fcp": "N/A"
+  },
+  {
+    "page": "About Us",
+    "url": "/about-us",
+    "score": 0,
+    "lcp": "N/A",
+    "fid": "N/A",
+    "cls": "N/A",
+    "ttfb": "N/A",
+    "si": "N/A",
+    "tbt": "N/A",
+    "fcp": "N/A"
+  },
+  {
+    "page": "FAQ",
+    "url": "/faq",
+    "score": 0,
+    "lcp": "N/A",
+    "fid": "N/A",
+    "cls": "N/A",
+    "ttfb": "N/A",
+    "si": "N/A",
+    "tbt": "N/A",
+    "fcp": "N/A"
+  }
+]

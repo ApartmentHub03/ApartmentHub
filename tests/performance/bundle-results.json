@@ -1,0 +1,328 @@
+{
+  "routes": [
+    {
+      "route": "/",
+      "sizeKB": 0.138,
+      "firstLoadKB": 138
+    },
+    {
+      "route": "/_not-found",
+      "sizeKB": 0.128,
+      "firstLoadKB": 102
+    },
+    {
+      "route": "/aanvraag",
+      "sizeKB": 0.29,
+      "firstLoadKB": 209
+    },
+    {
+      "route": "/aanvraag-general",
+      "sizeKB": 0.293,
+      "firstLoadKB": 209
+    },
+    {
+      "route": "/about",
+      "sizeKB": 0.139,
+      "firstLoadKB": 128
+    },
+    {
+      "route": "/about-us",
+      "sizeKB": 0.138,
+      "firstLoadKB": 128
+    },
+    {
+      "route": "/algemene-voorwaarden",
+      "sizeKB": 0.132,
+      "firstLoadKB": 112
+    },
+    {
+      "route": "/apartments",
+      "sizeKB": 2.75,
+      "firstLoadKB": 175
+    },
+    {
+      "route": "/appartementen",
+      "sizeKB": 2.75,
+      "firstLoadKB": 175
+    },
+    {
+      "route": "/application",
+      "sizeKB": 0.293,
+      "firstLoadKB": 209
+    },
+    {
+      "route": "/application-general",
+      "sizeKB": 0.294,
+      "firstLoadKB": 209
+    },
+    {
+      "route": "/contact",
+      "sizeKB": 0.138,
+      "firstLoadKB": 136
+    },
+    {
+      "route": "/deal-response",
+      "sizeKB": 0.39,
+      "firstLoadKB": 162
+    },
+    {
+      "route": "/discover-more",
+      "sizeKB": 0.136,
+      "firstLoadKB": 113
+    },
+    {
+      "route": "/en",
+      "sizeKB": 0.138,
+      "firstLoadKB": 138
+    },
+    {
+      "route": "/en/about-us",
+      "sizeKB": 0.138,
+      "firstLoadKB": 128
+    },
+    {
+      "route": "/en/apartments",
+      "sizeKB": 2.75,
+      "firstLoadKB": 175
+    },
+    {
+      "route": "/en/application",
+      "sizeKB": 0.294,
+      "firstLoadKB": 209
+    },
+    {
+      "route": "/en/application-general",
+      "sizeKB": 0.294,
+      "firstLoadKB": 209
+    },
+    {
+      "route": "/en/contact",
+      "sizeKB": 0.138,
+      "firstLoadKB": 136
+    },
+    {
+      "route": "/en/deal-response",
+      "sizeKB": 0.39,
+      "firstLoadKB": 162
+    },
+    {
+      "route": "/en/discover-more",
+      "sizeKB": 0.136,
+      "firstLoadKB": 113
+    },
+    {
+      "route": "/en/faq",
+      "sizeKB": 3.02,
+      "firstLoadKB": 125
+    },
+    {
+      "route": "/en/letter-of-intent",
+      "sizeKB": 0.304,
+      "firstLoadKB": 203
+    },
+    {
+      "route": "/en/login",
+      "sizeKB": 0.146,
+      "firstLoadKB": 184
+    },
+    {
+      "route": "/en/neighborhood/[id]",
+      "sizeKB": 0.14300000000000002,
+      "firstLoadKB": 237
+    },
+    {
+      "route": "/en/neighborhoods",
+      "sizeKB": 1.06,
+      "firstLoadKB": 127
+    },
+    {
+      "route": "/en/privacy-policy",
+      "sizeKB": 0.133,
+      "firstLoadKB": 108
+    },
+    {
+      "route": "/en/rent-in",
+      "sizeKB": 0.136,
+      "firstLoadKB": 129
+    },
+    {
+      "route": "/en/rent-out",
+      "sizeKB": 0.14100000000000001,
+      "firstLoadKB": 185
+    },
+    {
+      "route": "/en/signup",
+      "sizeKB": 0.14400000000000002,
+      "firstLoadKB": 165
+    },
+    {
+      "route": "/en/terms-and-conditions",
+      "sizeKB": 0.133,
+      "firstLoadKB": 112
+    },
+    {
+      "route": "/faq",
+      "sizeKB": 3.02,
+      "firstLoadKB": 125
+    },
+    {
+      "route": "/intentieverklaring",
+      "sizeKB": 0.303,
+      "firstLoadKB": 203
+    },
+    {
+      "route": "/landlords",
+      "sizeKB": 0.14200000000000002,
+      "firstLoadKB": 185
+    },
+    {
+      "route": "/letter-of-intent",
+      "sizeKB": 0.304,
+      "firstLoadKB": 203
+    },
+    {
+      "route": "/login",
+      "sizeKB": 0.146,
+      "firstLoadKB": 184
+    },
+    {
+      "route": "/neighborhoods",
+      "sizeKB": 1.06,
+      "firstLoadKB": 127
+    },
+    {
+      "route": "/nl",
+      "sizeKB": 0.138,
+      "firstLoadKB": 138
+    },
+    {
+      "route": "/nl/aanvraag",
+      "sizeKB": 0.294,
+      "firstLoadKB": 209
+    },
+    {
+      "route": "/nl/aanvraag-general",
+      "sizeKB": 0.294,
+      "firstLoadKB": 209
+    },
+    {
+      "route": "/nl/about-us",
+      "sizeKB": 0.139,
+      "firstLoadKB": 128
+    },
+    {
+      "route": "/nl/algemene-voorwaarden",
+      "sizeKB": 0.132,
+      "firstLoadKB": 112
+    },
+    {
+      "route": "/nl/appartementen",
+      "sizeKB": 2.75,
+      "firstLoadKB": 175
+    },
+    {
+      "route": "/nl/contact",
+      "sizeKB": 0.139,
+      "firstLoadKB": 136
+    },
+    {
+      "route": "/nl/discover-more",
+      "sizeKB": 0.136,
+      "firstLoadKB": 113
+    },
+    {
+      "route": "/nl/faq",
+      "sizeKB": 3.02,
+      "firstLoadKB": 125
+    },
+    {
+      "route": "/nl/intentieverklaring",
+      "sizeKB": 0.304,
+      "firstLoadKB": 203
+    },
+    {
+      "route": "/nl/login",
+      "sizeKB": 0.147,
+      "firstLoadKB": 184
+    },
+    {
+      "route": "/nl/neighborhood/[id]",
+      "sizeKB": 0.14300000000000002,
+      "firstLoadKB": 237
+    },
+    {
+      "route": "/nl/neighborhoods",
+      "sizeKB": 1.06,
+      "firstLoadKB": 127
+    },
+    {
+      "route": "/nl/privacy-policy",
+      "sizeKB": 0.132,
+      "firstLoadKB": 108
+    },
+    {
+      "route": "/nl/privacyverklaring",
+      "sizeKB": 0.132,
+      "firstLoadKB": 108
+    },
+    {
+      "route": "/nl/rent-in",
+      "sizeKB": 0.136,
+      "firstLoadKB": 129
+    },
+    {
+      "route": "/nl/rent-out",
+      "sizeKB": 0.14200000000000002,
+      "firstLoadKB": 185
+    },
+    {
+      "route": "/nl/signup",
+      "sizeKB": 0.14300000000000002,
+      "firstLoadKB": 165
+    },
+    {
+      "route": "/nl/terms-and-conditions",
+      "sizeKB": 0.132,
+      "firstLoadKB": 112
+    },
+    {
+      "route": "/privacy-policy",
+      "sizeKB": 0.133,
+      "firstLoadKB": 108
+    },
+    {
+      "route": "/privacyverklaring",
+      "sizeKB": 0.132,
+      "firstLoadKB": 108
+    },
+    {
+      "route": "/rent-in",
+      "sizeKB": 0.136,
+      "firstLoadKB": 129
+    },
+    {
+      "route": "/rent-out",
+      "sizeKB": 0.14200000000000002,
+      "firstLoadKB": 185
+    },
+    {
+      "route": "/signup",
+      "sizeKB": 0.14300000000000002,
+      "firstLoadKB": 165
+    },
+    {
+      "route": "/tenants",
+      "sizeKB": 0.136,
+      "firstLoadKB": 129
+    },
+    {
+      "route": "/terms-and-conditions",
+      "sizeKB": 0.132,
+      "firstLoadKB": 112
+    }
+  ],
+  "totalSizeKB": 33.089,
+  "avgFirstLoadKB": 154.9375,
+  "warnings": 14,
+  "failures": 0
+}

@@ -53,7 +53,7 @@ const AppartementenSelectie = () => {
             // Store selected apartment ID and full data for Aanvraag page
             localStorage.setItem('selected_apartment', selectedApartment);
             localStorage.setItem('selected_apartment_data', JSON.stringify(selectedApt));
-            router.push('/login');
+            router.push('/aanvraag');
         }
     };
 

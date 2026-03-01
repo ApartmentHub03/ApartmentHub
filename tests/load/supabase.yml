@@ -1,0 +1,39 @@
+config:
+  target: "https://diovljzaabbfftcqmwub.supabase.co"
+  phases:
+    - duration: 20
+      arrivalRate: 1
+      rampTo: 5
+      name: "Ramp up"
+    - duration: 20
+      arrivalRate: 5
+      name: "Sustain"
+  processor: "./artillery-processor.js"
+  variables:
+    supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpb3ZsanphYWJiZmZ0Y3Ftd3ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5OTIxMzMsImV4cCI6MjA4NDU2ODEzM30.jHGQzS5GxFDcDBv5-SBws6UGXWwGC3YnN47hrcCW6g4"
+  defaults:
+    headers:
+      User-Agent: "ApartmentHub-LoadTest/1.0"
+
+scenarios:
+  - name: "Auth send-code (negative)"
+    beforeScenario: "generatePhoneNumber"
+    flow:
+      - post:
+          url: "/functions/v1/auth-send-code"
+          beforeRequest: "setSupabaseHeaders"
+          json:
+            phone_number: "{{ phoneNumber }}"
+            mode: "login"
+          expect:
+            - statusCode: [200, 400, 404]
+
+  - name: "get-dossier (unauthenticated)"
+    flow:
+      - post:
+          url: "/functions/v1/get-dossier"
+          beforeRequest: "setSupabaseHeaders"
+          json:
+            dossier_id: "00000000-0000-0000-0000-000000000000"
+          expect:
+            - statusCode: [200, 401, 404]

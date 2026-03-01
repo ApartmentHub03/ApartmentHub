@@ -1,0 +1,23 @@
+config:
+  target: "https://davidvanwachem.app.n8n.cloud"
+  phases:
+    - duration: 20
+      arrivalRate: 2
+      name: "Sustain"
+  processor: "./artillery-processor.js"
+  defaults:
+    headers:
+      User-Agent: "ApartmentHub-LoadTest/1.0"
+
+scenarios:
+  - name: "Webhook reminder ping"
+    beforeScenario: "generatePhoneNumber"
+    flow:
+      - function: "buildWebhookPayload"
+      - post:
+          url: "/webhook/get-website-filled-status"
+          headers:
+            Content-Type: "application/json"
+          body: "{{ webhookPayload }}"
+          expect:
+            - statusCode: [200, 201, 204, 404, 500]
