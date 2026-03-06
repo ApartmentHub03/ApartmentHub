@@ -1,4 +1,4 @@
-const BASE_URL = 'https://www.apartmenthub.nl';
+const BASE_URL = 'https://apartmenthub.nl';
 
 export default function sitemap() {
   const now = new Date().toISOString();

@@ -4,10 +4,10 @@ export const metadata = {
     title: 'Frequently Asked Questions | ApartmentHub',
     description: 'Find answers to common questions about renting in Amsterdam with ApartmentHub.',
     alternates: {
-        canonical: 'https://www.apartmenthub.nl/en/faq',
+        canonical: 'https://apartmenthub.nl/en/faq',
         languages: {
-            en: 'https://www.apartmenthub.nl/en/faq',
-            nl: 'https://www.apartmenthub.nl/nl/faq',
+            en: 'https://apartmenthub.nl/en/faq',
+            nl: 'https://apartmenthub.nl/nl/faq',
         },
     },
 };

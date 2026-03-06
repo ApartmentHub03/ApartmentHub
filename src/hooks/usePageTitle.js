@@ -3,7 +3,7 @@ import { usePathname } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import { translations } from '../data/translations';
 
-const SITE_URL = 'https://www.apartmenthub.nl';
+const SITE_URL = 'https://apartmenthub.nl';
 
 // Map normalized paths to their canonical URL paths
 const getCanonicalPath = (normalizedPath) => {

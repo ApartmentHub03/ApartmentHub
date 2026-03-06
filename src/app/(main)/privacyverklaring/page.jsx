@@ -4,10 +4,10 @@ export const metadata = {
     title: 'Privacyverklaring | ApartmentHub',
     description: 'Lees het privacybeleid van ApartmentHub om te begrijpen hoe wij omgaan met uw persoonlijke gegevens.',
     alternates: {
-        canonical: 'https://www.apartmenthub.nl/nl/privacyverklaring',
+        canonical: 'https://apartmenthub.nl/nl/privacyverklaring',
         languages: {
-            en: 'https://www.apartmenthub.nl/en/privacy-policy',
-            nl: 'https://www.apartmenthub.nl/nl/privacyverklaring',
+            en: 'https://apartmenthub.nl/en/privacy-policy',
+            nl: 'https://apartmenthub.nl/nl/privacyverklaring',
         },
     },
 };

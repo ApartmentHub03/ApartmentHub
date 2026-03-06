@@ -30,7 +30,7 @@ export default function robots() {
         ],
       },
     ],
-    sitemap: 'https://www.apartmenthub.nl/sitemap.xml',
-    host: 'https://www.apartmenthub.nl',
+    sitemap: 'https://apartmenthub.nl/sitemap.xml',
+    host: 'https://apartmenthub.nl',
   };
 }
