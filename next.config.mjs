@@ -23,17 +23,32 @@ const nextConfig = {
     async redirects() {
         return [
             // Strip %EF%BB%BF (Zero Width No-Break Space / BOM) from the end of URLs
-            // Crawlers sometimes append this invisible character causing 404s
             {
                 source: '/:path*%EF%BB%BF',
                 destination: '/:path*',
                 permanent: true,
             },
             {
-                source: '/:path*%E2%80%8B', // Also strip standard zero-width space if present
+                source: '/:path*%E2%80%8B',
                 destination: '/:path*',
                 permanent: true,
-            }
+            },
+            // Redirect old root pages to canonical locale versions
+            {
+                source: '/landlords',
+                destination: '/en/rent-out',
+                permanent: true,
+            },
+            {
+                source: '/tenants',
+                destination: '/en/rent-in',
+                permanent: true,
+            },
+            {
+                source: '/about',
+                destination: '/en/about-us',
+                permanent: true,
+            },
         ];
     },
     // Headers for robots.txt, sitemap.xml etc.

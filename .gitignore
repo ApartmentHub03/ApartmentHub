@@ -34,3 +34,5 @@ apartmenthub-rentals-oasis-main
 tobecreated/
 
 .cursor/
+.claude/settings.json
+.mcp.json

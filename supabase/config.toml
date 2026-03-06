@@ -1,4 +1,4 @@
-project_id = "vordjtqtqrzvqvuzogop"
+project_id = "diovljzaabbfftcqmwub"
 
 [functions.analyze-rental-price]
 verify_jwt = false
