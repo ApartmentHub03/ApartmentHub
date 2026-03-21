@@ -46,3 +46,8 @@ tobecreated/
 
 # Supabase temp/local
 supabase/.temp/
+
+# MCP server
+mcp-server/.env
+mcp-server/node_modules/
+mcp-server/logs/
