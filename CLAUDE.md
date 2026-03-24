@@ -71,3 +71,54 @@ supabase/
 - Services in `src/services/` handle all Supabase/API calls
 - Edge functions use Deno runtime with `@supabase/supabase-js`
 - Webhooks go to n8n Cloud (davidvanwachem.app.n8n.cloud)
+- Git workflow: never push to `main` directly — use Beta branch + PRs
+
+## MCP Server (`mcp-server/`)
+Centralized remote MCP server so any team member can connect from any device via Claude Code.
+
+### Architecture
+- **Transport**: Streamable HTTP at `/mcp` (Express + `@modelcontextprotocol/sdk`)
+- **Auth**: Bearer tokens — `VALID_TOKENS` env var maps `token:username` pairs
+- **Plugins**: Auto-loaded from `mcp-server/plugins/` — drop in a `.js` file, restart, new tools available
+
+### Plugins & Tools (16 total)
+| Plugin | Tools |
+|--------|-------|
+| `codebase` | `read_file`, `list_directory`, `search_code`, `get_project_structure`, `sync_repo` |
+| `supabase` | `supabase_query` (read-only SQL), `list_tables`, `query_table`, `list_edge_functions`, `get_migration_history` |
+| `github` | `list_prs`, `get_pr_diff`, `list_issues`, `create_issue` |
+| `rules` | `get_ground_rules`, `get_user_info` |
+
+### Key Files
+- `server.js` — Express app, auth middleware, session management, logging, repo auto-sync
+- `plugin-loader.js` — Scans `plugins/` dir, auto-registers exports
+- `RULES.md` — Ground rules returned by the `get_ground_rules` tool
+- `.env.example` — All config vars documented
+- `Dockerfile` / `docker-compose.yml` — Deployment (includes optional Cloudflare Tunnel)
+
+### Config (env vars)
+- `VALID_TOKENS` — `tok_akshat:akshat,tok_david:david,...`
+- `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` — REST API access
+- `SUPABASE_PROJECT_REF`, `SUPABASE_ACCESS_TOKEN` — Management API (raw SQL)
+- `GITHUB_TOKEN`, `GITHUB_REPO` — GitHub integration
+- `REPO_PATH` — Path to cloned repo on server
+- `REPO_AUTO_SYNC=true`, `REPO_SYNC_INTERVAL_MS=300000` — Auto git-pull every 5min
+- `LOG_DIR` — Daily JSONL log files (`2026-03-21.log`)
+
+### Security
+- HTTPS via Cloudflare Tunnel (no port exposure, automatic SSL)
+- Token rotation: every 30 days or on suspected leak
+- Path traversal blocked in codebase plugin
+- SQL write operations blocked (DROP, DELETE, ALTER, INSERT, UPDATE)
+- Logs auth failures with IP for audit
+
+### Connecting from Claude Code
+```bash
+claude mcp add apartmenthub \
+  --transport http \
+  --url https://<server-address>/mcp \
+  --header "Authorization: Bearer tok_yourtoken"
+```
+
+### Setup Guide
+See `MCP_SETUP.md` for full deployment and connection instructions.
