@@ -136,7 +136,12 @@ export async function POST(request) {
 
             const eventlink = `${bookingUrl}?${params.toString()}`;
 
-            return NextResponse.json({ success: true, eventlink });
+            return NextResponse.json({
+                success: true,
+                eventlink,
+                calEventTypeId: eventData.data.id,
+                calScheduleId: scheduleId,
+            });
         }
 
         return NextResponse.json({

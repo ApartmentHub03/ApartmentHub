@@ -49,7 +49,7 @@ export default function AdminLogin() {
                         <div className={styles.logoIcon}>A</div>
                         <CardTitle as="h1">Admin Login</CardTitle>
                     </div>
-                    <p className={styles.subtitle}>ApartmentHub Dashboard</p>
+                    <p className={styles.subtitle}>ApartmentHub EventLink Creation </p>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleLogin} className={styles.form}>

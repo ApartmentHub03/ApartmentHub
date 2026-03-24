@@ -11,6 +11,35 @@ import { Plus, Copy, Check, Link, LogOut, Building2, Trash2, ClipboardList, X } 
 import { toast } from 'sonner';
 import styles from './dashboard.module.css';
 
+// Treat a datetime-local value (e.g. "2026-03-25T14:30") as Europe/Amsterdam time
+// and return a proper ISO string in UTC.
+function toAmsterdamISO(datetimeLocalValue) {
+    // Build a date string with an explicit Amsterdam offset by formatting a known
+    // instant in Amsterdam to discover the current UTC offset, then apply it.
+    const fmt = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Europe/Amsterdam',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false,
+        timeZoneName: 'shortOffset',
+    });
+
+    // Parse the naive datetime as if it were in Amsterdam:
+    // 1. Create a rough Date (in local TZ) just to get the Amsterdam offset for that date
+    const rough = new Date(datetimeLocalValue);
+    const parts = fmt.formatToParts(rough);
+    const offsetStr = parts.find((p) => p.type === 'timeZoneName')?.value || 'GMT+1';
+    // offsetStr is like "GMT+1" or "GMT+2"
+    const offsetMatch = offsetStr.match(/GMT([+-]\d+)/);
+    const offsetHours = offsetMatch ? parseInt(offsetMatch[1], 10) : 1;
+
+    // 2. Build an ISO string: append the Amsterdam offset to the naive value
+    const sign = offsetHours >= 0 ? '+' : '-';
+    const absH = String(Math.abs(offsetHours)).padStart(2, '0');
+    const isoWithOffset = `${datetimeLocalValue}:00${sign}${absH}:00`;
+    return new Date(isoWithOffset).toISOString();
+}
+
 export default function AdminDashboard() {
     const router = useRouter();
     const [authenticated, setAuthenticated] = useState(false);
@@ -90,7 +119,7 @@ export default function AdminDashboard() {
             full_address: form.full_address.trim(),
             zip_code: form.zip_code.trim() || null,
             rental_price: form.rental_price ? Number(form.rental_price) : null,
-            slot_datetime: new Date(form.slot_datetime).toISOString(),
+            slot_datetime: toAmsterdamISO(form.slot_datetime),
             slot_length_minutes: Number(form.slot_length_minutes),
             sq_mt: form.sq_mt ? Number(form.sq_mt) : null,
             whatsapp_number: form.whatsapp_number.trim() || null,
@@ -144,6 +173,8 @@ export default function AdminDashboard() {
                     .from('admin_apartment')
                     .update({
                         eventlink: data.eventlink,
+                        cal_event_type_id: data.calEventTypeId || null,
+                        cal_schedule_id: data.calScheduleId || null,
                         status: 'LinkCreated',
                         updated_at: new Date().toISOString(),
                     })
@@ -187,6 +218,30 @@ export default function AdminDashboard() {
     };
 
     const handleDelete = async (id) => {
+        const apt = apartments.find((a) => a.id === id);
+
+        // Delete Cal.com event type and schedule if they exist
+        if (apt?.cal_event_type_id || apt?.cal_schedule_id) {
+            try {
+                const res = await fetch('/api/admin/delete-event', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        calEventTypeId: apt.cal_event_type_id,
+                        calScheduleId: apt.cal_schedule_id,
+                    }),
+                });
+                const data = await res.json();
+                if (!data.success) {
+                    toast.error('Failed to delete Cal.com event');
+                    return;
+                }
+            } catch {
+                toast.error('Failed to delete Cal.com event');
+                return;
+            }
+        }
+
         const { error } = await supabase
             .from('admin_apartment')
             .delete()
@@ -547,8 +602,6 @@ export default function AdminDashboard() {
                                                 <th>Email</th>
                                                 <th>Event Title</th>
                                                 <th>Viewing</th>
-                                                <th>Type</th>
-                                                <th>Status</th>
                                                 <th>Trigger</th>
                                                 <th>Booking Date</th>
                                             </tr>
@@ -557,7 +610,7 @@ export default function AdminDashboard() {
                                             {logs.map((log) => (
                                                 <tr key={log.id}>
                                                     <td>{log.name || '—'}</td>
-                                                    <td>{log.whatsapp_number || log['WhatsApp Number'] || '—'}</td>
+                                                    <td>{log.whatsapp_number || '—'}</td>
                                                     <td>{log.Email || '—'}</td>
                                                     <td>{log.EventTitle || log.eventTitle || '—'}</td>
                                                     <td>
@@ -565,24 +618,7 @@ export default function AdminDashboard() {
                                                             ? `${log.Viewing_StartTime} - ${log.Viewing_EndTime}`
                                                             : '—'}
                                                     </td>
-                                                    <td>
-                                                        {log.viewingType ? (
-                                                            <Badge variant={log.viewingType === 'Video-Viewing' ? 'default' : 'secondary'} size="sm">
-                                                                {log.viewingType}
-                                                            </Badge>
-                                                        ) : '—'}
-                                                    </td>
-                                                    <td>
-                                                        {log.status ? (
-                                                            <Badge
-                                                                variant={log.status === 'ACCEPTED' ? 'success' : log.status === 'CANCELLED' ? 'error' : 'warning'}
-                                                                size="sm"
-                                                            >
-                                                                {log.status}
-                                                            </Badge>
-                                                        ) : '—'}
-                                                    </td>
-                                                    <td>{log.TriggerEvent || log.EventType || '—'}</td>
+                                                    <td>{log.TriggerEvent || '—'}</td>
                                                     <td>{log.bookingDate || '—'}</td>
                                                 </tr>
                                             ))}
