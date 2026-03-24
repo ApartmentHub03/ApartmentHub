@@ -67,6 +67,80 @@
     margin: 0;
 }
 
+/* Filters */
+.filters {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.filterBtn {
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    border: 1px solid #e5e7eb;
+    background: white;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+}
+
+.filterBtn:hover {
+    border-color: hsl(var(--myrtle));
+    color: hsl(var(--myrtle));
+}
+
+.filterActive {
+    background: hsl(var(--myrtle));
+    border-color: hsl(var(--myrtle));
+    color: white;
+}
+
+.filterActive:hover {
+    background: hsl(var(--myrtle) / 0.9);
+    border-color: hsl(var(--myrtle) / 0.9);
+    color: white;
+}
+
+/* Select */
+.selectWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.selectLabel {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    font-family: inherit;
+    color: #111827;
+    background-color: white;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2.5rem;
+}
+
+.select:focus {
+    border-color: hsl(var(--myrtle));
+    box-shadow: 0 0 0 3px hsl(var(--myrtle) / 0.1);
+}
+
 /* Form */
 .formCard {
     margin-bottom: 2rem;

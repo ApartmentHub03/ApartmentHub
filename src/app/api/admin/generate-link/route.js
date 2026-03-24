@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 export async function POST(request) {
-    const { address, slotDatetime, slotLengthMinutes } = await request.json();
+    const { address, slotDatetime, slotLengthMinutes, viewingType, whatsappNumber } = await request.json();
 
     const apiKey = process.env.CAL_COM_API_KEY;
     if (!apiKey) {
@@ -17,6 +17,29 @@ export async function POST(request) {
             .replace(/[^a-z0-9]/g, '')
             .slice(0, 40);
 
+        // Set location based on viewing type
+        const locations = viewingType === 'video'
+            ? [{ type: 'integration', integration: 'cal-video' }]
+            : [{ type: 'address', address, public: true }];
+
+        // Custom booking fields for WhatsApp and Viewing Type
+        const bookingFields = [
+            {
+                type: 'phone',
+                slug: 'whatsapp',
+                label: 'WhatsApp',
+                required: true,
+                placeholder: '+31 612345678',
+            },
+            {
+                type: 'select',
+                slug: 'viewing-type',
+                label: 'Viewing Type',
+                required: true,
+                options: ['In-Person', 'Video-Viewing'],
+            },
+        ];
+
         // Create an event type on Cal.com
         const res = await fetch('https://api.cal.com/v2/event-types', {
             method: 'POST',
@@ -29,7 +52,8 @@ export async function POST(request) {
                 title: address,
                 slug,
                 lengthInMinutes: Number(slotLengthMinutes),
-                locations: [{ type: 'address', address, public: true }],
+                locations,
+                bookingFields,
             }),
         });
 
@@ -38,11 +62,20 @@ export async function POST(request) {
         if (data.status === 'success' && data.data) {
             const bookingUrl = data.data.bookingUrl;
 
-            // Append date & time to the booking URL
+            // Append date, time, and prefilled field values to the booking URL
             const startTime = new Date(slotDatetime);
             const dateStr = startTime.toISOString().split('T')[0];
             const timeStr = startTime.toISOString().split('.')[0];
-            const eventlink = `${bookingUrl}?date=${dateStr}&slot=${timeStr}`;
+
+            const viewingLabel = viewingType === 'video' ? 'Video-Viewing' : 'In-Person';
+            const params = new URLSearchParams({
+                date: dateStr,
+                slot: timeStr,
+                whatsapp: whatsappNumber || '',
+                'viewing-type': viewingLabel,
+            });
+
+            const eventlink = `${bookingUrl}?${params.toString()}`;
 
             return NextResponse.json({ success: true, eventlink });
         }

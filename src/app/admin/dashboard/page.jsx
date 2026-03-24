@@ -20,6 +20,7 @@ export default function AdminDashboard() {
     const [submitting, setSubmitting] = useState(false);
     const [generatingLink, setGeneratingLink] = useState(null);
     const [copiedId, setCopiedId] = useState(null);
+    const [statusFilter, setStatusFilter] = useState('All');
 
     const [form, setForm] = useState({
         full_address: '',
@@ -28,6 +29,8 @@ export default function AdminDashboard() {
         slot_datetime: '',
         slot_length_minutes: '30',
         sq_mt: '',
+        whatsapp_number: '',
+        viewing_type: 'in-person',
     });
     const [formErrors, setFormErrors] = useState({});
 
@@ -87,6 +90,8 @@ export default function AdminDashboard() {
             slot_datetime: new Date(form.slot_datetime).toISOString(),
             slot_length_minutes: Number(form.slot_length_minutes),
             sq_mt: form.sq_mt ? Number(form.sq_mt) : null,
+            whatsapp_number: form.whatsapp_number.trim() || null,
+            viewing_type: form.viewing_type,
             status: 'Draft',
         });
 
@@ -104,6 +109,8 @@ export default function AdminDashboard() {
             slot_datetime: '',
             slot_length_minutes: '30',
             sq_mt: '',
+            whatsapp_number: '',
+            viewing_type: 'in-person',
         });
         setShowForm(false);
         setSubmitting(false);
@@ -122,6 +129,8 @@ export default function AdminDashboard() {
                     address: apartment.full_address,
                     slotDatetime: apartment.slot_datetime,
                     slotLengthMinutes: apartment.slot_length_minutes,
+                    viewingType: apartment.viewing_type || 'in-person',
+                    whatsappNumber: apartment.whatsapp_number || '',
                 }),
             });
 
@@ -209,6 +218,17 @@ export default function AdminDashboard() {
         });
     };
 
+    const filteredApartments = statusFilter === 'All'
+        ? apartments
+        : apartments.filter((apt) => apt.status === statusFilter);
+
+    const filterCounts = {
+        All: apartments.length,
+        Draft: apartments.filter((a) => a.status === 'Draft').length,
+        LinkCreated: apartments.filter((a) => a.status === 'LinkCreated').length,
+        Closed: apartments.filter((a) => a.status === 'Closed').length,
+    };
+
     if (!authenticated) return null;
 
     return (
@@ -233,12 +253,25 @@ export default function AdminDashboard() {
                 {/* Actions bar */}
                 <div className={styles.actionsBar}>
                     <h2 className={styles.sectionTitle}>
-                        Apartments ({apartments.length})
+                        Apartments ({filteredApartments.length})
                     </h2>
                     <Button onClick={() => setShowForm(!showForm)} size="md">
                         <Plus size={16} />
                         {showForm ? 'Cancel' : 'Add Apartment'}
                     </Button>
+                </div>
+
+                {/* Filters */}
+                <div className={styles.filters}>
+                    {['All', 'Draft', 'LinkCreated', 'Closed'].map((status) => (
+                        <button
+                            key={status}
+                            className={`${styles.filterBtn} ${statusFilter === status ? styles.filterActive : ''}`}
+                            onClick={() => setStatusFilter(status)}
+                        >
+                            {status} ({filterCounts[status]})
+                        </button>
+                    ))}
                 </div>
 
                 {/* Add form */}
@@ -281,6 +314,24 @@ export default function AdminDashboard() {
                                         suffix="m²"
                                     />
                                     <Input
+                                        label="WhatsApp Number"
+                                        type="tel"
+                                        value={form.whatsapp_number}
+                                        onChange={handleChange('whatsapp_number')}
+                                        placeholder="e.g. +31612345678"
+                                    />
+                                    <div className={styles.selectWrapper}>
+                                        <label className={styles.selectLabel}>Viewing Type</label>
+                                        <select
+                                            className={styles.select}
+                                            value={form.viewing_type}
+                                            onChange={handleChange('viewing_type')}
+                                        >
+                                            <option value="in-person">In-Person</option>
+                                            <option value="video">Video Call</option>
+                                        </select>
+                                    </div>
+                                    <Input
                                         label="Viewing Date & Time"
                                         required
                                         type="datetime-local"
@@ -319,7 +370,7 @@ export default function AdminDashboard() {
                 {/* Apartments list */}
                 {loading ? (
                     <div className={styles.loadingState}>Loading apartments...</div>
-                ) : apartments.length === 0 ? (
+                ) : filteredApartments.length === 0 ? (
                     <Card className={styles.emptyState}>
                         <CardContent>
                             <Building2 size={48} className={styles.emptyIcon} />
@@ -331,7 +382,7 @@ export default function AdminDashboard() {
                     </Card>
                 ) : (
                     <div className={styles.apartmentGrid}>
-                        {apartments.map((apt) => (
+                        {filteredApartments.map((apt) => (
                             <Card key={apt.id} shadow="lg" className={styles.apartmentCard}>
                                 <CardContent>
                                     <div className={styles.cardTop}>
