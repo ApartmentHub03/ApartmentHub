@@ -368,7 +368,6 @@ export default function AdminDashboard() {
                                         label="Viewing Date & Time"
                                         required
                                         type="datetime-local"
-                                        step={600}
                                         value={form.slot_datetime}
                                         onChange={handleChange('slot_datetime')}
                                         error={formErrors.slot_datetime}
