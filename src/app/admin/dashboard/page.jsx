@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import { Plus, Copy, Check, Link, LogOut, Building2, Trash2 } from 'lucide-react';
+import { Plus, Copy, Check, Link, LogOut, Building2, Trash2, ClipboardList, X } from 'lucide-react';
 import { toast } from 'sonner';
 import styles from './dashboard.module.css';
 
@@ -21,6 +21,9 @@ export default function AdminDashboard() {
     const [generatingLink, setGeneratingLink] = useState(null);
     const [copiedId, setCopiedId] = useState(null);
     const [statusFilter, setStatusFilter] = useState('All');
+    const [showLogs, setShowLogs] = useState(false);
+    const [logs, setLogs] = useState([]);
+    const [logsLoading, setLogsLoading] = useState(false);
 
     const [form, setForm] = useState({
         full_address: '',
@@ -202,6 +205,26 @@ export default function AdminDashboard() {
         router.push('/admin');
     };
 
+    const handleShowLogs = async () => {
+        if (showLogs) {
+            setShowLogs(false);
+            return;
+        }
+        setShowLogs(true);
+        setLogsLoading(true);
+        const { data, error } = await supabase
+            .from('admin_tennant')
+            .select('*')
+            .order('updated_at', { ascending: false });
+
+        if (error) {
+            toast.error('Failed to load tenant logs');
+        } else {
+            setLogs(data || []);
+        }
+        setLogsLoading(false);
+    };
+
     const getStatusVariant = (status) => {
         switch (status) {
             case 'LinkCreated': return 'success';
@@ -242,10 +265,20 @@ export default function AdminDashboard() {
                         </div>
                         <h1 className={styles.headerTitle}>Admin Dashboard</h1>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={handleLogout}>
-                        <LogOut size={16} />
-                        Logout
-                    </Button>
+                    <div className={styles.headerActions}>
+                        <Button
+                            variant={showLogs ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={handleShowLogs}
+                        >
+                            <ClipboardList size={16} />
+                            Logs
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={handleLogout}>
+                            <LogOut size={16} />
+                            Logout
+                        </Button>
+                    </div>
                 </div>
             </header>
 
@@ -335,6 +368,7 @@ export default function AdminDashboard() {
                                         label="Viewing Date & Time"
                                         required
                                         type="datetime-local"
+                                        step={600}
                                         value={form.slot_datetime}
                                         onChange={handleChange('slot_datetime')}
                                         error={formErrors.slot_datetime}
@@ -485,6 +519,82 @@ export default function AdminDashboard() {
                     </div>
                 )}
             </main>
+
+            {/* Logs Panel */}
+            {showLogs && (
+                <div className={styles.logsOverlay}>
+                    <div className={styles.logsPanel}>
+                        <div className={styles.logsPanelHeader}>
+                            <h2 className={styles.logsPanelTitle}>
+                                <ClipboardList size={20} />
+                                Tenant Logs ({logs.length})
+                            </h2>
+                            <Button variant="ghost" size="sm" iconOnly onClick={() => setShowLogs(false)}>
+                                <X size={18} />
+                            </Button>
+                        </div>
+                        <div className={styles.logsPanelContent}>
+                            {logsLoading ? (
+                                <div className={styles.loadingState}>Loading logs...</div>
+                            ) : logs.length === 0 ? (
+                                <div className={styles.loadingState}>No tenant logs found.</div>
+                            ) : (
+                                <div className={styles.logsTable}>
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>WhatsApp</th>
+                                                <th>Email</th>
+                                                <th>Event Title</th>
+                                                <th>Viewing</th>
+                                                <th>Type</th>
+                                                <th>Status</th>
+                                                <th>Trigger</th>
+                                                <th>Booking Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {logs.map((log) => (
+                                                <tr key={log.id}>
+                                                    <td>{log.name || '—'}</td>
+                                                    <td>{log.whatsapp_number || log['WhatsApp Number'] || '—'}</td>
+                                                    <td>{log.Email || '—'}</td>
+                                                    <td>{log.EventTitle || log.eventTitle || '—'}</td>
+                                                    <td>
+                                                        {log.Viewing_StartTime && log.Viewing_EndTime
+                                                            ? `${log.Viewing_StartTime} - ${log.Viewing_EndTime}`
+                                                            : '—'}
+                                                    </td>
+                                                    <td>
+                                                        {log.viewingType ? (
+                                                            <Badge variant={log.viewingType === 'Video-Viewing' ? 'default' : 'secondary'} size="sm">
+                                                                {log.viewingType}
+                                                            </Badge>
+                                                        ) : '—'}
+                                                    </td>
+                                                    <td>
+                                                        {log.status ? (
+                                                            <Badge
+                                                                variant={log.status === 'ACCEPTED' ? 'success' : log.status === 'CANCELLED' ? 'error' : 'warning'}
+                                                                size="sm"
+                                                            >
+                                                                {log.status}
+                                                            </Badge>
+                                                        ) : '—'}
+                                                    </td>
+                                                    <td>{log.TriggerEvent || log.EventType || '—'}</td>
+                                                    <td>{log.bookingDate || '—'}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

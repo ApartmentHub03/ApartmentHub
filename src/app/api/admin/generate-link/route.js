@@ -109,6 +109,7 @@ export async function POST(request) {
         ];
 
         // Step 4: Create the event type linked to the schedule
+        // minimumBookingNotice: 0 so slots are bookable right away
         const eventData = await calFetch('/event-types', apiKey, '2024-06-14', {
             method: 'POST',
             body: JSON.stringify({
@@ -118,6 +119,7 @@ export async function POST(request) {
                 locations,
                 bookingFields,
                 scheduleId,
+                minimumBookingNotice: 0,
             }),
         });
 
@@ -125,12 +127,10 @@ export async function POST(request) {
             const bookingUrl = eventData.data.bookingUrl;
 
             const viewingLabel = viewingType === 'video' ? 'Video-Viewing' : 'In-Person';
-            // Cal.com expects slot in UTC
-            const slotParam = startTime.toISOString().split('.')[0] + 'Z';
 
+            // Only use date param to pre-select the day; let user pick the slot on the page
             const params = new URLSearchParams({
                 date: slotDate,
-                slot: slotParam,
                 whatsapp: whatsappNumber || '',
                 'viewing-type': viewingLabel,
             });
