@@ -15,7 +15,7 @@ async function calDelete(path, apiKey, apiVersion) {
 }
 
 export async function POST(request) {
-    const { calEventTypeId, calScheduleId } = await request.json();
+    const { calEventTypeId, calEventTypeIdVideo, calScheduleId } = await request.json();
 
     const apiKey = process.env.CAL_COM_API_KEY;
     if (!apiKey) {
@@ -32,6 +32,13 @@ export async function POST(request) {
             const result = await calDelete(`/event-types/${calEventTypeId}`, apiKey, '2024-06-14');
             if (result.status !== 'success') {
                 errors.push({ type: 'event-type', details: result });
+            }
+        }
+
+        if (calEventTypeIdVideo) {
+            const result = await calDelete(`/event-types/${calEventTypeIdVideo}`, apiKey, '2024-06-14');
+            if (result.status !== 'success') {
+                errors.push({ type: 'event-type-video', details: result });
             }
         }
 

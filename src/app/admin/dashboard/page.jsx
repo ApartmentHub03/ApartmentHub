@@ -58,11 +58,13 @@ export default function AdminDashboard() {
         full_address: '',
         zip_code: '',
         rental_price: '',
-        slot_datetime: '',
+        start_date: '',
+        end_date: '',
+        daily_start_time: '',
+        daily_end_time: '',
         slot_length_minutes: '30',
         sq_mt: '',
         whatsapp_number: '',
-        viewing_type: 'in-person',
     });
     const [formErrors, setFormErrors] = useState({});
 
@@ -103,7 +105,14 @@ export default function AdminDashboard() {
     const validateForm = () => {
         const errors = {};
         if (!form.full_address.trim()) errors.full_address = 'Address is required';
-        if (!form.slot_datetime) errors.slot_datetime = 'Date & time is required';
+        if (!form.start_date) errors.start_date = 'Start date is required';
+        if (!form.end_date) errors.end_date = 'End date is required';
+        if (form.start_date && form.end_date && form.start_date > form.end_date)
+            errors.end_date = 'End date must be on or after start date';
+        if (!form.daily_start_time) errors.daily_start_time = 'Daily start time is required';
+        if (!form.daily_end_time) errors.daily_end_time = 'Daily end time is required';
+        if (form.daily_start_time && form.daily_end_time && form.daily_start_time >= form.daily_end_time)
+            errors.daily_end_time = 'End time must be after start time';
         if (!form.slot_length_minutes || Number(form.slot_length_minutes) <= 0)
             errors.slot_length_minutes = 'Slot length is required';
         setFormErrors(errors);
@@ -119,11 +128,11 @@ export default function AdminDashboard() {
             full_address: form.full_address.trim(),
             zip_code: form.zip_code.trim() || null,
             rental_price: form.rental_price ? Number(form.rental_price) : null,
-            slot_datetime: toAmsterdamISO(form.slot_datetime),
+            slot_datetime: toAmsterdamISO(`${form.start_date}T${form.daily_start_time}`),
+            slot_end_datetime: toAmsterdamISO(`${form.end_date}T${form.daily_end_time}`),
             slot_length_minutes: Number(form.slot_length_minutes),
             sq_mt: form.sq_mt ? Number(form.sq_mt) : null,
             whatsapp_number: form.whatsapp_number.trim() || null,
-            viewing_type: form.viewing_type,
             status: 'Draft',
         });
 
@@ -138,11 +147,13 @@ export default function AdminDashboard() {
             full_address: '',
             zip_code: '',
             rental_price: '',
-            slot_datetime: '',
+            start_date: '',
+            end_date: '',
+            daily_start_time: '',
+            daily_end_time: '',
             slot_length_minutes: '30',
             sq_mt: '',
             whatsapp_number: '',
-            viewing_type: 'in-person',
         });
         setShowForm(false);
         setSubmitting(false);
@@ -153,27 +164,28 @@ export default function AdminDashboard() {
         setGeneratingLink(apartment.id);
 
         try {
-            // Call Cal.com API to create event type and get event link
             const res = await fetch('/api/admin/generate-link', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     address: apartment.full_address,
-                    slotDatetime: apartment.slot_datetime,
+                    slotStartDatetime: apartment.slot_datetime,
+                    slotEndDatetime: apartment.slot_end_datetime,
                     slotLengthMinutes: apartment.slot_length_minutes,
-                    viewingType: apartment.viewing_type || 'in-person',
                     whatsappNumber: apartment.whatsapp_number || '',
                 }),
             });
 
             const data = await res.json();
 
-            if (data.success && data.eventlink) {
+            if (data.success && (data.eventlink || data.eventlinkVideo)) {
                 const { error } = await supabase
                     .from('admin_apartment')
                     .update({
-                        eventlink: data.eventlink,
+                        eventlink: data.eventlink || null,
+                        eventlink_video: data.eventlinkVideo || null,
                         cal_event_type_id: data.calEventTypeId || null,
+                        cal_event_type_id_video: data.calEventTypeIdVideo || null,
                         cal_schedule_id: data.calScheduleId || null,
                         status: 'LinkCreated',
                         updated_at: new Date().toISOString(),
@@ -183,14 +195,14 @@ export default function AdminDashboard() {
                 if (error) {
                     toast.error('Link generated but failed to save');
                 } else {
-                    toast.success('Event link generated!');
+                    toast.success('Event links generated!');
                     fetchApartments();
                 }
             } else {
-                toast.error(data.message || 'Failed to generate event link');
+                toast.error(data.message || 'Failed to generate event links');
             }
         } catch {
-            toast.error('Failed to generate event link');
+            toast.error('Failed to generate event links');
         } finally {
             setGeneratingLink(null);
         }
@@ -220,35 +232,35 @@ export default function AdminDashboard() {
     const handleDelete = async (id) => {
         const apt = apartments.find((a) => a.id === id);
 
-        // Delete Cal.com event type and schedule if they exist
-        if (apt?.cal_event_type_id || apt?.cal_schedule_id) {
+        // Delete Cal.com event types and schedule if they exist
+        if (apt?.cal_event_type_id || apt?.cal_event_type_id_video || apt?.cal_schedule_id) {
             try {
                 const res = await fetch('/api/admin/delete-event', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         calEventTypeId: apt.cal_event_type_id,
+                        calEventTypeIdVideo: apt.cal_event_type_id_video,
                         calScheduleId: apt.cal_schedule_id,
                     }),
                 });
                 const data = await res.json();
                 if (!data.success) {
-                    toast.error('Failed to delete Cal.com event');
-                    return;
+                    toast.error('Cal.com event cleanup failed, but removing from database');
                 }
             } catch {
-                toast.error('Failed to delete Cal.com event');
-                return;
+                toast.error('Cal.com event cleanup failed, but removing from database');
             }
         }
 
+        // Always delete from Supabase
         const { error } = await supabase
             .from('admin_apartment')
             .delete()
             .eq('id', id);
 
         if (error) {
-            toast.error('Failed to delete apartment');
+            toast.error('Failed to delete apartment from database');
             return;
         }
         toast.success('Apartment deleted');
@@ -408,24 +420,37 @@ export default function AdminDashboard() {
                                         onChange={handleChange('whatsapp_number')}
                                         placeholder="e.g. +31612345678"
                                     />
-                                    <div className={styles.selectWrapper}>
-                                        <label className={styles.selectLabel}>Viewing Type</label>
-                                        <select
-                                            className={styles.select}
-                                            value={form.viewing_type}
-                                            onChange={handleChange('viewing_type')}
-                                        >
-                                            <option value="in-person">In-Person</option>
-                                            <option value="video">Video Call</option>
-                                        </select>
-                                    </div>
                                     <Input
-                                        label="Viewing Date & Time"
+                                        label="Start Date"
                                         required
-                                        type="datetime-local"
-                                        value={form.slot_datetime}
-                                        onChange={handleChange('slot_datetime')}
-                                        error={formErrors.slot_datetime}
+                                        type="date"
+                                        value={form.start_date}
+                                        onChange={handleChange('start_date')}
+                                        error={formErrors.start_date}
+                                    />
+                                    <Input
+                                        label="End Date"
+                                        required
+                                        type="date"
+                                        value={form.end_date}
+                                        onChange={handleChange('end_date')}
+                                        error={formErrors.end_date}
+                                    />
+                                    <Input
+                                        label="Daily Start Time"
+                                        required
+                                        type="time"
+                                        value={form.daily_start_time}
+                                        onChange={handleChange('daily_start_time')}
+                                        error={formErrors.daily_start_time}
+                                    />
+                                    <Input
+                                        label="Daily End Time"
+                                        required
+                                        type="time"
+                                        value={form.daily_end_time}
+                                        onChange={handleChange('daily_end_time')}
+                                        error={formErrors.daily_end_time}
                                     />
                                     <Input
                                         label="Slot Length (minutes)"
@@ -521,29 +546,62 @@ export default function AdminDashboard() {
                                             </div>
                                         )}
                                         <div className={styles.detail}>
-                                            <span className={styles.detailLabel}>Viewing</span>
-                                            <span className={styles.detailValue}>{formatDateTime(apt.slot_datetime)}</span>
+                                            <span className={styles.detailLabel}>Date Range</span>
+                                            <span className={styles.detailValue}>
+                                                {new Date(apt.slot_datetime).toLocaleDateString('en-NL', { dateStyle: 'medium', timeZone: 'Europe/Amsterdam' })}
+                                                {apt.slot_end_datetime && ` — ${new Date(apt.slot_end_datetime).toLocaleDateString('en-NL', { dateStyle: 'medium', timeZone: 'Europe/Amsterdam' })}`}
+                                            </span>
                                         </div>
                                         <div className={styles.detail}>
-                                            <span className={styles.detailLabel}>Slot</span>
+                                            <span className={styles.detailLabel}>Daily Window</span>
+                                            <span className={styles.detailValue}>
+                                                {new Date(apt.slot_datetime).toLocaleTimeString('en-NL', { timeStyle: 'short', timeZone: 'Europe/Amsterdam' })}
+                                                {apt.slot_end_datetime && ` — ${new Date(apt.slot_end_datetime).toLocaleTimeString('en-NL', { timeStyle: 'short', timeZone: 'Europe/Amsterdam' })}`}
+                                            </span>
+                                        </div>
+                                        <div className={styles.detail}>
+                                            <span className={styles.detailLabel}>Interval</span>
                                             <span className={styles.detailValue}>{apt.slot_length_minutes} min</span>
                                         </div>
                                     </div>
 
-                                    {/* Event Link */}
+                                    {/* In-Person Event Link */}
                                     {apt.eventlink && (
                                         <div className={styles.eventLinkSection}>
-                                            <span className={styles.detailLabel}>Event Link</span>
+                                            <span className={styles.detailLabel}>In-Person Link</span>
                                             <div className={styles.eventLinkRow}>
                                                 <code className={styles.eventLink}>{apt.eventlink}</code>
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
                                                     iconOnly
-                                                    onClick={() => handleCopy(apt.eventlink, apt.id)}
-                                                    title="Copy link"
+                                                    onClick={() => handleCopy(apt.eventlink, `${apt.id}-inperson`)}
+                                                    title="Copy in-person link"
                                                 >
-                                                    {copiedId === apt.id ? (
+                                                    {copiedId === `${apt.id}-inperson` ? (
+                                                        <Check size={14} />
+                                                    ) : (
+                                                        <Copy size={14} />
+                                                    )}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Video Event Link */}
+                                    {apt.eventlink_video && (
+                                        <div className={styles.eventLinkSection}>
+                                            <span className={styles.detailLabel}>Video Link</span>
+                                            <div className={styles.eventLinkRow}>
+                                                <code className={styles.eventLink}>{apt.eventlink_video}</code>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    iconOnly
+                                                    onClick={() => handleCopy(apt.eventlink_video, `${apt.id}-video`)}
+                                                    title="Copy video link"
+                                                >
+                                                    {copiedId === `${apt.id}-video` ? (
                                                         <Check size={14} />
                                                     ) : (
                                                         <Copy size={14} />

@@ -35,7 +35,7 @@ function getAmsterdamDate(date) {
 }
 
 export async function POST(request) {
-    const { address, slotDatetime, slotLengthMinutes, viewingType, whatsappNumber } = await request.json();
+    const { address, slotStartDatetime, slotEndDatetime, slotLengthMinutes, whatsappNumber } = await request.json();
 
     const apiKey = process.env.CAL_COM_API_KEY;
     if (!apiKey) {
@@ -51,14 +51,14 @@ export async function POST(request) {
             .replace(/[^a-z0-9]/g, '')
             .slice(0, 40);
 
-        const startTime = new Date(slotDatetime);
-        const endTime = new Date(startTime.getTime() + Number(slotLengthMinutes) * 60000);
+        const startTime = new Date(slotStartDatetime);
+        const endTime = new Date(slotEndDatetime);
 
         const slotStartHH = getAmsterdamTime(startTime);
         const slotEndHH = getAmsterdamTime(endTime);
         const slotDate = getAmsterdamDate(startTime);
 
-        // Step 1: Create a schedule with the exact time window
+        // Step 1: Create a schedule with availability from start time to end time
         const scheduleData = await calFetch('/schedules', apiKey, '2024-06-11', {
             method: 'POST',
             body: JSON.stringify({
@@ -85,12 +85,7 @@ export async function POST(request) {
 
         const scheduleId = scheduleData.data.id;
 
-        // Step 2: Set location based on viewing type
-        const locations = viewingType === 'video'
-            ? [{ type: 'integration', integration: 'cal-video' }]
-            : [{ type: 'address', address, public: true }];
-
-        // Step 3: Custom booking fields
+        // Custom booking fields (no viewing-type select since we generate separate links)
         const bookingFields = [
             {
                 type: 'phone',
@@ -99,55 +94,80 @@ export async function POST(request) {
                 required: true,
                 placeholder: '+31 612345678',
             },
-            {
-                type: 'select',
-                slug: 'viewing-type',
-                label: 'Viewing Type',
-                required: true,
-                options: ['In-Person', 'Video-Viewing'],
-            },
         ];
 
-        // Step 4: Create the event type linked to the schedule
-        const eventData = await calFetch('/event-types', apiKey, '2024-06-14', {
+        // Restrict bookable dates to the admin-selected range
+        const slotEndDate = getAmsterdamDate(endTime);
+        const bookingWindow = {
+            type: 'range',
+            value: [slotDate, slotEndDate],
+        };
+
+        // Step 2: Create In-Person event type
+        const inPersonEvent = await calFetch('/event-types', apiKey, '2024-06-14', {
             method: 'POST',
             body: JSON.stringify({
-                title: address,
-                slug,
+                title: `${address} (In-Person)`,
+                slug: `${slug}-inperson`,
                 lengthInMinutes: Number(slotLengthMinutes),
-                locations,
+                locations: [{ type: 'address', address, public: true }],
                 bookingFields,
+                bookingWindow,
                 scheduleId,
             }),
         });
 
-        if (eventData.status === 'success' && eventData.data) {
-            const bookingUrl = eventData.data.bookingUrl;
+        // Step 3: Create Video event type
+        const videoEvent = await calFetch('/event-types', apiKey, '2024-06-14', {
+            method: 'POST',
+            body: JSON.stringify({
+                title: `${address} (Video)`,
+                slug: `${slug}-video`,
+                lengthInMinutes: Number(slotLengthMinutes),
+                locations: [{ type: 'integration', integration: 'cal-video' }],
+                bookingFields,
+                bookingWindow,
+                scheduleId,
+            }),
+        });
 
-            const viewingLabel = viewingType === 'video' ? 'Video-Viewing' : 'In-Person';
-            const slotParam = startTime.toISOString().split('.')[0] + 'Z';
+        const results = {};
 
+        // Build in-person link
+        if (inPersonEvent.status === 'success' && inPersonEvent.data) {
             const params = new URLSearchParams({
                 date: slotDate,
-                slot: slotParam,
                 whatsapp: whatsappNumber || '',
-                'viewing-type': viewingLabel,
             });
+            results.eventlink = `${inPersonEvent.data.bookingUrl}?${params.toString()}`;
+            results.calEventTypeId = inPersonEvent.data.id;
+        }
 
-            const eventlink = `${bookingUrl}?${params.toString()}`;
+        // Build video link
+        if (videoEvent.status === 'success' && videoEvent.data) {
+            const params = new URLSearchParams({
+                date: slotDate,
+                whatsapp: whatsappNumber || '',
+            });
+            results.eventlinkVideo = `${videoEvent.data.bookingUrl}?${params.toString()}`;
+            results.calEventTypeIdVideo = videoEvent.data.id;
+        }
 
+        if (!results.eventlink && !results.eventlinkVideo) {
             return NextResponse.json({
-                success: true,
-                eventlink,
-                calEventTypeId: eventData.data.id,
-                calScheduleId: scheduleId,
+                success: false,
+                message: 'Failed to create Cal.com event types',
+                details: { inPersonEvent, videoEvent },
             });
         }
 
         return NextResponse.json({
-            success: false,
-            message: eventData.error?.message || 'Failed to create Cal.com event type',
-            details: eventData,
+            success: true,
+            eventlink: results.eventlink || null,
+            eventlinkVideo: results.eventlinkVideo || null,
+            calEventTypeId: results.calEventTypeId || null,
+            calEventTypeIdVideo: results.calEventTypeIdVideo || null,
+            calScheduleId: scheduleId,
         });
     } catch (error) {
         return NextResponse.json(
