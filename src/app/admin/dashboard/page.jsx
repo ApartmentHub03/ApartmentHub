@@ -56,16 +56,17 @@ export default function AdminDashboard() {
 
     const [form, setForm] = useState({
         full_address: '',
-        zip_code: '',
         rental_price: '',
         start_date: '',
-        end_date: '',
         daily_start_time: '',
-        daily_end_time: '',
-        slot_length_minutes: '30',
+        duration_minutes: '60',
+        slot_interval_minutes: '5',
         sq_mt: '',
-        whatsapp_number: '',
     });
+
+    const numSlots = form.duration_minutes && form.slot_interval_minutes && Number(form.slot_interval_minutes) > 0
+        ? Math.floor(Number(form.duration_minutes) / Number(form.slot_interval_minutes))
+        : 0;
     const [formErrors, setFormErrors] = useState({});
 
     useEffect(() => {
@@ -106,15 +107,13 @@ export default function AdminDashboard() {
         const errors = {};
         if (!form.full_address.trim()) errors.full_address = 'Address is required';
         if (!form.start_date) errors.start_date = 'Start date is required';
-        if (!form.end_date) errors.end_date = 'End date is required';
-        if (form.start_date && form.end_date && form.start_date > form.end_date)
-            errors.end_date = 'End date must be on or after start date';
-        if (!form.daily_start_time) errors.daily_start_time = 'Daily start time is required';
-        if (!form.daily_end_time) errors.daily_end_time = 'Daily end time is required';
-        if (form.daily_start_time && form.daily_end_time && form.daily_start_time >= form.daily_end_time)
-            errors.daily_end_time = 'End time must be after start time';
-        if (!form.slot_length_minutes || Number(form.slot_length_minutes) <= 0)
-            errors.slot_length_minutes = 'Slot length is required';
+        if (!form.daily_start_time) errors.daily_start_time = 'Start time is required';
+        if (!form.duration_minutes || Number(form.duration_minutes) <= 0)
+            errors.duration_minutes = 'Duration is required';
+        if (!form.slot_interval_minutes || Number(form.slot_interval_minutes) <= 0)
+            errors.slot_interval_minutes = 'Slot interval is required';
+        if (form.duration_minutes && form.slot_interval_minutes && Number(form.slot_interval_minutes) > Number(form.duration_minutes))
+            errors.slot_interval_minutes = 'Interval cannot exceed duration';
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
     };
@@ -124,15 +123,21 @@ export default function AdminDashboard() {
         if (!validateForm()) return;
 
         setSubmitting(true);
+
+        // Compute end datetime from start + duration
+        const startDt = new Date(`${form.start_date}T${form.daily_start_time}`);
+        const endDt = new Date(startDt.getTime() + Number(form.duration_minutes) * 60 * 1000);
+        const endHH = String(endDt.getHours()).padStart(2, '0');
+        const endMM = String(endDt.getMinutes()).padStart(2, '0');
+        const endTimeStr = `${endHH}:${endMM}`;
+
         const { error } = await supabase.from('admin_apartment').insert({
             full_address: form.full_address.trim(),
-            zip_code: form.zip_code.trim() || null,
             rental_price: form.rental_price ? Number(form.rental_price) : null,
             slot_datetime: toAmsterdamISO(`${form.start_date}T${form.daily_start_time}`),
-            slot_end_datetime: toAmsterdamISO(`${form.end_date}T${form.daily_end_time}`),
-            slot_length_minutes: Number(form.slot_length_minutes),
+            slot_end_datetime: toAmsterdamISO(`${form.start_date}T${endTimeStr}`),
+            slot_length_minutes: Number(form.slot_interval_minutes),
             sq_mt: form.sq_mt ? Number(form.sq_mt) : null,
-            whatsapp_number: form.whatsapp_number.trim() || null,
             status: 'Draft',
         });
 
@@ -145,15 +150,12 @@ export default function AdminDashboard() {
         toast.success('Apartment created successfully');
         setForm({
             full_address: '',
-            zip_code: '',
             rental_price: '',
             start_date: '',
-            end_date: '',
             daily_start_time: '',
-            daily_end_time: '',
-            slot_length_minutes: '30',
+            duration_minutes: '60',
+            slot_interval_minutes: '5',
             sq_mt: '',
-            whatsapp_number: '',
         });
         setShowForm(false);
         setSubmitting(false);
@@ -172,7 +174,6 @@ export default function AdminDashboard() {
                     slotStartDatetime: apartment.slot_datetime,
                     slotEndDatetime: apartment.slot_end_datetime,
                     slotLengthMinutes: apartment.slot_length_minutes,
-                    whatsappNumber: apartment.whatsapp_number || '',
                 }),
             });
 
@@ -392,12 +393,6 @@ export default function AdminDashboard() {
                                         error={formErrors.full_address}
                                     />
                                     <Input
-                                        label="Zip Code"
-                                        value={form.zip_code}
-                                        onChange={handleChange('zip_code')}
-                                        placeholder="e.g. 1015 CJ"
-                                    />
-                                    <Input
                                         label="Rental Price"
                                         type="number"
                                         value={form.rental_price}
@@ -414,13 +409,6 @@ export default function AdminDashboard() {
                                         suffix="m²"
                                     />
                                     <Input
-                                        label="WhatsApp Number"
-                                        type="tel"
-                                        value={form.whatsapp_number}
-                                        onChange={handleChange('whatsapp_number')}
-                                        placeholder="e.g. +31612345678"
-                                    />
-                                    <Input
                                         label="Start Date"
                                         required
                                         type="date"
@@ -429,15 +417,7 @@ export default function AdminDashboard() {
                                         error={formErrors.start_date}
                                     />
                                     <Input
-                                        label="End Date"
-                                        required
-                                        type="date"
-                                        value={form.end_date}
-                                        onChange={handleChange('end_date')}
-                                        error={formErrors.end_date}
-                                    />
-                                    <Input
-                                        label="Daily Start Time"
+                                        label="Start Time"
                                         required
                                         type="time"
                                         value={form.daily_start_time}
@@ -445,23 +425,34 @@ export default function AdminDashboard() {
                                         error={formErrors.daily_start_time}
                                     />
                                     <Input
-                                        label="Daily End Time"
-                                        required
-                                        type="time"
-                                        value={form.daily_end_time}
-                                        onChange={handleChange('daily_end_time')}
-                                        error={formErrors.daily_end_time}
-                                    />
-                                    <Input
-                                        label="Slot Length (minutes)"
+                                        label="Duration (minutes)"
                                         required
                                         type="number"
-                                        value={form.slot_length_minutes}
-                                        onChange={handleChange('slot_length_minutes')}
-                                        placeholder="e.g. 30"
-                                        error={formErrors.slot_length_minutes}
+                                        value={form.duration_minutes}
+                                        onChange={handleChange('duration_minutes')}
+                                        placeholder="e.g. 60"
+                                        error={formErrors.duration_minutes}
                                         suffix="min"
                                     />
+                                    <Input
+                                        label="Slot Interval (minutes)"
+                                        required
+                                        type="number"
+                                        value={form.slot_interval_minutes}
+                                        onChange={handleChange('slot_interval_minutes')}
+                                        placeholder="e.g. 5"
+                                        error={formErrors.slot_interval_minutes}
+                                        suffix="min"
+                                    />
+                                    <div className={styles.slotsPreview}>
+                                        <span className={styles.detailLabel}>No. of Slots</span>
+                                        <span className={styles.slotsCount}>{numSlots}</span>
+                                        {numSlots > 0 && form.duration_minutes && form.slot_interval_minutes && (
+                                            <span className={styles.slotsCalc}>
+                                                ({form.duration_minutes} / {form.slot_interval_minutes} = {numSlots})
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                                 <div className={styles.formActions}>
                                     <Button
@@ -527,12 +518,6 @@ export default function AdminDashboard() {
                                     </div>
 
                                     <div className={styles.detailsGrid}>
-                                        {apt.zip_code && (
-                                            <div className={styles.detail}>
-                                                <span className={styles.detailLabel}>Zip Code</span>
-                                                <span className={styles.detailValue}>{apt.zip_code}</span>
-                                            </div>
-                                        )}
                                         {apt.rental_price && (
                                             <div className={styles.detail}>
                                                 <span className={styles.detailLabel}>Rent</span>
@@ -546,23 +531,38 @@ export default function AdminDashboard() {
                                             </div>
                                         )}
                                         <div className={styles.detail}>
-                                            <span className={styles.detailLabel}>Date Range</span>
+                                            <span className={styles.detailLabel}>Date</span>
                                             <span className={styles.detailValue}>
                                                 {new Date(apt.slot_datetime).toLocaleDateString('en-NL', { dateStyle: 'medium', timeZone: 'Europe/Amsterdam' })}
-                                                {apt.slot_end_datetime && ` — ${new Date(apt.slot_end_datetime).toLocaleDateString('en-NL', { dateStyle: 'medium', timeZone: 'Europe/Amsterdam' })}`}
                                             </span>
                                         </div>
                                         <div className={styles.detail}>
-                                            <span className={styles.detailLabel}>Daily Window</span>
+                                            <span className={styles.detailLabel}>Time Window</span>
                                             <span className={styles.detailValue}>
                                                 {new Date(apt.slot_datetime).toLocaleTimeString('en-NL', { timeStyle: 'short', timeZone: 'Europe/Amsterdam' })}
                                                 {apt.slot_end_datetime && ` — ${new Date(apt.slot_end_datetime).toLocaleTimeString('en-NL', { timeStyle: 'short', timeZone: 'Europe/Amsterdam' })}`}
                                             </span>
                                         </div>
+                                        {apt.slot_datetime && apt.slot_end_datetime && (
+                                            <div className={styles.detail}>
+                                                <span className={styles.detailLabel}>Duration</span>
+                                                <span className={styles.detailValue}>
+                                                    {Math.round((new Date(apt.slot_end_datetime) - new Date(apt.slot_datetime)) / 60000)} min
+                                                </span>
+                                            </div>
+                                        )}
                                         <div className={styles.detail}>
-                                            <span className={styles.detailLabel}>Interval</span>
+                                            <span className={styles.detailLabel}>Slot Interval</span>
                                             <span className={styles.detailValue}>{apt.slot_length_minutes} min</span>
                                         </div>
+                                        {apt.slot_datetime && apt.slot_end_datetime && apt.slot_length_minutes && (
+                                            <div className={styles.detail}>
+                                                <span className={styles.detailLabel}>No. of Slots</span>
+                                                <span className={styles.detailValue}>
+                                                    {Math.floor((new Date(apt.slot_end_datetime) - new Date(apt.slot_datetime)) / (apt.slot_length_minutes * 60000))}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* In-Person Event Link */}

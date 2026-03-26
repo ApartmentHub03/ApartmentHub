@@ -35,7 +35,7 @@ function getAmsterdamDate(date) {
 }
 
 export async function POST(request) {
-    const { address, slotStartDatetime, slotEndDatetime, slotLengthMinutes, whatsappNumber } = await request.json();
+    const { address, slotStartDatetime, slotEndDatetime, slotLengthMinutes } = await request.json();
 
     const apiKey = process.env.CAL_COM_API_KEY;
     if (!apiKey) {
@@ -135,20 +135,14 @@ export async function POST(request) {
 
         // Build in-person link
         if (inPersonEvent.status === 'success' && inPersonEvent.data) {
-            const params = new URLSearchParams({
-                date: slotDate,
-                whatsapp: whatsappNumber || '',
-            });
+            const params = new URLSearchParams({ date: slotDate });
             results.eventlink = `${inPersonEvent.data.bookingUrl}?${params.toString()}`;
             results.calEventTypeId = inPersonEvent.data.id;
         }
 
         // Build video link
         if (videoEvent.status === 'success' && videoEvent.data) {
-            const params = new URLSearchParams({
-                date: slotDate,
-                whatsapp: whatsappNumber || '',
-            });
+            const params = new URLSearchParams({ date: slotDate });
             results.eventlinkVideo = `${videoEvent.data.bookingUrl}?${params.toString()}`;
             results.calEventTypeIdVideo = videoEvent.data.id;
         }

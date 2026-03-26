@@ -421,3 +421,26 @@
 .logsTable tbody tr:hover {
     background: #f9fafb;
 }
+
+/* Slots preview */
+.slotsPreview {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.75rem 1rem;
+    background: #f0fdf9;
+    border: 1px solid hsl(var(--myrtle) / 0.2);
+    border-radius: 0.75rem;
+    justify-content: center;
+}
+
+.slotsCount {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: hsl(var(--myrtle));
+}
+
+.slotsCalc {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
