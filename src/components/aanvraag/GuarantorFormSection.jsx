@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { ChevronDown, ChevronUp, CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
 import { translations } from '../../data/translations';
@@ -11,7 +11,8 @@ const GuarantorCard = ({
     persoon,
     onDocumentUpload,
     onSendWhatsAppLink,
-    onRemove
+    onRemove,
+    onFormDataChange
 }) => {
     const currentLang = useSelector((state) => state.ui.language);
     const t = translations.aanvraag[currentLang] || translations.aanvraag.nl;
@@ -35,9 +36,21 @@ const GuarantorCard = ({
     // Assume progress calculation
     const progress = totalDocsCount > 0 ? Math.round((completedDocsCount / totalDocsCount) * 100) : 0;
 
+    // Notify parent of document completion status
+    const onFormDataChangeRef = useRef(onFormDataChange);
+    onFormDataChangeRef.current = onFormDataChange;
+
+    useEffect(() => {
+        if (onFormDataChangeRef.current) {
+            onFormDataChangeRef.current(persoon.persoonId, {
+                overallProgress: progress,
+                isDocsComplete: isComplete
+            });
+        }
+    }, [progress, isComplete, persoon.persoonId]);
+
     const handleWorkStatusChange = (status) => {
         setWorkStatus(status);
-        // Should lift this up if needed
     };
 
     const handleLocalUpload = (type, file) => {
@@ -179,7 +192,8 @@ const GuarantorFormSection = ({
     onDocumentUpload,
     onSendWhatsAppLink,
     onAddGuarantor,
-    onRemove
+    onRemove,
+    onFormDataChange
 }) => {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -190,6 +204,7 @@ const GuarantorFormSection = ({
                     onDocumentUpload={onDocumentUpload}
                     onSendWhatsAppLink={onSendWhatsAppLink}
                     onRemove={onRemove}
+                    onFormDataChange={onFormDataChange}
                 />
             ))}
         </div>
