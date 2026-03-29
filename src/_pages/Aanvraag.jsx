@@ -429,7 +429,9 @@ const Aanvraag = () => {
         }
     }, [accountId, phoneNumber]);
 
-    const canSubmit = bidAmount > 0 && startDate !== '' && isAllDocsComplete();
+    const canSubmit = isGeneralRoute
+        ? isAllDocsComplete()
+        : bidAmount > 0 && startDate !== '' && isAllDocsComplete();
 
     const handleDocumentUpload = async (persoonId, type, fileOrFiles) => {
         // Handle both single file and array of files
@@ -758,7 +760,7 @@ const Aanvraag = () => {
     };
 
     const handleSubmit = async () => {
-        if (!bidAmount || !startDate) {
+        if (!isGeneralRoute && (!bidAmount || !startDate)) {
             alert(currentLang === 'en' ? 'Please complete the bid section' : 'Vul de biedingsectie in');
             return;
         }
@@ -946,6 +948,7 @@ const Aanvraag = () => {
                                                         guarantors={[linkedGuarantor]}
                                                         onDocumentUpload={handleDocumentUpload}
                                                         onRemove={handleRemovePerson}
+                                                        onFormDataChange={handleFormDataChange}
                                                     />
                                                 </div>
                                             )}
