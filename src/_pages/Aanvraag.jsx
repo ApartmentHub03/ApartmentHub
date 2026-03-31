@@ -353,9 +353,9 @@ const Aanvraag = () => {
     const progress = calculateProgress();
 
     const isAllDocsComplete = () => {
-        const tenantIds = Object.keys(tenantProgress);
-        if (tenantIds.length === 0) return false;
-        return tenantIds.every(id => tenantProgress[id]?.isDocsComplete === true);
+        const personIds = (data?.personen || []).map(p => p.persoonId);
+        if (personIds.length === 0) return false;
+        return personIds.every(id => tenantProgress[id]?.isDocsComplete === true);
     };
 
     /**
@@ -624,8 +624,9 @@ const Aanvraag = () => {
         setTimeout(() => setSaveStatus('idle'), 2000);
 
         // After updating local state, check document completion and update accounts.documentation_status
-        const allNowComplete = Object.keys(tenantProgress).length > 0 &&
-            Object.values(tenantProgress).every(tp => tp?.isDocsComplete === true);
+        const allPersonIds = updatedPersonen.map(p => p.persoonId);
+        const allNowComplete = allPersonIds.length > 0 &&
+            allPersonIds.every(id => tenantProgress[id]?.isDocsComplete === true);
 
         if (allNowComplete) {
             console.log('[Aanvraag] All docs complete – saving persons to Supabase...');
@@ -752,6 +753,11 @@ const Aanvraag = () => {
         setData({
             ...data,
             personen: data.personen.filter(p => p.persoonId !== persoonId)
+        });
+        setTenantProgress(prev => {
+            const updated = { ...prev };
+            delete updated[persoonId];
+            return updated;
         });
     };
 
