@@ -7,7 +7,7 @@ import { setLanguage } from '../features/ui/uiSlice';
 import { LogOut, CheckCircle, Plus, AlertCircle } from 'lucide-react';
 import { translations } from '../data/translations';
 import { useAuth } from '../contexts/AuthContext';
-import { loadAanvraagData, saveAanvraagData } from '../services/aanvraagDataService';
+import { loadAanvraagData, saveAanvraagData, deletePersonFromSupabase } from '../services/aanvraagDataService';
 import { uploadDocument, deleteDocument } from '../services/documentStorageService';
 import { sendTenantDataEvent, sendDocumentUploadEvent, sendMultipleDocumentsEvent } from '../services/webhookService';
 import RentalConditionsSidebar from '../components/aanvraag/RentalConditionsSidebar';
@@ -72,6 +72,8 @@ const Aanvraag = () => {
     const [addPersonRole, setAddPersonRole] = useState("Medehuurder");
     const [selectedUploadMethod, setSelectedUploadMethod] = useState(null);
     const [selectedTenantForGuarantor, setSelectedTenantForGuarantor] = useState(null);
+    const [inviteLink, setInviteLink] = useState(null);
+    const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
 
     // Load apartment from localStorage (set by AppartementenSelectie)
     useEffect(() => {
@@ -235,6 +237,26 @@ const Aanvraag = () => {
 
         const result = await saveAanvraagData(dossierId, formData);
 
+        // After successful DB save, sync back any new supabaseIds to state
+        if (result.ok && result.personen) {
+            const needsUpdate = result.personen.some((p, i) =>
+                p.supabaseId && (!data.personen[i]?.supabaseId || data.personen[i].supabaseId !== p.supabaseId)
+            );
+            if (needsUpdate) {
+                setData(prev => {
+                    if (!prev) return prev;
+                    const updatedPersonen = prev.personen.map(person => {
+                        const saved = result.personen.find(p => p.persoonId === person.persoonId);
+                        if (saved?.supabaseId && !person.supabaseId) {
+                            return { ...person, supabaseId: saved.supabaseId };
+                        }
+                        return person;
+                    });
+                    return { ...prev, personen: updatedPersonen };
+                });
+            }
+        }
+
         // After successful DB save, also send data to n8n (fire-and-forget so webhook failures never block saving).
         if (result.ok) {
             const personen = (data.personen || []);
@@ -353,9 +375,16 @@ const Aanvraag = () => {
     const progress = calculateProgress();
 
     const isAllDocsComplete = () => {
-        const personIds = (data?.personen || []).map(p => p.persoonId);
-        if (personIds.length === 0) return false;
-        return personIds.every(id => tenantProgress[id]?.isDocsComplete === true);
+        const personen = data?.personen || [];
+        if (personen.length === 0) return false;
+        // For each person, check if they have reported progress.
+        // If they haven't selected a work status yet (no progress entry),
+        // treat them as complete (no required docs to check).
+        return personen.every(p => {
+            const progress = tenantProgress[p.persoonId];
+            if (!progress) return true; // No progress tracked yet — no work status selected
+            return progress.isDocsComplete === true;
+        });
     };
 
     /**
@@ -638,9 +667,41 @@ const Aanvraag = () => {
         }
     };
 
+    const handleDocumentRemove = async (persoonId, docType) => {
+        const persoon = data.personen.find(p => p.persoonId === persoonId);
+        if (!persoon) return;
+
+        const doc = (persoon.documenten || []).find(d => d.type === docType);
+
+        // Remove from local state immediately
+        const updatedPersonen = data.personen.map(p => {
+            if (p.persoonId === persoonId) {
+                return {
+                    ...p,
+                    documenten: (p.documenten || []).filter(d => d.type !== docType)
+                };
+            }
+            return p;
+        });
+        setData({ ...data, personen: updatedPersonen });
+
+        // Delete from Supabase (storage + metadata)
+        if (doc?.file?.id) {
+            const result = await deleteDocument(doc.file.id);
+            if (!result.ok) {
+                console.error('[Aanvraag] Failed to delete document:', result.error);
+            }
+        } else if (doc?.id) {
+            const result = await deleteDocument(doc.id);
+            if (!result.ok) {
+                console.error('[Aanvraag] Failed to delete document:', result.error);
+            }
+        }
+    };
+
     const handleAddCoTenant = () => {
         const medehuurders = data.personen.filter(p => p.rol === 'Medehuurder');
-        if (medehuurders.length >= 2) {
+        if (medehuurders.length >= 4) {
             alert("Max co-tenants reached");
             return;
         }
@@ -659,9 +720,41 @@ const Aanvraag = () => {
         setShowUploadChoiceModal(true);
     };
 
-    const handleUploadMethodSelected = (method) => {
+    const handleUploadMethodSelected = async (method) => {
         setSelectedUploadMethod(method);
-        setShowAddPersonModal(true);
+
+        if (method === 'whatsapp') {
+            // Generate invite link
+            try {
+                const { supabase: sb } = await import('../integrations/supabase/client');
+                const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+
+                const { data: inviteResult, error: inviteError } = await sb.functions.invoke('generate-invite', {
+                    body: {
+                        dossier_id: dossierId,
+                        role: addPersonRole,
+                        linked_to_persoon_id: addPersonRole === 'Garantsteller' ? selectedTenantForGuarantor : null,
+                        auth_token: token
+                    }
+                });
+
+                if (inviteError || !inviteResult?.ok) {
+                    console.error('[Aanvraag] Failed to generate invite:', inviteError || inviteResult);
+                    alert(currentLang === 'en' ? 'Failed to generate invite link' : 'Uitnodigingslink genereren mislukt');
+                    return;
+                }
+
+                const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+                const link = `${baseUrl}/invite?token=${inviteResult.invite_token}`;
+                setInviteLink(link);
+                setInviteLinkCopied(false);
+            } catch (err) {
+                console.error('[Aanvraag] Error generating invite:', err);
+                alert(currentLang === 'en' ? 'Failed to generate invite link' : 'Uitnodigingslink genereren mislukt');
+            }
+        } else {
+            setShowAddPersonModal(true);
+        }
     };
 
     const handleAddPersonSubmit = async (name, whatsapp) => {
@@ -749,7 +842,10 @@ const Aanvraag = () => {
         });
     };
 
-    const handleRemovePerson = (persoonId) => {
+    const handleRemovePerson = async (persoonId) => {
+        const personToRemove = data.personen.find(p => p.persoonId === persoonId);
+
+        // Remove from local state immediately
         setData({
             ...data,
             personen: data.personen.filter(p => p.persoonId !== persoonId)
@@ -759,6 +855,18 @@ const Aanvraag = () => {
             delete updated[persoonId];
             return updated;
         });
+
+        // Delete from Supabase if the person exists in DB
+        if (personToRemove?.supabaseId) {
+            const result = await deletePersonFromSupabase(
+                personToRemove.supabaseId,
+                accountId,
+                personToRemove.accountId || null
+            );
+            if (!result.ok) {
+                console.error('[Aanvraag] Failed to delete person from Supabase:', result.error);
+            }
+        }
     };
 
     const handleLogout = async () => {
@@ -943,6 +1051,7 @@ const Aanvraag = () => {
                                             <TenantFormSection
                                                 persoon={huurder}
                                                 onDocumentUpload={handleDocumentUpload}
+                                                onDocumentRemove={handleDocumentRemove}
                                                 onRemove={handleRemovePerson}
                                                 onFormDataChange={handleFormDataChange}
                                                 showUploadChoice={true}
@@ -953,6 +1062,7 @@ const Aanvraag = () => {
                                                     <GuarantorFormSection
                                                         guarantors={[linkedGuarantor]}
                                                         onDocumentUpload={handleDocumentUpload}
+                                                        onDocumentRemove={handleDocumentRemove}
                                                         onRemove={handleRemovePerson}
                                                         onFormDataChange={handleFormDataChange}
                                                     />
@@ -977,14 +1087,14 @@ const Aanvraag = () => {
                                 <button
                                     className={styles.addCoTenantButton}
                                     onClick={handleAddCoTenant}
-                                    disabled={alleHuurders.length >= 2}
+                                    disabled={alleHuurders.length >= 5}
                                 >
                                     <div className={styles.addCoTenantContent}>
                                         <div className={styles.plusIconWrapper}>
                                             <Plus size={20} />
                                         </div>
                                         <span>
-                                            {alleHuurders.length >= 2
+                                            {alleHuurders.length >= 5
                                                 ? (currentLang === 'en' ? 'Max co-tenants reached' : 'Max aantal medehuurders bereikt')
                                                 : (currentLang === 'en' ? 'Add Co-Tenant' : 'Medehuurder Toevoegen')}
                                         </span>
@@ -1019,6 +1129,66 @@ const Aanvraag = () => {
                 role={addPersonRole}
                 onSubmit={handleAddPersonSubmit}
             />
+
+            {/* Invite Link Modal */}
+            {inviteLink && (
+                <div style={{
+                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                }} onClick={() => setInviteLink(null)}>
+                    <div style={{
+                        background: 'white', borderRadius: '0.75rem', padding: '2rem',
+                        maxWidth: '28rem', width: '90%', textAlign: 'center'
+                    }} onClick={e => e.stopPropagation()}>
+                        <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>
+                            {addPersonRole === 'Medehuurder' ? '👥' : '🛡️'}
+                        </div>
+                        <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+                            {currentLang === 'en' ? 'Share this link' : 'Deel deze link'}
+                        </h3>
+                        <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem' }}>
+                            {currentLang === 'en'
+                                ? `Send this link to your ${addPersonRole === 'Medehuurder' ? 'co-tenant' : 'guarantor'} so they can fill in their details and upload documents.`
+                                : `Stuur deze link naar je ${addPersonRole === 'Medehuurder' ? 'medehuurder' : 'garantsteller'} zodat zij hun gegevens kunnen invullen en documenten kunnen uploaden.`}
+                        </p>
+                        <div style={{
+                            background: '#f3f4f6', borderRadius: '0.5rem', padding: '0.75rem',
+                            fontSize: '0.75rem', wordBreak: 'break-all', color: '#374151',
+                            marginBottom: '1rem', textAlign: 'left', fontFamily: 'monospace'
+                        }}>
+                            {inviteLink}
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(inviteLink);
+                                    setInviteLinkCopied(true);
+                                    setTimeout(() => setInviteLinkCopied(false), 2000);
+                                }}
+                                style={{
+                                    flex: 1, padding: '0.625rem', borderRadius: '0.375rem',
+                                    background: '#497772', color: 'white', border: 'none',
+                                    cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem'
+                                }}
+                            >
+                                {inviteLinkCopied
+                                    ? (currentLang === 'en' ? '✓ Copied!' : '✓ Gekopieerd!')
+                                    : (currentLang === 'en' ? 'Copy Link' : 'Link Kopiëren')}
+                            </button>
+                            <button
+                                onClick={() => setInviteLink(null)}
+                                style={{
+                                    padding: '0.625rem 1rem', borderRadius: '0.375rem',
+                                    background: 'white', color: '#6b7280', border: '1px solid #e5e7eb',
+                                    cursor: 'pointer', fontSize: '0.875rem'
+                                }}
+                            >
+                                {currentLang === 'en' ? 'Close' : 'Sluiten'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

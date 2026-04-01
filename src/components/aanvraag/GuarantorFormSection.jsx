@@ -10,6 +10,7 @@ import styles from './GuarantorFormSection.module.css';
 const GuarantorCard = ({
     persoon,
     onDocumentUpload,
+    onDocumentRemove,
     onSendWhatsAppLink,
     onRemove,
     onFormDataChange
@@ -98,42 +99,44 @@ const GuarantorCard = ({
 
             {isExpanded && (
                 <div className={styles.cardContent}>
-                    <div className={styles.formItem}>
-                        <label className={styles.label}>{currentLang === 'en' ? 'Full Name' : 'Volledige Naam'} *</label>
-                        <input className={styles.input} placeholder={currentLang === 'en' ? 'John Doe' : 'Jan Jansen'} defaultValue={persoon.naam} />
-                    </div>
-
-                    <div className={styles.formItem}>
-                        <label className={styles.label}>Email *</label>
-                        <input className={styles.input} type="email" placeholder="naam@voorbeeld.nl" defaultValue={persoon.email} />
-                    </div>
-
-                    <div className={styles.grid}>
+                    <div>
                         <div className={styles.formItem}>
-                            <label className={styles.label}>{currentLang === 'en' ? 'Current Address' : 'Huidig Adres'}</label>
-                            <input className={styles.input} placeholder={currentLang === 'en' ? 'Street 123' : 'Straat 123'} />
+                            <label className={styles.label}>{currentLang === 'en' ? 'Full Name' : 'Volledige Naam'} *</label>
+                            <input className={styles.input} placeholder={currentLang === 'en' ? 'John Doe' : 'Jan Jansen'} defaultValue={persoon.naam} />
                         </div>
+
                         <div className={styles.formItem}>
-                            <label className={styles.label}>{currentLang === 'en' ? 'Postcode' : 'Postcode'}</label>
-                            <input className={styles.input} placeholder="1234 AB" />
+                            <label className={styles.label}>Email *</label>
+                            <input className={styles.input} type="email" placeholder="naam@voorbeeld.nl" defaultValue={persoon.email} />
                         </div>
-                    </div>
 
-                    <div className={styles.formItem}>
-                        <label className={styles.label}>{currentLang === 'en' ? 'City' : 'Woonplaats'}</label>
-                        <input className={styles.input} placeholder={currentLang === 'en' ? 'Amsterdam' : 'Amsterdam'} />
-                    </div>
+                        <div className={styles.grid}>
+                            <div className={styles.formItem}>
+                                <label className={styles.label}>{currentLang === 'en' ? 'Current Address' : 'Huidig Adres'}</label>
+                                <input className={styles.input} placeholder={currentLang === 'en' ? 'Street 123' : 'Straat 123'} />
+                            </div>
+                            <div className={styles.formItem}>
+                                <label className={styles.label}>{currentLang === 'en' ? 'Postcode' : 'Postcode'}</label>
+                                <input className={styles.input} placeholder="1234 AB" />
+                            </div>
+                        </div>
 
-                    <div className={styles.formItem}>
-                        <label className={styles.label}>💼 {currentLang === 'en' ? 'Work Status' : 'Werkstatus'} *</label>
-                        <GuarantorWorkStatusSelector selected={workStatus} onChange={handleWorkStatusChange} />
-                    </div>
+                        <div className={styles.formItem}>
+                            <label className={styles.label}>{currentLang === 'en' ? 'City' : 'Woonplaats'}</label>
+                            <input className={styles.input} placeholder={currentLang === 'en' ? 'Amsterdam' : 'Amsterdam'} />
+                        </div>
 
-                    <div className={styles.formItem}>
-                        <label className={styles.label}>{currentLang === 'en' ? 'Gross Annual Income' : 'Bruto Jaarinkomen'} *</label>
-                        <div className={styles.inputWrapper}>
-                            <span className={styles.currencyPrefix}>€</span>
-                            <input className={`${styles.input} ${styles.inputWithPrefix}`} type="number" placeholder="45000" />
+                        <div className={styles.formItem}>
+                            <label className={styles.label}>💼 {currentLang === 'en' ? 'Work Status' : 'Werkstatus'} *</label>
+                            <GuarantorWorkStatusSelector selected={workStatus} onChange={handleWorkStatusChange} />
+                        </div>
+
+                        <div className={styles.formItem}>
+                            <label className={styles.label}>{currentLang === 'en' ? 'Gross Annual Income' : 'Bruto Jaarinkomen'} *</label>
+                            <div className={styles.inputWrapper}>
+                                <span className={styles.currencyPrefix}>€</span>
+                                <input className={`${styles.input} ${styles.inputWithPrefix}`} type="number" placeholder="45000" />
+                            </div>
                         </div>
                     </div>
 
@@ -160,7 +163,7 @@ const GuarantorCard = ({
                                                 status={isDocUploaded(doc.type) ? 'ontvangen' : 'ontbreekt'}
                                                 fileName={docData?.file?.name}
                                                 onUpload={(f) => handleLocalUpload(doc.type, f)}
-                                                onRemove={() => { }}
+                                                onRemove={onDocumentRemove ? () => onDocumentRemove(persoon.persoonId, doc.type) : undefined}
                                             />
                                         );
                                     })}
@@ -190,6 +193,7 @@ const GuarantorCard = ({
 const GuarantorFormSection = ({
     guarantors,
     onDocumentUpload,
+    onDocumentRemove,
     onSendWhatsAppLink,
     onAddGuarantor,
     onRemove,
@@ -202,6 +206,7 @@ const GuarantorFormSection = ({
                     key={guarantor.persoonId}
                     persoon={guarantor}
                     onDocumentUpload={onDocumentUpload}
+                    onDocumentRemove={onDocumentRemove}
                     onSendWhatsAppLink={onSendWhatsAppLink}
                     onRemove={onRemove}
                     onFormDataChange={onFormDataChange}

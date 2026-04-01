@@ -14,6 +14,7 @@ import styles from './TenantFormSection.module.css';
 const TenantFormSection = ({
     persoon,
     onDocumentUpload,
+    onDocumentRemove,
     onSendWhatsAppLink,
     onRemove,
     onFormDataChange,
@@ -366,7 +367,7 @@ const TenantFormSection = ({
                                                 status={isDocUploaded(doc.type) ? 'ontvangen' : 'ontbreekt'}
                                                 fileName={file?.name}
                                                 onUpload={(f) => handleLocalUpload(doc.type, f)}
-                                                onRemove={() => { }}
+                                                onRemove={onDocumentRemove ? () => onDocumentRemove(persoon.persoonId, doc.type) : undefined}
                                             />
                                         );
                                     })}

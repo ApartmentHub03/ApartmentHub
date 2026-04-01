@@ -30,9 +30,14 @@ serve(async (req) => {
   try {
     console.log('[add-person] Request received');
 
-    const token = req.headers.get('x-auth-token');
+    // Parse body first (can only read once)
+    const body = await req.json();
+    const { rol, naam, whatsapp, workStatus, linkedToPersoonId, linked_to_persoon_id, auth_token: bodyToken, dossier_id: bodyDossierId } = body;
+
+    // Get auth token from body or header
+    const token = bodyToken || req.headers.get('x-auth-token');
     if (!token) {
-      console.error('[add-person] No auth token in x-auth-token header');
+      console.error('[add-person] No auth token provided');
       return new Response(
         JSON.stringify({ success: false, error: "No authentication token provided" }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -49,19 +54,17 @@ serve(async (req) => {
 
     const payload = await verify(token, key);
     const phone_number = payload.phone_number as string;
-    const dossier_id = payload.dossier_id as string;
+    // Use dossier_id from body (for invite flow) or from token
+    const dossier_id = bodyDossierId || (payload.dossier_id as string);
 
     console.log('[add-person] Token verified for phone:', phone_number);
-
-    const { rol, naam, whatsapp, workStatus, linkedToPersoonId } = await req.json();
-
-    console.log('[add-person] Request data:', { rol, naam, whatsapp, workStatus, linkedToPersoonId });
+    console.log('[add-person] Request data:', { rol, naam, whatsapp, workStatus, linkedToPersoonId: linkedToPersoonId || linked_to_persoon_id });
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify dossier belongs to user
+    // Verify dossier exists
     const { data: dossier, error: dossierError } = await supabase
       .from('dossiers')
       .select('phone_number')
@@ -76,7 +79,8 @@ serve(async (req) => {
       );
     }
 
-    if (!dossier || dossier.phone_number !== phone_number) {
+    // For invite flow (bodyDossierId provided), skip ownership check
+    if (!bodyDossierId && (!dossier || dossier.phone_number !== phone_number)) {
       console.error('[add-person] Unauthorized: dossier phone does not match');
       return new Response(
         JSON.stringify({ success: false, error: "Unauthorized" }),
@@ -113,16 +117,22 @@ serve(async (req) => {
       );
     }
 
+    // Split name into first and last name
+    const nameParts = (naam || '').trim().split(' ');
+    const voornaam = nameParts[0] || '';
+    const achternaam = nameParts.slice(1).join(' ') || '';
+
     // Create new persoon
     const { data: newPersoon, error: persoonError } = await supabase
       .from('personen')
       .insert({
         dossier_id,
         rol,
-        naam,
-        whatsapp,
-        linked_to_persoon_id: rol === 'Garantsteller' ? linkedToPersoonId : null,
-        docs_complete: false,
+        voornaam,
+        achternaam,
+        telefoon: whatsapp || null,
+        type: rol === 'Hoofdhuurder' ? 'tenant' : rol === 'Medehuurder' ? 'co_tenant' : 'guarantor',
+        created_at: new Date().toISOString(),
       })
       .select()
       .single();

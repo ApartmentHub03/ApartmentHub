@@ -94,8 +94,8 @@ serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Only check for existing user during LOGIN (not signup)
-    if (mode !== 'signup') {
+    // Only check for existing user during LOGIN (not signup or invite)
+    if (mode !== 'signup' && mode !== 'invite') {
       const { data: existingUser, error: lookupError } = await supabase
         .from('dossiers')
         .select('id')
@@ -115,7 +115,7 @@ serve(async (req: Request) => {
       }
 
       console.log(`User found with dossier ID: ${existingUser.id}`);
-    } else {
+    } else if (mode === 'signup') {
       // During signup, check if user ALREADY exists (prevent duplicate accounts)
       const { data: existingUser } = await supabase
         .from('dossiers')
@@ -135,6 +135,9 @@ serve(async (req: Request) => {
         );
       }
       console.log(`Signup mode: no existing user found, proceeding with OTP`);
+    } else {
+      // Invite mode — no user checks, just send OTP
+      console.log(`Invite mode: skipping user checks, proceeding with OTP for ${formattedPhone}`);
     }
 
     // Delete old codes for this phone number

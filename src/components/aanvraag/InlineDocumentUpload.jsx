@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Upload, CheckCircle, AlertCircle, File, RefreshCw } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, File, RefreshCw, Trash2 } from 'lucide-react';
 import { translations } from '../../data/translations';
 import styles from './InlineDocumentUpload.module.css';
 
@@ -65,19 +65,36 @@ const InlineDocumentUpload = ({
                             </p>
                         </div>
                     </div>
-                    <label className={styles.cursorPointer}>
-                        <input
-                            type="file"
-                            className={styles.hiddenInput}
-                            accept=".pdf,.jpg,.jpeg,.png,.webp"
-                            onChange={handleFileSelect}
-                            disabled={uploading}
-                        />
-                        <button type="button" className={styles.changeButton} disabled={uploading}>
-                            <RefreshCw className={styles.iconSmall} />
-                            Change
-                        </button>
-                    </label>
+                    <div style={{ display: 'flex', gap: '0.375rem' }}>
+                        <label className={styles.cursorPointer}>
+                            <input
+                                type="file"
+                                className={styles.hiddenInput}
+                                accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                onChange={handleFileSelect}
+                                disabled={uploading}
+                            />
+                            <button type="button" className={styles.changeButton} disabled={uploading}>
+                                <RefreshCw className={styles.iconSmall} />
+                                Change
+                            </button>
+                        </label>
+                        {onRemove && (
+                            <button
+                                type="button"
+                                onClick={() => onRemove()}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '0.25rem',
+                                    padding: '0.25rem 0.5rem', borderRadius: '0.25rem',
+                                    background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca',
+                                    cursor: 'pointer', fontSize: '0.75rem', fontFamily: 'inherit'
+                                }}
+                            >
+                                <Trash2 style={{ width: '0.75rem', height: '0.75rem' }} />
+                                Remove
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         );
