@@ -109,10 +109,18 @@ serve(async (req) => {
       );
     }
 
-    if (rol === 'Garantsteller' && (garantstellerCount || 0) >= 2) {
+    // Allow one guarantor per tenant (main + co-tenants)
+    const { count: tenantCount } = await supabase
+      .from('personen')
+      .select('*', { count: 'exact', head: true })
+      .eq('dossier_id', dossier_id)
+      .in('rol', ['Hoofdhuurder', 'Medehuurder']);
+
+    const maxGuarantors = Math.max(tenantCount || 1, 2);
+    if (rol === 'Garantsteller' && (garantstellerCount || 0) >= maxGuarantors) {
       console.error('[add-person] Maximum garantstellers bereikt');
       return new Response(
-        JSON.stringify({ success: false, error: "Maximum 2 garantstellers bereikt" }),
+        JSON.stringify({ success: false, error: `Maximum ${maxGuarantors} garantstellers bereikt` }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -121,6 +129,9 @@ serve(async (req) => {
     const nameParts = (naam || '').trim().split(' ');
     const voornaam = nameParts[0] || '';
     const achternaam = nameParts.slice(1).join(' ') || '';
+
+    // Resolve linked_to_persoon_id from either camelCase or snake_case body field
+    const resolvedLinkedTo = linkedToPersoonId || linked_to_persoon_id || null;
 
     // Create new persoon
     const { data: newPersoon, error: persoonError } = await supabase
@@ -132,6 +143,7 @@ serve(async (req) => {
         achternaam,
         telefoon: whatsapp || null,
         type: rol === 'Hoofdhuurder' ? 'tenant' : rol === 'Medehuurder' ? 'co_tenant' : 'guarantor',
+        linked_to_persoon_id: rol === 'Garantsteller' ? resolvedLinkedTo : null,
         created_at: new Date().toISOString(),
       })
       .select()

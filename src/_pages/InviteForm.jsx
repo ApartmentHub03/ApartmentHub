@@ -35,6 +35,9 @@ const InviteForm = () => {
     const [inkomen, setInkomen] = useState('');
     const [werkstatus, setWerkstatus] = useState(null);
     const [documenten, setDocumenten] = useState([]);
+    const [guarantorInviteLink, setGuarantorInviteLink] = useState(null);
+    const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
+    const [generatingLink, setGeneratingLink] = useState(false);
 
     // Load invite context and existing data
     useEffect(() => {
@@ -256,6 +259,37 @@ const InviteForm = () => {
         router.replace('/');
     };
 
+    const handleAddGuarantorForSelf = async () => {
+        if (!inviteContext?.persoonId || !inviteContext?.dossierId) return;
+        setGeneratingLink(true);
+        try {
+            const token = localStorage.getItem('invite_token') || localStorage.getItem('auth_token');
+            const { data: inviteResult, error: inviteError } = await supabase.functions.invoke('generate-invite', {
+                body: {
+                    dossier_id: inviteContext.dossierId,
+                    role: 'Garantsteller',
+                    linked_to_persoon_id: inviteContext.persoonId,
+                    auth_token: token
+                }
+            });
+
+            if (inviteError || !inviteResult?.ok) {
+                console.error('[InviteForm] Failed to generate guarantor invite:', inviteError || inviteResult);
+                setError(currentLang === 'en' ? 'Failed to generate invite link' : 'Uitnodigingslink genereren mislukt');
+                return;
+            }
+
+            const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+            setGuarantorInviteLink(`${baseUrl}/invite?token=${inviteResult.invite_token}`);
+            setInviteLinkCopied(false);
+        } catch (err) {
+            console.error('[InviteForm] Error generating guarantor invite:', err);
+            setError(currentLang === 'en' ? 'Failed to generate invite link' : 'Uitnodigingslink genereren mislukt');
+        } finally {
+            setGeneratingLink(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className={styles.page}>
@@ -300,6 +334,60 @@ const InviteForm = () => {
                                 ? 'Your details and documents have been saved. The main tenant can now see your information in their application.'
                                 : 'Je gegevens en documenten zijn opgeslagen. De hoofdhuurder kan nu je informatie zien in hun aanvraag.'}
                         </p>
+
+                        {/* Co-tenants can add a guarantor for themselves */}
+                        {inviteContext?.role === 'Medehuurder' && !guarantorInviteLink && (
+                            <button
+                                onClick={handleAddGuarantorForSelf}
+                                disabled={generatingLink}
+                                style={{
+                                    marginTop: '1rem', padding: '0.625rem 1rem', borderRadius: '0.375rem',
+                                    background: 'white', color: '#497772', border: '2px solid #497772',
+                                    cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem', width: '100%',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                                }}
+                            >
+                                🛡️ {generatingLink
+                                    ? (currentLang === 'en' ? 'Generating...' : 'Genereren...')
+                                    : (currentLang === 'en' ? 'Add Guarantor for Yourself' : 'Garantsteller toevoegen voor jezelf')}
+                            </button>
+                        )}
+
+                        {/* Show generated guarantor invite link */}
+                        {guarantorInviteLink && (
+                            <div style={{ marginTop: '1rem', textAlign: 'left' }}>
+                                <p style={{ fontSize: '0.813rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                                    {currentLang === 'en'
+                                        ? 'Send this link to your guarantor so they can fill in their details and upload documents.'
+                                        : 'Stuur deze link naar je garantsteller zodat zij hun gegevens kunnen invullen en documenten kunnen uploaden.'}
+                                </p>
+                                <div style={{
+                                    background: '#f3f4f6', borderRadius: '0.5rem', padding: '0.75rem',
+                                    fontSize: '0.75rem', wordBreak: 'break-all', color: '#374151',
+                                    fontFamily: 'monospace', marginBottom: '0.5rem'
+                                }}>
+                                    {guarantorInviteLink}
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(guarantorInviteLink);
+                                        setInviteLinkCopied(true);
+                                        setTimeout(() => setInviteLinkCopied(false), 2000);
+                                    }}
+                                    style={{
+                                        width: '100%', padding: '0.5rem', borderRadius: '0.375rem',
+                                        background: inviteLinkCopied ? '#10b981' : '#497772',
+                                        color: 'white', border: 'none', cursor: 'pointer',
+                                        fontWeight: 500, fontSize: '0.813rem'
+                                    }}
+                                >
+                                    {inviteLinkCopied
+                                        ? (currentLang === 'en' ? '✓ Copied!' : '✓ Gekopieerd!')
+                                        : (currentLang === 'en' ? 'Copy Link' : 'Link Kopiëren')}
+                                </button>
+                            </div>
+                        )}
+
                         <button
                             onClick={handleLogout}
                             style={{

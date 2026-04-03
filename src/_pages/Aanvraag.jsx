@@ -710,9 +710,12 @@ const Aanvraag = () => {
     };
 
     const handleAddGuarantor = (tenantId) => {
-        const garantstellers = data.personen.filter(p => p.rol === 'Garantsteller');
-        if (garantstellers.length >= 2) {
-            alert("Max guarantors reached");
+        // Check if this specific tenant already has a guarantor
+        const existingGuarantor = data.personen.find(
+            p => p.rol === 'Garantsteller' && p.linkedToPersoonId === tenantId
+        );
+        if (existingGuarantor) {
+            alert(currentLang === 'en' ? "This person already has a guarantor" : "Deze persoon heeft al een garantsteller");
             return;
         }
         setSelectedTenantForGuarantor(tenantId);
@@ -733,7 +736,7 @@ const Aanvraag = () => {
                     body: {
                         dossier_id: dossierId,
                         role: addPersonRole,
-                        linked_to_persoon_id: addPersonRole === 'Garantsteller' ? selectedTenantForGuarantor : null,
+                        linked_to_persoon_id: addPersonRole === 'Garantsteller' && selectedTenantForGuarantor ? selectedTenantForGuarantor.replace(/^p/, '') : null,
                         auth_token: token
                     }
                 });
@@ -1069,7 +1072,7 @@ const Aanvraag = () => {
                                                 </div>
                                             )}
 
-                                            {!linkedGuarantor && garantstellers.length < 2 && (
+                                            {!linkedGuarantor && (
                                                 <button
                                                     className={styles.addGuarantorButton}
                                                     onClick={() => handleAddGuarantor(huurder.persoonId)}
@@ -1083,6 +1086,22 @@ const Aanvraag = () => {
                                         </div>
                                     );
                                 })}
+
+                                {/* Show any guarantors not linked to a specific tenant */}
+                                {garantstellers
+                                    .filter(g => !g.linkedToPersoonId || !alleHuurders.some(h => h.persoonId === g.linkedToPersoonId))
+                                    .map(g => (
+                                        <div key={g.persoonId} className={styles.guarantorWrapper}>
+                                            <GuarantorFormSection
+                                                guarantors={[g]}
+                                                onDocumentUpload={handleDocumentUpload}
+                                                onDocumentRemove={handleDocumentRemove}
+                                                onRemove={handleRemovePerson}
+                                                onFormDataChange={handleFormDataChange}
+                                            />
+                                        </div>
+                                    ))
+                                }
 
                                 <button
                                     className={styles.addCoTenantButton}

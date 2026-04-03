@@ -54,6 +54,11 @@ export const saveAanvraagData = async (dossierId, formData) => {
                     }
                 }
 
+                // Resolve linked_to_persoon_id — strip the 'p' prefix used in the frontend
+                const rawLinkedTo = persoon.linkedToPersoonId
+                    ? persoon.linkedToPersoonId.replace(/^p/, '')
+                    : null;
+
                 const persoonData = {
                     dossier_id: dossierId,
                     type: persoon.rol === 'Hoofdhuurder' ? 'tenant' :
@@ -68,6 +73,7 @@ export const saveAanvraagData = async (dossierId, formData) => {
                     postcode: persoon.postcode || null,
                     woonplaats: persoon.woonplaats || null,
                     rol: persoon.rol,
+                    linked_to_persoon_id: persoon.rol === 'Garantsteller' ? rawLinkedTo : null,
                     updated_at: new Date().toISOString()
                 };
 
@@ -296,6 +302,7 @@ export const loadAanvraagData = async (dossierId) => {
                 adres: p.huidige_adres || '',
                 postcode: p.postcode || '',
                 woonplaats: p.woonplaats || '',
+                linkedToPersoonId: p.linked_to_persoon_id ? `p${p.linked_to_persoon_id}` : null,
                 documenten: persoonDocuments,
                 docsCompleet: persoonDocuments.length > 0 // Mark as complete if has docs
             };

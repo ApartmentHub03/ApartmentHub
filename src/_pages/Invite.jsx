@@ -198,6 +198,7 @@ const Invite = () => {
                             voornaam: nameParts[0] || '',
                             achternaam: nameParts.slice(1).join(' ') || '',
                             telefoon: normalizedPhone,
+                            linked_to_persoon_id: inviteData.role === 'Garantsteller' ? (inviteData.linked_to_persoon_id || null) : null,
                             created_at: new Date().toISOString()
                         })
                         .select('id')
