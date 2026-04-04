@@ -59,19 +59,19 @@ const Navbar = () => {
                 else if (currentPath === '/neighborhoods') newPath = '/nl/neighborhoods';
                 else if (currentPath === '/faq') newPath = '/nl/faq';
                 else if (currentPath === '/about') newPath = '/nl/about-us';
-                else if (currentPath === '/application-general' || currentPath.includes('/application-general')) newPath = '/nl/aanvraag-general';
+                else if (currentPath === '/application' || currentPath.includes('/application')) newPath = '/nl/aanvraag';
             }
         } else {
             if (currentPath === '/nl') {
                 newPath = '/';
             } else if (currentPath.startsWith('/nl/')) {
-                if (currentPath.includes('/aanvraag-general')) {
-                    newPath = '/en/application-general';
+                if (currentPath.includes('/aanvraag')) {
+                    newPath = '/en/application';
                 } else {
                     newPath = currentPath.replace('/nl/', '/en/');
                 }
-            } else if (currentPath === '/aanvraag-general') {
-                newPath = '/en/application-general';
+            } else if (currentPath === '/aanvraag') {
+                newPath = '/en/application';
             }
         }
 

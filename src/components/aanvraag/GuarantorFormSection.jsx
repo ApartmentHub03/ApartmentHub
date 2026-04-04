@@ -13,7 +13,8 @@ const GuarantorCard = ({
     onDocumentRemove,
     onSendWhatsAppLink,
     onRemove,
-    onFormDataChange
+    onFormDataChange,
+    readOnly = false
 }) => {
     const currentLang = useSelector((state) => state.ui.language);
     const t = translations.aanvraag[currentLang] || translations.aanvraag.nl;
@@ -30,12 +31,12 @@ const GuarantorCard = ({
         return doc && doc.status === 'ontvangen';
     };
 
-    const completedDocsCount = requiredDocuments.filter(d => isDocUploaded(d.type)).length;
-    const totalDocsCount = requiredDocuments.length;
-    // Recalculate completeness based on current status
-    const isComplete = totalDocsCount > 0 && completedDocsCount === totalDocsCount;
-    // Assume progress calculation
-    const progress = totalDocsCount > 0 ? Math.round((completedDocsCount / totalDocsCount) * 100) : 0;
+    // Only count required (verplicht) documents for completion check
+    const verplichteDocs = requiredDocuments.filter(d => d.verplicht);
+    const completedDocsCount = verplichteDocs.filter(d => isDocUploaded(d.type)).length;
+    const totalDocsCount = verplichteDocs.length;
+    const isComplete = totalDocsCount > 0 ? completedDocsCount === totalDocsCount : (workStatus != null);
+    const progress = totalDocsCount > 0 ? Math.round((completedDocsCount / totalDocsCount) * 100) : (workStatus ? 100 : 0);
 
     // Notify parent of document completion status
     const onFormDataChangeRef = useRef(onFormDataChange);
@@ -102,40 +103,40 @@ const GuarantorCard = ({
                     <div>
                         <div className={styles.formItem}>
                             <label className={styles.label}>{currentLang === 'en' ? 'Full Name' : 'Volledige Naam'} *</label>
-                            <input className={styles.input} placeholder={currentLang === 'en' ? 'John Doe' : 'Jan Jansen'} defaultValue={persoon.naam} />
+                            <input className={styles.input} placeholder={currentLang === 'en' ? 'John Doe' : 'Jan Jansen'} defaultValue={persoon.naam} disabled={readOnly} />
                         </div>
 
                         <div className={styles.formItem}>
                             <label className={styles.label}>Email *</label>
-                            <input className={styles.input} type="email" placeholder="naam@voorbeeld.nl" defaultValue={persoon.email} />
+                            <input className={styles.input} type="email" placeholder="naam@voorbeeld.nl" defaultValue={persoon.email} disabled={readOnly} />
                         </div>
 
                         <div className={styles.grid}>
                             <div className={styles.formItem}>
                                 <label className={styles.label}>{currentLang === 'en' ? 'Current Address' : 'Huidig Adres'}</label>
-                                <input className={styles.input} placeholder={currentLang === 'en' ? 'Street 123' : 'Straat 123'} />
+                                <input className={styles.input} placeholder={currentLang === 'en' ? 'Street 123' : 'Straat 123'} disabled={readOnly} />
                             </div>
                             <div className={styles.formItem}>
                                 <label className={styles.label}>{currentLang === 'en' ? 'Postcode' : 'Postcode'}</label>
-                                <input className={styles.input} placeholder="1234 AB" />
+                                <input className={styles.input} placeholder="1234 AB" disabled={readOnly} />
                             </div>
                         </div>
 
                         <div className={styles.formItem}>
                             <label className={styles.label}>{currentLang === 'en' ? 'City' : 'Woonplaats'}</label>
-                            <input className={styles.input} placeholder={currentLang === 'en' ? 'Amsterdam' : 'Amsterdam'} />
+                            <input className={styles.input} placeholder={currentLang === 'en' ? 'Amsterdam' : 'Amsterdam'} disabled={readOnly} />
                         </div>
 
                         <div className={styles.formItem}>
                             <label className={styles.label}>💼 {currentLang === 'en' ? 'Work Status' : 'Werkstatus'} *</label>
-                            <GuarantorWorkStatusSelector selected={workStatus} onChange={handleWorkStatusChange} />
+                            <GuarantorWorkStatusSelector selected={workStatus} onChange={readOnly ? undefined : handleWorkStatusChange} disabled={readOnly} />
                         </div>
 
                         <div className={styles.formItem}>
                             <label className={styles.label}>{currentLang === 'en' ? 'Gross Annual Income' : 'Bruto Jaarinkomen'} *</label>
                             <div className={styles.inputWrapper}>
                                 <span className={styles.currencyPrefix}>€</span>
-                                <input className={`${styles.input} ${styles.inputWithPrefix}`} type="number" placeholder="45000" />
+                                <input className={`${styles.input} ${styles.inputWithPrefix}`} type="number" placeholder="45000" disabled={readOnly} />
                             </div>
                         </div>
                     </div>
@@ -157,13 +158,14 @@ const GuarantorCard = ({
                                         return (
                                             <InlineDocumentUpload
                                                 key={doc.type}
-                                                documentType={doc.type} // Should translate
+                                                documentType={doc.type}
                                                 description={doc.description}
                                                 verplicht={doc.verplicht}
                                                 status={isDocUploaded(doc.type) ? 'ontvangen' : 'ontbreekt'}
                                                 fileName={docData?.file?.name}
-                                                onUpload={(f) => handleLocalUpload(doc.type, f)}
-                                                onRemove={onDocumentRemove ? () => onDocumentRemove(persoon.persoonId, doc.type) : undefined}
+                                                onUpload={readOnly ? undefined : (f) => handleLocalUpload(doc.type, f)}
+                                                onRemove={readOnly ? undefined : (onDocumentRemove ? () => onDocumentRemove(persoon.persoonId, doc.type) : undefined)}
+                                                readOnly={readOnly}
                                             />
                                         );
                                     })}
@@ -173,7 +175,7 @@ const GuarantorCard = ({
                     </div>
 
                     <div className={styles.actions}>
-                        {onRemove && (
+                        {onRemove && !readOnly && (
                             <button className={styles.removeButton} onClick={() => onRemove(persoon.persoonId)}>
                                 <Trash2 size={16} />
                                 {currentLang === 'en' ? 'Remove Guarantor' : 'Garantsteller verwijderen'}
@@ -197,7 +199,8 @@ const GuarantorFormSection = ({
     onSendWhatsAppLink,
     onAddGuarantor,
     onRemove,
-    onFormDataChange
+    onFormDataChange,
+    readOnly = false
 }) => {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -210,6 +213,7 @@ const GuarantorFormSection = ({
                     onSendWhatsAppLink={onSendWhatsAppLink}
                     onRemove={onRemove}
                     onFormDataChange={onFormDataChange}
+                    readOnly={readOnly}
                 />
             ))}
         </div>

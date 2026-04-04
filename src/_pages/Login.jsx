@@ -23,12 +23,10 @@ const Login = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [codeSent, setCodeSent] = useState(false);
-    const [testCode, setTestCode] = useState(null);
-
     // Redirect if already authenticated
     React.useEffect(() => {
         if (isAuthenticated) {
-            const from = searchParams.get('from') || '/aanvraag-general';
+            const from = searchParams.get('from') || '/aanvraag';
             router.replace(from);
         }
     }, [isAuthenticated, router, searchParams]);
@@ -46,7 +44,6 @@ const Login = () => {
     const handleSendCode = async (e) => {
         e.preventDefault();
         setError('');
-        setTestCode(null);
 
         // Validate phone number (should be at least 10 digits after country code)
         const digitsOnly = phoneNumber.replace(/\D/g, '');
@@ -85,11 +82,6 @@ const Login = () => {
                     return;
                 }
                 throw new Error(sendError.message);
-            }
-
-            // Store test code if returned (development mode)
-            if (data?.test_code) {
-                setTestCode(data.test_code);
             }
 
             setCodeSent(true);
@@ -159,10 +151,10 @@ const Login = () => {
                 console.warn('Could not fetch account ID during login:', err);
             }
 
-            login(data.token, data.phone_number, data.dossier_id, null, null, accountId);
+            login(data.token, data.phone_number, data.dossier_id, null, null, accountId, data.user_role || 'main_tenant', data.persoon_id || null);
 
             // Navigate to target page
-            const from = searchParams.get('from') || '/aanvraag-general';
+            const from = searchParams.get('from') || '/aanvraag';
             router.replace(from);
         } catch (err) {
             console.error('Error verifying code:', err);
@@ -177,11 +169,6 @@ const Login = () => {
         setVerificationCode('');
         setError('');
         setCodeSent(false);
-        setTestCode(null);
-    };
-
-    const handleTestCodeClick = () => {
-        setVerificationCode(testCode || '123456');
     };
 
     return (
@@ -305,15 +292,6 @@ const Login = () => {
                                         : (currentLang === 'en' ? 'Verify' : 'Verifiëren')}
                                 </button>
                             </form>
-
-                            {(testCode || true) && (
-                                <div className={styles.testModeNote}>
-                                    {currentLang === 'en' ? 'Test mode: Use code' : 'Testmodus: Gebruik code'}{' '}
-                                    <span className={styles.testModeCode} onClick={handleTestCodeClick}>
-                                        {testCode || '123456'}
-                                    </span>
-                                </div>
-                            )}
                         </div>
                     )}
                 </div>

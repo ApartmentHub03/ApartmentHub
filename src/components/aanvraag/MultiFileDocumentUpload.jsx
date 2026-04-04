@@ -83,8 +83,8 @@ const MultiFileDocumentUpload = ({
                                 {uploadedFiles.map((file, index) => (
                                     <div key={index} className={styles.fileItemCompact}>
                                         <File className={styles.fileIconSmall} />
-                                        <span className={styles.fileNameCompact}>{file.name}</span>
-                                        <span className={styles.fileSizeCompact}>{(file.size / 1024).toFixed(0)} KB</span>
+                                        <span className={styles.fileNameCompact}>{file.name || file.fileName || 'Document'}</span>
+                                        <span className={styles.fileSizeCompact}>{file.size ? `${(file.size / 1024).toFixed(0)} KB` : ''}</span>
                                         <button
                                             type="button"
                                             className={styles.removeButtonCompact}

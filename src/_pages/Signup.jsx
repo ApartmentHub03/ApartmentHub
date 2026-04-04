@@ -22,12 +22,10 @@ const Signup = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [codeSent, setCodeSent] = useState(false);
-    const [testCode, setTestCode] = useState(null);
-
     // Redirect if already authenticated
     React.useEffect(() => {
         if (isAuthenticated) {
-            router.replace('/aanvraag-general');
+            router.replace('/aanvraag');
         }
     }, [isAuthenticated, router]);
 
@@ -76,11 +74,6 @@ const Signup = () => {
                 return;
             }
 
-            // Store test code if returned (development mode)
-            if (data.test_code) {
-                setTestCode(data.test_code);
-            }
-
             setCodeSent(true);
             setStep('code');
         } catch (err) {
@@ -124,10 +117,10 @@ const Signup = () => {
             }
 
             // Signup successful - store auth data
-            login(data.token, data.phone_number, data.dossier_id, firstName, lastName);
+            login(data.token, data.phone_number, data.dossier_id, firstName, lastName, null, data.user_role || 'main_tenant', data.persoon_id || null);
 
             // Navigate to application page
-            router.replace('/aanvraag-general');
+            router.replace('/aanvraag');
         } catch (err) {
             console.error('Error verifying code:', err);
             setError(currentLang === 'en' ? 'Invalid code' : 'Ongeldige code');
@@ -141,11 +134,6 @@ const Signup = () => {
         setVerificationCode('');
         setError('');
         setCodeSent(false);
-        setTestCode(null);
-    };
-
-    const handleTestCodeClick = () => {
-        setVerificationCode(testCode || '123456');
     };
 
     return (
@@ -298,15 +286,6 @@ const Signup = () => {
                                         : (currentLang === 'en' ? 'Verify & Complete' : 'Verifiëren & Voltooien')}
                                 </button>
                             </form>
-
-                            {(testCode || true) && (
-                                <div className={styles.testModeNote}>
-                                    {currentLang === 'en' ? 'Test mode: Use code' : 'Testmodus: Gebruik code'}{' '}
-                                    <span className={styles.testModeCode} onClick={handleTestCodeClick}>
-                                        {testCode || '123456'}
-                                    </span>
-                                </div>
-                            )}
                         </div>
                     )}
                 </div>

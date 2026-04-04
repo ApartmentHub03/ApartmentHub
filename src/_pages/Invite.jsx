@@ -33,7 +33,6 @@ const Invite = () => {
     const [verificationCode, setVerificationCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const [testCode, setTestCode] = useState(null);
 
     // Decode invite token on mount
     useEffect(() => {
@@ -103,10 +102,6 @@ const Invite = () => {
 
             if (sendError && !data) {
                 throw new Error(sendError.message);
-            }
-
-            if (data?.test_code) {
-                setTestCode(data.test_code);
             }
 
             setStep('code');
@@ -210,16 +205,20 @@ const Invite = () => {
                 }
             }
 
-            // Store invite context for the form page
+            // Determine the user role from the invite data
+            const userRole = inviteData.role === 'Medehuurder' ? 'co_tenant' : 'guarantor';
+
+            // Store invite context for the invite-form page
             localStorage.setItem('invite_dossier_id', inviteData.dossier_id);
             localStorage.setItem('invite_role', inviteData.role);
             localStorage.setItem('invite_persoon_id', persoonId || '');
             localStorage.setItem('invite_token', data.token);
 
-            // Log them in
-            login(data.token, data.phone_number, data.dossier_id, firstName, lastName, null);
+            // Log them in with their OWN dossier for the invite-form flow
+            // When they later login normally, auth-verify-code will detect the link and give them the shared dossier
+            login(data.token, data.phone_number, data.dossier_id, firstName, lastName, null, userRole, persoonId);
 
-            // Redirect to dedicated invite form page
+            // Redirect to dedicated invite form page (separate page for entering details/docs)
             router.replace('/invite-form');
         } catch (err) {
             console.error('Error verifying code:', err);
@@ -390,11 +389,6 @@ const Invite = () => {
                                     : (currentLang === 'en' ? 'Verify & Join' : 'Verifieer & Deelnemen')}
                             </button>
 
-                            {testCode && (
-                                <div className={styles.testModeNote}>
-                                    Test code: <code className={styles.testModeCode} onClick={() => setVerificationCode(testCode)}>{testCode}</code>
-                                </div>
-                            )}
                         </form>
                     )}
                 </div>

@@ -13,7 +13,8 @@ const BidSection = ({
     onBidAmountChange,
     onStartDateChange,
     onMotivationChange,
-    onMonthsAdvanceChange
+    onMonthsAdvanceChange,
+    readOnly = false
 }) => {
     const currentLang = useSelector((state) => state.ui.language);
     const t = translations.aanvraag[currentLang] || translations.aanvraag.nl;
@@ -40,7 +41,8 @@ const BidSection = ({
                                 className={styles.bidInput}
                                 placeholder={String(conditions.huurprijs)}
                                 value={bidAmount}
-                                onChange={(e) => onBidAmountChange(Number(e.target.value))}
+                                onChange={(e) => onBidAmountChange?.(Number(e.target.value))}
+                                disabled={readOnly}
                             />
                         </div>
                         <p className={styles.description}>
@@ -62,7 +64,8 @@ const BidSection = ({
                                 className={styles.dateInput}
                                 min={new Date().toISOString().split('T')[0]}
                                 value={startDate}
-                                onChange={(e) => onStartDateChange(e.target.value)}
+                                onChange={(e) => onStartDateChange?.(e.target.value)}
+                                disabled={readOnly}
                             />
                         </div>
                         <p className={styles.description}>
@@ -81,7 +84,8 @@ const BidSection = ({
                     <select
                         className={styles.select}
                         value={monthsAdvance}
-                        onChange={(e) => onMonthsAdvanceChange(Number(e.target.value))}
+                        onChange={(e) => onMonthsAdvanceChange?.(Number(e.target.value))}
+                        disabled={readOnly}
                     >
                         <option value="0">0 {currentLang === 'en' ? 'months' : 'maanden'}</option>
                         <option value="1">1 {currentLang === 'en' ? 'month' : 'maand'}</option>
@@ -109,7 +113,8 @@ const BidSection = ({
                             : 'Waarom wil je hier wonen? Wat maakt jou een geschikte huurder?'}
                         maxLength={500}
                         value={motivation}
-                        onChange={(e) => onMotivationChange(e.target.value)}
+                        onChange={(e) => onMotivationChange?.(e.target.value)}
+                        disabled={readOnly}
                     />
                     <p className={styles.charCount}>
                         {motivation.length}/500 {currentLang === 'en' ? 'characters' : 'karakters'}

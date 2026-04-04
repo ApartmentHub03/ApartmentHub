@@ -103,18 +103,31 @@ serve(async (req: Request) => {
         .single();
 
       if (lookupError || !existingUser) {
-        console.log(`User not found for phone: ${formattedPhone}`);
-        return new Response(
-          JSON.stringify({
-            ok: false,
-            message: "No account found with this phone number. Please sign up first.",
-            message_nl: "Geen account gevonden met dit telefoonnummer. Registreer je eerst."
-          }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+        // Also check if this phone belongs to a co-tenant or guarantor in personen table
+        const { data: linkedPerson } = await supabase
+          .from('personen')
+          .select('id, dossier_id, type, rol')
+          .eq('telefoon', formattedPhone)
+          .in('type', ['co_tenant', 'guarantor'])
+          .limit(1)
+          .maybeSingle();
 
-      console.log(`User found with dossier ID: ${existingUser.id}`);
+        if (!linkedPerson) {
+          console.log(`User not found for phone: ${formattedPhone}`);
+          return new Response(
+            JSON.stringify({
+              ok: false,
+              message: "No account found with this phone number. Please sign up first.",
+              message_nl: "Geen account gevonden met dit telefoonnummer. Registreer je eerst."
+            }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        console.log(`User found as linked ${linkedPerson.type} in dossier: ${linkedPerson.dossier_id}`);
+      } else {
+        console.log(`User found with dossier ID: ${existingUser.id}`);
+      }
     } else if (mode === 'signup') {
       // During signup, check if user ALREADY exists (prevent duplicate accounts)
       const { data: existingUser } = await supabase

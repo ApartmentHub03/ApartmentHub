@@ -40,20 +40,17 @@ const Aanvraag = () => {
     const pathname = usePathname();
     const dispatch = useDispatch();
     const currentLang = useSelector((state) => state.ui.language);
-    const { logout, dossierId, phoneNumber, accountId } = useAuth();
+    const { logout, dossierId, phoneNumber, accountId, isMainTenant, userRole, persoonId: authPersoonId } = useAuth();
     const [saveStatus, setSaveStatus] = useState('idle'); // 'idle', 'saving', 'saved', 'error'
 
     useEffect(() => {
         const path = pathname.toLowerCase();
-        if (path.includes('aanvraag-general') && currentLang !== 'nl') {
+        if ((path.includes('/nl/') || path.includes('/aanvraag')) && !path.includes('/en/') && currentLang !== 'nl') {
             dispatch(setLanguage('nl'));
-        } else if (path.includes('application-general') && currentLang !== 'en') {
+        } else if ((path.includes('/en/') || path.includes('/application')) && !path.includes('/nl/') && currentLang !== 'en') {
             dispatch(setLanguage('en'));
         }
     }, [pathname, dispatch, currentLang]);
-
-    // Detect if we're on the general (no-apartment) route
-    const isGeneralRoute = pathname.toLowerCase().includes('aanvraag-general') || pathname.toLowerCase().includes('application-general');
 
     const t = translations.aanvraag[currentLang] || translations.aanvraag.nl;
     const tNav = translations.nav[currentLang] || translations.nav.en;
@@ -458,9 +455,7 @@ const Aanvraag = () => {
         }
     }, [accountId, phoneNumber]);
 
-    const canSubmit = isGeneralRoute
-        ? isAllDocsComplete()
-        : bidAmount > 0 && startDate !== '' && isAllDocsComplete();
+    const canSubmit = bidAmount > 0 && startDate !== '' && isAllDocsComplete();
 
     const handleDocumentUpload = async (persoonId, type, fileOrFiles) => {
         // Handle both single file and array of files
@@ -484,9 +479,9 @@ const Aanvraag = () => {
         // Ensure person has a supabaseId - create in database if needed
         let persoonSupabaseId = persoon.supabaseId;
         if (!persoonSupabaseId) {
-            // Check if person has minimum required data
-            if (!persoon.naam || !persoon.email || !persoon.telefoon) {
-                alert('Please fill out at least name, email, and phone number before uploading documents');
+            // Check if person has minimum required data (name is enough to create the record)
+            if (!persoon.naam) {
+                alert(currentLang === 'en' ? 'Please fill out at least the name before uploading documents' : 'Vul minstens de naam in voordat je documenten uploadt');
                 return;
             }
 
@@ -606,33 +601,22 @@ const Aanvraag = () => {
             (existingDocs.length > 0) ||
             (filesToUpload.length === 1 && existingDocs.length > 0);
 
-        // Update local state with uploaded documents
-        const updatedPersonen = data.personen.map(p => {
-            if (p.persoonId === persoonId) {
-                const newDocs = [...(p.documenten || [])];
-                const existingDocIdx = newDocs.findIndex(d => d.type === type);
+        // Update local state with uploaded documents using callback form
+        // to preserve any concurrent state updates (e.g. supabaseId assignment)
+        setData(prevData => {
+            if (!prevData) return prevData;
+            const updatedPersonen = prevData.personen.map(p => {
+                if (p.persoonId === persoonId) {
+                    const newDocs = [...(p.documenten || [])];
+                    const existingDocIdx = newDocs.findIndex(d => d.type === type);
 
-                if (isMultiFile) {
-                    // Multi-file document: store as array of files
-                    const allFiles = [...existingDocs, ...uploadedDocs];
-                    const docEntry = {
-                        type,
-                        files: allFiles,
-                        status: allFiles.length > 0 ? 'ontvangen' : 'ontbreekt'
-                    };
-
-                    if (existingDocIdx >= 0) {
-                        newDocs[existingDocIdx] = docEntry;
-                    } else {
-                        newDocs.push(docEntry);
-                    }
-                } else {
-                    // Single-file document: store as single file
-                    if (uploadedDocs.length > 0) {
+                    if (isMultiFile) {
+                        // Multi-file document: store as array of files
+                        const allFiles = [...existingDocs, ...uploadedDocs];
                         const docEntry = {
-                            ...uploadedDocs[0],
                             type,
-                            status: 'ontvangen'
+                            files: allFiles,
+                            status: allFiles.length > 0 ? 'ontvangen' : 'ontbreekt'
                         };
 
                         if (existingDocIdx >= 0) {
@@ -640,31 +624,45 @@ const Aanvraag = () => {
                         } else {
                             newDocs.push(docEntry);
                         }
+                    } else {
+                        // Single-file document: store as single file
+                        if (uploadedDocs.length > 0) {
+                            const docEntry = {
+                                ...uploadedDocs[0],
+                                type,
+                                status: 'ontvangen'
+                            };
+
+                            if (existingDocIdx >= 0) {
+                                newDocs[existingDocIdx] = docEntry;
+                            } else {
+                                newDocs.push(docEntry);
+                            }
+                        }
                     }
+
+                    return { ...p, documenten: newDocs, docsCompleet: newDocs.length >= 1 };
                 }
+                return p;
+            });
 
-                return { ...p, documenten: newDocs, docsCompleet: newDocs.length >= 1 };
+            // Check document completion
+            const allPersonIds = updatedPersonen.map(p => p.persoonId);
+            const allNowComplete = allPersonIds.length > 0 &&
+                allPersonIds.every(id => tenantProgress[id]?.isDocsComplete === true);
+
+            if (allNowComplete) {
+                console.log('[Aanvraag] All docs complete – saving persons to Supabase...');
+                saveAllPersonsToSupabase(updatedPersonen).catch(console.error);
+                updateAccountDocumentationStatus('Complete').catch(console.error);
+            } else {
+                updateAccountDocumentationStatus('Pending').catch(console.error);
             }
-            return p;
-        });
 
-        setData({ ...data, personen: updatedPersonen });
+            return { ...prevData, personen: updatedPersonen };
+        });
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 2000);
-
-        // After updating local state, check document completion and update accounts.documentation_status
-        const allPersonIds = updatedPersonen.map(p => p.persoonId);
-        const allNowComplete = allPersonIds.length > 0 &&
-            allPersonIds.every(id => tenantProgress[id]?.isDocsComplete === true);
-
-        if (allNowComplete) {
-            console.log('[Aanvraag] All docs complete – saving persons to Supabase...');
-            saveAllPersonsToSupabase(updatedPersonen).catch(console.error);
-            updateAccountDocumentationStatus('Complete').catch(console.error);
-        } else {
-            // Not all docs uploaded yet – set status to Pending
-            updateAccountDocumentationStatus('Pending').catch(console.error);
-        }
     };
 
     const handleDocumentRemove = async (persoonId, docType) => {
@@ -702,7 +700,7 @@ const Aanvraag = () => {
     const handleAddCoTenant = () => {
         const medehuurders = data.personen.filter(p => p.rol === 'Medehuurder');
         if (medehuurders.length >= 4) {
-            alert("Max co-tenants reached");
+            alert(currentLang === 'en' ? "Max co-tenants reached" : "Max aantal medehuurders bereikt");
             return;
         }
         setAddPersonRole("Medehuurder");
@@ -756,7 +754,21 @@ const Aanvraag = () => {
                 alert(currentLang === 'en' ? 'Failed to generate invite link' : 'Uitnodigingslink genereren mislukt');
             }
         } else {
-            setShowAddPersonModal(true);
+            // Directly add empty person card inline — no popup
+            const newPerson = {
+                persoonId: `p${Date.now()}`,
+                naam: '',
+                rol: addPersonRole,
+                email: '',
+                telefoon: '',
+                documenten: [],
+                docsCompleet: false,
+                linkedToPersoonId: addPersonRole === 'Garantsteller' ? selectedTenantForGuarantor : undefined
+            };
+            setData(prev => ({
+                ...prev,
+                personen: [...prev.personen, newPerson]
+            }));
         }
     };
 
@@ -877,7 +889,7 @@ const Aanvraag = () => {
     };
 
     const handleSubmit = async () => {
-        if (!isGeneralRoute && (!bidAmount || !startDate)) {
+        if (!bidAmount || !startDate) {
             alert(currentLang === 'en' ? 'Please complete the bid section' : 'Vul de biedingsectie in');
             return;
         }
@@ -886,7 +898,7 @@ const Aanvraag = () => {
         await updateAccountDocumentationStatus('Complete');
 
         // Link offer to apartment and account (skip on general route)
-        if (!isGeneralRoute && data.pand?.apartmentId && accountId) {
+        if (data.pand?.apartmentId && accountId) {
             try {
                 const { supabase: sb } = await import('../integrations/supabase/client');
 
@@ -959,14 +971,21 @@ const Aanvraag = () => {
             <div className={styles.headerContainer}>
                 <div className={styles.container}>
                     <div className={styles.topBar}>
-                        {!isGeneralRoute && data.pand.adres && (
+                        {data.pand?.adres && (
                             <p className={styles.addressText}>📍 {data.pand.adres}</p>
                         )}
                         <div className={styles.headerButtons}>
-                            {!isGeneralRoute && (
+                            {isMainTenant && (
                                 <button className={styles.changeButton} onClick={() => router.push('/appartementen')}>
                                     {currentLang === 'en' ? 'Change Apartment' : 'Wijzig Appartement'}
                                 </button>
+                            )}
+                            {!isMainTenant && (
+                                <span style={{ fontSize: '0.75rem', color: '#6b7280', padding: '0.25rem 0.5rem', background: '#f3f4f6', borderRadius: '0.25rem' }}>
+                                    {userRole === 'co_tenant'
+                                        ? (currentLang === 'en' ? 'Co-Tenant View' : 'Medehuurder weergave')
+                                        : (currentLang === 'en' ? 'Guarantor View' : 'Garantsteller weergave')}
+                                </span>
                             )}
                             <button className={styles.logoutButton} onClick={handleLogout}>
                                 <LogOut size={14} />
@@ -1012,52 +1031,55 @@ const Aanvraag = () => {
                 )}
 
                 <div className={styles.mainLayout}>
-                    {!isGeneralRoute && (
-                        <RentalConditionsSidebar conditions={data.pand.voorwaarden} address={data.pand.adres} />
-                    )}
+                    <RentalConditionsSidebar conditions={data.pand?.voorwaarden} address={data.pand?.adres} />
 
                     <div className={styles.contentColumn}>
 
-                        {!isGeneralRoute && (
-                            <div className={styles.stepContainer}>
-                                <div className={styles.stepHeader}>
-                                    <div className={styles.stepNumber}>1</div>
-                                    <h2 className={styles.stepTitle}>{currentLang === 'en' ? 'Your Bid' : 'Jouw Bod'}</h2>
-                                </div>
-                                <BidSection
-                                    conditions={data.pand.voorwaarden}
-                                    bidAmount={bidAmount}
-                                    startDate={startDate}
-                                    motivation={motivation}
-                                    monthsAdvance={monthsAdvance}
-                                    onBidAmountChange={setBidAmount}
-                                    onStartDateChange={setStartDate}
-                                    onMotivationChange={setMotivation}
-                                    onMonthsAdvanceChange={setMonthsAdvance}
-                                />
+                        <div className={styles.stepContainer}>
+                            <div className={styles.stepHeader}>
+                                <div className={styles.stepNumber}>1</div>
+                                <h2 className={styles.stepTitle}>{currentLang === 'en' ? 'Your Bid' : 'Jouw Bod'}</h2>
                             </div>
-                        )}
+                            <BidSection
+                                conditions={data.pand?.voorwaarden}
+                                bidAmount={bidAmount}
+                                startDate={startDate}
+                                motivation={motivation}
+                                monthsAdvance={monthsAdvance}
+                                onBidAmountChange={isMainTenant ? setBidAmount : undefined}
+                                onStartDateChange={isMainTenant ? setStartDate : undefined}
+                                onMotivationChange={isMainTenant ? setMotivation : undefined}
+                                onMonthsAdvanceChange={isMainTenant ? setMonthsAdvance : undefined}
+                                readOnly={!isMainTenant}
+                            />
+                        </div>
 
 
                         <div className={styles.stepContainer}>
                             <div className={styles.stepHeader}>
-                                <div className={styles.stepNumber}>{isGeneralRoute ? '1' : '2'}</div>
+                                <div className={styles.stepNumber}>2</div>
                                 <h2 className={styles.stepTitle}>{currentLang === 'en' ? 'Details' : 'Gegevens'}</h2>
                             </div>
 
                             <div className={styles.listsContainer}>
                                 {alleHuurders.map((huurder) => {
                                     const linkedGuarantor = garantstellers.find(g => g.linkedToPersoonId === huurder.persoonId);
+                                    // Determine if this person's card is editable by the current user
+                                    const isOwnCard = !isMainTenant && huurder.supabaseId === authPersoonId;
+                                    const huurderReadOnly = !isMainTenant && !isOwnCard;
+                                    const guarantorIsOwn = !isMainTenant && linkedGuarantor?.supabaseId === authPersoonId;
+                                    const guarantorReadOnly = !isMainTenant && !guarantorIsOwn;
 
                                     return (
                                         <div key={huurder.persoonId} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                             <TenantFormSection
                                                 persoon={huurder}
                                                 onDocumentUpload={handleDocumentUpload}
-                                                onDocumentRemove={handleDocumentRemove}
-                                                onRemove={handleRemovePerson}
+                                                onDocumentRemove={huurderReadOnly ? undefined : handleDocumentRemove}
+                                                onRemove={huurderReadOnly ? undefined : (isOwnCard ? handleRemovePerson : handleRemovePerson)}
                                                 onFormDataChange={handleFormDataChange}
                                                 showUploadChoice={true}
+                                                readOnly={huurderReadOnly}
                                             />
 
                                             {linkedGuarantor && (
@@ -1065,14 +1087,15 @@ const Aanvraag = () => {
                                                     <GuarantorFormSection
                                                         guarantors={[linkedGuarantor]}
                                                         onDocumentUpload={handleDocumentUpload}
-                                                        onDocumentRemove={handleDocumentRemove}
-                                                        onRemove={handleRemovePerson}
+                                                        onDocumentRemove={guarantorReadOnly ? undefined : handleDocumentRemove}
+                                                        onRemove={guarantorReadOnly ? undefined : handleRemovePerson}
                                                         onFormDataChange={handleFormDataChange}
+                                                        readOnly={guarantorReadOnly}
                                                     />
                                                 </div>
                                             )}
 
-                                            {!linkedGuarantor && (
+                                            {!linkedGuarantor && isMainTenant && (
                                                 <button
                                                     className={styles.addGuarantorButton}
                                                     onClick={() => handleAddGuarantor(huurder.persoonId)}
@@ -1090,46 +1113,55 @@ const Aanvraag = () => {
                                 {/* Show any guarantors not linked to a specific tenant */}
                                 {garantstellers
                                     .filter(g => !g.linkedToPersoonId || !alleHuurders.some(h => h.persoonId === g.linkedToPersoonId))
-                                    .map(g => (
-                                        <div key={g.persoonId} className={styles.guarantorWrapper}>
-                                            <GuarantorFormSection
-                                                guarantors={[g]}
-                                                onDocumentUpload={handleDocumentUpload}
-                                                onDocumentRemove={handleDocumentRemove}
-                                                onRemove={handleRemovePerson}
-                                                onFormDataChange={handleFormDataChange}
-                                            />
-                                        </div>
-                                    ))
+                                    .map(g => {
+                                        const gIsOwn = !isMainTenant && g.supabaseId === authPersoonId;
+                                        const gReadOnly = !isMainTenant && !gIsOwn;
+                                        return (
+                                            <div key={g.persoonId} className={styles.guarantorWrapper}>
+                                                <GuarantorFormSection
+                                                    guarantors={[g]}
+                                                    onDocumentUpload={handleDocumentUpload}
+                                                    onDocumentRemove={gReadOnly ? undefined : handleDocumentRemove}
+                                                    onRemove={gReadOnly ? undefined : handleRemovePerson}
+                                                    onFormDataChange={handleFormDataChange}
+                                                    readOnly={gReadOnly}
+                                                />
+                                            </div>
+                                        );
+                                    })
                                 }
 
-                                <button
-                                    className={styles.addCoTenantButton}
-                                    onClick={handleAddCoTenant}
-                                    disabled={alleHuurders.length >= 5}
-                                >
-                                    <div className={styles.addCoTenantContent}>
-                                        <div className={styles.plusIconWrapper}>
-                                            <Plus size={20} />
+                                {isMainTenant && (
+                                    <button
+                                        className={styles.addCoTenantButton}
+                                        onClick={handleAddCoTenant}
+                                        disabled={alleHuurders.length >= 5}
+                                    >
+                                        <div className={styles.addCoTenantContent}>
+                                            <div className={styles.plusIconWrapper}>
+                                                <Plus size={20} />
+                                            </div>
+                                            <span>
+                                                {alleHuurders.length >= 5
+                                                    ? (currentLang === 'en' ? 'Max co-tenants reached' : 'Max aantal medehuurders bereikt')
+                                                    : (currentLang === 'en' ? 'Add Co-Tenant' : 'Medehuurder Toevoegen')}
+                                            </span>
                                         </div>
-                                        <span>
-                                            {alleHuurders.length >= 5
-                                                ? (currentLang === 'en' ? 'Max co-tenants reached' : 'Max aantal medehuurders bereikt')
-                                                : (currentLang === 'en' ? 'Add Co-Tenant' : 'Medehuurder Toevoegen')}
-                                        </span>
-                                    </div>
-                                </button>
+                                    </button>
+                                )}
                             </div>
                         </div>
 
-                        <button
-                            className={styles.submitButton}
-                            onClick={handleSubmit}
-                            disabled={!canSubmit}
-                        >
-                            <CheckCircle size={24} />
-                            {currentLang === 'en' ? 'Submit Application' : 'Aanvraag Versturen'}
-                        </button>
+                        {isMainTenant && (
+                            <button
+                                className={styles.submitButton}
+                                onClick={handleSubmit}
+                                disabled={!canSubmit}
+                            >
+                                <CheckCircle size={24} />
+                                {currentLang === 'en' ? 'Submit Application' : 'Aanvraag Versturen'}
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
