@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import { UserPlus, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,13 +11,14 @@ import styles from './Login.module.css';
 
 const Signup = () => {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const currentLang = useSelector((state) => state.ui.language);
     const { isAuthenticated, login } = useAuth();
 
     const [step, setStep] = useState('details'); // 'details' or 'code'
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
-    const [phoneNumber, setPhoneNumber] = useState('+');
+    const [phoneNumber, setPhoneNumber] = useState(searchParams.get('phone') || '+');
     const [verificationCode, setVerificationCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');

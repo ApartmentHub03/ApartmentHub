@@ -240,6 +240,36 @@ const InviteForm = () => {
         }
 
         await handleSave();
+
+        // Notify main tenant via WhatsApp that co-tenant has submitted
+        if (inviteContext?.dossierId) {
+            try {
+                const { data: dossierRow } = await supabase
+                    .from('dossiers')
+                    .select('phone_number')
+                    .eq('id', inviteContext.dossierId)
+                    .single();
+
+                if (dossierRow?.phone_number) {
+                    fetch('https://davidvanwachem.app.n8n.cloud/webhook/get-agenda-page-details', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            eventType: 'co_tenant_submitted',
+                            main_tenant_phone: dossierRow.phone_number,
+                            co_tenant_name: naam,
+                            co_tenant_phone: telefoon || phoneNumber,
+                            role: inviteContext.role,
+                            dossier_id: inviteContext.dossierId,
+                            timestamp: new Date().toISOString()
+                        })
+                    }).catch(err => console.warn('[InviteForm] Webhook notification failed:', err));
+                }
+            } catch (err) {
+                console.warn('[InviteForm] Could not notify main tenant:', err);
+            }
+        }
+
         setSubmitted(true);
     };
 

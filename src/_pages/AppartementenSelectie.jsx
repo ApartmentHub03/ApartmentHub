@@ -118,6 +118,9 @@ const AppartementenSelectie = () => {
         if (selectedApartments.length === 0) return;
         setSaving(true);
 
+        // Read the flag at click-time (not render-time) to avoid SSR issues
+        const isFromSubmit = typeof window !== 'undefined' && sessionStorage.getItem('fromSubmitFlow') === 'true';
+
         try {
             const selectedApts = apartments.filter(apt => selectedApartments.includes(apt.id));
             const aptEntries = selectedApts.map(apt => ({
@@ -137,7 +140,73 @@ const AppartementenSelectie = () => {
                 localStorage.setItem('pending_apartment_selected', JSON.stringify(aptEntries));
             }
 
-            router.push('/aanvraag');
+            // If coming from the submit flow, link offers to selected apartments then go to LOI
+            if (isFromSubmit) {
+                sessionStorage.removeItem('fromSubmitFlow');
+
+                // Link offers to apartments if we have an account
+                if (accountId) {
+                    const loiRaw = sessionStorage.getItem('loiData');
+                    const loiData = loiRaw ? JSON.parse(loiRaw) : {};
+                    const bidAmounts = loiData.bidAmounts || {};
+                    const startDate = loiData.startDate || '';
+                    const motivation = loiData.motivation || '';
+                    const mainTenantName = loiData.tenantData?.personen?.find(p => p.rol === 'Hoofdhuurder')?.naam || '';
+
+                    const { data: accData } = await supabase.from('accounts').select('offered_apartments').eq('id', accountId).single();
+                    let updatedOffered = accData?.offered_apartments || [];
+
+                    for (const apt of selectedApts) {
+                        if (!updatedOffered.includes(apt.id)) {
+                            updatedOffered.push(apt.id);
+                        }
+
+                        const { data: aptData } = await supabase.from('apartments').select('offers_in').eq('id', apt.id).single();
+                        const offersIn = aptData?.offers_in || [];
+                        const bidAmount = bidAmounts[apt.id] || bidAmounts['__default'] || apt.rental_price || 0;
+
+                        const existingIdx = offersIn.findIndex(o => o.account_id === accountId);
+                        const offerObj = {
+                            account_id: accountId,
+                            tenant_name: mainTenantName,
+                            bid_amount: bidAmount,
+                            start_date: startDate,
+                            motivation: motivation,
+                            status: 'Pending',
+                            submitted_at: new Date().toISOString()
+                        };
+
+                        if (existingIdx >= 0) {
+                            offersIn[existingIdx] = offerObj;
+                        } else {
+                            offersIn.push(offerObj);
+                        }
+
+                        await supabase.from('apartments').update({ offers_in: offersIn }).eq('id', apt.id);
+                    }
+
+                    await supabase.from('accounts').update({ offered_apartments: updatedOffered }).eq('id', accountId);
+
+                    // Update LOI data with the selected apartments
+                    const loiRaw2 = sessionStorage.getItem('loiData');
+                    if (loiRaw2) {
+                        const updatedLoi = JSON.parse(loiRaw2);
+                        updatedLoi.properties = selectedApts.map(a => ({
+                            adres: a["Full Address"] || [a.street, a.area].filter(Boolean).join(', ') || '',
+                            apartmentId: a.id,
+                            voorwaarden: { huurprijs: a.rental_price || 0 }
+                        }));
+                        updatedLoi.property = updatedLoi.properties[0] || updatedLoi.property;
+                        sessionStorage.setItem('loiData', JSON.stringify(updatedLoi));
+                    }
+                }
+
+                // Always redirect to letter-of-intent when coming from submit
+                router.push(currentLang === 'en' ? '/en/letter-of-intent' : '/letter-of-intent');
+            } else {
+                // Normal flow — go back to aanvraag
+                router.push('/aanvraag');
+            }
         } catch (err) {
             console.error('[AppartementenSelectie] Error saving apartments:', err);
             setSaving(false);

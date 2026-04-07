@@ -73,6 +73,14 @@ const Aanvraag = () => {
     const [mainTenantApartments, setMainTenantApartments] = useState([]); // apartments available to co-tenant
     const [showApartmentPicker, setShowApartmentPicker] = useState(false);
     const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [shareModalName, setShareModalName] = useState('');
+    const [shareModalPhone, setShareModalPhone] = useState('+');
+    const [shareModalSending, setShareModalSending] = useState(false);
+    const [shareModalSent, setShareModalSent] = useState(false);
+    const [showRemoveConfirm, setShowRemoveConfirm] = useState(null); // persoonId to confirm removal
+    const [notifyingSent, setNotifyingSent] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Apartments are loaded from Supabase accounts.apartment_selected in the data loading effect below
 
@@ -301,12 +309,18 @@ const Aanvraag = () => {
                 setMonthsAdvance(result.data.monthsAdvance || 0);
 
                 const personen = result.data.personen?.length > 0
-                    ? result.data.personen
+                    ? result.data.personen.map(p => {
+                        // Autofill main tenant's phone from auth if empty
+                        if (p.rol === 'Hoofdhuurder' && !p.telefoon && phoneNumber) {
+                            return { ...p, telefoon: phoneNumber };
+                        }
+                        return p;
+                    })
                     : [{
                         persoonId: "p1",
                         naam: "",
                         email: "",
-                        telefoon: "",
+                        telefoon: phoneNumber || "",
                         rol: "Hoofdhuurder",
                         documenten: [],
                         docsCompleet: false
@@ -318,7 +332,7 @@ const Aanvraag = () => {
                     persoonId: "p1",
                     naam: "",
                     email: "",
-                    telefoon: "",
+                    telefoon: phoneNumber || "",
                     rol: "Hoofdhuurder",
                     documenten: [],
                     docsCompleet: false
@@ -616,7 +630,20 @@ const Aanvraag = () => {
         return new Set(phones).size !== phones.length;
     };
 
-    const canSubmit = Object.values(bidAmounts).some(b => b > 0) && startDate !== '' && isAllDocsComplete() && !hasPhoneDuplicates();
+    const isAllFormsComplete = () => {
+        const personen = data?.personen || [];
+        if (personen.length === 0) return false;
+        return personen.every(p => {
+            const progress = tenantProgress[p.persoonId];
+            if (!progress) return true; // No progress tracked yet
+            // isFormComplete is only reported by TenantFormSection (not GuarantorFormSection),
+            // so treat undefined as true — guarantors don't have the same form fields.
+            if (progress.isFormComplete === undefined) return true;
+            return progress.isFormComplete === true;
+        });
+    };
+
+    const canSubmit = Object.values(bidAmounts).some(b => b > 0) && startDate !== '' && isAllDocsComplete() && isAllFormsComplete() && !hasPhoneDuplicates();
 
     const handleDocumentUpload = async (persoonId, type, fileOrFiles) => {
         // Handle both single file and array of files
@@ -874,38 +901,87 @@ const Aanvraag = () => {
         setShowUploadChoiceModal(true);
     };
 
+    const generateInviteLink = async () => {
+        try {
+            const { supabase: sb } = await import('../integrations/supabase/client');
+            const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+
+            const { data: inviteResult, error: inviteError } = await sb.functions.invoke('generate-invite', {
+                body: {
+                    dossier_id: dossierId,
+                    role: addPersonRole,
+                    linked_to_persoon_id: addPersonRole === 'Garantsteller' && selectedTenantForGuarantor ? selectedTenantForGuarantor.replace(/^p/, '') : null,
+                    auth_token: token
+                }
+            });
+
+            if (inviteError || !inviteResult?.ok) {
+                console.error('[Aanvraag] Failed to generate invite:', inviteError || inviteResult);
+                return null;
+            }
+
+            const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+            return `${baseUrl}/invite?token=${inviteResult.invite_token}`;
+        } catch (err) {
+            console.error('[Aanvraag] Error generating invite:', err);
+            return null;
+        }
+    };
+
+    const handleShareModalSend = async () => {
+        if (!shareModalName.trim() || !shareModalPhone.trim() || shareModalPhone === '+') return;
+
+        setShareModalSending(true);
+
+        // Generate invite link if not already generated
+        let link = inviteLink;
+        if (!link) {
+            link = await generateInviteLink();
+            if (!link) {
+                alert(currentLang === 'en' ? 'Failed to generate invite link' : 'Uitnodigingslink genereren mislukt');
+                setShareModalSending(false);
+                return;
+            }
+            setInviteLink(link);
+        }
+
+        // Send WhatsApp invitation via n8n webhook
+        try {
+            await fetch('https://davidvanwachem.app.n8n.cloud/webhook/get-agenda-page-details', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    eventType: 'invite_co_tenant',
+                    name: shareModalName,
+                    phone_number: shareModalPhone,
+                    invite_link: link,
+                    role: addPersonRole,
+                    invited_by: phoneNumber,
+                    timestamp: new Date().toISOString()
+                })
+            });
+        } catch (err) {
+            console.warn('[Aanvraag] Webhook for invite failed (non-blocking):', err);
+        }
+
+        // Also add the person to the dossier
+        await handleAddPersonSubmit(shareModalName, shareModalPhone);
+
+        setShareModalSending(false);
+        setShareModalSent(true);
+    };
+
     const handleUploadMethodSelected = async (method) => {
         setSelectedUploadMethod(method);
 
         if (method === 'whatsapp') {
-            // Generate invite link
-            try {
-                const { supabase: sb } = await import('../integrations/supabase/client');
-                const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-
-                const { data: inviteResult, error: inviteError } = await sb.functions.invoke('generate-invite', {
-                    body: {
-                        dossier_id: dossierId,
-                        role: addPersonRole,
-                        linked_to_persoon_id: addPersonRole === 'Garantsteller' && selectedTenantForGuarantor ? selectedTenantForGuarantor.replace(/^p/, '') : null,
-                        auth_token: token
-                    }
-                });
-
-                if (inviteError || !inviteResult?.ok) {
-                    console.error('[Aanvraag] Failed to generate invite:', inviteError || inviteResult);
-                    alert(currentLang === 'en' ? 'Failed to generate invite link' : 'Uitnodigingslink genereren mislukt');
-                    return;
-                }
-
-                const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-                const link = `${baseUrl}/invite?token=${inviteResult.invite_token}`;
-                setInviteLink(link);
-                setInviteLinkCopied(false);
-            } catch (err) {
-                console.error('[Aanvraag] Error generating invite:', err);
-                alert(currentLang === 'en' ? 'Failed to generate invite link' : 'Uitnodigingslink genereren mislukt');
-            }
+            // Show share modal with Name + Phone fields
+            setShareModalName('');
+            setShareModalPhone('+');
+            setShareModalSent(false);
+            setInviteLink(null);
+            setInviteLinkCopied(false);
+            setShowShareModal(true);
         } else {
             // Directly add empty person card inline — no popup
             const newPerson = {
@@ -1052,6 +1128,20 @@ const Aanvraag = () => {
     const handleRemovePerson = async (persoonId) => {
         const personToRemove = data.personen.find(p => p.persoonId === persoonId);
 
+        // Check if co-tenant is removing themselves — show confirmation
+        const isSelfRemoval = !isMainTenant && personToRemove?.supabaseId === authPersoonId;
+        if (isSelfRemoval) {
+            setShowRemoveConfirm(persoonId);
+            return;
+        }
+
+        await executeRemovePerson(persoonId);
+    };
+
+    const executeRemovePerson = async (persoonId) => {
+        const personToRemove = data.personen.find(p => p.persoonId === persoonId);
+        const isSelfRemoval = !isMainTenant && personToRemove?.supabaseId === authPersoonId;
+
         // Remove from local state immediately
         setData({
             ...data,
@@ -1073,6 +1163,12 @@ const Aanvraag = () => {
             if (!result.ok) {
                 console.error('[Aanvraag] Failed to delete person from Supabase:', result.error);
             }
+        }
+
+        // If co-tenant removed themselves, logout and redirect to login
+        if (isSelfRemoval) {
+            await logout();
+            router.replace('/login');
         }
     };
 
@@ -1124,79 +1220,34 @@ const Aanvraag = () => {
         await logout();
     };
 
-    const handleSubmit = async () => {
+    const handleSubmitClick = async () => {
         if (!Object.values(bidAmounts).some(b => b > 0) || !startDate) {
             alert(currentLang === 'en' ? 'Please complete the bid section' : 'Vul de biedingsectie in');
             return;
         }
 
+        // Save application data + mark documentation as complete
+        setIsSubmitting(true);
         setSaveStatus('saving');
         await updateAccountDocumentationStatus('Complete');
 
-        const panden = data.panden || (data.pand?.apartmentId ? [data.pand] : []);
-        const mainTenant = data.personen.find(p => p.rol === 'Hoofdhuurder');
+        // Save current form state so it persists
+        const formData = {
+            bidAmount: Object.values(bidAmounts).find(b => b > 0) || 0,
+            startDate,
+            motivation,
+            monthsAdvance,
+            propertyAddress: (data.panden || []).map(p => p.adres).filter(Boolean).join(', ') || data.pand?.adres || '',
+            personen: data.personen || []
+        };
+        await saveAanvraagData(dossierId, formData);
 
-        // Link offers to all apartments and account
-        if (panden.length > 0 && accountId) {
-            try {
-                const { supabase: sb } = await import('../integrations/supabase/client');
-
-                // 1. Account: push all to offered_apartments array
-                const { data: accData } = await sb.from('accounts').select('offered_apartments').eq('id', accountId).single();
-                const offeredApts = accData?.offered_apartments || [];
-                let updatedOffered = [...offeredApts];
-
-                for (const pand of panden) {
-                    if (!pand.apartmentId) continue;
-                    const aptBid = bidAmounts[pand.apartmentId] || 0;
-                    if (aptBid <= 0) continue;
-
-                    if (!updatedOffered.includes(pand.apartmentId)) {
-                        updatedOffered.push(pand.apartmentId);
-                    }
-
-                    // 2. Apartment: push to offers_in JSONB array
-                    const { data: aptData } = await sb.from('apartments').select('offers_in').eq('id', pand.apartmentId).single();
-                    const offersIn = aptData?.offers_in || [];
-
-                    const existingOfferIdx = offersIn.findIndex(o => o.account_id === accountId);
-                    const offerObj = {
-                        account_id: accountId,
-                        tenant_name: mainTenant?.naam || '',
-                        bid_amount: aptBid,
-                        start_date: startDate,
-                        motivation: motivation,
-                        status: 'Pending',
-                        submitted_at: new Date().toISOString()
-                    };
-
-                    if (existingOfferIdx >= 0) {
-                        offersIn[existingOfferIdx] = offerObj;
-                    } else {
-                        offersIn.push(offerObj);
-                    }
-
-                    await sb.from('apartments').update({ offers_in: offersIn }).eq('id', pand.apartmentId);
-                }
-
-                await sb.from('accounts').update({
-                    offered_apartments: updatedOffered
-                }).eq('id', accountId);
-            } catch (err) {
-                console.error('[Aanvraag] Failed to submit offers to CRM:', err);
-            }
-        }
-
-        setSaveStatus('saved');
-        setTimeout(() => setSaveStatus('idle'), 2000);
-
-        console.log("Submitting", { bidAmounts, startDate, data });
-        const letterPath = currentLang === 'en' ? '/en/letter-of-intent' : '/letter-of-intent';
-        // Store LOI data in sessionStorage for the next page
+        // Store LOI data in sessionStorage for later use
         if (typeof window !== 'undefined') {
+            const panden = data.panden || (data.pand?.apartmentId ? [data.pand] : []);
             const firstPand = panden[0] || data.pand;
             sessionStorage.setItem('loiData', JSON.stringify({
-                bidAmount: firstPand ? (bidAmounts[firstPand.apartmentId] || 0) : 0,
+                bidAmount: firstPand ? (bidAmounts[firstPand.apartmentId] || bidAmounts['__default'] || 0) : 0,
                 bidAmounts,
                 startDate,
                 motivation,
@@ -1206,8 +1257,19 @@ const Aanvraag = () => {
                 properties: panden
             }));
         }
-        router.push(letterPath);
+
+        setSaveStatus('saved');
+        setIsSubmitting(false);
+
+        // Mark that the user is coming from the submit flow so /appartementen
+        // redirects to /letter-of-intent after apartment selection
+        sessionStorage.setItem('fromSubmitFlow', 'true');
+
+        // Redirect to /appartementen so the main tenant can select apartments to apply for
+        router.push('/appartementen');
     };
+
+    // Old handleSubmit removed — handleSubmitClick now saves + redirects to /appartementen
 
     if (loading || !data) {
         return <div className="p-8 text-center">Loading...</div>;
@@ -1227,11 +1289,6 @@ const Aanvraag = () => {
                             </p>
                         )}
                         <div className={styles.headerButtons}>
-                            {isMainTenant && (
-                                <button className={styles.changeButton} onClick={() => router.push('/appartementen')}>
-                                    {currentLang === 'en' ? 'Change Apartments' : 'Wijzig Appartementen'}
-                                </button>
-                            )}
                             {!isMainTenant && (
                                 <span style={{ fontSize: '0.75rem', color: '#6b7280', padding: '0.25rem 0.5rem', background: '#f3f4f6', borderRadius: '0.25rem' }}>
                                     {userRole === 'co_tenant'
@@ -1356,7 +1413,7 @@ const Aanvraag = () => {
                             </div>
                             <BidSection
                                 conditions={data.pand?.voorwaarden}
-                                bidAmount={bidAmounts[data.pand?.apartmentId] || 0}
+                                bidAmount={bidAmounts[data.pand?.apartmentId || '__default'] || 0}
                                 startDate={startDate}
                                 motivation={motivation}
                                 monthsAdvance={monthsAdvance}
@@ -1364,9 +1421,15 @@ const Aanvraag = () => {
                                     // Apply same bid to all selected apartments
                                     setBidAmounts(prev => {
                                         const updated = { ...prev };
-                                        (data.panden || [data.pand]).filter(Boolean).forEach(p => {
-                                            updated[p.apartmentId] = val;
-                                        });
+                                        const targets = (data.panden && data.panden.length > 0) ? data.panden : [data.pand].filter(Boolean);
+                                        if (targets.length > 0) {
+                                            targets.forEach(p => {
+                                                updated[p.apartmentId || '__default'] = val;
+                                            });
+                                        } else {
+                                            // No apartments at all — store under default key
+                                            updated['__default'] = val;
+                                        }
                                         return updated;
                                     });
                                 } : undefined}
@@ -1409,6 +1472,7 @@ const Aanvraag = () => {
                                                 readOnly={huurderReadOnly}
                                                 hideIncome={!isViewingOwnTenantCard}
                                                 isPhoneDuplicate={isPhoneDuplicate}
+                                                isOwnCard={isOwnCard}
                                             />
 
                                             {linkedGuarantors.map(g => {
@@ -1493,11 +1557,56 @@ const Aanvraag = () => {
                         {isMainTenant && (
                             <button
                                 className={styles.submitButton}
-                                onClick={handleSubmit}
-                                disabled={!canSubmit}
+                                onClick={handleSubmitClick}
+                                disabled={!canSubmit || isSubmitting}
                             >
                                 <CheckCircle size={24} />
-                                {currentLang === 'en' ? 'Submit Application' : 'Aanvraag Versturen'}
+                                {isSubmitting
+                                    ? (currentLang === 'en' ? 'Submitting...' : 'Indienen...')
+                                    : (currentLang === 'en' ? 'Submit Application' : 'Aanvraag Versturen')}
+                            </button>
+                        )}
+
+                        {!isMainTenant && (
+                            <button
+                                className={styles.submitButton}
+                                style={{ background: notifyingSent ? '#10b981' : undefined }}
+                                onClick={async () => {
+                                    if (notifyingSent) return;
+                                    try {
+                                        const { supabase: sb } = await import('../integrations/supabase/client');
+                                        const { data: dossierRow } = await sb
+                                            .from('dossiers')
+                                            .select('phone_number')
+                                            .eq('id', dossierId)
+                                            .single();
+
+                                        if (dossierRow?.phone_number) {
+                                            const myPerson = data?.personen?.find(p => p.supabaseId === authPersoonId);
+                                            await fetch('https://davidvanwachem.app.n8n.cloud/webhook/get-agenda-page-details', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    eventType: 'notify_main_tenant_to_submit',
+                                                    main_tenant_phone: dossierRow.phone_number,
+                                                    requester_name: myPerson?.naam || '',
+                                                    requester_phone: phoneNumber,
+                                                    role: userRole === 'co_tenant' ? 'Medehuurder' : 'Garantsteller',
+                                                    dossier_id: dossierId,
+                                                    timestamp: new Date().toISOString()
+                                                })
+                                            });
+                                            setNotifyingSent(true);
+                                            setTimeout(() => setNotifyingSent(false), 5000);
+                                        }
+                                    } catch (err) {
+                                        console.error('[Aanvraag] Failed to notify main tenant:', err);
+                                    }
+                                }}
+                            >
+                                {notifyingSent
+                                    ? (currentLang === 'en' ? '✓ Notification Sent!' : '✓ Melding Verzonden!')
+                                    : (currentLang === 'en' ? 'Notify Main Tenant to Submit' : 'Hoofdhuurder melden om in te dienen')}
                             </button>
                         )}
                     </div>
@@ -1519,60 +1628,213 @@ const Aanvraag = () => {
                 onSubmit={handleAddPersonSubmit}
             />
 
-            {/* Invite Link Modal */}
-            {inviteLink && (
+            {/* Share Invite Modal — Name + Phone + Send Invitation + Copy Link */}
+            {showShareModal && (
                 <div style={{
                     position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
-                }} onClick={() => setInviteLink(null)}>
+                }} onClick={() => { setShowShareModal(false); setInviteLink(null); }}>
                     <div style={{
                         background: 'white', borderRadius: '0.75rem', padding: '2rem',
-                        maxWidth: '28rem', width: '90%', textAlign: 'center'
+                        maxWidth: '28rem', width: '90%'
                     }} onClick={e => e.stopPropagation()}>
-                        <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>
-                            {addPersonRole === 'Medehuurder' ? '👥' : '🛡️'}
+                        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
+                                {addPersonRole === 'Medehuurder' ? '👥' : '🛡️'}
+                            </div>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                                {currentLang === 'en'
+                                    ? `Invite ${addPersonRole === 'Medehuurder' ? 'Co-Tenant' : 'Guarantor'}`
+                                    : `${addPersonRole === 'Medehuurder' ? 'Medehuurder' : 'Garantsteller'} uitnodigen`}
+                            </h3>
+                            <p style={{ fontSize: '0.813rem', color: '#6b7280' }}>
+                                {currentLang === 'en'
+                                    ? 'Enter their details to send a WhatsApp invitation'
+                                    : 'Vul hun gegevens in om een WhatsApp-uitnodiging te sturen'}
+                            </p>
                         </div>
-                        <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.5rem' }}>
-                            {currentLang === 'en' ? 'Share this link' : 'Deel deze link'}
+
+                        {!shareModalSent ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.813rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>
+                                        {currentLang === 'en' ? 'Name' : 'Naam'} *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={shareModalName}
+                                        onChange={e => setShareModalName(e.target.value)}
+                                        placeholder={currentLang === 'en' ? 'Full name' : 'Volledige naam'}
+                                        style={{
+                                            width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #e5e7eb',
+                                            borderRadius: '0.375rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box'
+                                        }}
+                                        autoFocus
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.813rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>
+                                        {currentLang === 'en' ? 'Phone Number (WhatsApp)' : 'Telefoonnummer (WhatsApp)'} *
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        value={shareModalPhone}
+                                        onChange={e => {
+                                            let val = e.target.value.replace(/[^\d+]/g, '');
+                                            if (!val.startsWith('+')) val = '+' + val;
+                                            setShareModalPhone(val);
+                                        }}
+                                        placeholder="+31612345678"
+                                        style={{
+                                            width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #e5e7eb',
+                                            borderRadius: '0.375rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box'
+                                        }}
+                                    />
+                                </div>
+
+                                <button
+                                    onClick={handleShareModalSend}
+                                    disabled={shareModalSending || !shareModalName.trim() || shareModalPhone.replace(/\D/g, '').length < 10}
+                                    style={{
+                                        width: '100%', padding: '0.75rem', borderRadius: '0.375rem',
+                                        background: (!shareModalName.trim() || shareModalPhone.replace(/\D/g, '').length < 10) ? '#d1d5db' : '#497772',
+                                        color: 'white', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                                    }}
+                                >
+                                    {shareModalSending
+                                        ? (currentLang === 'en' ? 'Sending...' : 'Versturen...')
+                                        : (currentLang === 'en' ? 'Send Invitation' : 'Uitnodiging versturen')}
+                                </button>
+
+                                {/* Copy Link button — generates link on demand */}
+                                <button
+                                    onClick={async () => {
+                                        let link = inviteLink;
+                                        if (!link) {
+                                            link = await generateInviteLink();
+                                            if (link) setInviteLink(link);
+                                        }
+                                        if (link) {
+                                            navigator.clipboard.writeText(link);
+                                            setInviteLinkCopied(true);
+                                            setTimeout(() => setInviteLinkCopied(false), 2000);
+                                        }
+                                    }}
+                                    style={{
+                                        width: '100%', padding: '0.625rem', borderRadius: '0.375rem',
+                                        background: 'white', color: '#497772', border: '2px solid #497772',
+                                        cursor: 'pointer', fontWeight: 500, fontSize: '0.813rem'
+                                    }}
+                                >
+                                    {inviteLinkCopied
+                                        ? (currentLang === 'en' ? '✓ Link Copied!' : '✓ Link Gekopieerd!')
+                                        : (currentLang === 'en' ? 'Copy Invite Link' : 'Uitnodigingslink kopiëren')}
+                                </button>
+
+                                <button
+                                    onClick={() => { setShowShareModal(false); setInviteLink(null); }}
+                                    style={{
+                                        width: '100%', padding: '0.5rem', borderRadius: '0.375rem',
+                                        background: 'transparent', color: '#6b7280', border: '1px solid #e5e7eb',
+                                        cursor: 'pointer', fontSize: '0.813rem'
+                                    }}
+                                >
+                                    {currentLang === 'en' ? 'Cancel' : 'Annuleren'}
+                                </button>
+                            </div>
+                        ) : (
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ color: '#10b981', marginBottom: '0.75rem', fontSize: '2.5rem' }}>✓</div>
+                                <p style={{ fontSize: '0.875rem', color: '#374151', marginBottom: '0.5rem', fontWeight: 500 }}>
+                                    {currentLang === 'en'
+                                        ? `Invitation sent to ${shareModalName}!`
+                                        : `Uitnodiging verzonden naar ${shareModalName}!`}
+                                </p>
+                                <p style={{ fontSize: '0.813rem', color: '#6b7280', marginBottom: '1rem' }}>
+                                    {currentLang === 'en'
+                                        ? 'They will receive a WhatsApp message with a link to fill in their details.'
+                                        : 'Ze ontvangen een WhatsApp-bericht met een link om hun gegevens in te vullen.'}
+                                </p>
+
+                                {inviteLink && (
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(inviteLink);
+                                            setInviteLinkCopied(true);
+                                            setTimeout(() => setInviteLinkCopied(false), 2000);
+                                        }}
+                                        style={{
+                                            width: '100%', padding: '0.625rem', borderRadius: '0.375rem',
+                                            background: 'white', color: '#497772', border: '2px solid #497772',
+                                            cursor: 'pointer', fontWeight: 500, fontSize: '0.813rem', marginBottom: '0.5rem'
+                                        }}
+                                    >
+                                        {inviteLinkCopied
+                                            ? (currentLang === 'en' ? '✓ Copied!' : '✓ Gekopieerd!')
+                                            : (currentLang === 'en' ? 'Copy Link' : 'Link Kopiëren')}
+                                    </button>
+                                )}
+
+                                <button
+                                    onClick={() => { setShowShareModal(false); setInviteLink(null); }}
+                                    style={{
+                                        width: '100%', padding: '0.625rem', borderRadius: '0.375rem',
+                                        background: '#497772', color: 'white', border: 'none',
+                                        cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem'
+                                    }}
+                                >
+                                    {currentLang === 'en' ? 'Done' : 'Klaar'}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Remove Confirmation Modal for co-tenant self-removal */}
+            {showRemoveConfirm && (
+                <div style={{
+                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                }} onClick={() => setShowRemoveConfirm(null)}>
+                    <div style={{
+                        background: 'white', borderRadius: '0.75rem', padding: '2rem',
+                        maxWidth: '24rem', width: '90%', textAlign: 'center'
+                    }} onClick={e => e.stopPropagation()}>
+                        <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>⚠️</div>
+                        <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.5rem', color: '#111827' }}>
+                            {currentLang === 'en' ? 'Remove Yourself?' : 'Jezelf verwijderen?'}
                         </h3>
-                        <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem' }}>
+                        <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1.5rem' }}>
                             {currentLang === 'en'
-                                ? `Send this link to your ${addPersonRole === 'Medehuurder' ? 'co-tenant' : 'guarantor'} so they can fill in their details and upload documents.`
-                                : `Stuur deze link naar je ${addPersonRole === 'Medehuurder' ? 'medehuurder' : 'garantsteller'} zodat zij hun gegevens kunnen invullen en documenten kunnen uploaden.`}
+                                ? 'This will permanently delete your data from this application and you will be logged out. This action cannot be undone.'
+                                : 'Dit zal je gegevens permanent verwijderen uit deze aanvraag en je wordt uitgelogd. Deze actie kan niet ongedaan worden gemaakt.'}
                         </p>
-                        <div style={{
-                            background: '#f3f4f6', borderRadius: '0.5rem', padding: '0.75rem',
-                            fontSize: '0.75rem', wordBreak: 'break-all', color: '#374151',
-                            marginBottom: '1rem', textAlign: 'left', fontFamily: 'monospace'
-                        }}>
-                            {inviteLink}
-                        </div>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                             <button
-                                onClick={() => {
-                                    navigator.clipboard.writeText(inviteLink);
-                                    setInviteLinkCopied(true);
-                                    setTimeout(() => setInviteLinkCopied(false), 2000);
-                                }}
+                                onClick={() => setShowRemoveConfirm(null)}
                                 style={{
                                     flex: 1, padding: '0.625rem', borderRadius: '0.375rem',
-                                    background: '#497772', color: 'white', border: 'none',
+                                    background: 'white', color: '#374151', border: '1px solid #e5e7eb',
                                     cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem'
                                 }}
                             >
-                                {inviteLinkCopied
-                                    ? (currentLang === 'en' ? '✓ Copied!' : '✓ Gekopieerd!')
-                                    : (currentLang === 'en' ? 'Copy Link' : 'Link Kopiëren')}
+                                {currentLang === 'en' ? 'Cancel' : 'Annuleren'}
                             </button>
                             <button
-                                onClick={() => setInviteLink(null)}
+                                onClick={async () => {
+                                    const id = showRemoveConfirm;
+                                    setShowRemoveConfirm(null);
+                                    await executeRemovePerson(id);
+                                }}
                                 style={{
-                                    padding: '0.625rem 1rem', borderRadius: '0.375rem',
-                                    background: 'white', color: '#6b7280', border: '1px solid #e5e7eb',
-                                    cursor: 'pointer', fontSize: '0.875rem'
+                                    flex: 1, padding: '0.625rem', borderRadius: '0.375rem',
+                                    background: '#ef4444', color: 'white', border: 'none',
+                                    cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem'
                                 }}
                             >
-                                {currentLang === 'en' ? 'Close' : 'Sluiten'}
+                                {currentLang === 'en' ? 'Yes, Remove Me' : 'Ja, verwijder mij'}
                             </button>
                         </div>
                     </div>

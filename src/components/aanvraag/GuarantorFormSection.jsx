@@ -36,8 +36,8 @@ const GuarantorCard = ({
     const verplichteDocs = requiredDocuments.filter(d => d.verplicht);
     const completedDocsCount = verplichteDocs.filter(d => isDocUploaded(d.type)).length;
     const totalDocsCount = verplichteDocs.length;
-    const isComplete = totalDocsCount > 0 ? completedDocsCount === totalDocsCount : (workStatus != null);
-    const progress = totalDocsCount > 0 ? Math.round((completedDocsCount / totalDocsCount) * 100) : (workStatus ? 100 : 0);
+    const isComplete = totalDocsCount > 0 ? completedDocsCount === totalDocsCount : true;
+    const progress = totalDocsCount > 0 ? Math.round((completedDocsCount / totalDocsCount) * 100) : 100;
 
     // Notify parent of document completion status
     const onFormDataChangeRef = useRef(onFormDataChange);

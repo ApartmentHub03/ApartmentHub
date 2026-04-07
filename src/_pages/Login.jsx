@@ -64,9 +64,9 @@ const Login = () => {
             // Supabase functions.invoke returns data even on non-2xx if function returns JSON
             // Check if we got an error response with user-facing message
             if (data && !data.ok) {
-                // Handle "user not found" error
+                // Handle "user not found" error — redirect to signup
                 if (data.message?.includes('No account') || data.message_nl?.includes('Geen account')) {
-                    setError(currentLang === 'en' ? data.message : data.message_nl);
+                    router.replace(`/signup?phone=${encodeURIComponent(phoneNumber)}`);
                     return;
                 }
                 setError(currentLang === 'en' ? (data.message || 'An error occurred') : (data.message_nl || 'Er is een fout opgetreden'));
@@ -74,11 +74,9 @@ const Login = () => {
             }
 
             if (sendError) {
-                // Check if it's a "user not found" error (404)
+                // Check if it's a "user not found" error (404) — redirect to signup
                 if (sendError.message?.includes('non-2xx') || sendError.message?.includes('404')) {
-                    setError(currentLang === 'en'
-                        ? 'No account found with this phone number. Please sign up first.'
-                        : 'Geen account gevonden met dit telefoonnummer. Registreer je eerst.');
+                    router.replace(`/signup?phone=${encodeURIComponent(phoneNumber)}`);
                     return;
                 }
                 throw new Error(sendError.message);
@@ -88,11 +86,10 @@ const Login = () => {
             setStep('code');
         } catch (err) {
             console.error('Error sending code:', err);
-            // Check if error message indicates account not found
+            // Check if error message indicates account not found — redirect to signup
             if (err.message?.includes('non-2xx') || err.message?.includes('404')) {
-                setError(currentLang === 'en'
-                    ? 'No account found with this phone number. Please sign up first.'
-                    : 'Geen account gevonden met dit telefoonnummer. Registreer je eerst.');
+                router.replace(`/signup?phone=${encodeURIComponent(phoneNumber)}`);
+                return;
             } else {
                 setError(currentLang === 'en'
                     ? 'Failed to send code. Please try again.'

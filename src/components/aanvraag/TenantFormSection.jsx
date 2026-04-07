@@ -21,7 +21,8 @@ const TenantFormSection = ({
     showUploadChoice = false,
     readOnly = false,
     hideIncome = false,
-    isPhoneDuplicate
+    isPhoneDuplicate,
+    isOwnCard = false
 }) => {
     const currentLang = useSelector((state) => state.ui.language);
     const t = translations.aanvraag[currentLang] || translations.aanvraag.nl;
@@ -74,23 +75,29 @@ const TenantFormSection = ({
         return doc && doc.status === 'ontvangen';
     };
 
-    // Calculate form completion (required fields: name, email, phone, workStatus, income)
+    // Calculate form completion (required fields: name, email, phone, workStatus, and income if visible)
     const calculateFormProgress = useCallback(() => {
         const requiredFields = [
             { key: 'naam', filled: formData.naam.trim() !== '' },
             { key: 'email', filled: formData.email.trim() !== '' },
             { key: 'telefoon', filled: formData.telefoon.trim() !== '' },
             { key: 'workStatus', filled: workStatus !== null },
-            { key: 'inkomen', filled: formData.inkomen.toString().trim() !== '' }
         ];
+        // Only require income when the field is visible (i.e. on your own card)
+        if (!hideIncome) {
+            requiredFields.push({ key: 'inkomen', filled: formData.inkomen.toString().trim() !== '' });
+        }
 
         const filledCount = requiredFields.filter(f => f.filled).length;
         return Math.round((filledCount / requiredFields.length) * 100);
-    }, [formData.naam, formData.email, formData.telefoon, formData.inkomen, workStatus]);
+    }, [formData.naam, formData.email, formData.telefoon, formData.inkomen, workStatus, hideIncome]);
 
     // Calculate document completion
+    // When no work status is selected, there are no known required docs yet —
+    // we treat docs as complete so that the *form* incompleteness (work status
+    // missing) is what blocks submission, not a phantom 0% doc score.
     const calculateDocProgress = useCallback(() => {
-        if (!workStatus) return 0;
+        if (!workStatus) return 100;
         const requiredDocs = requiredDocuments.filter(d => d.verplicht);
         if (requiredDocs.length === 0) return 100;
         const uploadedRequiredDocs = requiredDocs.filter(d => isDocUploaded(d.type)).length;
@@ -414,13 +421,15 @@ const TenantFormSection = ({
 
                     {/* Actions */}
                     <div className={styles.actionsRow}>
-                        {persoon.rol === 'Medehuurder' && onRemove && !readOnly && (
+                        {persoon.rol === 'Medehuurder' && onRemove && (
                             <button
                                 className={styles.removeButton}
                                 onClick={() => onRemove(persoon.persoonId)}
                             >
                                 <Trash2 className="h-4 w-4" />
-                                {tForm.removeTenant}
+                                {isOwnCard
+                                    ? (currentLang === 'en' ? 'Remove Myself' : 'Mezelf verwijderen')
+                                    : tForm.removeTenant}
                             </button>
                         )}
                         <button
