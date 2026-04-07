@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
-import { Calendar } from 'lucide-react';
+import { Calendar, AlertCircle } from 'lucide-react';
 import { translations } from '../../data/translations';
 import styles from './BidSection.module.css';
 
@@ -28,6 +28,16 @@ const BidSection = ({
                 </h3>
             </div>
             <div className={styles.cardContent}>
+                {readOnly && (
+                    <div className={styles.readOnlyBanner}>
+                        <AlertCircle size={16} />
+                        <span>
+                            {currentLang === 'en'
+                                ? 'These details are filled by the main tenant. You cannot edit them.'
+                                : 'Deze gegevens zijn ingevuld door de hoofdhuurder. U kunt deze niet bewerken.'}
+                        </span>
+                    </div>
+                )}
                 <div className={styles.grid}>
                     {/* Bid */}
                     <div className={styles.formItem}>

@@ -14,7 +14,8 @@ const GuarantorCard = ({
     onSendWhatsAppLink,
     onRemove,
     onFormDataChange,
-    readOnly = false
+    readOnly = false,
+    hideIncome = false
 }) => {
     const currentLang = useSelector((state) => state.ui.language);
     const t = translations.aanvraag[currentLang] || translations.aanvraag.nl;
@@ -100,6 +101,16 @@ const GuarantorCard = ({
 
             {isExpanded && (
                 <div className={styles.cardContent}>
+                    {readOnly && (
+                        <div className={styles.readOnlyBanner}>
+                            <AlertCircle size={16} />
+                            <span>
+                                {currentLang === 'en'
+                                    ? 'These details are filled by the main tenant. You cannot edit them.'
+                                    : 'Deze gegevens zijn ingevuld door de hoofdhuurder. U kunt deze niet bewerken.'}
+                            </span>
+                        </div>
+                    )}
                     <div>
                         <div className={styles.formItem}>
                             <label className={styles.label}>{currentLang === 'en' ? 'Full Name' : 'Volledige Naam'} *</label>
@@ -132,13 +143,15 @@ const GuarantorCard = ({
                             <GuarantorWorkStatusSelector selected={workStatus} onChange={readOnly ? undefined : handleWorkStatusChange} disabled={readOnly} />
                         </div>
 
-                        <div className={styles.formItem}>
-                            <label className={styles.label}>{currentLang === 'en' ? 'Gross Annual Income' : 'Bruto Jaarinkomen'} *</label>
-                            <div className={styles.inputWrapper}>
-                                <span className={styles.currencyPrefix}>€</span>
-                                <input className={`${styles.input} ${styles.inputWithPrefix}`} type="number" placeholder="45000" disabled={readOnly} />
+                        {!hideIncome && (
+                            <div className={styles.formItem}>
+                                <label className={styles.label}>{currentLang === 'en' ? 'Gross Annual Income' : 'Bruto Jaarinkomen'} *</label>
+                                <div className={styles.inputWrapper}>
+                                    <span className={styles.currencyPrefix}>€</span>
+                                    <input className={`${styles.input} ${styles.inputWithPrefix}`} type="number" placeholder="45000" disabled={readOnly} />
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
 
                     <div className={styles.documentsSection}>
@@ -200,7 +213,8 @@ const GuarantorFormSection = ({
     onAddGuarantor,
     onRemove,
     onFormDataChange,
-    readOnly = false
+    readOnly = false,
+    hideIncome = false
 }) => {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -214,6 +228,7 @@ const GuarantorFormSection = ({
                     onRemove={onRemove}
                     onFormDataChange={onFormDataChange}
                     readOnly={readOnly}
+                    hideIncome={hideIncome}
                 />
             ))}
         </div>

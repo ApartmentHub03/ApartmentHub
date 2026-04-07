@@ -85,37 +85,65 @@ const MultiFileDocumentUpload = ({
                                         <File className={styles.fileIconSmall} />
                                         <span className={styles.fileNameCompact}>{file.name || file.fileName || 'Document'}</span>
                                         <span className={styles.fileSizeCompact}>{file.size ? `${(file.size / 1024).toFixed(0)} KB` : ''}</span>
-                                        <button
-                                            type="button"
-                                            className={styles.removeButtonCompact}
-                                            onClick={() => onRemove(index)}
-                                        >
-                                            <X className={styles.removeIconSmall} />
-                                        </button>
+                                        {onRemove && (
+                                            <button
+                                                type="button"
+                                                className={styles.removeButtonCompact}
+                                                onClick={() => onRemove(index)}
+                                            >
+                                                <X className={styles.removeIconSmall} />
+                                            </button>
+                                        )}
                                     </div>
                                 ))}
                             </div>
-                            {canUploadMore && (
+                            {onUpload && canUploadMore && (
                                 <p className={styles.uploadMoreHintCompact}>
                                     📎 You can add {maxFiles - uploadedFiles.length} more file(s)
                                 </p>
                             )}
                         </div>
                     </div>
-                    <label className={styles.cursorPointer}>
-                        <input
-                            type="file"
-                            className={styles.hiddenInput}
-                            accept=".pdf,.jpg,.jpeg,.png,.webp"
-                            onChange={handleFileSelect}
-                            disabled={uploading}
-                            multiple
-                        />
-                        <button type="button" className={styles.changeButton} disabled={uploading}>
-                            <Upload className={styles.changeIcon} />
-                            Upload more
-                        </button>
-                    </label>
+                    {onUpload && canUploadMore && (
+                        <label className={styles.cursorPointer}>
+                            <input
+                                type="file"
+                                className={styles.hiddenInput}
+                                accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                onChange={handleFileSelect}
+                                disabled={uploading}
+                                multiple
+                            />
+                            <button type="button" className={styles.changeButton} disabled={uploading}>
+                                <Upload className={styles.changeIcon} />
+                                Upload more
+                            </button>
+                        </label>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // No upload handler = read-only, just show the missing document label
+    if (!onUpload) {
+        return (
+            <div className={styles.uploadCard}>
+                <div className={styles.contentWrapper}>
+                    <div className={styles.topRow}>
+                        <div className={`${styles.iconWrapper} ${verplicht ? styles.iconWrapperRequired : styles.iconWrapperOptional}`}>
+                            <AlertCircle className={`${styles.icon} ${verplicht ? styles.iconRequired : styles.iconOptional}`} />
+                        </div>
+                        <div className={styles.textContainer}>
+                            <div className={styles.titleRow}>
+                                <p className={styles.title}>{documentType}</p>
+                                {!verplicht && (
+                                    <span className={styles.optionalBadge}>optional</span>
+                                )}
+                            </div>
+                            {description && <p className={styles.description}>{description}</p>}
+                        </div>
+                    </div>
                 </div>
             </div>
         );

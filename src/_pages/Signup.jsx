@@ -42,7 +42,6 @@ const Signup = () => {
     const handleSignUp = async (e) => {
         e.preventDefault();
         setError('');
-        setTestCode(null);
 
         if (!firstName.trim() || !lastName.trim()) {
             setError(currentLang === 'en' ? 'Please enter your name' : 'Voer je naam in');

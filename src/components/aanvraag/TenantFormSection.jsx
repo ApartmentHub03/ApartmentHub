@@ -19,7 +19,9 @@ const TenantFormSection = ({
     onRemove,
     onFormDataChange,
     showUploadChoice = false,
-    readOnly = false
+    readOnly = false,
+    hideIncome = false,
+    isPhoneDuplicate
 }) => {
     const currentLang = useSelector((state) => state.ui.language);
     const t = translations.aanvraag[currentLang] || translations.aanvraag.nl;
@@ -202,6 +204,18 @@ const TenantFormSection = ({
             {/* Content */}
             {isExpanded && (
                 <CardContent className={styles.cardContent}>
+                    {/* Read-only warning for co-tenants */}
+                    {readOnly && (
+                        <div className={styles.readOnlyBanner}>
+                            <AlertCircle size={16} />
+                            <span>
+                                {currentLang === 'en'
+                                    ? 'These details are filled by the main tenant. You cannot edit them.'
+                                    : 'Deze gegevens zijn ingevuld door de hoofdhuurder. U kunt deze niet bewerken.'}
+                            </span>
+                        </div>
+                    )}
+
                     {/* Form Fields */}
                     <div className={styles.formSection}>
                         {/* Full Name */}
@@ -237,12 +251,19 @@ const TenantFormSection = ({
                             </label>
                             <input
                                 type="tel"
-                                className={styles.formInput}
+                                className={`${styles.formInput} ${isPhoneDuplicate && formData.telefoon && isPhoneDuplicate(formData.telefoon, persoon.persoonId) ? styles.inputError : ''}`}
                                 placeholder="+31 6 12345678"
                                 value={formData.telefoon}
                                 onChange={(e) => handleInputChange('telefoon', e.target.value)}
                                 disabled={readOnly}
                             />
+                            {isPhoneDuplicate && formData.telefoon && isPhoneDuplicate(formData.telefoon, persoon.persoonId) && (
+                                <p className={styles.fieldError}>
+                                    {currentLang === 'en'
+                                        ? 'This phone number is already used by another person in this application'
+                                        : 'Dit telefoonnummer wordt al gebruikt door een andere persoon in deze aanvraag'}
+                                </p>
+                            )}
                         </div>
 
                         {/* Work Status */}
@@ -299,21 +320,23 @@ const TenantFormSection = ({
                             />
                         </div>
 
-                        {/* Income */}
-                        <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>{tForm.income} *</label>
-                            <div className={styles.inputWithPrefix}>
-                                <span className={styles.inputPrefix}>€</span>
-                                <input
-                                    type="number"
-                                    className={`${styles.formInput} ${styles.inputHasPrefix}`}
-                                    placeholder="45000"
-                                    value={formData.inkomen}
-                                    onChange={(e) => handleInputChange('inkomen', e.target.value)}
-                                    disabled={readOnly}
-                                />
+                        {/* Income — only visible on your own card */}
+                        {!hideIncome && (
+                            <div className={styles.formGroup}>
+                                <label className={styles.formLabel}>{tForm.income} *</label>
+                                <div className={styles.inputWithPrefix}>
+                                    <span className={styles.inputPrefix}>€</span>
+                                    <input
+                                        type="number"
+                                        className={`${styles.formInput} ${styles.inputHasPrefix}`}
+                                        placeholder="45000"
+                                        value={formData.inkomen}
+                                        onChange={(e) => handleInputChange('inkomen', e.target.value)}
+                                        disabled={readOnly}
+                                    />
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
 
                     {/* Documents Section */}

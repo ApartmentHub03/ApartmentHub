@@ -56,9 +56,9 @@ const Aanvraag = () => {
     const tNav = translations.nav[currentLang] || translations.nav.en;
 
     const [loading, setLoading] = useState(true);
-    const [selectedPand, setSelectedPand] = useState(null); // loaded from localStorage
+    const [selectedPanden, setSelectedPanden] = useState([]); // array of pand objects
     const [data, setData] = useState(null);
-    const [bidAmount, setBidAmount] = useState(0);
+    const [bidAmounts, setBidAmounts] = useState({}); // { [apartmentId]: number }
     const [startDate, setStartDate] = useState("");
     const [motivation, setMotivation] = useState("");
     const [monthsAdvance, setMonthsAdvance] = useState(0);
@@ -70,23 +70,13 @@ const Aanvraag = () => {
     const [selectedUploadMethod, setSelectedUploadMethod] = useState(null);
     const [selectedTenantForGuarantor, setSelectedTenantForGuarantor] = useState(null);
     const [inviteLink, setInviteLink] = useState(null);
+    const [mainTenantApartments, setMainTenantApartments] = useState([]); // apartments available to co-tenant
+    const [showApartmentPicker, setShowApartmentPicker] = useState(false);
     const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
 
-    // Load apartment from localStorage (set by AppartementenSelectie)
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const raw = localStorage.getItem('selected_apartment_data');
-        if (raw) {
-            try {
-                const apt = JSON.parse(raw);
-                setSelectedPand(buildPandFromApartment(apt));
-            } catch (e) {
-                console.warn('[Aanvraag] Could not parse selected_apartment_data', e);
-            }
-        }
-    }, []);
+    // Apartments are loaded from Supabase accounts.apartment_selected in the data loading effect below
 
-    // Load saved data on mount
+    // Load saved data on mount — apartments come from Supabase accounts.apartment_selected
     useEffect(() => {
         const loadData = async () => {
             if (!dossierId) {
@@ -95,77 +85,217 @@ const Aanvraag = () => {
             }
 
             const result = await loadAanvraagData(dossierId);
-            let pand = selectedPand || {
+            let panden = [];
+
+            // Load apartments from accounts.apartment_selected (persisted in Supabase)
+            const { supabase: sb } = await import('../integrations/supabase/client');
+
+            if (accountId) {
+                try {
+                    const { data: accData, error: accError } = await sb
+                        .from('accounts')
+                        .select('current_bookings, documentation_status, apartment_selected')
+                        .eq('id', accountId)
+                        .single();
+
+                    if (!accError) {
+                        const savedApts = accData?.apartment_selected || [];
+
+                        if (savedApts.length > 0) {
+                            // Fetch full apartment data for all saved IDs
+                            const aptIds = savedApts.map(a => a.apartment_id).filter(Boolean);
+                            const { data: aptRows } = await sb
+                                .from('apartments')
+                                .select('*')
+                                .in('id', aptIds);
+
+                            if (aptRows && aptRows.length > 0) {
+                                panden = aptRows.map(buildPandFromApartment);
+
+                                // Restore per-apartment bids from saved data
+                                const savedBids = {};
+                                savedApts.forEach(a => {
+                                    if (a.apartment_id && a.bid_amount) {
+                                        savedBids[a.apartment_id] = a.bid_amount;
+                                    }
+                                });
+                                if (Object.keys(savedBids).length > 0) {
+                                    setBidAmounts(prev => ({ ...savedBids, ...prev }));
+                                }
+                            }
+                        }
+
+                        // Fallback: load from current_bookings if no apartments selected yet
+                        if (panden.length === 0 && accData?.current_bookings?.length > 0) {
+                            const booking = accData.current_bookings[0];
+                            if (booking.apartment_id) {
+                                const { data: aptData } = await sb
+                                    .from('apartments')
+                                    .select('*')
+                                    .eq('id', booking.apartment_id)
+                                    .single();
+
+                                if (aptData) {
+                                    panden = [buildPandFromApartment(aptData)];
+                                }
+                            }
+                        }
+
+                        // Set initial 'Not filled' status if empty
+                        if (!accData?.documentation_status) {
+                            await sb.from('accounts').update({ documentation_status: 'Pending' }).eq('id', accountId);
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[Aanvraag] Could not load apartments from accounts', e);
+                }
+            }
+
+            // For co-tenants: load the main tenant's apartments and bids
+            // Uses the shared dossierId to find the main tenant's phone, then their account
+            if (!isMainTenant && dossierId) {
+                try {
+                    // The dossier's phone_number belongs to the main tenant
+                    const { data: dossierRow } = await sb
+                        .from('dossiers')
+                        .select('phone_number')
+                        .eq('id', dossierId)
+                        .single();
+
+                    let mainAccountData = null;
+
+                    if (dossierRow?.phone_number) {
+                        const mainPhone = dossierRow.phone_number.replace(/\s+/g, '');
+                        // Find the main tenant's account by their phone
+                        const { data: mainAccRow } = await sb
+                            .from('accounts')
+                            .select('id, apartment_selected')
+                            .or(`whatsapp_number.eq.${mainPhone},whatsapp_number.eq.${dossierRow.phone_number}`)
+                            .limit(1)
+                            .maybeSingle();
+
+                        mainAccountData = mainAccRow;
+                    }
+
+                    // Fallback: try via linked_account_id if we have an accountId
+                    if (!mainAccountData && accountId) {
+                        const { data: myAcc } = await sb
+                            .from('accounts')
+                            .select('linked_account_id')
+                            .eq('id', accountId)
+                            .single();
+
+                        if (myAcc?.linked_account_id) {
+                            const { data: linkedAcc } = await sb
+                                .from('accounts')
+                                .select('id, apartment_selected')
+                                .eq('id', myAcc.linked_account_id)
+                                .single();
+                            mainAccountData = linkedAcc;
+                        }
+                    }
+
+                    if (mainAccountData?.apartment_selected?.length > 0) {
+                        const mainApts = mainAccountData.apartment_selected;
+                        const mainAptIds = mainApts.map(a => a.apartment_id).filter(Boolean);
+                        const { data: mainAptRows } = await sb
+                            .from('apartments')
+                            .select('*')
+                            .in('id', mainAptIds);
+
+                        if (mainAptRows && mainAptRows.length > 0) {
+                            const mainPanden = mainAptRows.map(buildPandFromApartment);
+                            setMainTenantApartments(mainPanden);
+
+                            // If co-tenant has no apartments selected yet, default to all main tenant's
+                            if (panden.length === 0) {
+                                panden = mainPanden;
+                            }
+
+                            // Load the main tenant's bid amounts so co-tenant sees real values
+                            const mainBids = {};
+                            mainApts.forEach(a => {
+                                if (a.apartment_id && a.bid_amount) {
+                                    mainBids[a.apartment_id] = a.bid_amount;
+                                }
+                            });
+                            // Also use dossier-level bid as fallback
+                            if (result.ok && result.data?.bidAmount) {
+                                mainPanden.forEach(p => {
+                                    if (!mainBids[p.apartmentId]) {
+                                        mainBids[p.apartmentId] = result.data.bidAmount;
+                                    }
+                                });
+                            }
+                            if (Object.keys(mainBids).length > 0) {
+                                setBidAmounts(prev => {
+                                    // Only set if co-tenant doesn't have their own bids yet
+                                    const merged = { ...mainBids };
+                                    Object.keys(prev).forEach(k => { if (prev[k]) merged[k] = prev[k]; });
+                                    return merged;
+                                });
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[Aanvraag] Could not load main tenant apartments for co-tenant:', e);
+                }
+            }
+
+            // Fallback: check localStorage for pending selections (when no account exists yet)
+            if (panden.length === 0 && typeof window !== 'undefined') {
+                const pending = localStorage.getItem('pending_apartment_selected');
+                if (pending) {
+                    try {
+                        const pendingApts = JSON.parse(pending);
+                        const aptIds = pendingApts.map(a => a.apartment_id).filter(Boolean);
+                        if (aptIds.length > 0) {
+                            const { data: aptRows } = await sb
+                                .from('apartments')
+                                .select('*')
+                                .in('id', aptIds);
+
+                            if (aptRows && aptRows.length > 0) {
+                                panden = aptRows.map(buildPandFromApartment);
+                            }
+                        }
+
+                        // If account now exists, persist and clear localStorage
+                        if (accountId && panden.length > 0) {
+                            await sb.from('accounts').update({
+                                apartment_selected: pendingApts
+                            }).eq('id', accountId);
+                            localStorage.removeItem('pending_apartment_selected');
+                        }
+                    } catch (e) {
+                        console.warn('[Aanvraag] Could not parse pending_apartment_selected', e);
+                    }
+                }
+            }
+
+            setSelectedPanden(panden);
+
+            // Use first apartment as legacy fallback for single-pand references
+            const firstPand = panden[0] || {
                 adres: '',
                 voorwaarden: { huurprijs: 0, waarborgsom: 0, servicekosten: '-', beschikbaar: '-', minBod: 0, maxBod: 0 }
             };
 
-            // Attempt to load apartment from accounts current_bookings
-            if (accountId) {
-                try {
-                    const { supabase: sb } = await import('../integrations/supabase/client');
-                    const { data: accData, error: accError } = await sb
-                        .from('accounts')
-                        .select('current_bookings, documentation_status')
-                        .eq('id', accountId)
-                        .single();
-
-                    if (!accError && accData?.current_bookings?.length > 0) {
-                        const booking = accData.current_bookings[0];
-                        if (booking.apartment_id) {
-                            const { data: aptData } = await sb
-                                .from('apartments')
-                                .select('*')
-                                .eq('id', booking.apartment_id)
-                                .single();
-
-                            if (aptData) {
-                                pand = buildPandFromApartment(aptData);
-                                setSelectedPand(pand);
-                            }
-                        }
-                    }
-
-                    // Set initial 'Not filled' status if empty
-                    if (!accError && !accData?.documentation_status) {
-                        await sb.from('accounts').update({ documentation_status: 'Pending' }).eq('id', accountId);
-                    }
-
-                    // Save the selected apartment to accounts.apartment_selected
-                    if (pand.apartmentId) {
-                        try {
-                            const { data: accForApt } = await sb
-                                .from('accounts')
-                                .select('apartment_selected')
-                                .eq('id', accountId)
-                                .single();
-
-                            const existing = accForApt?.apartment_selected || [];
-                            const alreadySelected = existing.some(a => a.apartment_id === pand.apartmentId);
-
-                            if (!alreadySelected) {
-                                const aptEntry = {
-                                    apartment_id: pand.apartmentId,
-                                    address: pand.adres,
-                                    rental_price: pand.voorwaarden?.huurprijs || null,
-                                    selected_at: new Date().toISOString()
-                                };
-                                await sb.from('accounts').update({
-                                    apartment_selected: [...existing, aptEntry]
-                                }).eq('id', accountId);
-                                console.log('[Aanvraag] ✓ Saved apartment to accounts.apartment_selected');
-                            }
-                        } catch (aptErr) {
-                            console.warn('[Aanvraag] Could not update apartment_selected:', aptErr);
-                        }
-                    }
-                } catch (e) {
-                    console.warn('[Aanvraag] Could not load apartment from current_bookings', e);
-                }
-            }
-
             if (result.ok && result.data) {
-                setBidAmount(result.data.bidAmount || pand.voorwaarden.huurprijs);
+                // Initialize per-apartment bid amounts (saved bids take priority, then dossier-level, then rental price)
+                const initialBids = {};
+                panden.forEach(p => {
+                    initialBids[p.apartmentId] = p.voorwaarden.huurprijs;
+                });
+                // Dossier-level bid as fallback for all
+                if (result.data.bidAmount) {
+                    panden.forEach(p => {
+                        if (!initialBids[p.apartmentId] || initialBids[p.apartmentId] === p.voorwaarden.huurprijs) {
+                            initialBids[p.apartmentId] = result.data.bidAmount;
+                        }
+                    });
+                }
+                setBidAmounts(prev => ({ ...initialBids, ...prev }));
                 setStartDate(result.data.startDate || '');
                 setMotivation(result.data.motivation || '');
                 setMonthsAdvance(result.data.monthsAdvance || 0);
@@ -182,7 +312,7 @@ const Aanvraag = () => {
                         docsCompleet: false
                     }];
 
-                setData({ pand, personen, dossierCompleet: false });
+                setData({ panden, pand: firstPand, personen, dossierCompleet: false });
             } else {
                 const initialPerson = {
                     persoonId: "p1",
@@ -193,27 +323,17 @@ const Aanvraag = () => {
                     documenten: [],
                     docsCompleet: false
                 };
-                setData({ pand, personen: [initialPerson], dossierCompleet: false });
-                setBidAmount(pand.voorwaarden.huurprijs);
+                setData({ panden, pand: firstPand, personen: [initialPerson], dossierCompleet: false });
+                const initialBids = {};
+                panden.forEach(p => { initialBids[p.apartmentId] = p.voorwaarden.huurprijs; });
+                setBidAmounts(prev => ({ ...initialBids, ...prev }));
             }
 
             setLoading(false);
         };
 
         loadData();
-        // Re-run when selectedPand resolves (it's loaded async from localStorage)
-    }, [dossierId, selectedPand]);
-
-    // Keep data.pand in sync when selectedPand loads after data is already set
-    useEffect(() => {
-        if (!selectedPand || !data) return;
-        setData(prev => {
-            if (!prev) return prev;
-            return { ...prev, pand: selectedPand };
-        });
-        // We only want to run this when selectedPand actually changes
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedPand]);
+    }, [dossierId, accountId]);
 
     // Auto-save with debouncing
     const saveTimeoutRef = useRef(null);
@@ -223,16 +343,43 @@ const Aanvraag = () => {
 
         setSaveStatus('saving');
 
+        // Use first apartment's bid for dossier-level save (backward compat)
+        const firstPand = data.panden?.[0] || data.pand;
+        const firstBid = firstPand?.apartmentId ? (bidAmounts[firstPand.apartmentId] || 0) : 0;
+        const allAddresses = (data.panden || []).map(p => p.adres).filter(Boolean).join(', ');
+
         const formData = {
-            bidAmount,
+            bidAmount: firstBid,
             startDate,
             motivation,
             monthsAdvance,
-            propertyAddress: data.pand?.adres || '',
+            propertyAddress: allAddresses || data.pand?.adres || '',
             personen: data.personen || []
         };
 
         const result = await saveAanvraagData(dossierId, formData);
+
+        // Also save per-apartment bids to accounts.apartment_selected
+        if (result.ok && accountId && data.panden?.length > 0) {
+            try {
+                const { supabase: sb } = await import('../integrations/supabase/client');
+                const updatedSelected = data.panden.map(p => ({
+                    apartment_id: p.apartmentId,
+                    address: p.adres,
+                    rental_price: p.voorwaarden?.huurprijs || null,
+                    bid_amount: bidAmounts[p.apartmentId] || null,
+                    start_date: startDate || null,
+                    motivation: motivation || null,
+                    months_advance: monthsAdvance || 0,
+                    selected_at: new Date().toISOString()
+                }));
+                await sb.from('accounts').update({
+                    apartment_selected: updatedSelected
+                }).eq('id', accountId);
+            } catch (e) {
+                console.warn('[Aanvraag] Could not save per-apartment bids:', e);
+            }
+        }
 
         // After successful DB save, sync back any new supabaseIds to state
         if (result.ok && result.personen) {
@@ -279,7 +426,7 @@ const Aanvraag = () => {
             // Check progress of page 1 to set 'Partial'
             // If they have filled some core details but haven't uploaded docs yet
             const hasData = !!(
-                bidAmount > 0 ||
+                Object.values(bidAmounts).some(b => b > 0) ||
                 startDate !== '' ||
                 (data.personen && data.personen[0] && data.personen[0].naam?.trim() !== '')
             );
@@ -300,7 +447,7 @@ const Aanvraag = () => {
             setSaveStatus('error');
             console.error('Auto-save failed:', result.error);
         }
-    }, [dossierId, data, bidAmount, startDate, motivation, monthsAdvance]);
+    }, [dossierId, data, bidAmounts, startDate, motivation, monthsAdvance, accountId]);
 
     // Trigger auto-save when data changes
     useEffect(() => {
@@ -321,13 +468,13 @@ const Aanvraag = () => {
                 clearTimeout(saveTimeoutRef.current);
             }
         };
-    }, [bidAmount, startDate, motivation, monthsAdvance, data, loading, autoSave]);
+    }, [bidAmounts, startDate, motivation, monthsAdvance, data, loading, autoSave]);
 
     const calculateProgress = () => {
         if (!data) return 0;
 
-        const hasBid = bidAmount > 0 && startDate !== "";
-        const bidProgress = hasBid ? 30 : 0;
+        const hasAnyBid = Object.values(bidAmounts).some(b => b > 0) && startDate !== "";
+        const bidProgress = hasAnyBid ? 30 : 0;
 
         const tenantIds = Object.keys(tenantProgress);
         if (tenantIds.length === 0) return bidProgress;
@@ -342,6 +489,12 @@ const Aanvraag = () => {
     };
 
     const handleFormDataChange = (persoonId, formDataUpdate) => {
+        // Check for duplicate phone number
+        if (formDataUpdate.telefoon !== undefined) {
+            const isDup = isPhoneDuplicate(formDataUpdate.telefoon, persoonId);
+            formDataUpdate.phoneDuplicate = isDup;
+        }
+
         setTenantProgress(prev => ({
             ...prev,
             [persoonId]: formDataUpdate
@@ -455,7 +608,15 @@ const Aanvraag = () => {
         }
     }, [accountId, phoneNumber]);
 
-    const canSubmit = bidAmount > 0 && startDate !== '' && isAllDocsComplete();
+    const hasPhoneDuplicates = () => {
+        if (!data?.personen) return false;
+        const phones = data.personen
+            .map(p => (p.telefoon || '').replace(/\s+/g, ''))
+            .filter(p => p && p !== '+');
+        return new Set(phones).size !== phones.length;
+    };
+
+    const canSubmit = Object.values(bidAmounts).some(b => b > 0) && startDate !== '' && isAllDocsComplete() && !hasPhoneDuplicates();
 
     const handleDocumentUpload = async (persoonId, type, fileOrFiles) => {
         // Handle both single file and array of files
@@ -708,14 +869,6 @@ const Aanvraag = () => {
     };
 
     const handleAddGuarantor = (tenantId) => {
-        // Check if this specific tenant already has a guarantor
-        const existingGuarantor = data.personen.find(
-            p => p.rol === 'Garantsteller' && p.linkedToPersoonId === tenantId
-        );
-        if (existingGuarantor) {
-            alert(currentLang === 'en' ? "This person already has a guarantor" : "Deze persoon heeft al een garantsteller");
-            return;
-        }
         setSelectedTenantForGuarantor(tenantId);
         setAddPersonRole("Garantsteller");
         setShowUploadChoiceModal(true);
@@ -772,7 +925,46 @@ const Aanvraag = () => {
         }
     };
 
+    // Check if a phone number is already used by another person in this dossier
+    const isPhoneDuplicate = useCallback((phone, excludePersoonId = null) => {
+        if (!phone || !data?.personen) return false;
+        const normalized = phone.replace(/\s+/g, '');
+        if (!normalized || normalized === '+') return false;
+        return data.personen.some(p => {
+            if (excludePersoonId && p.persoonId === excludePersoonId) return false;
+            const pPhone = (p.telefoon || '').replace(/\s+/g, '');
+            return pPhone && (pPhone === normalized || pPhone === phone);
+        });
+    }, [data?.personen]);
+
+    // Also check against the logged-in user's phone
+    const isPhoneDuplicateWithAuth = useCallback((phone, excludePersoonId = null) => {
+        if (!phone) return false;
+        const normalized = phone.replace(/\s+/g, '');
+        if (!normalized || normalized === '+') return false;
+        // Check against all existing personen
+        if (isPhoneDuplicate(phone, excludePersoonId)) return true;
+        // Check against the auth phone (main tenant's login phone)
+        const authPhone = (phoneNumber || '').replace(/\s+/g, '');
+        if (authPhone && authPhone === normalized) {
+            // Only flag as duplicate if excluding self — the main tenant's phone IS expected on their card
+            const mainTenant = data?.personen?.find(p => p.rol === 'Hoofdhuurder');
+            if (excludePersoonId && mainTenant?.persoonId === excludePersoonId) return false;
+            if (!excludePersoonId) return true;
+            return true;
+        }
+        return false;
+    }, [isPhoneDuplicate, phoneNumber, data?.personen]);
+
     const handleAddPersonSubmit = async (name, whatsapp) => {
+        // Validate: no duplicate phone numbers
+        if (isPhoneDuplicateWithAuth(whatsapp)) {
+            alert(currentLang === 'en'
+                ? 'This phone number is already used by another person in this application. Each person must have a unique phone number.'
+                : 'Dit telefoonnummer wordt al gebruikt door een andere persoon in deze aanvraag. Elke persoon moet een uniek telefoonnummer hebben.');
+            return;
+        }
+
         let newAccountId = null;
 
         try {
@@ -884,12 +1076,56 @@ const Aanvraag = () => {
         }
     };
 
+    const handleCoTenantApartmentToggle = async (apartmentId) => {
+        const currentIds = (data?.panden || []).map(p => p.apartmentId);
+        const isSelected = currentIds.includes(apartmentId);
+
+        let newPanden;
+        if (isSelected) {
+            // Deselect — but must keep at least one
+            if (currentIds.length <= 1) return;
+            newPanden = (data?.panden || []).filter(p => p.apartmentId !== apartmentId);
+        } else {
+            // Select — add from mainTenantApartments
+            const toAdd = mainTenantApartments.find(p => p.apartmentId === apartmentId);
+            if (!toAdd) return;
+            newPanden = [...(data?.panden || []), toAdd];
+        }
+
+        setSelectedPanden(newPanden);
+        setData(prev => prev ? { ...prev, panden: newPanden, pand: newPanden[0] } : prev);
+
+        // Initialize bid for newly added apartment
+        if (!isSelected) {
+            const added = mainTenantApartments.find(p => p.apartmentId === apartmentId);
+            if (added) {
+                setBidAmounts(prev => ({ ...prev, [apartmentId]: prev[apartmentId] || added.voorwaarden.huurprijs }));
+            }
+        }
+
+        // Persist to co-tenant's account
+        if (accountId) {
+            try {
+                const { supabase: sb } = await import('../integrations/supabase/client');
+                const aptEntries = newPanden.map(p => ({
+                    apartment_id: p.apartmentId,
+                    address: p.adres,
+                    rental_price: p.voorwaarden?.huurprijs || null,
+                    selected_at: new Date().toISOString()
+                }));
+                await sb.from('accounts').update({ apartment_selected: aptEntries }).eq('id', accountId);
+            } catch (e) {
+                console.warn('[Aanvraag] Could not save co-tenant apartment selection', e);
+            }
+        }
+    };
+
     const handleLogout = async () => {
         await logout();
     };
 
     const handleSubmit = async () => {
-        if (!bidAmount || !startDate) {
+        if (!Object.values(bidAmounts).some(b => b > 0) || !startDate) {
             alert(currentLang === 'en' ? 'Please complete the bid section' : 'Vul de biedingsectie in');
             return;
         }
@@ -897,63 +1133,77 @@ const Aanvraag = () => {
         setSaveStatus('saving');
         await updateAccountDocumentationStatus('Complete');
 
-        // Link offer to apartment and account (skip on general route)
-        if (data.pand?.apartmentId && accountId) {
+        const panden = data.panden || (data.pand?.apartmentId ? [data.pand] : []);
+        const mainTenant = data.personen.find(p => p.rol === 'Hoofdhuurder');
+
+        // Link offers to all apartments and account
+        if (panden.length > 0 && accountId) {
             try {
                 const { supabase: sb } = await import('../integrations/supabase/client');
 
-                // 1. Account: push to offered_apartments array
+                // 1. Account: push all to offered_apartments array
                 const { data: accData } = await sb.from('accounts').select('offered_apartments').eq('id', accountId).single();
                 const offeredApts = accData?.offered_apartments || [];
-                if (!offeredApts.includes(data.pand.apartmentId)) {
-                    await sb.from('accounts').update({
-                        offered_apartments: [...offeredApts, data.pand.apartmentId]
-                    }).eq('id', accountId);
+                let updatedOffered = [...offeredApts];
+
+                for (const pand of panden) {
+                    if (!pand.apartmentId) continue;
+                    const aptBid = bidAmounts[pand.apartmentId] || 0;
+                    if (aptBid <= 0) continue;
+
+                    if (!updatedOffered.includes(pand.apartmentId)) {
+                        updatedOffered.push(pand.apartmentId);
+                    }
+
+                    // 2. Apartment: push to offers_in JSONB array
+                    const { data: aptData } = await sb.from('apartments').select('offers_in').eq('id', pand.apartmentId).single();
+                    const offersIn = aptData?.offers_in || [];
+
+                    const existingOfferIdx = offersIn.findIndex(o => o.account_id === accountId);
+                    const offerObj = {
+                        account_id: accountId,
+                        tenant_name: mainTenant?.naam || '',
+                        bid_amount: aptBid,
+                        start_date: startDate,
+                        motivation: motivation,
+                        status: 'Pending',
+                        submitted_at: new Date().toISOString()
+                    };
+
+                    if (existingOfferIdx >= 0) {
+                        offersIn[existingOfferIdx] = offerObj;
+                    } else {
+                        offersIn.push(offerObj);
+                    }
+
+                    await sb.from('apartments').update({ offers_in: offersIn }).eq('id', pand.apartmentId);
                 }
 
-                // 2. Apartment: push to offers_in JSONB array
-                const { data: aptData } = await sb.from('apartments').select('offers_in').eq('id', data.pand.apartmentId).single();
-                const offersIn = aptData?.offers_in || [];
-                const mainTenant = data.personen.find(p => p.rol === 'Hoofdhuurder');
-
-                // Check if we already have an offer for this account to avoid duplicates
-                const existingOfferIdx = offersIn.findIndex(o => o.account_id === accountId);
-                const offerObj = {
-                    account_id: accountId,
-                    tenant_name: mainTenant?.naam || '',
-                    bid_amount: bidAmount,
-                    start_date: startDate,
-                    motivation: motivation,
-                    status: 'Pending', // New offer is pending review
-                    submitted_at: new Date().toISOString()
-                };
-
-                if (existingOfferIdx >= 0) {
-                    offersIn[existingOfferIdx] = offerObj;
-                } else {
-                    offersIn.push(offerObj);
-                }
-
-                await sb.from('apartments').update({ offers_in: offersIn }).eq('id', data.pand.apartmentId);
+                await sb.from('accounts').update({
+                    offered_apartments: updatedOffered
+                }).eq('id', accountId);
             } catch (err) {
-                console.error('[Aanvraag] Failed to submit offer to CRM:', err);
+                console.error('[Aanvraag] Failed to submit offers to CRM:', err);
             }
         }
 
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 2000);
 
-        console.log("Submitting", { bidAmount, startDate, data });
+        console.log("Submitting", { bidAmounts, startDate, data });
         const letterPath = currentLang === 'en' ? '/en/letter-of-intent' : '/letter-of-intent';
         // Store LOI data in sessionStorage for the next page
         if (typeof window !== 'undefined') {
+            const firstPand = panden[0] || data.pand;
             sessionStorage.setItem('loiData', JSON.stringify({
-                bidAmount,
+                bidAmount: firstPand ? (bidAmounts[firstPand.apartmentId] || 0) : 0,
+                bidAmounts,
                 startDate,
                 motivation,
                 monthsAdvance,
                 tenantData: data,
-                property: data.pand
+                property: firstPand,
+                properties: panden
             }));
         }
         router.push(letterPath);
@@ -971,13 +1221,15 @@ const Aanvraag = () => {
             <div className={styles.headerContainer}>
                 <div className={styles.container}>
                     <div className={styles.topBar}>
-                        {data.pand?.adres && (
-                            <p className={styles.addressText}>📍 {data.pand.adres}</p>
+                        {(data.panden?.length > 0 || data.pand?.adres) && (
+                            <p className={styles.addressText}>
+                                {(data.panden || [data.pand]).filter(Boolean).map(p => p.adres).filter(Boolean).join(' | ')}
+                            </p>
                         )}
                         <div className={styles.headerButtons}>
                             {isMainTenant && (
                                 <button className={styles.changeButton} onClick={() => router.push('/appartementen')}>
-                                    {currentLang === 'en' ? 'Change Apartment' : 'Wijzig Appartement'}
+                                    {currentLang === 'en' ? 'Change Apartments' : 'Wijzig Appartementen'}
                                 </button>
                             )}
                             {!isMainTenant && (
@@ -1031,9 +1283,71 @@ const Aanvraag = () => {
                 )}
 
                 <div className={styles.mainLayout}>
-                    <RentalConditionsSidebar conditions={data.pand?.voorwaarden} address={data.pand?.adres} />
+                    <RentalConditionsSidebar
+                        conditions={data.pand?.voorwaarden}
+                        address={data.pand?.adres}
+                        panden={data.panden}
+                    />
 
                     <div className={styles.contentColumn}>
+
+                        {/* Co-tenant warning banner */}
+                        {!isMainTenant && (
+                            <div className={styles.coTenantWarningBanner}>
+                                <AlertCircle size={18} />
+                                <span>
+                                    {currentLang === 'en'
+                                        ? 'You are logged in as a co-tenant. You can only edit your own details. Other sections are managed by the main tenant.'
+                                        : 'U bent ingelogd als medehuurder. U kunt alleen uw eigen gegevens bewerken. Andere secties worden beheerd door de hoofdhuurder.'}
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Co-tenant apartment picker */}
+                        {!isMainTenant && mainTenantApartments.length > 0 && (
+                            <div className={styles.stepContainer}>
+                                <div className={styles.stepHeader}>
+                                    <div className={styles.stepNumber}>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                                    </div>
+                                    <h2 className={styles.stepTitle}>
+                                        {currentLang === 'en' ? 'Choose Apartments' : 'Kies Appartementen'}
+                                    </h2>
+                                </div>
+                                <p style={{ fontSize: '0.8125rem', color: '#6b7280', margin: '0 0 0.75rem', paddingLeft: '0.25rem' }}>
+                                    {currentLang === 'en'
+                                        ? 'Select the apartments you want to apply for (from the main tenant\'s selection)'
+                                        : 'Selecteer de appartementen waarvoor u wilt solliciteren (uit de selectie van de hoofdhuurder)'}
+                                </p>
+                                <div className={styles.coTenantAptGrid}>
+                                    {mainTenantApartments.map(apt => {
+                                        const isSelected = (data?.panden || []).some(p => p.apartmentId === apt.apartmentId);
+                                        return (
+                                            <div
+                                                key={apt.apartmentId}
+                                                className={`${styles.coTenantAptCard} ${isSelected ? styles.coTenantAptCardSelected : ''}`}
+                                                onClick={() => handleCoTenantApartmentToggle(apt.apartmentId)}
+                                            >
+                                                <div className={styles.coTenantAptCheckbox}>
+                                                    {isSelected && (
+                                                        <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+                                                            <path d="M2 7L5.5 10.5L12 3.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                        </svg>
+                                                    )}
+                                                </div>
+                                                <div className={styles.coTenantAptInfo}>
+                                                    <span className={styles.coTenantAptName}>{apt.adres}</span>
+                                                    <span className={styles.coTenantAptPrice}>
+                                                        {'\u20AC'}{apt.voorwaarden?.huurprijs || 0}{' '}
+                                                        {currentLang === 'en' ? '/mo' : '/mnd'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
 
                         <div className={styles.stepContainer}>
                             <div className={styles.stepHeader}>
@@ -1042,11 +1356,20 @@ const Aanvraag = () => {
                             </div>
                             <BidSection
                                 conditions={data.pand?.voorwaarden}
-                                bidAmount={bidAmount}
+                                bidAmount={bidAmounts[data.pand?.apartmentId] || 0}
                                 startDate={startDate}
                                 motivation={motivation}
                                 monthsAdvance={monthsAdvance}
-                                onBidAmountChange={isMainTenant ? setBidAmount : undefined}
+                                onBidAmountChange={isMainTenant ? (val) => {
+                                    // Apply same bid to all selected apartments
+                                    setBidAmounts(prev => {
+                                        const updated = { ...prev };
+                                        (data.panden || [data.pand]).filter(Boolean).forEach(p => {
+                                            updated[p.apartmentId] = val;
+                                        });
+                                        return updated;
+                                    });
+                                } : undefined}
                                 onStartDateChange={isMainTenant ? setStartDate : undefined}
                                 onMotivationChange={isMainTenant ? setMotivation : undefined}
                                 onMonthsAdvanceChange={isMainTenant ? setMonthsAdvance : undefined}
@@ -1063,12 +1386,16 @@ const Aanvraag = () => {
 
                             <div className={styles.listsContainer}>
                                 {alleHuurders.map((huurder) => {
-                                    const linkedGuarantor = garantstellers.find(g => g.linkedToPersoonId === huurder.persoonId);
+                                    const linkedGuarantors = garantstellers.filter(g => g.linkedToPersoonId === huurder.persoonId);
                                     // Determine if this person's card is editable by the current user
                                     const isOwnCard = !isMainTenant && huurder.supabaseId === authPersoonId;
                                     const huurderReadOnly = !isMainTenant && !isOwnCard;
-                                    const guarantorIsOwn = !isMainTenant && linkedGuarantor?.supabaseId === authPersoonId;
-                                    const guarantorReadOnly = !isMainTenant && !guarantorIsOwn;
+                                    // Income is only visible on your own card
+                                    const isViewingOwnTenantCard = isMainTenant
+                                        ? huurder.rol === 'Hoofdhuurder'
+                                        : huurder.supabaseId === authPersoonId;
+                                    // Co-tenant can add guarantor for themselves
+                                    const canAddGuarantor = isMainTenant || isOwnCard;
 
                                     return (
                                         <div key={huurder.persoonId} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -1076,34 +1403,45 @@ const Aanvraag = () => {
                                                 persoon={huurder}
                                                 onDocumentUpload={handleDocumentUpload}
                                                 onDocumentRemove={huurderReadOnly ? undefined : handleDocumentRemove}
-                                                onRemove={huurderReadOnly ? undefined : (isOwnCard ? handleRemovePerson : handleRemovePerson)}
+                                                onRemove={huurderReadOnly ? undefined : handleRemovePerson}
                                                 onFormDataChange={handleFormDataChange}
                                                 showUploadChoice={true}
                                                 readOnly={huurderReadOnly}
+                                                hideIncome={!isViewingOwnTenantCard}
+                                                isPhoneDuplicate={isPhoneDuplicate}
                                             />
 
-                                            {linkedGuarantor && (
-                                                <div className={styles.guarantorWrapper}>
-                                                    <GuarantorFormSection
-                                                        guarantors={[linkedGuarantor]}
-                                                        onDocumentUpload={handleDocumentUpload}
-                                                        onDocumentRemove={guarantorReadOnly ? undefined : handleDocumentRemove}
-                                                        onRemove={guarantorReadOnly ? undefined : handleRemovePerson}
-                                                        onFormDataChange={handleFormDataChange}
-                                                        readOnly={guarantorReadOnly}
-                                                    />
-                                                </div>
-                                            )}
+                                            {linkedGuarantors.map(g => {
+                                                // Co-tenant can edit: guarantor linked to their own card, or if they ARE the guarantor
+                                                const gIsOwn = !isMainTenant && g.supabaseId === authPersoonId;
+                                                const gLinkedToOwn = isOwnCard;
+                                                const gReadOnly = !isMainTenant && !gIsOwn && !gLinkedToOwn;
+                                                // Only the guarantor themselves can see their own income
+                                                const gIsself = g.supabaseId === authPersoonId;
+                                                return (
+                                                    <div key={g.persoonId} className={styles.guarantorWrapper}>
+                                                        <GuarantorFormSection
+                                                            guarantors={[g]}
+                                                            onDocumentUpload={handleDocumentUpload}
+                                                            onDocumentRemove={gReadOnly ? undefined : handleDocumentRemove}
+                                                            onRemove={gReadOnly ? undefined : handleRemovePerson}
+                                                            onFormDataChange={handleFormDataChange}
+                                                            readOnly={gReadOnly}
+                                                            hideIncome={!gIsself}
+                                                        />
+                                                    </div>
+                                                );
+                                            })}
 
-                                            {!linkedGuarantor && isMainTenant && (
+                                            {canAddGuarantor && (
                                                 <button
                                                     className={styles.addGuarantorButton}
                                                     onClick={() => handleAddGuarantor(huurder.persoonId)}
                                                 >
                                                     <Plus size={16} />
                                                     {currentLang === 'en'
-                                                        ? `Add Guarantor for ${huurder.naam}`
-                                                        : `Garantsteller toevoegen voor ${huurder.naam}`}
+                                                        ? `Add Guarantor for ${huurder.naam || (isOwnCard ? 'yourself' : '')}`
+                                                        : `Garantsteller toevoegen voor ${huurder.naam || (isOwnCard ? 'jezelf' : '')}`}
                                                 </button>
                                             )}
                                         </div>
@@ -1116,6 +1454,7 @@ const Aanvraag = () => {
                                     .map(g => {
                                         const gIsOwn = !isMainTenant && g.supabaseId === authPersoonId;
                                         const gReadOnly = !isMainTenant && !gIsOwn;
+                                        const gIsself = g.supabaseId === authPersoonId;
                                         return (
                                             <div key={g.persoonId} className={styles.guarantorWrapper}>
                                                 <GuarantorFormSection
@@ -1125,30 +1464,29 @@ const Aanvraag = () => {
                                                     onRemove={gReadOnly ? undefined : handleRemovePerson}
                                                     onFormDataChange={handleFormDataChange}
                                                     readOnly={gReadOnly}
+                                                    hideIncome={!gIsself}
                                                 />
                                             </div>
                                         );
                                     })
                                 }
 
-                                {isMainTenant && (
-                                    <button
-                                        className={styles.addCoTenantButton}
-                                        onClick={handleAddCoTenant}
-                                        disabled={alleHuurders.length >= 5}
-                                    >
-                                        <div className={styles.addCoTenantContent}>
-                                            <div className={styles.plusIconWrapper}>
-                                                <Plus size={20} />
-                                            </div>
-                                            <span>
-                                                {alleHuurders.length >= 5
-                                                    ? (currentLang === 'en' ? 'Max co-tenants reached' : 'Max aantal medehuurders bereikt')
-                                                    : (currentLang === 'en' ? 'Add Co-Tenant' : 'Medehuurder Toevoegen')}
-                                            </span>
+                                <button
+                                    className={styles.addCoTenantButton}
+                                    onClick={handleAddCoTenant}
+                                    disabled={alleHuurders.length >= 5}
+                                >
+                                    <div className={styles.addCoTenantContent}>
+                                        <div className={styles.plusIconWrapper}>
+                                            <Plus size={20} />
                                         </div>
-                                    </button>
-                                )}
+                                        <span>
+                                            {alleHuurders.length >= 5
+                                                ? (currentLang === 'en' ? 'Max co-tenants reached' : 'Max aantal medehuurders bereikt')
+                                                : (currentLang === 'en' ? 'Add Co-Tenant' : 'Medehuurder Toevoegen')}
+                                        </span>
+                                    </div>
+                                </button>
                             </div>
                         </div>
 

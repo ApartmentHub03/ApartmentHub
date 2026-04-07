@@ -54,11 +54,6 @@ export const saveAanvraagData = async (dossierId, formData) => {
                     }
                 }
 
-                // Resolve linked_to_persoon_id — strip the 'p' prefix used in the frontend
-                const rawLinkedTo = persoon.linkedToPersoonId
-                    ? persoon.linkedToPersoonId.replace(/^p/, '')
-                    : null;
-
                 const persoonData = {
                     dossier_id: dossierId,
                     type: persoon.rol === 'Hoofdhuurder' ? 'tenant' :
@@ -73,7 +68,6 @@ export const saveAanvraagData = async (dossierId, formData) => {
                     postcode: persoon.postcode || null,
                     woonplaats: persoon.woonplaats || null,
                     rol: persoon.rol,
-                    linked_to_persoon_id: persoon.rol === 'Garantsteller' ? rawLinkedTo : null,
                     updated_at: new Date().toISOString()
                 };
 
