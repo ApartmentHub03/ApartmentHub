@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
-import { Briefcase, Users, Armchair } from 'lucide-react';
+import { Briefcase, Users } from 'lucide-react';
 import { translations } from '../../data/translations';
 import styles from './GuarantorWorkStatusSelector.module.css';
 
@@ -22,13 +22,6 @@ const GuarantorWorkStatusSelector = ({ selected, onChange }) => {
             emoji: "🏢",
             icon: Users,
             gradientClass: styles.entrepreneurGradient
-        },
-        {
-            value: "gepensioneerd",
-            label: currentLang === 'en' ? 'Retiree' : 'Gepensioneerd',
-            emoji: "🛋️",
-            icon: Armchair,
-            gradientClass: styles.retireeGradient
         }
     ];
 

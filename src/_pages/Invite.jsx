@@ -28,11 +28,15 @@ const Invite = () => {
     const [inviteError, setInviteError] = useState('');
     const [step, setStep] = useState('phone'); // 'phone' or 'code'
     const [phoneNumber, setPhoneNumber] = useState('+');
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
     const [verificationCode, setVerificationCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+
+    // Name comes from the invite token (set by the main tenant when sharing the link).
+    // Fall back to empty strings if the token doesn't include a name.
+    const inviteName = (inviteData?.name || '').trim();
+    const [firstName, ...restName] = inviteName.split(/\s+/);
+    const lastName = restName.join(' ');
 
     // Decode invite token on mount
     useEffect(() => {
@@ -73,11 +77,6 @@ const Invite = () => {
     const handleSendCode = async (e) => {
         e.preventDefault();
         setError('');
-
-        if (!firstName.trim() || !lastName.trim()) {
-            setError(currentLang === 'en' ? 'Please enter your full name' : 'Voer je volledige naam in');
-            return;
-        }
 
         const digitsOnly = phoneNumber.replace(/\D/g, '');
         if (digitsOnly.length < 10) {
@@ -286,34 +285,14 @@ const Invite = () => {
 
                     {step === 'phone' ? (
                         <form onSubmit={handleSendCode} className={styles.form}>
-                            <div className={styles.nameRow}>
-                                <div>
-                                    <label className={styles.inputLabel}>
-                                        {currentLang === 'en' ? 'First name' : 'Voornaam'}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className={styles.input}
-                                        value={firstName}
-                                        onChange={(e) => setFirstName(e.target.value)}
-                                        placeholder={currentLang === 'en' ? 'John' : 'Jan'}
-                                        required
-                                    />
+                            {inviteName && (
+                                <div className={styles.successMessage}>
+                                    <CheckCircle size={16} />
+                                    {currentLang === 'en'
+                                        ? `Welcome, ${inviteName}`
+                                        : `Welkom, ${inviteName}`}
                                 </div>
-                                <div>
-                                    <label className={styles.inputLabel}>
-                                        {currentLang === 'en' ? 'Last name' : 'Achternaam'}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className={styles.input}
-                                        value={lastName}
-                                        onChange={(e) => setLastName(e.target.value)}
-                                        placeholder={currentLang === 'en' ? 'Doe' : 'Jansen'}
-                                        required
-                                    />
-                                </div>
-                            </div>
+                            )}
 
                             <div>
                                 <label className={styles.inputLabel}>

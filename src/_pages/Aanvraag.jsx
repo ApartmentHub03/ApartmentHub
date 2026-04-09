@@ -952,6 +952,7 @@ const Aanvraag = () => {
                 body: {
                     dossier_id: dossierId,
                     role: addPersonRole,
+                    name: shareModalName || null,
                     linked_to_persoon_id: addPersonRole === 'Garantsteller' && selectedTenantForGuarantor ? selectedTenantForGuarantor.replace(/^p/, '') : null,
                     auth_token: token
                 }
@@ -1268,6 +1269,15 @@ const Aanvraag = () => {
             return;
         }
 
+        // Apartment must be selected before submit (same flow for main + co-tenant)
+        const selectedPanden = data?.panden || (data?.pand?.apartmentId ? [data.pand] : []);
+        if (selectedPanden.length === 0) {
+            alert(currentLang === 'en'
+                ? 'Please select an apartment before submitting.'
+                : 'Selecteer een appartement voordat u indient.');
+            return;
+        }
+
         // Save application data + mark documentation as complete
         setIsSubmitting(true);
         setSaveStatus('saving');
@@ -1300,20 +1310,66 @@ const Aanvraag = () => {
             }));
         }
 
+        // For main tenants, link offers to selected apartments before redirecting
+        // (this is what /appartementen used to do via the fromSubmitFlow detour)
+        if (isMainTenant && accountId) {
+            try {
+                const { supabase: sb } = await import('../integrations/supabase/client');
+                const { data: accData } = await sb
+                    .from('accounts')
+                    .select('offered_apartments')
+                    .eq('id', accountId)
+                    .single();
+                let updatedOffered = accData?.offered_apartments || [];
+
+                const mainTenantName = data.personen.find(p => p.rol === 'Hoofdhuurder')?.naam || '';
+
+                for (const p of selectedPanden) {
+                    if (!p.apartmentId) continue;
+                    if (!updatedOffered.includes(p.apartmentId)) {
+                        updatedOffered.push(p.apartmentId);
+                    }
+
+                    const { data: aptData } = await sb
+                        .from('apartments')
+                        .select('offers_in')
+                        .eq('id', p.apartmentId)
+                        .single();
+                    const offersIn = aptData?.offers_in || [];
+                    const bidAmount = bidAmounts[p.apartmentId] || bidAmounts['__default'] || p.voorwaarden?.huurprijs || 0;
+
+                    const existingIdx = offersIn.findIndex(o => o.account_id === accountId);
+                    const offerObj = {
+                        account_id: accountId,
+                        tenant_name: mainTenantName,
+                        bid_amount: bidAmount,
+                        start_date: startDate,
+                        motivation: motivation,
+                        status: 'Pending',
+                        submitted_at: new Date().toISOString()
+                    };
+
+                    if (existingIdx >= 0) {
+                        offersIn[existingIdx] = offerObj;
+                    } else {
+                        offersIn.push(offerObj);
+                    }
+
+                    await sb.from('apartments').update({ offers_in: offersIn }).eq('id', p.apartmentId);
+                }
+
+                await sb.from('accounts').update({ offered_apartments: updatedOffered }).eq('id', accountId);
+            } catch (e) {
+                console.warn('[Aanvraag] Could not link offers to apartments on submit:', e);
+            }
+        }
+
         setSaveStatus('saved');
         setIsSubmitting(false);
 
-        if (!isMainTenant) {
-            // Co-tenant: already has apartment selected, go directly to letter of intent
-            router.push(currentLang === 'en' ? '/en/letter-of-intent' : '/letter-of-intent');
-        } else {
-            // Main tenant: go to apartment selection first, then letter of intent
-            sessionStorage.setItem('fromSubmitFlow', 'true');
-            router.push('/appartementen');
-        }
+        // Both main tenant and co-tenant: apartment is already selected, go directly to LOI
+        router.push(currentLang === 'en' ? '/en/letter-of-intent' : '/letter-of-intent');
     };
-
-    // Old handleSubmit removed — handleSubmitClick now saves + redirects to /appartementen
 
     if (loading || !data) {
         return <div className="p-8 text-center">Loading...</div>;
@@ -1404,51 +1460,50 @@ const Aanvraag = () => {
                             </div>
                         )}
 
-                        {/* Co-tenant: choose apartment (same flow as main tenant) */}
-                        {!isMainTenant && (
-                            <div className={styles.stepContainer}>
-                                <div className={styles.stepHeader}>
-                                    <div className={styles.stepNumber}>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                                    </div>
-                                    <h2 className={styles.stepTitle}>
-                                        {currentLang === 'en' ? 'Choose Apartment' : 'Kies Appartement'}
-                                    </h2>
-                                </div>
-                                <p style={{ fontSize: '0.8125rem', color: '#6b7280', margin: '0 0 0.75rem', paddingLeft: '0.25rem' }}>
-                                    {currentLang === 'en'
-                                        ? 'Select the apartment you want to apply for'
-                                        : 'Selecteer het appartement waarvoor u wilt solliciteren'}
-                                </p>
-                                {data?.panden?.length > 0 && (
-                                    <div style={{
-                                        background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '0.5rem',
-                                        padding: '0.75rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem'
-                                    }}>
-                                        <CheckCircle size={16} style={{ color: '#16a34a' }} />
-                                        <span style={{ fontSize: '0.875rem', color: '#15803d' }}>
-                                            {data.panden[0].adres} — {'\u20AC'}{data.panden[0].voorwaarden?.huurprijs || 0}{currentLang === 'en' ? '/mo' : '/mnd'}
-                                        </span>
-                                    </div>
-                                )}
-                                <button
-                                    onClick={() => router.push('/appartementen')}
-                                    style={{
-                                        width: '100%', padding: '0.75rem', borderRadius: '0.5rem',
-                                        background: data?.panden?.length > 0 ? 'white' : '#497772',
-                                        color: data?.panden?.length > 0 ? '#497772' : 'white',
-                                        border: data?.panden?.length > 0 ? '2px solid #497772' : 'none',
-                                        cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                                    }}
-                                >
+                        {/* Choose apartment (same flow for main tenant and co-tenant) */}
+                        <div className={styles.stepContainer}>
+                            <div className={styles.stepHeader}>
+                                <div className={styles.stepNumber}>
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                                    {data?.panden?.length > 0
-                                        ? (currentLang === 'en' ? 'Change Apartment' : 'Appartement Wijzigen')
-                                        : (currentLang === 'en' ? 'Select Apartment' : 'Appartement Selecteren')}
-                                </button>
+                                </div>
+                                <h2 className={styles.stepTitle}>
+                                    {currentLang === 'en' ? 'Choose Apartment' : 'Kies Appartement'}
+                                </h2>
                             </div>
-                        )}
+                            <p style={{ fontSize: '0.8125rem', color: '#6b7280', margin: '0 0 0.75rem', paddingLeft: '0.25rem' }}>
+                                {currentLang === 'en'
+                                    ? 'Select the apartment you want to apply for'
+                                    : 'Selecteer het appartement waarvoor u wilt solliciteren'}
+                            </p>
+                            {data?.panden?.length > 0 && (
+                                <div style={{
+                                    background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '0.5rem',
+                                    padding: '0.75rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem'
+                                }}>
+                                    <CheckCircle size={16} style={{ color: '#16a34a' }} />
+                                    <span style={{ fontSize: '0.875rem', color: '#15803d' }}>
+                                        {data.panden[0].adres} — {'\u20AC'}{data.panden[0].voorwaarden?.huurprijs || 0}{currentLang === 'en' ? '/mo' : '/mnd'}
+                                    </span>
+                                </div>
+                            )}
+                            <button
+                                onClick={() => router.push('/appartementen')}
+                                disabled={!isMainTenant && mainTenantApartments.length === 0}
+                                style={{
+                                    width: '100%', padding: '0.75rem', borderRadius: '0.5rem',
+                                    background: data?.panden?.length > 0 ? 'white' : '#497772',
+                                    color: data?.panden?.length > 0 ? '#497772' : 'white',
+                                    border: data?.panden?.length > 0 ? '2px solid #497772' : 'none',
+                                    cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                                }}
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                                {data?.panden?.length > 0
+                                    ? (currentLang === 'en' ? 'Change Apartment' : 'Appartement Wijzigen')
+                                    : (currentLang === 'en' ? 'Select Apartment' : 'Appartement Selecteren')}
+                            </button>
+                        </div>
 
                         <div className={styles.stepContainer}>
                             <div className={styles.stepHeader}>

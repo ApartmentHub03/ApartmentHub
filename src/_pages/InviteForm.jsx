@@ -302,6 +302,7 @@ const InviteForm = () => {
                 body: {
                     dossier_id: inviteContext.dossierId,
                     role: 'Garantsteller',
+                    name: guarantorName || null,
                     linked_to_persoon_id: inviteContext.persoonId,
                     auth_token: token
                 }
@@ -322,6 +323,132 @@ const InviteForm = () => {
         } finally {
             setGeneratingLink(false);
         }
+    };
+
+    const renderGuarantorModal = () => {
+        if (!showGuarantorModal) return null;
+        return (
+            <div style={{
+                position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+            }} onClick={() => setShowGuarantorModal(false)}>
+                <div style={{
+                    background: 'white', borderRadius: '0.75rem', padding: '2rem',
+                    maxWidth: '28rem', width: '90%'
+                }} onClick={e => e.stopPropagation()}>
+                    <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                        <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🛡️</div>
+                        <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                            {currentLang === 'en' ? 'Add Guarantor' : 'Garantsteller toevoegen'}
+                        </h3>
+                        <p style={{ fontSize: '0.813rem', color: '#6b7280' }}>
+                            {currentLang === 'en'
+                                ? 'Enter their details and share the invite link'
+                                : 'Vul hun gegevens in en deel de uitnodigingslink'}
+                        </p>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.813rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>
+                                {currentLang === 'en' ? 'Name' : 'Naam'} *
+                            </label>
+                            <input
+                                type="text"
+                                value={guarantorName}
+                                onChange={e => setGuarantorName(e.target.value)}
+                                placeholder={currentLang === 'en' ? 'Full name' : 'Volledige naam'}
+                                style={{
+                                    width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #e5e7eb',
+                                    borderRadius: '0.375rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box'
+                                }}
+                                autoFocus
+                            />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.813rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>
+                                {currentLang === 'en' ? 'Phone Number' : 'Telefoonnummer'} *
+                            </label>
+                            <input
+                                type="tel"
+                                value={guarantorPhone}
+                                onChange={e => {
+                                    let val = e.target.value.replace(/[^\d+]/g, '');
+                                    if (!val.startsWith('+')) val = '+' + val;
+                                    setGuarantorPhone(val);
+                                }}
+                                placeholder="+31612345678"
+                                style={{
+                                    width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #e5e7eb',
+                                    borderRadius: '0.375rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box'
+                                }}
+                            />
+                        </div>
+
+                        {/* Generate & show invite link */}
+                        {!guarantorInviteLink ? (
+                            <button
+                                onClick={async () => {
+                                    if (!guarantorName.trim() || guarantorPhone.replace(/\D/g, '').length < 10) return;
+                                    await handleAddGuarantorForSelf();
+                                }}
+                                disabled={generatingLink || !guarantorName.trim() || guarantorPhone.replace(/\D/g, '').length < 10}
+                                style={{
+                                    width: '100%', padding: '0.75rem', borderRadius: '0.375rem',
+                                    background: (!guarantorName.trim() || guarantorPhone.replace(/\D/g, '').length < 10) ? '#d1d5db' : '#497772',
+                                    color: 'white', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem'
+                                }}
+                            >
+                                {generatingLink
+                                    ? (currentLang === 'en' ? 'Generating Link...' : 'Link genereren...')
+                                    : (currentLang === 'en' ? 'Generate Invite Link' : 'Uitnodigingslink genereren')}
+                            </button>
+                        ) : (
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.813rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>
+                                    {currentLang === 'en' ? 'Invite Link' : 'Uitnodigingslink'}
+                                </label>
+                                <div style={{
+                                    background: '#f3f4f6', borderRadius: '0.375rem', padding: '0.625rem 0.75rem',
+                                    fontSize: '0.75rem', wordBreak: 'break-all', color: '#374151',
+                                    fontFamily: 'monospace', border: '1px solid #e5e7eb', marginBottom: '0.5rem'
+                                }}>
+                                    {guarantorInviteLink}
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(guarantorInviteLink);
+                                        setInviteLinkCopied(true);
+                                        setTimeout(() => setInviteLinkCopied(false), 2000);
+                                    }}
+                                    style={{
+                                        width: '100%', padding: '0.625rem', borderRadius: '0.375rem',
+                                        background: inviteLinkCopied ? '#10b981' : '#497772',
+                                        color: 'white', border: 'none', cursor: 'pointer',
+                                        fontWeight: 500, fontSize: '0.813rem'
+                                    }}
+                                >
+                                    {inviteLinkCopied
+                                        ? (currentLang === 'en' ? '✓ Link Copied!' : '✓ Link Gekopieerd!')
+                                        : (currentLang === 'en' ? 'Copy Link' : 'Link Kopiëren')}
+                                </button>
+                            </div>
+                        )}
+
+                        <button
+                            onClick={() => setShowGuarantorModal(false)}
+                            style={{
+                                width: '100%', padding: '0.5rem', borderRadius: '0.375rem',
+                                background: 'transparent', color: '#6b7280', border: '1px solid #e5e7eb',
+                                cursor: 'pointer', fontSize: '0.813rem'
+                            }}
+                        >
+                            {currentLang === 'en' ? 'Close' : 'Sluiten'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
     };
 
     if (loading) {
@@ -402,6 +529,7 @@ const InviteForm = () => {
                         </button>
                     </div>
                 </div>
+                {renderGuarantorModal()}
             </div>
         );
     }
@@ -609,129 +737,7 @@ const InviteForm = () => {
                 </button>
             </div>
 
-            {/* Guarantor Popup Modal */}
-            {showGuarantorModal && (
-                <div style={{
-                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
-                }} onClick={() => setShowGuarantorModal(false)}>
-                    <div style={{
-                        background: 'white', borderRadius: '0.75rem', padding: '2rem',
-                        maxWidth: '28rem', width: '90%'
-                    }} onClick={e => e.stopPropagation()}>
-                        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-                            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🛡️</div>
-                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-                                {currentLang === 'en' ? 'Add Guarantor' : 'Garantsteller toevoegen'}
-                            </h3>
-                            <p style={{ fontSize: '0.813rem', color: '#6b7280' }}>
-                                {currentLang === 'en'
-                                    ? 'Enter their details and share the invite link'
-                                    : 'Vul hun gegevens in en deel de uitnodigingslink'}
-                            </p>
-                        </div>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '0.813rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>
-                                    {currentLang === 'en' ? 'Name' : 'Naam'} *
-                                </label>
-                                <input
-                                    type="text"
-                                    value={guarantorName}
-                                    onChange={e => setGuarantorName(e.target.value)}
-                                    placeholder={currentLang === 'en' ? 'Full name' : 'Volledige naam'}
-                                    style={{
-                                        width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #e5e7eb',
-                                        borderRadius: '0.375rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box'
-                                    }}
-                                    autoFocus
-                                />
-                            </div>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '0.813rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>
-                                    {currentLang === 'en' ? 'Phone Number' : 'Telefoonnummer'} *
-                                </label>
-                                <input
-                                    type="tel"
-                                    value={guarantorPhone}
-                                    onChange={e => {
-                                        let val = e.target.value.replace(/[^\d+]/g, '');
-                                        if (!val.startsWith('+')) val = '+' + val;
-                                        setGuarantorPhone(val);
-                                    }}
-                                    placeholder="+31612345678"
-                                    style={{
-                                        width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #e5e7eb',
-                                        borderRadius: '0.375rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box'
-                                    }}
-                                />
-                            </div>
-
-                            {/* Generate & show invite link */}
-                            {!guarantorInviteLink ? (
-                                <button
-                                    onClick={async () => {
-                                        if (!guarantorName.trim() || guarantorPhone.replace(/\D/g, '').length < 10) return;
-                                        await handleAddGuarantorForSelf();
-                                    }}
-                                    disabled={generatingLink || !guarantorName.trim() || guarantorPhone.replace(/\D/g, '').length < 10}
-                                    style={{
-                                        width: '100%', padding: '0.75rem', borderRadius: '0.375rem',
-                                        background: (!guarantorName.trim() || guarantorPhone.replace(/\D/g, '').length < 10) ? '#d1d5db' : '#497772',
-                                        color: 'white', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem'
-                                    }}
-                                >
-                                    {generatingLink
-                                        ? (currentLang === 'en' ? 'Generating Link...' : 'Link genereren...')
-                                        : (currentLang === 'en' ? 'Generate Invite Link' : 'Uitnodigingslink genereren')}
-                                </button>
-                            ) : (
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '0.813rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>
-                                        {currentLang === 'en' ? 'Invite Link' : 'Uitnodigingslink'}
-                                    </label>
-                                    <div style={{
-                                        background: '#f3f4f6', borderRadius: '0.375rem', padding: '0.625rem 0.75rem',
-                                        fontSize: '0.75rem', wordBreak: 'break-all', color: '#374151',
-                                        fontFamily: 'monospace', border: '1px solid #e5e7eb', marginBottom: '0.5rem'
-                                    }}>
-                                        {guarantorInviteLink}
-                                    </div>
-                                    <button
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(guarantorInviteLink);
-                                            setInviteLinkCopied(true);
-                                            setTimeout(() => setInviteLinkCopied(false), 2000);
-                                        }}
-                                        style={{
-                                            width: '100%', padding: '0.625rem', borderRadius: '0.375rem',
-                                            background: inviteLinkCopied ? '#10b981' : '#497772',
-                                            color: 'white', border: 'none', cursor: 'pointer',
-                                            fontWeight: 500, fontSize: '0.813rem'
-                                        }}
-                                    >
-                                        {inviteLinkCopied
-                                            ? (currentLang === 'en' ? '✓ Link Copied!' : '✓ Link Gekopieerd!')
-                                            : (currentLang === 'en' ? 'Copy Link' : 'Link Kopiëren')}
-                                    </button>
-                                </div>
-                            )}
-
-                            <button
-                                onClick={() => setShowGuarantorModal(false)}
-                                style={{
-                                    width: '100%', padding: '0.5rem', borderRadius: '0.375rem',
-                                    background: 'transparent', color: '#6b7280', border: '1px solid #e5e7eb',
-                                    cursor: 'pointer', fontSize: '0.813rem'
-                                }}
-                            >
-                                {currentLang === 'en' ? 'Close' : 'Sluiten'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {renderGuarantorModal()}
         </div>
     );
 };
