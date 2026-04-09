@@ -5,6 +5,7 @@ import { translations } from '../../data/translations';
 import GuarantorWorkStatusSelector from './GuarantorWorkStatusSelector';
 import InlineDocumentUpload from './InlineDocumentUpload';
 import { getRequiredDocuments } from '../../utils/documentRequirements';
+import { documentTypeLabels, workStatusLabels } from '../../config/documentRequirements';
 import styles from './GuarantorFormSection.module.css';
 
 const GuarantorCard = ({
@@ -163,16 +164,20 @@ const GuarantorCard = ({
                         ) : (
                             <>
                                 <p className={styles.statusContext}>
-                                    {currentLang === 'en' ? 'For Guarantor' : 'Voor Garantsteller'} ({workStatus})
+                                    {currentLang === 'en' ? 'For Guarantor' : 'Voor Garantsteller'} ({workStatusLabels[currentLang]?.[workStatus] || workStatus})
                                 </p>
                                 <div className={styles.documentsList}>
                                     {requiredDocuments.map((doc) => {
                                         const docData = getDoc(doc.type);
+                                        const labels = documentTypeLabels[currentLang] || documentTypeLabels.en || {};
+                                        const labelData = labels[doc.type] || {};
+                                        const title = labelData.name || doc.type;
+                                        const description = labelData.description || doc.description;
                                         return (
                                             <InlineDocumentUpload
                                                 key={doc.type}
-                                                documentType={doc.type}
-                                                description={doc.description}
+                                                documentType={title}
+                                                description={description}
                                                 verplicht={doc.verplicht}
                                                 status={isDocUploaded(doc.type) ? 'ontvangen' : 'ontbreekt'}
                                                 fileName={docData?.file?.name}

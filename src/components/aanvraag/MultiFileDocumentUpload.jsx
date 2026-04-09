@@ -54,8 +54,14 @@ const MultiFileDocumentUpload = ({
 
         if (validFiles.length > 0) {
             setUploading(true);
-            onUpload([...uploadedFiles, ...validFiles]);
-            setUploading(false);
+            try {
+                // onUpload may return a Promise (parent uploads to Supabase).
+                // Await it so the "uploading" state stays true until the
+                // upload actually completes — otherwise the user gets no feedback.
+                await onUpload([...uploadedFiles, ...validFiles]);
+            } finally {
+                setUploading(false);
+            }
         }
     };
 

@@ -175,7 +175,7 @@ const InviteForm = () => {
             setDocumenten(prev => {
                 const filtered = prev.filter(d => d.type !== type);
                 return [...filtered, {
-                    id: result.documentId,
+                    id: result.document?.id,
                     type,
                     name: file.name,
                     fileName: file.name,
@@ -185,14 +185,53 @@ const InviteForm = () => {
         }
     };
 
-    const handleMultiFileUpload = async (type, files) => {
+    const handleMultiFileUpload = async (type, items) => {
         if (!inviteContext?.persoonId) return;
 
-        for (const file of files) {
-            if (file instanceof File) {
-                await handleDocumentUpload(type, file);
-            }
+        // `items` contains both already-uploaded document objects and new File objects.
+        // Only upload the new Files; leave existing docs alone in state.
+        const existingDocs = items.filter(it => it && !(it instanceof File));
+        const newFiles = items.filter(it => it instanceof File);
+        if (newFiles.length === 0) {
+            // Pure removal/reorder — sync state to the passed-in list
+            setDocumenten(prev => {
+                const others = prev.filter(d => d.type !== type);
+                return [...others, ...existingDocs.map(d => ({ ...d, type }))];
+            });
+            return;
         }
+
+        // Upload new files in parallel; pass fileIndex so each gets a unique storage path.
+        const baseIndex = existingDocs.length;
+        const uploadPromises = newFiles.map((file, i) =>
+            uploadDocument(
+                inviteContext.persoonId,
+                inviteContext.dossierId,
+                type,
+                file,
+                phoneNumber,
+                null,
+                baseIndex + i
+            ).then(result => ({ result, file }))
+        );
+
+        const results = await Promise.all(uploadPromises);
+        const newDocs = results
+            .filter(({ result }) => result.ok)
+            .map(({ result, file }) => ({
+                id: result.document?.id,
+                type,
+                name: file.name,
+                fileName: file.name,
+                status: 'ontvangen'
+            }));
+
+        // Append new docs to state, preserving existing ones of the same type.
+        setDocumenten(prev => {
+            const others = prev.filter(d => d.type !== type);
+            const sameType = prev.filter(d => d.type === type);
+            return [...others, ...sameType, ...newDocs];
+        });
     };
 
     const handleSave = useCallback(async () => {

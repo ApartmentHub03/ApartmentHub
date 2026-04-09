@@ -784,8 +784,13 @@ const Aanvraag = () => {
             const mainTenantPhone = hoofdhuurder?.telefoon || phoneNumber;
 
             setSaveStatus('saving');
+            // Use indexed storage paths whenever this is a multi-file slot,
+            // i.e. either uploading >1 file at once OR adding to existing files.
+            // Otherwise the new upload would overwrite the previous one in storage
+            // (upsert: true on the same `{phone}/loonstroken.pdf` path).
+            const useIndexedNames = filesToUpload.length > 1 || existingDocs.length > 0;
             const uploadPromises = filesToUpload.map((file, fi) => {
-                const fileIndex = filesToUpload.length > 1 ? (existingDocs.length + fi) : null;
+                const fileIndex = useIndexedNames ? (existingDocs.length + fi) : null;
                 return uploadDocument(persoonSupabaseId, dossierId, type, file, docPhoneNumber, targetAccountId, fileIndex, persoon.rol, mainTenantPhone);
             });
 
