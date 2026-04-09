@@ -10,6 +10,7 @@ import { uploadDocument } from '../services/documentStorageService';
 import { getRequiredDocuments } from '../utils/documentRequirements';
 import { documentTypeLabels, workStatusLabels } from '../config/documentRequirements';
 import WorkStatusSelector from '../components/aanvraag/WorkStatusSelector';
+import GuarantorWorkStatusSelector from '../components/aanvraag/GuarantorWorkStatusSelector';
 import InlineDocumentUpload from '../components/aanvraag/InlineDocumentUpload';
 import MultiFileDocumentUpload from '../components/aanvraag/MultiFileDocumentUpload';
 import styles from './Login.module.css';
@@ -38,6 +39,9 @@ const InviteForm = () => {
     const [guarantorInviteLink, setGuarantorInviteLink] = useState(null);
     const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
     const [generatingLink, setGeneratingLink] = useState(false);
+    const [showGuarantorModal, setShowGuarantorModal] = useState(false);
+    const [guarantorName, setGuarantorName] = useState('');
+    const [guarantorPhone, setGuarantorPhone] = useState('+');
 
     // Load invite context and existing data
     useEffect(() => {
@@ -366,10 +370,15 @@ const InviteForm = () => {
                         </p>
 
                         {/* Co-tenants can add a guarantor for themselves */}
-                        {inviteContext?.role === 'Medehuurder' && !guarantorInviteLink && (
+                        {inviteContext?.role === 'Medehuurder' && (
                             <button
-                                onClick={handleAddGuarantorForSelf}
-                                disabled={generatingLink}
+                                onClick={() => {
+                                    setGuarantorName('');
+                                    setGuarantorPhone('+');
+                                    setGuarantorInviteLink(null);
+                                    setInviteLinkCopied(false);
+                                    setShowGuarantorModal(true);
+                                }}
                                 style={{
                                     marginTop: '1rem', padding: '0.625rem 1rem', borderRadius: '0.375rem',
                                     background: 'white', color: '#497772', border: '2px solid #497772',
@@ -377,45 +386,8 @@ const InviteForm = () => {
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
                                 }}
                             >
-                                🛡️ {generatingLink
-                                    ? (currentLang === 'en' ? 'Generating...' : 'Genereren...')
-                                    : (currentLang === 'en' ? 'Add Guarantor for Yourself' : 'Garantsteller toevoegen voor jezelf')}
+                                🛡️ {currentLang === 'en' ? 'Add Guarantor' : 'Garantsteller toevoegen'}
                             </button>
-                        )}
-
-                        {/* Show generated guarantor invite link */}
-                        {guarantorInviteLink && (
-                            <div style={{ marginTop: '1rem', textAlign: 'left' }}>
-                                <p style={{ fontSize: '0.813rem', color: '#6b7280', marginBottom: '0.5rem' }}>
-                                    {currentLang === 'en'
-                                        ? 'Send this link to your guarantor so they can fill in their details and upload documents.'
-                                        : 'Stuur deze link naar je garantsteller zodat zij hun gegevens kunnen invullen en documenten kunnen uploaden.'}
-                                </p>
-                                <div style={{
-                                    background: '#f3f4f6', borderRadius: '0.5rem', padding: '0.75rem',
-                                    fontSize: '0.75rem', wordBreak: 'break-all', color: '#374151',
-                                    fontFamily: 'monospace', marginBottom: '0.5rem'
-                                }}>
-                                    {guarantorInviteLink}
-                                </div>
-                                <button
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(guarantorInviteLink);
-                                        setInviteLinkCopied(true);
-                                        setTimeout(() => setInviteLinkCopied(false), 2000);
-                                    }}
-                                    style={{
-                                        width: '100%', padding: '0.5rem', borderRadius: '0.375rem',
-                                        background: inviteLinkCopied ? '#10b981' : '#497772',
-                                        color: 'white', border: 'none', cursor: 'pointer',
-                                        fontWeight: 500, fontSize: '0.813rem'
-                                    }}
-                                >
-                                    {inviteLinkCopied
-                                        ? (currentLang === 'en' ? '✓ Copied!' : '✓ Gekopieerd!')
-                                        : (currentLang === 'en' ? 'Copy Link' : 'Link Kopiëren')}
-                                </button>
-                            </div>
                         )}
 
                         <button
@@ -535,15 +507,22 @@ const InviteForm = () => {
                         💼 {currentLang === 'en' ? 'Work Status & Documents' : 'Werkstatus & Documenten'}
                     </h2>
 
-                    <WorkStatusSelector
-                        selected={werkstatus}
-                        onChange={setWerkstatus}
-                        labels={{
-                            student: currentLang === 'en' ? 'Student' : 'Student',
-                            employee: currentLang === 'en' ? 'Employee' : 'Werknemer',
-                            entrepreneur: currentLang === 'en' ? 'Entrepreneur' : 'Ondernemer'
-                        }}
-                    />
+                    {inviteContext?.role === 'Garantsteller' ? (
+                        <GuarantorWorkStatusSelector
+                            selected={werkstatus}
+                            onChange={setWerkstatus}
+                        />
+                    ) : (
+                        <WorkStatusSelector
+                            selected={werkstatus}
+                            onChange={setWerkstatus}
+                            labels={{
+                                student: currentLang === 'en' ? 'Student' : 'Student',
+                                employee: currentLang === 'en' ? 'Employee' : 'Werknemer',
+                                entrepreneur: currentLang === 'en' ? 'Entrepreneur' : 'Ondernemer'
+                            }}
+                        />
+                    )}
 
                     {werkstatus && (
                         <div style={{ marginTop: '1rem' }}>
@@ -629,6 +608,130 @@ const InviteForm = () => {
                     {currentLang === 'en' ? 'Log Out' : 'Uitloggen'}
                 </button>
             </div>
+
+            {/* Guarantor Popup Modal */}
+            {showGuarantorModal && (
+                <div style={{
+                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                }} onClick={() => setShowGuarantorModal(false)}>
+                    <div style={{
+                        background: 'white', borderRadius: '0.75rem', padding: '2rem',
+                        maxWidth: '28rem', width: '90%'
+                    }} onClick={e => e.stopPropagation()}>
+                        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🛡️</div>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                                {currentLang === 'en' ? 'Add Guarantor' : 'Garantsteller toevoegen'}
+                            </h3>
+                            <p style={{ fontSize: '0.813rem', color: '#6b7280' }}>
+                                {currentLang === 'en'
+                                    ? 'Enter their details and share the invite link'
+                                    : 'Vul hun gegevens in en deel de uitnodigingslink'}
+                            </p>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.813rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>
+                                    {currentLang === 'en' ? 'Name' : 'Naam'} *
+                                </label>
+                                <input
+                                    type="text"
+                                    value={guarantorName}
+                                    onChange={e => setGuarantorName(e.target.value)}
+                                    placeholder={currentLang === 'en' ? 'Full name' : 'Volledige naam'}
+                                    style={{
+                                        width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #e5e7eb',
+                                        borderRadius: '0.375rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box'
+                                    }}
+                                    autoFocus
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.813rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>
+                                    {currentLang === 'en' ? 'Phone Number' : 'Telefoonnummer'} *
+                                </label>
+                                <input
+                                    type="tel"
+                                    value={guarantorPhone}
+                                    onChange={e => {
+                                        let val = e.target.value.replace(/[^\d+]/g, '');
+                                        if (!val.startsWith('+')) val = '+' + val;
+                                        setGuarantorPhone(val);
+                                    }}
+                                    placeholder="+31612345678"
+                                    style={{
+                                        width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #e5e7eb',
+                                        borderRadius: '0.375rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box'
+                                    }}
+                                />
+                            </div>
+
+                            {/* Generate & show invite link */}
+                            {!guarantorInviteLink ? (
+                                <button
+                                    onClick={async () => {
+                                        if (!guarantorName.trim() || guarantorPhone.replace(/\D/g, '').length < 10) return;
+                                        await handleAddGuarantorForSelf();
+                                    }}
+                                    disabled={generatingLink || !guarantorName.trim() || guarantorPhone.replace(/\D/g, '').length < 10}
+                                    style={{
+                                        width: '100%', padding: '0.75rem', borderRadius: '0.375rem',
+                                        background: (!guarantorName.trim() || guarantorPhone.replace(/\D/g, '').length < 10) ? '#d1d5db' : '#497772',
+                                        color: 'white', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem'
+                                    }}
+                                >
+                                    {generatingLink
+                                        ? (currentLang === 'en' ? 'Generating Link...' : 'Link genereren...')
+                                        : (currentLang === 'en' ? 'Generate Invite Link' : 'Uitnodigingslink genereren')}
+                                </button>
+                            ) : (
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.813rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>
+                                        {currentLang === 'en' ? 'Invite Link' : 'Uitnodigingslink'}
+                                    </label>
+                                    <div style={{
+                                        background: '#f3f4f6', borderRadius: '0.375rem', padding: '0.625rem 0.75rem',
+                                        fontSize: '0.75rem', wordBreak: 'break-all', color: '#374151',
+                                        fontFamily: 'monospace', border: '1px solid #e5e7eb', marginBottom: '0.5rem'
+                                    }}>
+                                        {guarantorInviteLink}
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(guarantorInviteLink);
+                                            setInviteLinkCopied(true);
+                                            setTimeout(() => setInviteLinkCopied(false), 2000);
+                                        }}
+                                        style={{
+                                            width: '100%', padding: '0.625rem', borderRadius: '0.375rem',
+                                            background: inviteLinkCopied ? '#10b981' : '#497772',
+                                            color: 'white', border: 'none', cursor: 'pointer',
+                                            fontWeight: 500, fontSize: '0.813rem'
+                                        }}
+                                    >
+                                        {inviteLinkCopied
+                                            ? (currentLang === 'en' ? '✓ Link Copied!' : '✓ Link Gekopieerd!')
+                                            : (currentLang === 'en' ? 'Copy Link' : 'Link Kopiëren')}
+                                    </button>
+                                </div>
+                            )}
+
+                            <button
+                                onClick={() => setShowGuarantorModal(false)}
+                                style={{
+                                    width: '100%', padding: '0.5rem', borderRadius: '0.375rem',
+                                    background: 'transparent', color: '#6b7280', border: '1px solid #e5e7eb',
+                                    cursor: 'pointer', fontSize: '0.813rem'
+                                }}
+                            >
+                                {currentLang === 'en' ? 'Close' : 'Sluiten'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

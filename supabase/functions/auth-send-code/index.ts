@@ -94,64 +94,8 @@ serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Only check for existing user during LOGIN (not signup or invite)
-    if (mode !== 'signup' && mode !== 'invite') {
-      const { data: existingUser, error: lookupError } = await supabase
-        .from('dossiers')
-        .select('id')
-        .eq('phone_number', formattedPhone)
-        .single();
-
-      if (lookupError || !existingUser) {
-        // Also check if this phone belongs to a co-tenant or guarantor in personen table
-        const { data: linkedPerson } = await supabase
-          .from('personen')
-          .select('id, dossier_id, type, rol')
-          .eq('telefoon', formattedPhone)
-          .in('type', ['co_tenant', 'guarantor'])
-          .limit(1)
-          .maybeSingle();
-
-        if (!linkedPerson) {
-          console.log(`User not found for phone: ${formattedPhone}`);
-          return new Response(
-            JSON.stringify({
-              ok: false,
-              message: "No account found with this phone number. Please sign up first.",
-              message_nl: "Geen account gevonden met dit telefoonnummer. Registreer je eerst."
-            }),
-            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-
-        console.log(`User found as linked ${linkedPerson.type} in dossier: ${linkedPerson.dossier_id}`);
-      } else {
-        console.log(`User found with dossier ID: ${existingUser.id}`);
-      }
-    } else if (mode === 'signup') {
-      // During signup, check if user ALREADY exists (prevent duplicate accounts)
-      const { data: existingUser } = await supabase
-        .from('dossiers')
-        .select('id')
-        .eq('phone_number', formattedPhone)
-        .single();
-
-      if (existingUser) {
-        console.log(`User already exists with phone: ${formattedPhone}`);
-        return new Response(
-          JSON.stringify({
-            ok: false,
-            message: "An account with this phone number already exists. Please login instead.",
-            message_nl: "Er bestaat al een account met dit telefoonnummer. Log in."
-          }),
-          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      console.log(`Signup mode: no existing user found, proceeding with OTP`);
-    } else {
-      // Invite mode — no user checks, just send OTP
-      console.log(`Invite mode: skipping user checks, proceeding with OTP for ${formattedPhone}`);
-    }
+    // No account check needed — account is auto-created during verification if it doesn't exist
+    console.log(`Proceeding with OTP for ${formattedPhone}, mode: ${mode || 'login'}`);
 
     // Delete old codes for this phone number
     await supabase

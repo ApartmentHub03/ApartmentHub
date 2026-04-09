@@ -43,10 +43,8 @@ const InlineDocumentUpload = ({
         }
 
         setUploading(true);
-        setTimeout(() => {
-            onUpload(file);
-            setUploading(false);
-        }, 800);
+        onUpload(file);
+        setUploading(false);
     };
 
     if (status === 'ontvangen') {

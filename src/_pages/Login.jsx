@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import { Phone, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
@@ -61,24 +60,12 @@ const Login = () => {
                 body: { phone_number: phoneNumber }
             });
 
-            // Supabase functions.invoke returns data even on non-2xx if function returns JSON
-            // Check if we got an error response with user-facing message
             if (data && !data.ok) {
-                // Handle "user not found" error — redirect to signup
-                if (data.message?.includes('No account') || data.message_nl?.includes('Geen account')) {
-                    router.replace(`/signup?phone=${encodeURIComponent(phoneNumber)}`);
-                    return;
-                }
                 setError(currentLang === 'en' ? (data.message || 'An error occurred') : (data.message_nl || 'Er is een fout opgetreden'));
                 return;
             }
 
             if (sendError) {
-                // Check if it's a "user not found" error (404) — redirect to signup
-                if (sendError.message?.includes('non-2xx') || sendError.message?.includes('404')) {
-                    router.replace(`/signup?phone=${encodeURIComponent(phoneNumber)}`);
-                    return;
-                }
                 throw new Error(sendError.message);
             }
 
@@ -86,15 +73,9 @@ const Login = () => {
             setStep('code');
         } catch (err) {
             console.error('Error sending code:', err);
-            // Check if error message indicates account not found — redirect to signup
-            if (err.message?.includes('non-2xx') || err.message?.includes('404')) {
-                router.replace(`/signup?phone=${encodeURIComponent(phoneNumber)}`);
-                return;
-            } else {
-                setError(currentLang === 'en'
-                    ? 'Failed to send code. Please try again.'
-                    : 'Kon code niet versturen. Probeer het opnieuw.');
-            }
+            setError(currentLang === 'en'
+                ? 'Failed to send code. Please try again.'
+                : 'Kon code niet versturen. Probeer het opnieuw.');
         } finally {
             setIsLoading(false);
         }
@@ -226,12 +207,11 @@ const Login = () => {
                                     : (currentLang === 'en' ? 'Send WhatsApp code' : 'Stuur WhatsApp code')}
                             </button>
 
-                            <div className={styles.signupLink}>
-                                {currentLang === 'en' ? "Don't have an account? " : 'Nog geen account? '}
-                                <Link href="/signup">
-                                    {currentLang === 'en' ? 'Sign up' : 'Registreren'}
-                                </Link>
-                            </div>
+                            <p className={styles.inputHint} style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+                                {currentLang === 'en'
+                                    ? 'New here? Just enter your number — we\'ll set everything up for you.'
+                                    : 'Nieuw hier? Voer je nummer in — wij regelen de rest.'}
+                            </p>
                         </form>
                     ) : (
                         <div className={styles.form}>

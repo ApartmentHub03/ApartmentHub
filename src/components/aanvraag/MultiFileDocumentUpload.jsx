@@ -54,10 +54,8 @@ const MultiFileDocumentUpload = ({
 
         if (validFiles.length > 0) {
             setUploading(true);
-            setTimeout(() => {
-                onUpload([...uploadedFiles, ...validFiles]);
-                setUploading(false);
-            }, 800);
+            onUpload([...uploadedFiles, ...validFiles]);
+            setUploading(false);
         }
     };
 

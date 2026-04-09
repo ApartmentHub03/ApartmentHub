@@ -25,73 +25,18 @@ const AppartementenSelectie = () => {
             setLoading(true);
             setFetchError(null);
             try {
-                if (isMainTenant) {
-                    // Main tenant: fetch all active apartments
-                    const { data, error } = await supabase
-                        .from('apartments')
-                        .select('id, "Full Address", street, area, zip_code, rental_price, bedrooms, square_meters, status')
-                        .in('status', ['Active', 'CreateLink'])
-                        .order('Full Address', { ascending: true });
+                // Both main tenant and co-tenant see all active apartments
+                const { data, error } = await supabase
+                    .from('apartments')
+                    .select('id, "Full Address", street, area, zip_code, rental_price, bedrooms, square_meters, status')
+                    .in('status', ['Active', 'CreateLink'])
+                    .order('Full Address', { ascending: true });
 
-                    if (error) {
-                        console.error('[AppartementenSelectie] Error fetching apartments:', error);
-                        setFetchError(error.message);
-                    } else {
-                        setApartments(data || []);
-                    }
+                if (error) {
+                    console.error('[AppartementenSelectie] Error fetching apartments:', error);
+                    setFetchError(error.message);
                 } else {
-                    // Co-tenant: fetch main tenant's selected apartments
-                    if (!accountId) {
-                        setFetchError('No account linked');
-                        setLoading(false);
-                        return;
-                    }
-
-                    // Get the linked main tenant account
-                    const { data: accData, error: accError } = await supabase
-                        .from('accounts')
-                        .select('linked_account_id')
-                        .eq('id', accountId)
-                        .single();
-
-                    if (accError || !accData?.linked_account_id) {
-                        setFetchError('Could not find main tenant');
-                        setLoading(false);
-                        return;
-                    }
-
-                    // Get the main tenant's apartment_selected
-                    const { data: mainAccData, error: mainAccError } = await supabase
-                        .from('accounts')
-                        .select('apartment_selected')
-                        .eq('id', accData.linked_account_id)
-                        .single();
-
-                    if (mainAccError) {
-                        setFetchError('Could not load main tenant apartments');
-                        setLoading(false);
-                        return;
-                    }
-
-                    const selectedByMain = mainAccData?.apartment_selected || [];
-                    if (selectedByMain.length === 0) {
-                        setApartments([]);
-                        setLoading(false);
-                        return;
-                    }
-
-                    // Fetch full apartment data for those IDs
-                    const aptIds = selectedByMain.map(a => a.apartment_id);
-                    const { data: aptData, error: aptError } = await supabase
-                        .from('apartments')
-                        .select('id, "Full Address", street, area, zip_code, rental_price, bedrooms, square_meters, status')
-                        .in('id', aptIds);
-
-                    if (aptError) {
-                        setFetchError(aptError.message);
-                    } else {
-                        setApartments(aptData || []);
-                    }
+                    setApartments(data || []);
                 }
             } catch (err) {
                 console.error('[AppartementenSelectie] Unexpected error:', err);
@@ -108,7 +53,7 @@ const AppartementenSelectie = () => {
         setSelectedApartments(prev =>
             prev.includes(aptId)
                 ? prev.filter(id => id !== aptId)
-                : [...prev, aptId]
+                : [aptId]
         );
     };
 
@@ -233,12 +178,6 @@ const AppartementenSelectie = () => {
 
                     <div className={styles.content}>
                         <div className={styles.form}>
-                            {!isMainTenant && (
-                                <div className={styles.coTenantBanner}>
-                                    {t.coTenantSubtitle}
-                                </div>
-                            )}
-
                             <div className={styles.selectWrapper}>
                                 <div className={styles.selectLabelRow}>
                                     <label className={styles.selectLabel}>{t.selectLabel}</label>

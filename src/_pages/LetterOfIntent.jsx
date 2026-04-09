@@ -9,7 +9,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { sendLetterOfIntentEvent } from '../services/webhookService';
 import Button from '../components/ui/Button';
 import Navbar from '../components/layout/Navbar';
-import Footer from '../components/layout/Footer';
 import styles from './LetterOfIntent.module.css';
 
 const LetterOfIntent = () => {
@@ -321,7 +320,6 @@ const LetterOfIntent = () => {
                         </div>
                     </div>
                 </div>
-                <Footer />
             </div>
         );
     }
@@ -566,7 +564,6 @@ const LetterOfIntent = () => {
                     </div>
                 </div>
             </div>
-            <Footer />
         </div>
     );
 };

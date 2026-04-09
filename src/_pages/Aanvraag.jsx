@@ -57,6 +57,7 @@ const Aanvraag = () => {
 
     const [loading, setLoading] = useState(true);
     const [selectedPanden, setSelectedPanden] = useState([]); // array of pand objects
+    const [allSidebarPanden, setAllSidebarPanden] = useState([]); // all apartments across main + co-tenants for sidebar
     const [data, setData] = useState(null);
     const [bidAmounts, setBidAmounts] = useState({}); // { [apartmentId]: number }
     const [startDate, setStartDate] = useState("");
@@ -341,6 +342,46 @@ const Aanvraag = () => {
                 const initialBids = {};
                 panden.forEach(p => { initialBids[p.apartmentId] = p.voorwaarden.huurprijs; });
                 setBidAmounts(prev => ({ ...initialBids, ...prev }));
+            }
+
+            // Load all apartments across main tenant + co-tenants for the sidebar
+            try {
+                const sidebarApts = [...panden];
+                if (isMainTenant && accountId) {
+                    // Main tenant: find co-tenant accounts linked to this account and gather their apartments
+                    const { data: linkedAccounts } = await sb
+                        .from('accounts')
+                        .select('id, tenant_name, apartment_selected')
+                        .eq('linked_account_id', accountId)
+                        .eq('account_role', 'co-tenant');
+
+                    if (linkedAccounts?.length > 0) {
+                        for (const acc of linkedAccounts) {
+                            const coApts = acc.apartment_selected || [];
+                            for (const a of coApts) {
+                                if (a.apartment_id && !sidebarApts.some(p => p.apartmentId === a.apartment_id)) {
+                                    const { data: aptRow } = await sb
+                                        .from('apartments')
+                                        .select('*')
+                                        .eq('id', a.apartment_id)
+                                        .single();
+                                    if (aptRow) sidebarApts.push(buildPandFromApartment(aptRow));
+                                }
+                            }
+                        }
+                    }
+                } else if (!isMainTenant) {
+                    // Co-tenant: also include main tenant's apartments
+                    for (const apt of mainTenantApartments) {
+                        if (!sidebarApts.some(p => p.apartmentId === apt.apartmentId)) {
+                            sidebarApts.push(apt);
+                        }
+                    }
+                }
+                setAllSidebarPanden(sidebarApts);
+            } catch (e) {
+                console.warn('[Aanvraag] Could not load sidebar apartments', e);
+                setAllSidebarPanden(panden);
             }
 
             setLoading(false);
@@ -742,13 +783,14 @@ const Aanvraag = () => {
             const hoofdhuurder = data.personen.find(p => p.rol === 'Hoofdhuurder');
             const mainTenantPhone = hoofdhuurder?.telefoon || phoneNumber;
 
-            for (let fi = 0; fi < filesToUpload.length; fi++) {
-                const file = filesToUpload[fi];
-                setSaveStatus('saving');
-                // For multi-file uploads pass file index; for single file pass null
+            setSaveStatus('saving');
+            const uploadPromises = filesToUpload.map((file, fi) => {
                 const fileIndex = filesToUpload.length > 1 ? (existingDocs.length + fi) : null;
-                const result = await uploadDocument(persoonSupabaseId, dossierId, type, file, docPhoneNumber, targetAccountId, fileIndex, persoon.rol, mainTenantPhone);
+                return uploadDocument(persoonSupabaseId, dossierId, type, file, docPhoneNumber, targetAccountId, fileIndex, persoon.rol, mainTenantPhone);
+            });
 
+            const results = await Promise.all(uploadPromises);
+            for (const result of results) {
                 if (result.ok) {
                     uploadedDocs.push(result.document);
                 } else {
@@ -1182,10 +1224,10 @@ const Aanvraag = () => {
             if (currentIds.length <= 1) return;
             newPanden = (data?.panden || []).filter(p => p.apartmentId !== apartmentId);
         } else {
-            // Select — add from mainTenantApartments
+            // Select only 1 apartment at a time
             const toAdd = mainTenantApartments.find(p => p.apartmentId === apartmentId);
             if (!toAdd) return;
-            newPanden = [...(data?.panden || []), toAdd];
+            newPanden = [toAdd];
         }
 
         setSelectedPanden(newPanden);
@@ -1261,12 +1303,14 @@ const Aanvraag = () => {
         setSaveStatus('saved');
         setIsSubmitting(false);
 
-        // Mark that the user is coming from the submit flow so /appartementen
-        // redirects to /letter-of-intent after apartment selection
-        sessionStorage.setItem('fromSubmitFlow', 'true');
-
-        // Redirect to /appartementen so the main tenant can select apartments to apply for
-        router.push('/appartementen');
+        if (!isMainTenant) {
+            // Co-tenant: already has apartment selected, go directly to letter of intent
+            router.push(currentLang === 'en' ? '/en/letter-of-intent' : '/letter-of-intent');
+        } else {
+            // Main tenant: go to apartment selection first, then letter of intent
+            sessionStorage.setItem('fromSubmitFlow', 'true');
+            router.push('/appartementen');
+        }
     };
 
     // Old handleSubmit removed — handleSubmitClick now saves + redirects to /appartementen
@@ -1343,7 +1387,7 @@ const Aanvraag = () => {
                     <RentalConditionsSidebar
                         conditions={data.pand?.voorwaarden}
                         address={data.pand?.adres}
-                        panden={data.panden}
+                        panden={allSidebarPanden.length > 0 ? allSidebarPanden : data.panden}
                     />
 
                     <div className={styles.contentColumn}>
@@ -1360,49 +1404,49 @@ const Aanvraag = () => {
                             </div>
                         )}
 
-                        {/* Co-tenant apartment picker */}
-                        {!isMainTenant && mainTenantApartments.length > 0 && (
+                        {/* Co-tenant: choose apartment (same flow as main tenant) */}
+                        {!isMainTenant && (
                             <div className={styles.stepContainer}>
                                 <div className={styles.stepHeader}>
                                     <div className={styles.stepNumber}>
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                                     </div>
                                     <h2 className={styles.stepTitle}>
-                                        {currentLang === 'en' ? 'Choose Apartments' : 'Kies Appartementen'}
+                                        {currentLang === 'en' ? 'Choose Apartment' : 'Kies Appartement'}
                                     </h2>
                                 </div>
                                 <p style={{ fontSize: '0.8125rem', color: '#6b7280', margin: '0 0 0.75rem', paddingLeft: '0.25rem' }}>
                                     {currentLang === 'en'
-                                        ? 'Select the apartments you want to apply for (from the main tenant\'s selection)'
-                                        : 'Selecteer de appartementen waarvoor u wilt solliciteren (uit de selectie van de hoofdhuurder)'}
+                                        ? 'Select the apartment you want to apply for'
+                                        : 'Selecteer het appartement waarvoor u wilt solliciteren'}
                                 </p>
-                                <div className={styles.coTenantAptGrid}>
-                                    {mainTenantApartments.map(apt => {
-                                        const isSelected = (data?.panden || []).some(p => p.apartmentId === apt.apartmentId);
-                                        return (
-                                            <div
-                                                key={apt.apartmentId}
-                                                className={`${styles.coTenantAptCard} ${isSelected ? styles.coTenantAptCardSelected : ''}`}
-                                                onClick={() => handleCoTenantApartmentToggle(apt.apartmentId)}
-                                            >
-                                                <div className={styles.coTenantAptCheckbox}>
-                                                    {isSelected && (
-                                                        <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
-                                                            <path d="M2 7L5.5 10.5L12 3.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                                        </svg>
-                                                    )}
-                                                </div>
-                                                <div className={styles.coTenantAptInfo}>
-                                                    <span className={styles.coTenantAptName}>{apt.adres}</span>
-                                                    <span className={styles.coTenantAptPrice}>
-                                                        {'\u20AC'}{apt.voorwaarden?.huurprijs || 0}{' '}
-                                                        {currentLang === 'en' ? '/mo' : '/mnd'}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                                {data?.panden?.length > 0 && (
+                                    <div style={{
+                                        background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '0.5rem',
+                                        padding: '0.75rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem'
+                                    }}>
+                                        <CheckCircle size={16} style={{ color: '#16a34a' }} />
+                                        <span style={{ fontSize: '0.875rem', color: '#15803d' }}>
+                                            {data.panden[0].adres} — {'\u20AC'}{data.panden[0].voorwaarden?.huurprijs || 0}{currentLang === 'en' ? '/mo' : '/mnd'}
+                                        </span>
+                                    </div>
+                                )}
+                                <button
+                                    onClick={() => router.push('/appartementen')}
+                                    style={{
+                                        width: '100%', padding: '0.75rem', borderRadius: '0.5rem',
+                                        background: data?.panden?.length > 0 ? 'white' : '#497772',
+                                        color: data?.panden?.length > 0 ? '#497772' : 'white',
+                                        border: data?.panden?.length > 0 ? '2px solid #497772' : 'none',
+                                        cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                                    }}
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                                    {data?.panden?.length > 0
+                                        ? (currentLang === 'en' ? 'Change Apartment' : 'Appartement Wijzigen')
+                                        : (currentLang === 'en' ? 'Select Apartment' : 'Appartement Selecteren')}
+                                </button>
                             </div>
                         )}
 
@@ -1417,8 +1461,7 @@ const Aanvraag = () => {
                                 startDate={startDate}
                                 motivation={motivation}
                                 monthsAdvance={monthsAdvance}
-                                onBidAmountChange={isMainTenant ? (val) => {
-                                    // Apply same bid to all selected apartments
+                                onBidAmountChange={(val) => {
                                     setBidAmounts(prev => {
                                         const updated = { ...prev };
                                         const targets = (data.panden && data.panden.length > 0) ? data.panden : [data.pand].filter(Boolean);
@@ -1427,16 +1470,14 @@ const Aanvraag = () => {
                                                 updated[p.apartmentId || '__default'] = val;
                                             });
                                         } else {
-                                            // No apartments at all — store under default key
                                             updated['__default'] = val;
                                         }
                                         return updated;
                                     });
-                                } : undefined}
-                                onStartDateChange={isMainTenant ? setStartDate : undefined}
-                                onMotivationChange={isMainTenant ? setMotivation : undefined}
-                                onMonthsAdvanceChange={isMainTenant ? setMonthsAdvance : undefined}
-                                readOnly={!isMainTenant}
+                                }}
+                                onStartDateChange={setStartDate}
+                                onMotivationChange={setMotivation}
+                                onMonthsAdvanceChange={setMonthsAdvance}
                             />
                         </div>
 
@@ -1554,23 +1595,26 @@ const Aanvraag = () => {
                             </div>
                         </div>
 
-                        {isMainTenant && (
-                            <button
-                                className={styles.submitButton}
-                                onClick={handleSubmitClick}
-                                disabled={!canSubmit || isSubmitting}
-                            >
-                                <CheckCircle size={24} />
-                                {isSubmitting
-                                    ? (currentLang === 'en' ? 'Submitting...' : 'Indienen...')
-                                    : (currentLang === 'en' ? 'Submit Application' : 'Aanvraag Versturen')}
-                            </button>
-                        )}
+                        <button
+                            className={styles.submitButton}
+                            onClick={handleSubmitClick}
+                            disabled={!canSubmit || isSubmitting}
+                        >
+                            <CheckCircle size={24} />
+                            {isSubmitting
+                                ? (currentLang === 'en' ? 'Submitting...' : 'Indienen...')
+                                : (currentLang === 'en' ? 'Submit Application' : 'Aanvraag Versturen')}
+                        </button>
 
                         {!isMainTenant && (
                             <button
                                 className={styles.submitButton}
-                                style={{ background: notifyingSent ? '#10b981' : undefined }}
+                                style={{
+                                    background: notifyingSent ? '#10b981' : 'white',
+                                    color: notifyingSent ? 'white' : '#497772',
+                                    border: '2px solid #497772',
+                                    marginTop: '0.5rem'
+                                }}
                                 onClick={async () => {
                                     if (notifyingSent) return;
                                     try {
