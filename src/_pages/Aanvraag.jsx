@@ -219,37 +219,58 @@ const Aanvraag = () => {
                             mainPandenLocal = mainPanden;
                             setMainTenantApartments(mainPanden);
 
-                            // If co-tenant/guarantor has no apartments selected yet,
-                            // fall back to whatever the main tenant has chosen.
+                            // Pre-fill the co-tenant/guarantor view with the main tenant's
+                            // apartment selection unless they have explicitly chosen one of
+                            // their own. The co-tenant can still change the apartment via
+                            // /appartementen, which writes to their own account.
                             const hadOwnSelection = panden.length > 0;
                             if (!hadOwnSelection) {
                                 panden = mainPanden;
                             }
 
-                            // Load the main tenant's bid amounts so the fallback view also
-                            // shows the real bid the main tenant placed.
+                            // Build pre-fill bids: prefer the main tenant's per-apartment
+                            // bid, fall back to the dossier-level bid, then to the rental
+                            // price so the BidSection always shows a sensible value.
                             const mainBids = {};
                             mainApts.forEach(a => {
                                 if (a.apartment_id && a.bid_amount) {
                                     mainBids[a.apartment_id] = a.bid_amount;
                                 }
                             });
-                            // Also use dossier-level bid as fallback
-                            if (result.ok && result.data?.bidAmount) {
-                                mainPanden.forEach(p => {
-                                    if (!mainBids[p.apartmentId]) {
+                            mainPanden.forEach(p => {
+                                if (!mainBids[p.apartmentId]) {
+                                    if (result.ok && result.data?.bidAmount) {
                                         mainBids[p.apartmentId] = result.data.bidAmount;
+                                    } else if (p.voorwaarden?.huurprijs) {
+                                        mainBids[p.apartmentId] = p.voorwaarden.huurprijs;
                                     }
-                                });
-                            }
+                                }
+                            });
+
                             if (Object.keys(mainBids).length > 0) {
                                 setBidAmounts(prev => {
-                                    // Co-tenants/guarantors with their own bids keep them; otherwise
-                                    // start from the main tenant's bids.
+                                    if (!hadOwnSelection) {
+                                        // No own selection: always start fresh from the
+                                        // main tenant's pre-fill so updates from the main
+                                        // tenant flow through on every load.
+                                        return { ...mainBids };
+                                    }
+                                    // Has own selection: keep co-tenant's per-apartment
+                                    // bids, merge in main's only for keys they don't have.
                                     const merged = { ...mainBids };
                                     Object.keys(prev).forEach(k => { if (prev[k]) merged[k] = prev[k]; });
                                     return merged;
                                 });
+                            }
+
+                            // Pre-fill startDate / motivation / monthsAdvance from the main
+                            // tenant's first apartment_selected entry too — these are
+                            // sub-fields of the bid that the co-tenant should see.
+                            if (!hadOwnSelection) {
+                                const firstMainApt = mainApts[0];
+                                if (firstMainApt?.start_date) setStartDate(firstMainApt.start_date);
+                                if (firstMainApt?.motivation) setMotivation(firstMainApt.motivation);
+                                if (firstMainApt?.months_advance != null) setMonthsAdvance(firstMainApt.months_advance);
                             }
                         }
                     }
@@ -423,9 +444,13 @@ const Aanvraag = () => {
         const result = await saveAanvraagData(dossierId, formData);
 
         // Also save per-apartment bids to accounts.apartment_selected.
-        // Guarantors should never persist their own apartment/bid — they only
-        // view what the main tenant + co-tenants chose.
-        if (result.ok && accountId && data.panden?.length > 0 && userRole !== 'guarantor') {
+        // Only the main tenant persists this — co-tenants and guarantors view
+        // the main tenant's pre-filled apartment/bid until they explicitly
+        // change the apartment via the /appartementen page (which writes to
+        // their own account directly). Otherwise the autoSave would freeze
+        // stale main-tenant data into the co-tenant's account and the
+        // pre-fill would never refresh.
+        if (result.ok && accountId && data.panden?.length > 0 && isMainTenant) {
             try {
                 const { supabase: sb } = await import('../integrations/supabase/client');
                 const updatedSelected = data.panden.map(p => ({

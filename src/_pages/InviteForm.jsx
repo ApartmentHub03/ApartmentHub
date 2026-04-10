@@ -42,6 +42,8 @@ const InviteForm = () => {
     const [showGuarantorModal, setShowGuarantorModal] = useState(false);
     const [guarantorName, setGuarantorName] = useState('');
     const [guarantorPhone, setGuarantorPhone] = useState('+');
+    const [guarantorSending, setGuarantorSending] = useState(false);
+    const [guarantorSent, setGuarantorSent] = useState(false);
 
     // Load invite context and existing data
     useEffect(() => {
@@ -332,9 +334,10 @@ const InviteForm = () => {
         router.replace('/');
     };
 
-    const handleAddGuarantorForSelf = async () => {
-        if (!inviteContext?.persoonId || !inviteContext?.dossierId) return;
-        setGeneratingLink(true);
+    // Generate the guarantor invite link (matches Aanvraag.generateInviteLink shape).
+    // Returns the link or null on failure. Also stores it in state for the modal.
+    const generateGuarantorInviteLink = async () => {
+        if (!inviteContext?.persoonId || !inviteContext?.dossierId) return null;
         try {
             const token = localStorage.getItem('invite_token') || localStorage.getItem('auth_token');
             const { data: inviteResult, error: inviteError } = await supabase.functions.invoke('generate-invite', {
@@ -349,29 +352,71 @@ const InviteForm = () => {
 
             if (inviteError || !inviteResult?.ok) {
                 console.error('[InviteForm] Failed to generate guarantor invite:', inviteError || inviteResult);
-                setError(currentLang === 'en' ? 'Failed to generate invite link' : 'Uitnodigingslink genereren mislukt');
-                return;
+                return null;
             }
 
             const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-            setGuarantorInviteLink(`${baseUrl}/invite?token=${inviteResult.invite_token}`);
+            const link = `${baseUrl}/invite?token=${inviteResult.invite_token}`;
+            setGuarantorInviteLink(link);
             setInviteLinkCopied(false);
+            return link;
         } catch (err) {
             console.error('[InviteForm] Error generating guarantor invite:', err);
-            setError(currentLang === 'en' ? 'Failed to generate invite link' : 'Uitnodigingslink genereren mislukt');
-        } finally {
-            setGeneratingLink(false);
+            return null;
         }
     };
 
+    // Send WhatsApp invitation to the guarantor — mirrors Aanvraag.handleShareModalSend.
+    const handleSendGuarantorInvitation = async () => {
+        if (!guarantorName.trim() || !guarantorPhone.trim() || guarantorPhone === '+') return;
+
+        setGuarantorSending(true);
+
+        // Generate invite link if not already generated
+        let link = guarantorInviteLink;
+        if (!link) {
+            link = await generateGuarantorInviteLink();
+            if (!link) {
+                setError(currentLang === 'en' ? 'Failed to generate invite link' : 'Uitnodigingslink genereren mislukt');
+                setGuarantorSending(false);
+                return;
+            }
+        }
+
+        // Send WhatsApp invitation via n8n webhook
+        try {
+            await fetch('https://davidvanwachem.app.n8n.cloud/webhook/get-agenda-page-details', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    eventType: 'invite_co_tenant',
+                    name: guarantorName,
+                    phone_number: guarantorPhone,
+                    invite_link: link,
+                    role: 'Garantsteller',
+                    invited_by: phoneNumber,
+                    timestamp: new Date().toISOString()
+                })
+            });
+        } catch (err) {
+            console.warn('[InviteForm] Webhook for invite failed (non-blocking):', err);
+        }
+
+        setGuarantorSending(false);
+        setGuarantorSent(true);
+    };
+
+    // Mirrors the aanvraag page "share invite" modal exactly: name + phone +
+    // Send Invitation (primary) + Copy Invite Link (secondary), with a sent
+    // confirmation state.
     const renderGuarantorModal = () => {
         if (!showGuarantorModal) return null;
-        const isValid = guarantorName.trim().length >= 2 && guarantorPhone.replace(/\D/g, '').length >= 10;
+        const closeModal = () => { setShowGuarantorModal(false); setGuarantorInviteLink(null); };
         return (
             <div style={{
                 position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
-            }} onClick={() => setShowGuarantorModal(false)}>
+            }} onClick={closeModal}>
                 <div style={{
                     background: 'white', borderRadius: '0.75rem', padding: '2rem',
                     maxWidth: '28rem', width: '90%'
@@ -383,91 +428,114 @@ const InviteForm = () => {
                         </h3>
                         <p style={{ fontSize: '0.813rem', color: '#6b7280' }}>
                             {currentLang === 'en'
-                                ? 'Enter their details and share the invite link'
-                                : 'Vul hun gegevens in en deel de uitnodigingslink'}
+                                ? 'Enter their details to send a WhatsApp invitation'
+                                : 'Vul hun gegevens in om een WhatsApp-uitnodiging te sturen'}
                         </p>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '0.813rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>
-                                {currentLang === 'en' ? 'Name' : 'Naam'} *
-                            </label>
-                            <input
-                                type="text"
-                                value={guarantorName}
-                                onChange={e => setGuarantorName(e.target.value)}
-                                placeholder={currentLang === 'en' ? 'Full name' : 'Volledige naam'}
-                                style={{
-                                    width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #e5e7eb',
-                                    borderRadius: '0.375rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box'
-                                }}
-                                autoFocus
-                            />
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '0.813rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>
-                                {currentLang === 'en' ? 'Phone Number (WhatsApp)' : 'Telefoonnummer (WhatsApp)'} *
-                            </label>
-                            <input
-                                type="tel"
-                                value={guarantorPhone}
-                                onChange={e => {
-                                    let val = e.target.value.replace(/[^\d+]/g, '');
-                                    if (!val.startsWith('+')) val = '+' + val;
-                                    setGuarantorPhone(val);
-                                }}
-                                placeholder="+31612345678"
-                                style={{
-                                    width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #e5e7eb',
-                                    borderRadius: '0.375rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box'
-                                }}
-                            />
-                        </div>
+                    {!guarantorSent ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.813rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>
+                                    {currentLang === 'en' ? 'Name' : 'Naam'} *
+                                </label>
+                                <input
+                                    type="text"
+                                    value={guarantorName}
+                                    onChange={e => setGuarantorName(e.target.value)}
+                                    placeholder={currentLang === 'en' ? 'Full name' : 'Volledige naam'}
+                                    style={{
+                                        width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #e5e7eb',
+                                        borderRadius: '0.375rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box'
+                                    }}
+                                    autoFocus
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.813rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>
+                                    {currentLang === 'en' ? 'Phone Number (WhatsApp)' : 'Telefoonnummer (WhatsApp)'} *
+                                </label>
+                                <input
+                                    type="tel"
+                                    value={guarantorPhone}
+                                    onChange={e => {
+                                        let val = e.target.value.replace(/[^\d+]/g, '');
+                                        if (!val.startsWith('+')) val = '+' + val;
+                                        setGuarantorPhone(val);
+                                    }}
+                                    placeholder="+31612345678"
+                                    style={{
+                                        width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #e5e7eb',
+                                        borderRadius: '0.375rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box'
+                                    }}
+                                />
+                            </div>
 
-                        {/* Copy Link button — generates link on demand (matches aanvraag share modal) */}
-                        <button
-                            onClick={async () => {
-                                if (!isValid) return;
-                                let link = guarantorInviteLink;
-                                if (!link) {
-                                    await handleAddGuarantorForSelf();
-                                    // handleAddGuarantorForSelf sets guarantorInviteLink in state;
-                                    // re-read after a short tick via the latest closure
-                                    return;
-                                }
-                                navigator.clipboard.writeText(link);
-                                setInviteLinkCopied(true);
-                                setTimeout(() => setInviteLinkCopied(false), 2000);
-                            }}
-                            disabled={generatingLink || !isValid}
-                            style={{
-                                width: '100%', padding: '0.75rem', borderRadius: '0.375rem',
-                                background: !isValid ? '#d1d5db' : '#497772',
-                                color: 'white', border: 'none',
-                                cursor: !isValid ? 'not-allowed' : 'pointer',
-                                fontWeight: 600, fontSize: '0.875rem',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                            }}
-                        >
-                            {generatingLink
-                                ? (currentLang === 'en' ? 'Generating Link...' : 'Link genereren...')
-                                : guarantorInviteLink
-                                    ? (inviteLinkCopied
-                                        ? (currentLang === 'en' ? '✓ Link Copied!' : '✓ Link Gekopieerd!')
-                                        : (currentLang === 'en' ? 'Copy Invite Link' : 'Uitnodigingslink kopiëren'))
-                                    : (currentLang === 'en' ? 'Generate Invite Link' : 'Uitnodigingslink genereren')}
-                        </button>
+                            <button
+                                onClick={handleSendGuarantorInvitation}
+                                disabled={guarantorSending || !guarantorName.trim() || guarantorPhone.replace(/\D/g, '').length < 10}
+                                style={{
+                                    width: '100%', padding: '0.75rem', borderRadius: '0.375rem',
+                                    background: (!guarantorName.trim() || guarantorPhone.replace(/\D/g, '').length < 10) ? '#d1d5db' : '#497772',
+                                    color: 'white', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                                }}
+                            >
+                                {guarantorSending
+                                    ? (currentLang === 'en' ? 'Sending...' : 'Versturen...')
+                                    : (currentLang === 'en' ? 'Send Invitation' : 'Uitnodiging versturen')}
+                            </button>
 
-                        {guarantorInviteLink && (
-                            <>
-                                <div style={{
-                                    background: '#f3f4f6', borderRadius: '0.375rem', padding: '0.625rem 0.75rem',
-                                    fontSize: '0.75rem', wordBreak: 'break-all', color: '#374151',
-                                    fontFamily: 'monospace', border: '1px solid #e5e7eb'
-                                }}>
-                                    {guarantorInviteLink}
-                                </div>
+                            {/* Copy Link button — generates link on demand */}
+                            <button
+                                onClick={async () => {
+                                    let link = guarantorInviteLink;
+                                    if (!link) {
+                                        link = await generateGuarantorInviteLink();
+                                    }
+                                    if (link) {
+                                        navigator.clipboard.writeText(link);
+                                        setInviteLinkCopied(true);
+                                        setTimeout(() => setInviteLinkCopied(false), 2000);
+                                    }
+                                }}
+                                style={{
+                                    width: '100%', padding: '0.625rem', borderRadius: '0.375rem',
+                                    background: 'white', color: '#497772', border: '2px solid #497772',
+                                    cursor: 'pointer', fontWeight: 500, fontSize: '0.813rem'
+                                }}
+                            >
+                                {inviteLinkCopied
+                                    ? (currentLang === 'en' ? '✓ Link Copied!' : '✓ Link Gekopieerd!')
+                                    : (currentLang === 'en' ? 'Copy Invite Link' : 'Uitnodigingslink kopiëren')}
+                            </button>
+
+                            <button
+                                onClick={closeModal}
+                                style={{
+                                    width: '100%', padding: '0.5rem', borderRadius: '0.375rem',
+                                    background: 'transparent', color: '#6b7280', border: '1px solid #e5e7eb',
+                                    cursor: 'pointer', fontSize: '0.813rem'
+                                }}
+                            >
+                                {currentLang === 'en' ? 'Cancel' : 'Annuleren'}
+                            </button>
+                        </div>
+                    ) : (
+                        <div style={{ textAlign: 'center' }}>
+                            <div style={{ color: '#10b981', marginBottom: '0.75rem', fontSize: '2.5rem' }}>✓</div>
+                            <p style={{ fontSize: '0.875rem', color: '#374151', marginBottom: '0.5rem', fontWeight: 500 }}>
+                                {currentLang === 'en'
+                                    ? `Invitation sent to ${guarantorName}!`
+                                    : `Uitnodiging verzonden naar ${guarantorName}!`}
+                            </p>
+                            <p style={{ fontSize: '0.813rem', color: '#6b7280', marginBottom: '1rem' }}>
+                                {currentLang === 'en'
+                                    ? 'They will receive a WhatsApp message with a link to fill in their details.'
+                                    : 'Ze ontvangen een WhatsApp-bericht met een link om hun gegevens in te vullen.'}
+                            </p>
+
+                            {guarantorInviteLink && (
                                 <button
                                     onClick={() => {
                                         navigator.clipboard.writeText(guarantorInviteLink);
@@ -477,27 +545,27 @@ const InviteForm = () => {
                                     style={{
                                         width: '100%', padding: '0.625rem', borderRadius: '0.375rem',
                                         background: 'white', color: '#497772', border: '2px solid #497772',
-                                        cursor: 'pointer', fontWeight: 500, fontSize: '0.813rem'
+                                        cursor: 'pointer', fontWeight: 500, fontSize: '0.813rem', marginBottom: '0.5rem'
                                     }}
                                 >
                                     {inviteLinkCopied
                                         ? (currentLang === 'en' ? '✓ Copied!' : '✓ Gekopieerd!')
                                         : (currentLang === 'en' ? 'Copy Link' : 'Link Kopiëren')}
                                 </button>
-                            </>
-                        )}
+                            )}
 
-                        <button
-                            onClick={() => setShowGuarantorModal(false)}
-                            style={{
-                                width: '100%', padding: '0.5rem', borderRadius: '0.375rem',
-                                background: 'transparent', color: '#6b7280', border: '1px solid #e5e7eb',
-                                cursor: 'pointer', fontSize: '0.813rem'
-                            }}
-                        >
-                            {currentLang === 'en' ? 'Cancel' : 'Annuleren'}
-                        </button>
-                    </div>
+                            <button
+                                onClick={closeModal}
+                                style={{
+                                    width: '100%', padding: '0.625rem', borderRadius: '0.375rem',
+                                    background: '#497772', color: 'white', border: 'none',
+                                    cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem'
+                                }}
+                            >
+                                {currentLang === 'en' ? 'Done' : 'Klaar'}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         );
@@ -556,6 +624,8 @@ const InviteForm = () => {
                                     setGuarantorPhone('+');
                                     setGuarantorInviteLink(null);
                                     setInviteLinkCopied(false);
+                                    setGuarantorSent(false);
+                                    setGuarantorSending(false);
                                     setShowGuarantorModal(true);
                                 }}
                                 style={{
