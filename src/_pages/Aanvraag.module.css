@@ -249,6 +249,81 @@
     gap: 1rem;
 }
 
+/* Select / Change Apartment button */
+.selectApartmentButton {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    background: white;
+    color: hsl(var(--myrtle));
+    border: 2px solid hsl(var(--myrtle));
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: 0 0 0 0 rgba(243, 107, 25, 0);
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.selectApartmentButton:hover {
+    background: #f36b19; /* orange */
+    color: white;
+    border-color: #f36b19;
+    box-shadow: 0 0 0 4px rgba(243, 107, 25, 0.2);
+    transform: translateY(-1px);
+}
+
+.selectApartmentButton:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(243, 107, 25, 0.35);
+}
+
+.selectApartmentButton:active {
+    transform: translateY(0);
+}
+
+/* Collapsed placeholder shown in the Bid step until an apartment is selected */
+.bidPlaceholder {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 1rem 1.25rem;
+    background: #f9fafb;
+    border: 1px dashed #d1d5db;
+    border-radius: 0.75rem;
+    color: #6b7280;
+    cursor: not-allowed;
+    user-select: none;
+}
+
+.bidPlaceholderIcon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.bidPlaceholderText {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.bidPlaceholderTitle {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.bidPlaceholderSubtitle {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: #6b7280;
+}
+
 .stepHeader {
     display: flex;
     align-items: center;

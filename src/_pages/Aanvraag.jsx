@@ -83,6 +83,7 @@ const Aanvraag = () => {
     const [showRemoveConfirm, setShowRemoveConfirm] = useState(null); // persoonId to confirm removal
     const [notifyingSent, setNotifyingSent] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
 
     // Apartments are loaded from Supabase accounts.apartment_selected in the data loading effect below
 
@@ -1309,7 +1310,9 @@ const Aanvraag = () => {
         await logout();
     };
 
-    const handleSubmitClick = async () => {
+    // Validate and open the confirmation modal — actual submission happens in
+    // submitApplication() once the user confirms in the modal.
+    const handleSubmitClick = () => {
         if (!Object.values(bidAmounts).some(b => b > 0) || !startDate) {
             alert(currentLang === 'en' ? 'Please complete the bid section' : 'Vul de biedingsectie in');
             return;
@@ -1323,6 +1326,14 @@ const Aanvraag = () => {
                 : 'Selecteer een appartement voordat u indient.');
             return;
         }
+
+        setShowSubmitConfirm(true);
+    };
+
+    const submitApplication = async () => {
+        setShowSubmitConfirm(false);
+
+        const selectedPanden = data?.panden || (data?.pand?.apartmentId ? [data.pand] : []);
 
         // Save application data + mark documentation as complete
         setIsSubmitting(true);
@@ -1553,15 +1564,9 @@ const Aanvraag = () => {
                             )}
                             {userRole !== 'guarantor' && (
                                 <button
+                                    type="button"
                                     onClick={() => router.push('/appartementen')}
-                                    style={{
-                                        width: '100%', padding: '0.75rem', borderRadius: '0.5rem',
-                                        background: data?.panden?.length > 0 ? 'white' : '#497772',
-                                        color: data?.panden?.length > 0 ? '#497772' : 'white',
-                                        border: data?.panden?.length > 0 ? '2px solid #497772' : 'none',
-                                        cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                                    }}
+                                    className={styles.selectApartmentButton}
                                 >
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                                     {data?.panden?.length > 0
@@ -1580,31 +1585,55 @@ const Aanvraag = () => {
                                         : (currentLang === 'en' ? 'Your Bid' : 'Jouw Bod')}
                                 </h2>
                             </div>
-                            <BidSection
-                                conditions={data.pand?.voorwaarden}
-                                bidAmount={bidAmounts[data.pand?.apartmentId || '__default'] || 0}
-                                startDate={startDate}
-                                motivation={motivation}
-                                monthsAdvance={monthsAdvance}
-                                readOnly={userRole === 'guarantor'}
-                                onBidAmountChange={(val) => {
-                                    setBidAmounts(prev => {
-                                        const updated = { ...prev };
-                                        const targets = (data.panden && data.panden.length > 0) ? data.panden : [data.pand].filter(Boolean);
-                                        if (targets.length > 0) {
-                                            targets.forEach(p => {
-                                                updated[p.apartmentId || '__default'] = val;
-                                            });
-                                        } else {
-                                            updated['__default'] = val;
-                                        }
-                                        return updated;
-                                    });
-                                }}
-                                onStartDateChange={setStartDate}
-                                onMotivationChange={setMotivation}
-                                onMonthsAdvanceChange={setMonthsAdvance}
-                            />
+                            {data?.panden?.length > 0 ? (
+                                <BidSection
+                                    conditions={data.pand?.voorwaarden}
+                                    bidAmount={bidAmounts[data.pand?.apartmentId || '__default'] || 0}
+                                    startDate={startDate}
+                                    motivation={motivation}
+                                    monthsAdvance={monthsAdvance}
+                                    readOnly={userRole === 'guarantor'}
+                                    onBidAmountChange={(val) => {
+                                        setBidAmounts(prev => {
+                                            const updated = { ...prev };
+                                            const targets = (data.panden && data.panden.length > 0) ? data.panden : [data.pand].filter(Boolean);
+                                            if (targets.length > 0) {
+                                                targets.forEach(p => {
+                                                    updated[p.apartmentId || '__default'] = val;
+                                                });
+                                            } else {
+                                                updated['__default'] = val;
+                                            }
+                                            return updated;
+                                        });
+                                    }}
+                                    onStartDateChange={setStartDate}
+                                    onMotivationChange={setMotivation}
+                                    onMonthsAdvanceChange={setMonthsAdvance}
+                                />
+                            ) : (
+                                // Collapsed, non-expandable placeholder shown when no apartment
+                                // is selected yet (main tenant + co-tenant only — guarantors
+                                // never see the full editable bid section).
+                                <div
+                                    className={styles.bidPlaceholder}
+                                    aria-disabled="true"
+                                >
+                                    <div className={styles.bidPlaceholderIcon}>🔒</div>
+                                    <div className={styles.bidPlaceholderText}>
+                                        <p className={styles.bidPlaceholderTitle}>
+                                            {currentLang === 'en'
+                                                ? 'Select an apartment to place your bid'
+                                                : 'Selecteer een appartement om uw bod te plaatsen'}
+                                        </p>
+                                        <p className={styles.bidPlaceholderSubtitle}>
+                                            {currentLang === 'en'
+                                                ? 'The bid details will become available once an apartment is chosen.'
+                                                : 'De bodgegevens worden beschikbaar zodra er een appartement is gekozen.'}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
 
@@ -1961,6 +1990,104 @@ const Aanvraag = () => {
                     </div>
                 </div>
             )}
+
+            {/* Submit Confirmation Modal — confirms the apartment(s) the user is bidding on */}
+            {showSubmitConfirm && (() => {
+                const submitPanden = data?.panden || (data?.pand?.apartmentId ? [data.pand] : []);
+                return (
+                    <div style={{
+                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                    }} onClick={() => setShowSubmitConfirm(false)}>
+                        <div style={{
+                            background: 'white', borderRadius: '0.75rem', padding: '2rem',
+                            maxWidth: '28rem', width: '90%'
+                        }} onClick={e => e.stopPropagation()}>
+                            <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🏠</div>
+                                <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.5rem', color: '#111827' }}>
+                                    {currentLang === 'en' ? 'Submit Application?' : 'Aanvraag indienen?'}
+                                </h3>
+                                <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: 0 }}>
+                                    {submitPanden.length > 1
+                                        ? (currentLang === 'en'
+                                            ? 'Do you want to submit your application for these apartments?'
+                                            : 'Wilt u uw aanvraag indienen voor deze appartementen?')
+                                        : (currentLang === 'en'
+                                            ? 'Do you want to submit your application for this apartment?'
+                                            : 'Wilt u uw aanvraag indienen voor dit appartement?')}
+                                </p>
+                            </div>
+
+                            {/* Apartment + bid summary */}
+                            <div style={{
+                                background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '0.5rem',
+                                padding: '0.875rem', marginBottom: '1.25rem',
+                                display: 'flex', flexDirection: 'column', gap: '0.625rem'
+                            }}>
+                                {submitPanden.map((p) => {
+                                    const bid = bidAmounts[p.apartmentId] || bidAmounts['__default'] || p.voorwaarden?.huurprijs || 0;
+                                    return (
+                                        <div key={p.apartmentId || p.adres} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                                                <CheckCircle size={16} style={{ color: '#16a34a', marginTop: '0.125rem', flexShrink: 0 }} />
+                                                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>
+                                                    {p.adres || (currentLang === 'en' ? 'Selected apartment' : 'Geselecteerd appartement')}
+                                                </span>
+                                            </div>
+                                            <div style={{ paddingLeft: '1.5rem', fontSize: '0.8125rem', color: '#374151' }}>
+                                                <span style={{ color: '#6b7280' }}>
+                                                    {currentLang === 'en' ? 'Your bid:' : 'Uw bod:'}
+                                                </span>{' '}
+                                                <span style={{ fontWeight: 600 }}>{'\u20AC'}{bid}</span>
+                                                <span style={{ color: '#6b7280' }}>{currentLang === 'en' ? '/mo' : '/mnd'}</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                {startDate && (
+                                    <div style={{ paddingLeft: '1.5rem', fontSize: '0.8125rem', color: '#374151' }}>
+                                        <span style={{ color: '#6b7280' }}>
+                                            {currentLang === 'en' ? 'Start date:' : 'Startdatum:'}
+                                        </span>{' '}
+                                        <span style={{ fontWeight: 600 }}>{startDate}</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button
+                                    onClick={() => setShowSubmitConfirm(false)}
+                                    disabled={isSubmitting}
+                                    style={{
+                                        flex: 1, padding: '0.75rem', borderRadius: '0.375rem',
+                                        background: 'white', color: '#374151', border: '1px solid #e5e7eb',
+                                        cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem'
+                                    }}
+                                >
+                                    {currentLang === 'en' ? 'Cancel' : 'Annuleren'}
+                                </button>
+                                <button
+                                    onClick={submitApplication}
+                                    disabled={isSubmitting}
+                                    style={{
+                                        flex: 1, padding: '0.75rem', borderRadius: '0.375rem',
+                                        background: '#497772', color: 'white', border: 'none',
+                                        cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                                        fontWeight: 600, fontSize: '0.875rem',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem'
+                                    }}
+                                >
+                                    <CheckCircle size={16} />
+                                    {isSubmitting
+                                        ? (currentLang === 'en' ? 'Submitting...' : 'Indienen...')
+                                        : (currentLang === 'en' ? 'Yes, Submit' : 'Ja, indienen')}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
 
             {/* Remove Confirmation Modal for co-tenant self-removal */}
             {showRemoveConfirm && (

@@ -8,6 +8,8 @@ export const translations = {
             faq: 'FAQ',
             about: 'About Us',
             contact: 'Contact',
+            login: 'Log In',
+            myApplication: 'My Application',
         },
         nl: {
             home: 'Home',
@@ -17,6 +19,8 @@ export const translations = {
             faq: 'Veelgestelde Vragen',
             about: 'Over Ons',
             contact: 'Contact',
+            login: 'Inloggen',
+            myApplication: 'Mijn Aanvraag',
         }
     },
     home: {

@@ -4,8 +4,9 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSelector, useDispatch } from 'react-redux';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, LogIn } from 'lucide-react';
 import { toggleMobileMenu, closeMobileMenu, setLanguage } from '@/features/ui/uiSlice';
+import { useAuth } from '@/contexts/AuthContext';
 import styles from './Navbar.module.css';
 import { translations } from '@/data/translations';
 
@@ -15,8 +16,27 @@ const Navbar = () => {
     const currentLang = useSelector((state) => state.ui.language);
     const pathname = usePathname();
     const router = useRouter();
+    const { isAuthenticated, firstName } = useAuth();
 
     const t = translations.nav[currentLang] || translations.nav.en;
+    const loginPath = '/login';
+    const aanvraagPath = currentLang === 'nl' ? '/nl/aanvraag' : '/en/application';
+    // When the user is authenticated, show their first name in place of the
+    // login label. Falls back to a generic greeting if first name is missing.
+    const authedLabel = firstName
+        ? (currentLang === 'en' ? `Hi, ${firstName}` : `Hoi, ${firstName}`)
+        : (currentLang === 'en' ? 'My Account' : 'Mijn Account');
+
+    // Hide the login / "My Account" button when the user is already inside
+    // the application flow (aanvraag / application / letter-of-intent), since
+    // those pages already represent "being inside My Account".
+    const lowerPath = (pathname || '').toLowerCase();
+    const isInsideAccountFlow =
+        lowerPath.includes('/aanvraag') ||
+        lowerPath.includes('/application') ||
+        lowerPath.includes('/letter-of-intent') ||
+        lowerPath.includes('/intentieverklaring');
+    const showLoginButton = !isInsideAccountFlow;
 
     const navLinks = [
         { name: t.rentOut, path: currentLang === 'nl' ? '/nl/rent-out' : '/en/rent-out' },
@@ -135,6 +155,16 @@ const Navbar = () => {
                             </Link>
                         ))}
                         <LanguageSwitcher />
+                        {showLoginButton && (
+                            <Link
+                                href={isAuthenticated ? aanvraagPath : loginPath}
+                                className={styles.loginButton}
+                                onClick={() => window.scrollTo(0, 0)}
+                            >
+                                <LogIn size={16} />
+                                {isAuthenticated ? authedLabel : t.login}
+                            </Link>
+                        )}
                     </div>
 
                     <div className={styles.mobileActions}>
@@ -163,6 +193,16 @@ const Navbar = () => {
                             {link.name}
                         </Link>
                     ))}
+                    {showLoginButton && (
+                        <Link
+                            href={isAuthenticated ? aanvraagPath : loginPath}
+                            className={styles.mobileLoginButton}
+                            onClick={handleLinkClick}
+                        >
+                            <LogIn size={16} />
+                            {isAuthenticated ? authedLabel : t.login}
+                        </Link>
+                    )}
                 </div>
             </div>
         </nav>
