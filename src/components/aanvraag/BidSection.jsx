@@ -18,6 +18,7 @@ const BidSection = ({
 }) => {
     const currentLang = useSelector((state) => state.ui.language);
     const t = translations.aanvraag[currentLang] || translations.aanvraag.nl;
+    const safeConditions = conditions || { huurprijs: 0, beschikbaar: '-' };
 
     return (
         <div className={styles.card}>
@@ -49,7 +50,7 @@ const BidSection = ({
                             <input
                                 type="number"
                                 className={styles.bidInput}
-                                placeholder={String(conditions.huurprijs)}
+                                placeholder={String(safeConditions.huurprijs)}
                                 value={bidAmount}
                                 onChange={(e) => onBidAmountChange?.(Number(e.target.value))}
                                 disabled={readOnly}
@@ -80,8 +81,8 @@ const BidSection = ({
                         </div>
                         <p className={styles.description}>
                             {currentLang === 'en'
-                                ? `Earliest possible: ${conditions.beschikbaar}. Later = more attractive.`
-                                : `Vroegst mogelijk: ${conditions.beschikbaar}. Later = minder aantrekkelijk.`}
+                                ? `Earliest possible: ${safeConditions.beschikbaar}. Later = more attractive.`
+                                : `Vroegst mogelijk: ${safeConditions.beschikbaar}. Later = minder aantrekkelijk.`}
                         </p>
                     </div>
                 </div>

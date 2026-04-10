@@ -64,8 +64,11 @@ const InlineDocumentUpload = ({
                         </div>
                     </div>
                     {onUpload && (
-                        <div style={{ display: 'flex', gap: '0.375rem' }}>
-                            <label className={styles.cursorPointer}>
+                        <div style={{
+                            display: 'flex', gap: '0.375rem', flexShrink: 0,
+                            flexWrap: 'wrap', alignItems: 'center'
+                        }}>
+                            <label className={styles.cursorPointer} style={{ flexShrink: 0 }}>
                                 <input
                                     type="file"
                                     className={styles.hiddenInput}
@@ -86,7 +89,8 @@ const InlineDocumentUpload = ({
                                         display: 'flex', alignItems: 'center', gap: '0.25rem',
                                         padding: '0.25rem 0.5rem', borderRadius: '0.25rem',
                                         background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca',
-                                        cursor: 'pointer', fontSize: '0.75rem', fontFamily: 'inherit'
+                                        cursor: 'pointer', fontSize: '0.75rem', fontFamily: 'inherit',
+                                        flexShrink: 0, whiteSpace: 'nowrap'
                                     }}
                                 >
                                     <Trash2 style={{ width: '0.75rem', height: '0.75rem' }} />

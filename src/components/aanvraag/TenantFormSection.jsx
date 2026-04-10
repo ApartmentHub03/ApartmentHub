@@ -176,7 +176,11 @@ const TenantFormSection = ({
                     </div>
                     <div className={styles.headerInfo}>
                         <h3 className={styles.roleTitle}>
-                            {persoon.rol === 'Hoofdhuurder' ? 'MAIN TENANT' : persoon.rol?.toUpperCase()}
+                            {persoon.rol === 'Hoofdhuurder'
+                                ? (currentLang === 'en' ? 'MAIN TENANT' : 'HOOFDHUURDER')
+                                : persoon.rol === 'Medehuurder'
+                                    ? 'CO-TENANT'
+                                    : persoon.rol?.toUpperCase()}
                         </h3>
                         <p className={styles.personName}>
                             {formData.naam || tForm.newTenant}

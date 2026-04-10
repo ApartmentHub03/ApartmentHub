@@ -46,7 +46,9 @@ const AddPersonModal = ({
     };
 
     const roleIcon = role === 'Medehuurder' ? '👥' : '🛡️';
-    const localizedRole = role; // Assuming role comes in localized or we map it. 'Medehuurder' is Dutch.
+    const localizedRole = role === 'Medehuurder'
+        ? 'Co-Tenant'
+        : (currentLang === 'en' ? 'Guarantor' : 'Garantsteller');
 
     return (
         <div className={styles.overlay} onClick={() => onOpenChange(false)}>
@@ -54,12 +56,12 @@ const AddPersonModal = ({
                 <div className={styles.header}>
                     <h3 className={styles.title}>
                         <span style={{ fontSize: '1.5rem' }}>{roleIcon}</span>
-                        {currentLang === 'en' ? `Add ${role}` : `${role} toevoegen`}
+                        {currentLang === 'en' ? `Add ${localizedRole}` : `${localizedRole} toevoegen`}
                     </h3>
                     <p className={styles.subtitle}>
                         {currentLang === 'en'
-                            ? `Enter details for the new ${role.toLowerCase()}.`
-                            : `Vul de gegevens in van de nieuwe ${role.toLowerCase()}.`}
+                            ? `Enter details for the new ${localizedRole.toLowerCase()}.`
+                            : `Vul de gegevens in van de nieuwe ${localizedRole.toLowerCase()}.`}
                     </p>
                 </div>
 

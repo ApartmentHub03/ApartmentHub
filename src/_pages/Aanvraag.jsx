@@ -9,6 +9,7 @@ import { translations } from '../data/translations';
 import { useAuth } from '../contexts/AuthContext';
 import { loadAanvraagData, saveAanvraagData, deletePersonFromSupabase } from '../services/aanvraagDataService';
 import { uploadDocument, deleteDocument } from '../services/documentStorageService';
+import { getRequiredDocuments } from '../utils/documentRequirements';
 import { sendTenantDataEvent, sendDocumentUploadEvent, sendMultipleDocumentsEvent } from '../services/webhookService';
 import RentalConditionsSidebar from '../components/aanvraag/RentalConditionsSidebar';
 import BidSection from '../components/aanvraag/BidSection';
@@ -95,6 +96,7 @@ const Aanvraag = () => {
 
             const result = await loadAanvraagData(dossierId);
             let panden = [];
+            let mainPandenLocal = []; // local capture so sidebar logic doesn't read stale state
 
             // Load apartments from accounts.apartment_selected (persisted in Supabase)
             const { supabase: sb } = await import('../integrations/supabase/client');
@@ -214,14 +216,18 @@ const Aanvraag = () => {
 
                         if (mainAptRows && mainAptRows.length > 0) {
                             const mainPanden = mainAptRows.map(buildPandFromApartment);
+                            mainPandenLocal = mainPanden;
                             setMainTenantApartments(mainPanden);
 
-                            // If co-tenant has no apartments selected yet, default to all main tenant's
-                            if (panden.length === 0) {
+                            // If co-tenant/guarantor has no apartments selected yet,
+                            // fall back to whatever the main tenant has chosen.
+                            const hadOwnSelection = panden.length > 0;
+                            if (!hadOwnSelection) {
                                 panden = mainPanden;
                             }
 
-                            // Load the main tenant's bid amounts so co-tenant sees real values
+                            // Load the main tenant's bid amounts so the fallback view also
+                            // shows the real bid the main tenant placed.
                             const mainBids = {};
                             mainApts.forEach(a => {
                                 if (a.apartment_id && a.bid_amount) {
@@ -238,7 +244,8 @@ const Aanvraag = () => {
                             }
                             if (Object.keys(mainBids).length > 0) {
                                 setBidAmounts(prev => {
-                                    // Only set if co-tenant doesn't have their own bids yet
+                                    // Co-tenants/guarantors with their own bids keep them; otherwise
+                                    // start from the main tenant's bids.
                                     const merged = { ...mainBids };
                                     Object.keys(prev).forEach(k => { if (prev[k]) merged[k] = prev[k]; });
                                     return merged;
@@ -371,8 +378,9 @@ const Aanvraag = () => {
                         }
                     }
                 } else if (!isMainTenant) {
-                    // Co-tenant: also include main tenant's apartments
-                    for (const apt of mainTenantApartments) {
+                    // Co-tenant/guarantor: also include main tenant's apartments
+                    // (use the freshly-loaded local array, not stale state).
+                    for (const apt of mainPandenLocal) {
                         if (!sidebarApts.some(p => p.apartmentId === apt.apartmentId)) {
                             sidebarApts.push(apt);
                         }
@@ -414,8 +422,10 @@ const Aanvraag = () => {
 
         const result = await saveAanvraagData(dossierId, formData);
 
-        // Also save per-apartment bids to accounts.apartment_selected
-        if (result.ok && accountId && data.panden?.length > 0) {
+        // Also save per-apartment bids to accounts.apartment_selected.
+        // Guarantors should never persist their own apartment/bid — they only
+        // view what the main tenant + co-tenants chose.
+        if (result.ok && accountId && data.panden?.length > 0 && userRole !== 'guarantor') {
             try {
                 const { supabase: sb } = await import('../integrations/supabase/client');
                 const updatedSelected = data.panden.map(p => ({
@@ -502,7 +512,7 @@ const Aanvraag = () => {
             setSaveStatus('error');
             console.error('Auto-save failed:', result.error);
         }
-    }, [dossierId, data, bidAmounts, startDate, motivation, monthsAdvance, accountId]);
+    }, [dossierId, data, bidAmounts, startDate, motivation, monthsAdvance, accountId, isMainTenant, userRole]);
 
     // Trigger auto-save when data changes
     useEffect(() => {
@@ -828,13 +838,19 @@ const Aanvraag = () => {
             console.log('[Aanvraag] No new files to upload to webhook (only existing docs)');
         }
 
-        // Check if this is a multi-file document type
-        // Multi-file if: existing doc has files array, or we're uploading multiple files, or we have existing docs
+        // Check if this is a multi-file document type.
+        // We must consult the requirements config (not just state), otherwise the
+        // FIRST upload of a multi-file slot (e.g. payslips) gets stored as a
+        // single-file entry and the renderer — which reads `docData.files` —
+        // never sees it until the page is reloaded.
+        const persoonRoleForCheck = persoon.rol === 'Garantsteller' ? 'guarantor' : 'tenant';
+        const requiredDocsForCheck = getRequiredDocuments(persoon.werkstatus, persoonRoleForCheck);
+        const docConfig = requiredDocsForCheck.find(d => d.type === type);
         const docData = persoon.documenten?.find(d => d.type === type);
-        const isMultiFile = docData?.files !== undefined ||
+        const isMultiFile = docConfig?.multiFile === true ||
+            docData?.files !== undefined ||
             (filesToUpload.length > 1) ||
-            (existingDocs.length > 0) ||
-            (filesToUpload.length === 1 && existingDocs.length > 0);
+            (existingDocs.length > 0);
 
         // Update local state with uploaded documents using callback form
         // to preserve any concurrent state updates (e.g. supabaseId assignment)
@@ -1397,7 +1413,7 @@ const Aanvraag = () => {
                             {!isMainTenant && (
                                 <span style={{ fontSize: '0.75rem', color: '#6b7280', padding: '0.25rem 0.5rem', background: '#f3f4f6', borderRadius: '0.25rem' }}>
                                     {userRole === 'co_tenant'
-                                        ? (currentLang === 'en' ? 'Co-Tenant View' : 'Medehuurder weergave')
+                                        ? (currentLang === 'en' ? 'Co-Tenant View' : 'Co-Tenant weergave')
                                         : (currentLang === 'en' ? 'Guarantor View' : 'Garantsteller weergave')}
                                 </span>
                             )}
@@ -1458,29 +1474,39 @@ const Aanvraag = () => {
                             <div className={styles.coTenantWarningBanner}>
                                 <AlertCircle size={18} />
                                 <span>
-                                    {currentLang === 'en'
-                                        ? 'You are logged in as a co-tenant. You can only edit your own details. Other sections are managed by the main tenant.'
-                                        : 'U bent ingelogd als medehuurder. U kunt alleen uw eigen gegevens bewerken. Andere secties worden beheerd door de hoofdhuurder.'}
+                                    {userRole === 'guarantor'
+                                        ? (currentLang === 'en'
+                                            ? 'You are logged in as a guarantor. You can only edit your own details. The apartment and bid are managed by the main tenant and co-tenant.'
+                                            : 'U bent ingelogd als garantsteller. U kunt alleen uw eigen gegevens bewerken. Het appartement en bod worden beheerd door de hoofdhuurder en Co-Tenant.')
+                                        : (currentLang === 'en'
+                                            ? 'You are logged in as a co-tenant. You can edit your own details and the apartment and bid (shared with the main tenant).'
+                                            : 'U bent ingelogd als Co-Tenant. U kunt uw eigen gegevens en het appartement en bod (gedeeld met de hoofdhuurder) bewerken.')}
                                 </span>
                             </div>
                         )}
 
-                        {/* Choose apartment (same flow for main tenant and co-tenant) */}
+                        {/* Choose apartment (main tenant + co-tenant can change; guarantor view-only) */}
                         <div className={styles.stepContainer}>
                             <div className={styles.stepHeader}>
                                 <div className={styles.stepNumber}>
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                                 </div>
                                 <h2 className={styles.stepTitle}>
-                                    {currentLang === 'en' ? 'Choose Apartment' : 'Kies Appartement'}
+                                    {userRole === 'guarantor'
+                                        ? (currentLang === 'en' ? 'Selected Apartment' : 'Geselecteerd Appartement')
+                                        : (currentLang === 'en' ? 'Choose Apartment' : 'Kies Appartement')}
                                 </h2>
                             </div>
                             <p style={{ fontSize: '0.8125rem', color: '#6b7280', margin: '0 0 0.75rem', paddingLeft: '0.25rem' }}>
-                                {currentLang === 'en'
-                                    ? 'Select the apartment you want to apply for'
-                                    : 'Selecteer het appartement waarvoor u wilt solliciteren'}
+                                {userRole === 'guarantor'
+                                    ? (currentLang === 'en'
+                                        ? 'The apartment selected by the main tenant or co-tenant'
+                                        : 'Het appartement geselecteerd door de hoofdhuurder of Co-Tenant')
+                                    : (currentLang === 'en'
+                                        ? 'Select the apartment you want to apply for'
+                                        : 'Selecteer het appartement waarvoor u wilt solliciteren')}
                             </p>
-                            {data?.panden?.length > 0 && (
+                            {data?.panden?.length > 0 ? (
                                 <div style={{
                                     background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '0.5rem',
                                     padding: '0.75rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem'
@@ -1490,30 +1516,44 @@ const Aanvraag = () => {
                                         {data.panden[0].adres} — {'\u20AC'}{data.panden[0].voorwaarden?.huurprijs || 0}{currentLang === 'en' ? '/mo' : '/mnd'}
                                     </span>
                                 </div>
+                            ) : userRole === 'guarantor' && (
+                                <div style={{
+                                    background: '#fefce8', border: '1px solid #fde68a', borderRadius: '0.5rem',
+                                    padding: '0.75rem', marginBottom: '0.75rem', fontSize: '0.875rem', color: '#854d0e'
+                                }}>
+                                    {currentLang === 'en'
+                                        ? 'No apartment has been selected yet by the main tenant or co-tenant.'
+                                        : 'Er is nog geen appartement geselecteerd door de hoofdhuurder of Co-Tenant.'}
+                                </div>
                             )}
-                            <button
-                                onClick={() => router.push('/appartementen')}
-                                disabled={!isMainTenant && mainTenantApartments.length === 0}
-                                style={{
-                                    width: '100%', padding: '0.75rem', borderRadius: '0.5rem',
-                                    background: data?.panden?.length > 0 ? 'white' : '#497772',
-                                    color: data?.panden?.length > 0 ? '#497772' : 'white',
-                                    border: data?.panden?.length > 0 ? '2px solid #497772' : 'none',
-                                    cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                                }}
-                            >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                                {data?.panden?.length > 0
-                                    ? (currentLang === 'en' ? 'Change Apartment' : 'Appartement Wijzigen')
-                                    : (currentLang === 'en' ? 'Select Apartment' : 'Appartement Selecteren')}
-                            </button>
+                            {userRole !== 'guarantor' && (
+                                <button
+                                    onClick={() => router.push('/appartementen')}
+                                    style={{
+                                        width: '100%', padding: '0.75rem', borderRadius: '0.5rem',
+                                        background: data?.panden?.length > 0 ? 'white' : '#497772',
+                                        color: data?.panden?.length > 0 ? '#497772' : 'white',
+                                        border: data?.panden?.length > 0 ? '2px solid #497772' : 'none',
+                                        cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                                    }}
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                                    {data?.panden?.length > 0
+                                        ? (currentLang === 'en' ? 'Change Apartment' : 'Appartement Wijzigen')
+                                        : (currentLang === 'en' ? 'Select Apartment' : 'Appartement Selecteren')}
+                                </button>
+                            )}
                         </div>
 
                         <div className={styles.stepContainer}>
                             <div className={styles.stepHeader}>
                                 <div className={styles.stepNumber}>1</div>
-                                <h2 className={styles.stepTitle}>{currentLang === 'en' ? 'Your Bid' : 'Jouw Bod'}</h2>
+                                <h2 className={styles.stepTitle}>
+                                    {userRole === 'guarantor'
+                                        ? (currentLang === 'en' ? 'Bid Details' : 'Bod Gegevens')
+                                        : (currentLang === 'en' ? 'Your Bid' : 'Jouw Bod')}
+                                </h2>
                             </div>
                             <BidSection
                                 conditions={data.pand?.voorwaarden}
@@ -1521,6 +1561,7 @@ const Aanvraag = () => {
                                 startDate={startDate}
                                 motivation={motivation}
                                 monthsAdvance={monthsAdvance}
+                                readOnly={userRole === 'guarantor'}
                                 onBidAmountChange={(val) => {
                                     setBidAmounts(prev => {
                                         const updated = { ...prev };
@@ -1647,8 +1688,8 @@ const Aanvraag = () => {
                                         </div>
                                         <span>
                                             {alleHuurders.length >= 5
-                                                ? (currentLang === 'en' ? 'Max co-tenants reached' : 'Max aantal medehuurders bereikt')
-                                                : (currentLang === 'en' ? 'Add Co-Tenant' : 'Medehuurder Toevoegen')}
+                                                ? (currentLang === 'en' ? 'Max co-tenants reached' : 'Max aantal Co-Tenants bereikt')
+                                                : (currentLang === 'en' ? 'Add Co-Tenant' : 'Co-Tenant Toevoegen')}
                                         </span>
                                     </div>
                                 </button>
@@ -1749,7 +1790,7 @@ const Aanvraag = () => {
                             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.25rem' }}>
                                 {currentLang === 'en'
                                     ? `Invite ${addPersonRole === 'Medehuurder' ? 'Co-Tenant' : 'Guarantor'}`
-                                    : `${addPersonRole === 'Medehuurder' ? 'Medehuurder' : 'Garantsteller'} uitnodigen`}
+                                    : `${addPersonRole === 'Medehuurder' ? 'Co-Tenant' : 'Garantsteller'} uitnodigen`}
                             </h3>
                             <p style={{ fontSize: '0.813rem', color: '#6b7280' }}>
                                 {currentLang === 'en'
