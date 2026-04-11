@@ -9,6 +9,7 @@ import { supabase } from '../integrations/supabase/client';
 import { uploadDocument } from '../services/documentStorageService';
 import { getRequiredDocuments } from '../utils/documentRequirements';
 import { documentTypeLabels, workStatusLabels } from '../config/documentRequirements';
+import { sendGuarantorInvite } from '../services/zokoService';
 import WorkStatusSelector from '../components/aanvraag/WorkStatusSelector';
 import GuarantorWorkStatusSelector from '../components/aanvraag/GuarantorWorkStatusSelector';
 import InlineDocumentUpload from '../components/aanvraag/InlineDocumentUpload';
@@ -383,7 +384,7 @@ const InviteForm = () => {
             }
         }
 
-        // Send WhatsApp invitation via n8n webhook
+        // Send WhatsApp invitation via n8n webhook (CRM automation)
         try {
             await fetch('https://davidvanwachem.app.n8n.cloud/webhook/get-agenda-page-details', {
                 method: 'POST',
@@ -400,6 +401,19 @@ const InviteForm = () => {
             });
         } catch (err) {
             console.warn('[InviteForm] Webhook for invite failed (non-blocking):', err);
+        }
+
+        // Send the guarantor_invite WhatsApp template directly via Zoko
+        try {
+            const invitedByName = (naam || '').trim() || 'ApartmentHub';
+            await sendGuarantorInvite({
+                recipient: guarantorPhone,
+                name: guarantorName,
+                invitedBy: invitedByName,
+                inviteLink: link,
+            });
+        } catch (err) {
+            console.warn('[InviteForm] Zoko guarantor invite failed (non-blocking):', err);
         }
 
         setGuarantorSending(false);

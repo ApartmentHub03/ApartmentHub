@@ -11,6 +11,7 @@ import { loadAanvraagData, saveAanvraagData, deletePersonFromSupabase } from '..
 import { uploadDocument, deleteDocument } from '../services/documentStorageService';
 import { getRequiredDocuments } from '../utils/documentRequirements';
 import { sendTenantDataEvent, sendDocumentUploadEvent, sendMultipleDocumentsEvent } from '../services/webhookService';
+import { sendCoTenantInvite, sendGuarantorInvite, sendReadyToApplyNotification } from '../services/zokoService';
 import RentalConditionsSidebar from '../components/aanvraag/RentalConditionsSidebar';
 import BidSection from '../components/aanvraag/BidSection';
 import TenantFormSection from '../components/aanvraag/TenantFormSection';
@@ -1035,7 +1036,7 @@ const Aanvraag = () => {
             setInviteLink(link);
         }
 
-        // Send WhatsApp invitation via n8n webhook
+        // Send WhatsApp invitation via n8n webhook (CRM automation)
         try {
             await fetch('https://davidvanwachem.app.n8n.cloud/webhook/get-agenda-page-details', {
                 method: 'POST',
@@ -1052,6 +1053,21 @@ const Aanvraag = () => {
             });
         } catch (err) {
             console.warn('[Aanvraag] Webhook for invite failed (non-blocking):', err);
+        }
+
+        // Send WhatsApp template directly via Zoko
+        try {
+            const mainTenant = data?.personen?.find(p => p.rol === 'Hoofdhuurder');
+            const invitedByName = (mainTenant?.naam || '').trim() || 'ApartmentHub';
+            const sender = addPersonRole === 'Garantsteller' ? sendGuarantorInvite : sendCoTenantInvite;
+            await sender({
+                recipient: shareModalPhone,
+                name: shareModalName,
+                invitedBy: invitedByName,
+                inviteLink: link,
+            });
+        } catch (err) {
+            console.warn('[Aanvraag] Zoko invite send failed (non-blocking):', err);
         }
 
         // Also add the person to the dossier
@@ -1782,19 +1798,53 @@ const Aanvraag = () => {
 
                                         if (dossierRow?.phone_number) {
                                             const myPerson = data?.personen?.find(p => p.supabaseId === authPersoonId);
-                                            await fetch('https://davidvanwachem.app.n8n.cloud/webhook/get-agenda-page-details', {
-                                                method: 'POST',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({
-                                                    eventType: 'notify_main_tenant_to_submit',
-                                                    main_tenant_phone: dossierRow.phone_number,
-                                                    requester_name: myPerson?.naam || '',
-                                                    requester_phone: phoneNumber,
-                                                    role: userRole === 'co_tenant' ? 'Medehuurder' : 'Garantsteller',
-                                                    dossier_id: dossierId,
-                                                    timestamp: new Date().toISOString()
-                                                })
-                                            });
+
+                                            // Fire CRM webhook (non-blocking)
+                                            try {
+                                                await fetch('https://davidvanwachem.app.n8n.cloud/webhook/get-agenda-page-details', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({
+                                                        eventType: 'notify_main_tenant_to_submit',
+                                                        main_tenant_phone: dossierRow.phone_number,
+                                                        requester_name: myPerson?.naam || '',
+                                                        requester_phone: phoneNumber,
+                                                        role: userRole === 'co_tenant' ? 'Medehuurder' : 'Garantsteller',
+                                                        dossier_id: dossierId,
+                                                        timestamp: new Date().toISOString()
+                                                    })
+                                                });
+                                            } catch (err) {
+                                                console.warn('[Aanvraag] notify-main-tenant webhook failed (non-blocking):', err);
+                                            }
+
+                                            // Send the "you_can_now_start_applying_to_apartments" template
+                                            // directly to the main tenant via Zoko.
+                                            try {
+                                                // Look up main tenant name (Hoofdhuurder) via personen on the shared dossier.
+                                                const { data: mainTenantRow } = await sb
+                                                    .from('personen')
+                                                    .select('voornaam, achternaam')
+                                                    .eq('dossier_id', dossierId)
+                                                    .eq('rol', 'Hoofdhuurder')
+                                                    .limit(1)
+                                                    .maybeSingle();
+
+                                                const mainTenantName = [mainTenantRow?.voornaam, mainTenantRow?.achternaam]
+                                                    .filter(Boolean).join(' ').trim() || 'there';
+
+                                                const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+                                                const applyLink = `${baseUrl}/appartementen`;
+
+                                                await sendReadyToApplyNotification({
+                                                    recipient: dossierRow.phone_number,
+                                                    name: mainTenantName,
+                                                    applyLink,
+                                                });
+                                            } catch (err) {
+                                                console.warn('[Aanvraag] Zoko notify-main-tenant send failed (non-blocking):', err);
+                                            }
+
                                             setNotifyingSent(true);
                                             setTimeout(() => setNotifyingSent(false), 5000);
                                         }
