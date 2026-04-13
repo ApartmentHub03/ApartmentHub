@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import { Plus, Copy, Check, Link, LogOut, Building2, Trash2, ClipboardList, X } from 'lucide-react';
+import { Plus, Copy, Check, Link, LogOut, Building2, Trash2, ClipboardList, X, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import styles from './dashboard.module.css';
 
@@ -334,6 +334,14 @@ export default function AdminDashboard() {
                         <h1 className={styles.headerTitle}>Admin Dashboard</h1>
                     </div>
                     <div className={styles.headerActions}>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push('/admin/seo')}
+                        >
+                            <BarChart3 size={16} />
+                            SEO
+                        </Button>
                         <Button
                             variant={showLogs ? 'default' : 'outline'}
                             size="sm"
