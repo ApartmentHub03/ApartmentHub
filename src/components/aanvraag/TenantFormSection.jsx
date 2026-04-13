@@ -14,10 +14,15 @@ import styles from './TenantFormSection.module.css';
 const TenantFormSection = ({
     persoon,
     onDocumentUpload,
+    onDocumentRemove,
     onSendWhatsAppLink,
     onRemove,
     onFormDataChange,
-    showUploadChoice = false
+    showUploadChoice = false,
+    readOnly = false,
+    hideIncome = false,
+    isPhoneDuplicate,
+    isOwnCard = false
 }) => {
     const currentLang = useSelector((state) => state.ui.language);
     const t = translations.aanvraag[currentLang] || translations.aanvraag.nl;
@@ -70,23 +75,29 @@ const TenantFormSection = ({
         return doc && doc.status === 'ontvangen';
     };
 
-    // Calculate form completion (required fields: name, email, phone, workStatus, income)
+    // Calculate form completion (required fields: name, email, phone, workStatus, and income if visible)
     const calculateFormProgress = useCallback(() => {
         const requiredFields = [
             { key: 'naam', filled: formData.naam.trim() !== '' },
             { key: 'email', filled: formData.email.trim() !== '' },
             { key: 'telefoon', filled: formData.telefoon.trim() !== '' },
             { key: 'workStatus', filled: workStatus !== null },
-            { key: 'inkomen', filled: formData.inkomen.toString().trim() !== '' }
         ];
+        // Only require income when the field is visible (i.e. on your own card)
+        if (!hideIncome) {
+            requiredFields.push({ key: 'inkomen', filled: formData.inkomen.toString().trim() !== '' });
+        }
 
         const filledCount = requiredFields.filter(f => f.filled).length;
         return Math.round((filledCount / requiredFields.length) * 100);
-    }, [formData.naam, formData.email, formData.telefoon, formData.inkomen, workStatus]);
+    }, [formData.naam, formData.email, formData.telefoon, formData.inkomen, workStatus, hideIncome]);
 
     // Calculate document completion
+    // When no work status is selected, there are no known required docs yet —
+    // we treat docs as complete so that the *form* incompleteness (work status
+    // missing) is what blocks submission, not a phantom 0% doc score.
     const calculateDocProgress = useCallback(() => {
-        if (!workStatus) return 0;
+        if (!workStatus) return 100;
         const requiredDocs = requiredDocuments.filter(d => d.verplicht);
         if (requiredDocs.length === 0) return 100;
         const uploadedRequiredDocs = requiredDocs.filter(d => isDocUploaded(d.type)).length;
@@ -165,7 +176,11 @@ const TenantFormSection = ({
                     </div>
                     <div className={styles.headerInfo}>
                         <h3 className={styles.roleTitle}>
-                            {persoon.rol === 'Hoofdhuurder' ? 'MAIN TENANT' : persoon.rol?.toUpperCase()}
+                            {persoon.rol === 'Hoofdhuurder'
+                                ? (currentLang === 'en' ? 'MAIN TENANT' : 'HOOFDHUURDER')
+                                : persoon.rol === 'Medehuurder'
+                                    ? 'CO-TENANT'
+                                    : persoon.rol?.toUpperCase()}
                         </h3>
                         <p className={styles.personName}>
                             {formData.naam || tForm.newTenant}
@@ -200,6 +215,18 @@ const TenantFormSection = ({
             {/* Content */}
             {isExpanded && (
                 <CardContent className={styles.cardContent}>
+                    {/* Read-only warning for co-tenants */}
+                    {readOnly && (
+                        <div className={styles.readOnlyBanner}>
+                            <AlertCircle size={16} />
+                            <span>
+                                {currentLang === 'en'
+                                    ? 'These details are filled by the main tenant. You cannot edit them.'
+                                    : 'Deze gegevens zijn ingevuld door de hoofdhuurder. U kunt deze niet bewerken.'}
+                            </span>
+                        </div>
+                    )}
+
                     {/* Form Fields */}
                     <div className={styles.formSection}>
                         {/* Full Name */}
@@ -211,6 +238,7 @@ const TenantFormSection = ({
                                 placeholder="Jan Jansen"
                                 value={formData.naam}
                                 onChange={(e) => handleInputChange('naam', e.target.value)}
+                                disabled={readOnly}
                             />
                         </div>
 
@@ -223,6 +251,7 @@ const TenantFormSection = ({
                                 placeholder="john@example.com"
                                 value={formData.email}
                                 onChange={(e) => handleInputChange('email', e.target.value)}
+                                disabled={readOnly}
                             />
                         </div>
 
@@ -233,11 +262,19 @@ const TenantFormSection = ({
                             </label>
                             <input
                                 type="tel"
-                                className={styles.formInput}
+                                className={`${styles.formInput} ${isPhoneDuplicate && formData.telefoon && isPhoneDuplicate(formData.telefoon, persoon.persoonId) ? styles.inputError : ''}`}
                                 placeholder="+31 6 12345678"
                                 value={formData.telefoon}
                                 onChange={(e) => handleInputChange('telefoon', e.target.value)}
+                                disabled={readOnly}
                             />
+                            {isPhoneDuplicate && formData.telefoon && isPhoneDuplicate(formData.telefoon, persoon.persoonId) && (
+                                <p className={styles.fieldError}>
+                                    {currentLang === 'en'
+                                        ? 'This phone number is already used by another person in this application'
+                                        : 'Dit telefoonnummer wordt al gebruikt door een andere persoon in deze aanvraag'}
+                                </p>
+                            )}
                         </div>
 
                         {/* Work Status */}
@@ -245,12 +282,13 @@ const TenantFormSection = ({
                             <label className={styles.formLabel}>💼 {tForm.workStatus} *</label>
                             <WorkStatusSelector
                                 selected={workStatus}
-                                onChange={handleWorkStatusChange}
+                                onChange={readOnly ? undefined : handleWorkStatusChange}
                                 labels={{
                                     student: tForm.student,
                                     employee: tForm.employee,
                                     entrepreneur: tForm.entrepreneur
                                 }}
+                                disabled={readOnly}
                             />
                         </div>
 
@@ -264,6 +302,7 @@ const TenantFormSection = ({
                                     placeholder="Street 123"
                                     value={formData.adres}
                                     onChange={(e) => handleInputChange('adres', e.target.value)}
+                                    disabled={readOnly}
                                 />
                             </div>
                             <div className={styles.formGroup}>
@@ -274,6 +313,7 @@ const TenantFormSection = ({
                                     placeholder="1234 AB"
                                     value={formData.postcode}
                                     onChange={(e) => handleInputChange('postcode', e.target.value)}
+                                    disabled={readOnly}
                                 />
                             </div>
                         </div>
@@ -287,23 +327,27 @@ const TenantFormSection = ({
                                 placeholder="Amsterdam"
                                 value={formData.woonplaats}
                                 onChange={(e) => handleInputChange('woonplaats', e.target.value)}
+                                disabled={readOnly}
                             />
                         </div>
 
-                        {/* Income */}
-                        <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>{tForm.income} *</label>
-                            <div className={styles.inputWithPrefix}>
-                                <span className={styles.inputPrefix}>€</span>
-                                <input
-                                    type="number"
-                                    className={`${styles.formInput} ${styles.inputHasPrefix}`}
-                                    placeholder="45000"
-                                    value={formData.inkomen}
-                                    onChange={(e) => handleInputChange('inkomen', e.target.value)}
-                                />
+                        {/* Income — only visible on your own card */}
+                        {!hideIncome && (
+                            <div className={styles.formGroup}>
+                                <label className={styles.formLabel}>{tForm.income} *</label>
+                                <div className={styles.inputWithPrefix}>
+                                    <span className={styles.inputPrefix}>€</span>
+                                    <input
+                                        type="number"
+                                        className={`${styles.formInput} ${styles.inputHasPrefix}`}
+                                        placeholder="45000"
+                                        value={formData.inkomen}
+                                        onChange={(e) => handleInputChange('inkomen', e.target.value)}
+                                        disabled={readOnly}
+                                    />
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
 
                     {/* Documents Section */}
@@ -320,15 +364,17 @@ const TenantFormSection = ({
                                     <span className={styles.forRoleText}>
                                         For {workStatus === 'student' ? 'Student' : workStatus === 'werknemer' ? 'Employee' : 'Entrepreneur'}
                                     </span>
-                                    <button
-                                        className={styles.changeMethodButton}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setUploadMethod(null);
-                                        }}
-                                    >
-                                        Choose another method
-                                    </button>
+                                    {!readOnly && (
+                                        <button
+                                            className={styles.changeMethodButton}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setUploadMethod(null);
+                                            }}
+                                        >
+                                            Choose another method
+                                        </button>
+                                    )}
                                 </div>
 
                                 <div className={styles.documentsList}>
@@ -352,8 +398,9 @@ const TenantFormSection = ({
                                                     minFiles={doc.minFiles}
                                                     maxFiles={doc.maxFiles}
                                                     uploadedFiles={files}
-                                                    onUpload={(f) => handleMultiFileUpload(doc.type, f)}
-                                                    onRemove={(idx) => handleMultiFileRemove(doc.type, idx)}
+                                                    onUpload={readOnly ? undefined : (f) => handleMultiFileUpload(doc.type, f)}
+                                                    onRemove={readOnly ? undefined : (idx) => handleMultiFileRemove(doc.type, idx)}
+                                                    readOnly={readOnly}
                                                 />
                                             );
                                         }
@@ -365,8 +412,9 @@ const TenantFormSection = ({
                                                 verplicht={doc.verplicht}
                                                 status={isDocUploaded(doc.type) ? 'ontvangen' : 'ontbreekt'}
                                                 fileName={file?.name}
-                                                onUpload={(f) => handleLocalUpload(doc.type, f)}
-                                                onRemove={() => { }}
+                                                onUpload={readOnly ? undefined : (f) => handleLocalUpload(doc.type, f)}
+                                                onRemove={readOnly ? undefined : (onDocumentRemove ? () => onDocumentRemove(persoon.persoonId, doc.type) : undefined)}
+                                                readOnly={readOnly}
                                             />
                                         );
                                     })}
@@ -383,7 +431,9 @@ const TenantFormSection = ({
                                 onClick={() => onRemove(persoon.persoonId)}
                             >
                                 <Trash2 className="h-4 w-4" />
-                                {tForm.removeTenant}
+                                {isOwnCard
+                                    ? (currentLang === 'en' ? 'Remove Myself' : 'Mezelf verwijderen')
+                                    : tForm.removeTenant}
                             </button>
                         )}
                         <button

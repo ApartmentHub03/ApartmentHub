@@ -33,6 +33,8 @@ export const AuthProvider = ({ children }) => {
         accountId: null,
         firstName: null,
         lastName: null,
+        userRole: null,    // 'main_tenant', 'co_tenant', or 'guarantor'
+        persoonId: null,   // personen table ID for co-tenants/guarantors
     });
     const [isLoading, setIsLoading] = useState(true);
 
@@ -46,6 +48,8 @@ export const AuthProvider = ({ children }) => {
                 const storedAccountId = localStorage.getItem('account_id');
                 const storedFirstName = localStorage.getItem('auth_first_name');
                 const storedLastName = localStorage.getItem('auth_last_name');
+                const storedUserRole = localStorage.getItem('auth_user_role');
+                const storedPersoonId = localStorage.getItem('auth_persoon_id');
 
                 if (storedToken && !isTokenExpired(storedToken)) {
                     console.log('[Auth] Loaded session from localStorage');
@@ -56,6 +60,8 @@ export const AuthProvider = ({ children }) => {
                         accountId: storedAccountId,
                         firstName: storedFirstName,
                         lastName: storedLastName,
+                        userRole: storedUserRole || 'main_tenant',
+                        persoonId: storedPersoonId,
                     });
                 } else if (storedToken) {
                     // Token expired, clear storage
@@ -66,6 +72,8 @@ export const AuthProvider = ({ children }) => {
                     localStorage.removeItem('account_id');
                     localStorage.removeItem('auth_first_name');
                     localStorage.removeItem('auth_last_name');
+                    localStorage.removeItem('auth_user_role');
+                    localStorage.removeItem('auth_persoon_id');
                 }
             } catch (e) {
                 console.error('[Auth] Error loading auth state:', e);
@@ -80,8 +88,8 @@ export const AuthProvider = ({ children }) => {
     /**
      * Login - store auth data after successful verification
      */
-    const login = useCallback((token, phoneNumber, dossierId, firstName = null, lastName = null, accountId = null) => {
-        console.log('[Auth] Logging in:', phoneNumber, 'Dossier:', dossierId, 'Account:', accountId);
+    const login = useCallback((token, phoneNumber, dossierId, firstName = null, lastName = null, accountId = null, userRole = null, persoonId = null) => {
+        console.log('[Auth] Logging in:', phoneNumber, 'Dossier:', dossierId, 'Account:', accountId, 'Role:', userRole);
 
         // Store in localStorage
         localStorage.setItem('auth_token', token);
@@ -90,6 +98,8 @@ export const AuthProvider = ({ children }) => {
         if (accountId) localStorage.setItem('account_id', accountId);
         if (firstName) localStorage.setItem('auth_first_name', firstName);
         if (lastName) localStorage.setItem('auth_last_name', lastName);
+        localStorage.setItem('auth_user_role', userRole || 'main_tenant');
+        if (persoonId) localStorage.setItem('auth_persoon_id', persoonId);
 
         // Update state
         setAuthState({
@@ -99,6 +109,8 @@ export const AuthProvider = ({ children }) => {
             accountId,
             firstName,
             lastName,
+            userRole: userRole || 'main_tenant',
+            persoonId,
         });
 
         // Send login event to webhook
@@ -121,6 +133,8 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('account_id');
         localStorage.removeItem('auth_first_name');
         localStorage.removeItem('auth_last_name');
+        localStorage.removeItem('auth_user_role');
+        localStorage.removeItem('auth_persoon_id');
 
         // Clear state
         setAuthState({
@@ -130,6 +144,8 @@ export const AuthProvider = ({ children }) => {
             accountId: null,
             firstName: null,
             lastName: null,
+            userRole: null,
+            persoonId: null,
         });
     }, []);
 
@@ -148,6 +164,9 @@ export const AuthProvider = ({ children }) => {
                 accountId: authState.accountId,
                 firstName: authState.firstName,
                 lastName: authState.lastName,
+                userRole: authState.userRole,
+                persoonId: authState.persoonId,
+                isMainTenant: !authState.userRole || authState.userRole === 'main_tenant',
                 userName,
                 isAuthenticated,
                 isLoading,

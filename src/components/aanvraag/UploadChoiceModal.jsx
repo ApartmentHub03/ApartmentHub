@@ -28,8 +28,13 @@ const UploadChoiceModal = ({
 
     const icon = role === 'Medehuurder' ? '👥' : '🛡️';
 
+    // Localized role label (always "Co-Tenant" for medehuurder)
+    const localizedRole = role === 'Medehuurder'
+        ? 'Co-Tenant'
+        : (currentLang === 'en' ? 'Guarantor' : 'Garantsteller');
+
     // Helper to replace {{role}}
-    const replaceRole = (text) => text.replace('{{role}}', role);
+    const replaceRole = (text) => text.replace('{{role}}', localizedRole);
 
     const localizedTitle = replaceRole(tChoice.title);
     const localizedSendLink = replaceRole(tChoice.sendLinkDesc);

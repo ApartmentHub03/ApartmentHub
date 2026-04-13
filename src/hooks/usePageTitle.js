@@ -73,8 +73,8 @@ const getCanonicalPath = (normalizedPath) => {
     }
 
     // Application / Aanvraag
-    if (normalizedPath.includes('application-general') || normalizedPath.includes('aanvraag-general')) {
-        return '/aanvraag-general';
+    if (normalizedPath.includes('application') || normalizedPath.includes('aanvraag')) {
+        return '/aanvraag';
     }
 
     // Appartementen
@@ -131,7 +131,7 @@ const usePageTitle = () => {
             titleKey = 'about';
         } else if (normalizedPath.includes('contact')) {
             titleKey = 'contact';
-        } else if (normalizedPath.includes('application-general') || normalizedPath.includes('aanvraag-general')) {
+        } else if (normalizedPath.includes('application') || normalizedPath.includes('aanvraag')) {
             titleKey = 'aanvraag';
         } else {
             titleKey = 'home';

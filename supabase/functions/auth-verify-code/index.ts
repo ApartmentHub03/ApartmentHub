@@ -157,6 +157,29 @@ serve(async (req) => {
       dossier = newDossier;
     }
 
+    // Check if this phone belongs to a co-tenant or guarantor linked to another dossier
+    let sharedDossierId: string | null = null;
+    let userRole: string = 'main_tenant';
+    let persoonId: string | null = null;
+
+    const { data: linkedPerson } = await supabase
+      .from('personen')
+      .select('id, dossier_id, type, rol')
+      .eq('telefoon', formattedPhone)
+      .in('type', ['co_tenant', 'guarantor'])
+      .limit(1)
+      .maybeSingle();
+
+    if (linkedPerson) {
+      sharedDossierId = linkedPerson.dossier_id;
+      userRole = linkedPerson.type; // 'co_tenant' or 'guarantor'
+      persoonId = linkedPerson.id;
+      console.log(`[AUTH] User is a linked ${userRole} in dossier ${sharedDossierId}, persoon_id: ${persoonId}`);
+    }
+
+    // Use the shared dossier if the user is a linked co-tenant/guarantor
+    const effectiveDossierId = sharedDossierId || dossier.id;
+
     // Generate JWT token
     const jwtSecret = Deno.env.get('JWT_SECRET') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const key = await crypto.subtle.importKey(
@@ -171,22 +194,26 @@ serve(async (req) => {
       { alg: 'HS256', typ: 'JWT' },
       {
         phone_number: formattedPhone,
-        dossier_id: dossier.id,
+        dossier_id: effectiveDossierId,
         first_name: first_name || null,
         last_name: last_name || null,
+        user_role: userRole,
+        persoon_id: persoonId,
         exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60), // 7 days
       },
       key
     );
 
-    console.log(`[SUCCESS] Code verified for ${formattedPhone}, dossier ID: ${dossier.id}`);
+    console.log(`[SUCCESS] Code verified for ${formattedPhone}, dossier ID: ${effectiveDossierId}, role: ${userRole}`);
 
     return new Response(
       JSON.stringify({
         ok: true,
         token,
-        dossier_id: dossier.id,
+        dossier_id: effectiveDossierId,
         phone_number: formattedPhone,
+        user_role: userRole,
+        persoon_id: persoonId,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

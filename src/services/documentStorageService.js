@@ -113,10 +113,12 @@ export const uploadDocument = async (persoonId, dossierId, docType, file, phoneN
             document: {
                 id: docData.id,
                 type: docData.type,
+                name: file.name,
                 fileName: docData.bestandsnaam,
                 filePath: docData.bestandspad,
                 publicUrl: urlData.publicUrl,
                 status: docData.status,
+                size: file.size,
                 uploadedAt: docData.uploaded_at
             }
         };

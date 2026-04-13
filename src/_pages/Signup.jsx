@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import { UserPlus, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,23 +11,22 @@ import styles from './Login.module.css';
 
 const Signup = () => {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const currentLang = useSelector((state) => state.ui.language);
     const { isAuthenticated, login } = useAuth();
 
     const [step, setStep] = useState('details'); // 'details' or 'code'
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
-    const [phoneNumber, setPhoneNumber] = useState('+');
+    const [phoneNumber, setPhoneNumber] = useState(searchParams.get('phone') || '+');
     const [verificationCode, setVerificationCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [codeSent, setCodeSent] = useState(false);
-    const [testCode, setTestCode] = useState(null);
-
     // Redirect if already authenticated
     React.useEffect(() => {
         if (isAuthenticated) {
-            router.replace('/aanvraag-general');
+            router.replace('/aanvraag');
         }
     }, [isAuthenticated, router]);
 
@@ -44,7 +43,6 @@ const Signup = () => {
     const handleSignUp = async (e) => {
         e.preventDefault();
         setError('');
-        setTestCode(null);
 
         if (!firstName.trim() || !lastName.trim()) {
             setError(currentLang === 'en' ? 'Please enter your name' : 'Voer je naam in');
@@ -74,11 +72,6 @@ const Signup = () => {
             if (!data.ok) {
                 setError(currentLang === 'en' ? data.message : data.message_nl);
                 return;
-            }
-
-            // Store test code if returned (development mode)
-            if (data.test_code) {
-                setTestCode(data.test_code);
             }
 
             setCodeSent(true);
@@ -124,10 +117,10 @@ const Signup = () => {
             }
 
             // Signup successful - store auth data
-            login(data.token, data.phone_number, data.dossier_id, firstName, lastName);
+            login(data.token, data.phone_number, data.dossier_id, firstName, lastName, null, data.user_role || 'main_tenant', data.persoon_id || null);
 
             // Navigate to application page
-            router.replace('/aanvraag-general');
+            router.replace('/aanvraag');
         } catch (err) {
             console.error('Error verifying code:', err);
             setError(currentLang === 'en' ? 'Invalid code' : 'Ongeldige code');
@@ -141,11 +134,6 @@ const Signup = () => {
         setVerificationCode('');
         setError('');
         setCodeSent(false);
-        setTestCode(null);
-    };
-
-    const handleTestCodeClick = () => {
-        setVerificationCode(testCode || '123456');
     };
 
     return (
@@ -298,15 +286,6 @@ const Signup = () => {
                                         : (currentLang === 'en' ? 'Verify & Complete' : 'Verifiëren & Voltooien')}
                                 </button>
                             </form>
-
-                            {(testCode || true) && (
-                                <div className={styles.testModeNote}>
-                                    {currentLang === 'en' ? 'Test mode: Use code' : 'Testmodus: Gebruik code'}{' '}
-                                    <span className={styles.testModeCode} onClick={handleTestCodeClick}>
-                                        {testCode || '123456'}
-                                    </span>
-                                </div>
-                            )}
                         </div>
                     )}
                 </div>

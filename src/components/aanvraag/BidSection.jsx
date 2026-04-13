@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
-import { Calendar } from 'lucide-react';
+import { Calendar, AlertCircle } from 'lucide-react';
 import { translations } from '../../data/translations';
 import styles from './BidSection.module.css';
 
@@ -13,10 +13,12 @@ const BidSection = ({
     onBidAmountChange,
     onStartDateChange,
     onMotivationChange,
-    onMonthsAdvanceChange
+    onMonthsAdvanceChange,
+    readOnly = false
 }) => {
     const currentLang = useSelector((state) => state.ui.language);
     const t = translations.aanvraag[currentLang] || translations.aanvraag.nl;
+    const safeConditions = conditions || { huurprijs: 0, beschikbaar: '-' };
 
     return (
         <div className={styles.card}>
@@ -27,6 +29,16 @@ const BidSection = ({
                 </h3>
             </div>
             <div className={styles.cardContent}>
+                {readOnly && (
+                    <div className={styles.readOnlyBanner}>
+                        <AlertCircle size={16} />
+                        <span>
+                            {currentLang === 'en'
+                                ? 'These details are filled by the main tenant. You cannot edit them.'
+                                : 'Deze gegevens zijn ingevuld door de hoofdhuurder. U kunt deze niet bewerken.'}
+                        </span>
+                    </div>
+                )}
                 <div className={styles.grid}>
                     {/* Bid */}
                     <div className={styles.formItem}>
@@ -38,9 +50,10 @@ const BidSection = ({
                             <input
                                 type="number"
                                 className={styles.bidInput}
-                                placeholder={String(conditions.huurprijs)}
+                                placeholder={String(safeConditions.huurprijs)}
                                 value={bidAmount}
-                                onChange={(e) => onBidAmountChange(Number(e.target.value))}
+                                onChange={(e) => onBidAmountChange?.(Number(e.target.value))}
+                                disabled={readOnly}
                             />
                         </div>
                         <p className={styles.description}>
@@ -62,13 +75,14 @@ const BidSection = ({
                                 className={styles.dateInput}
                                 min={new Date().toISOString().split('T')[0]}
                                 value={startDate}
-                                onChange={(e) => onStartDateChange(e.target.value)}
+                                onChange={(e) => onStartDateChange?.(e.target.value)}
+                                disabled={readOnly}
                             />
                         </div>
                         <p className={styles.description}>
                             {currentLang === 'en'
-                                ? `Earliest possible: ${conditions.beschikbaar}. Later = more attractive.`
-                                : `Vroegst mogelijk: ${conditions.beschikbaar}. Later = minder aantrekkelijk.`}
+                                ? `Earliest possible: ${safeConditions.beschikbaar}. Later = more attractive.`
+                                : `Vroegst mogelijk: ${safeConditions.beschikbaar}. Later = minder aantrekkelijk.`}
                         </p>
                     </div>
                 </div>
@@ -81,7 +95,8 @@ const BidSection = ({
                     <select
                         className={styles.select}
                         value={monthsAdvance}
-                        onChange={(e) => onMonthsAdvanceChange(Number(e.target.value))}
+                        onChange={(e) => onMonthsAdvanceChange?.(Number(e.target.value))}
+                        disabled={readOnly}
                     >
                         <option value="0">0 {currentLang === 'en' ? 'months' : 'maanden'}</option>
                         <option value="1">1 {currentLang === 'en' ? 'month' : 'maand'}</option>
@@ -109,7 +124,8 @@ const BidSection = ({
                             : 'Waarom wil je hier wonen? Wat maakt jou een geschikte huurder?'}
                         maxLength={500}
                         value={motivation}
-                        onChange={(e) => onMotivationChange(e.target.value)}
+                        onChange={(e) => onMotivationChange?.(e.target.value)}
+                        disabled={readOnly}
                     />
                     <p className={styles.charCount}>
                         {motivation.length}/500 {currentLang === 'en' ? 'characters' : 'karakters'}
