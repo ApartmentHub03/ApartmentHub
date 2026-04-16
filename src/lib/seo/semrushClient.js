@@ -48,11 +48,16 @@ async function semrushFetch(params, baseUrl = BASE_URL) {
         headers: { Accept: 'text/csv' },
     });
 
+    // Semrush returns the real reason in the body even on 4xx responses.
+    const text = await response.text();
+
     if (!response.ok) {
-        throw new Error(`Semrush HTTP ${response.status}: ${response.statusText}`);
+        const body = (text || '').trim().slice(0, 200);
+        throw new Error(
+            `Semrush HTTP ${response.status}: ${body || response.statusText}`
+        );
     }
 
-    const text = await response.text();
     return parseCsv(text);
 }
 
@@ -70,10 +75,10 @@ export async function getApiUnitsRemaining() {
     const url = new URL(UNITS_URL);
     url.searchParams.set('key', getApiKey());
     const response = await fetch(url.toString());
-    if (!response.ok) {
-        throw new Error(`Semrush units HTTP ${response.status}`);
-    }
     const text = (await response.text()).trim();
+    if (!response.ok) {
+        throw new Error(`Semrush units HTTP ${response.status}: ${text.slice(0, 200)}`);
+    }
     if (text.startsWith('ERROR')) {
         throw new Error(`Semrush units error: ${text}`);
     }
