@@ -3,6 +3,7 @@
 import { useAdminFetch } from '@/hooks/useAdminFetch';
 import ScoreCard from './ScoreCard';
 import TrafficChart from './TrafficChart';
+import SemrushStatus from './SemrushStatus';
 import { SkeletonCard, SkeletonBlock } from './SkeletonCard';
 import styles from '../seo.module.css';
 
@@ -53,6 +54,8 @@ export default function OverviewTab({ refreshKey }) {
                     Some data sources failed to load. Check API credentials in env vars.
                 </div>
             )}
+
+            <SemrushStatus refreshKey={refreshKey} />
 
             <div className={styles.kpiGrid}>
                 <ScoreCard label="Realtime Users" value={realtime.activeUsers} format="number" />

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useAdminFetch } from '@/hooks/useAdminFetch';
 import { SkeletonBlock } from './SkeletonCard';
 import styles from '../seo.module.css';
@@ -17,6 +18,7 @@ export default function KeywordsTab({ refreshKey }) {
     const { data, loading, error } = useAdminFetch(
         `/api/admin/seo/semrush/keywords?limit=50&_=${refreshKey}`
     );
+    const paid = useAdminFetch(`/api/admin/seo/semrush/paid-keywords?limit=25&_=${refreshKey}`);
 
     if (loading && !data) return <SkeletonBlock />;
     if (error)
@@ -29,6 +31,7 @@ export default function KeywordsTab({ refreshKey }) {
         );
 
     const keywords = data?.keywords || [];
+    const paidKeywords = paid.data?.keywords || [];
     const topByTraffic = keywords.slice().sort((a, b) => b.traffic - a.traffic).slice(0, 15);
 
     const positionBuckets = keywords.reduce(
@@ -45,7 +48,7 @@ export default function KeywordsTab({ refreshKey }) {
     return (
         <>
             <div className={styles.section}>
-                <h3 className={styles.sectionTitle}>Top 15 Keywords by Traffic</h3>
+                <h3 className={styles.sectionTitle}>Top 15 Organic Keywords by Traffic</h3>
                 <div className={styles.chartContainer}>
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={topByTraffic} layout="vertical" margin={{ left: 140 }}>
@@ -107,16 +110,22 @@ export default function KeywordsTab({ refreshKey }) {
                 <div className={styles.section}>
                     <h3 className={styles.sectionTitle}>Summary</h3>
                     <p className={styles.sectionSubtitle}>
-                        Total keywords: <strong>{keywords.length}</strong>
+                        Total organic keywords: <strong>{keywords.length}</strong>
                     </p>
                     <p className={styles.sectionSubtitle}>
-                        Total est. traffic: <strong>{keywords.reduce((s, k) => s + k.traffic, 0).toLocaleString()}</strong>
+                        Total est. traffic:{' '}
+                        <strong>
+                            {keywords.reduce((s, k) => s + k.traffic, 0).toLocaleString()}
+                        </strong>
+                    </p>
+                    <p className={styles.sectionSubtitle}>
+                        Paid keywords: <strong>{paidKeywords.length}</strong>
                     </p>
                 </div>
             </div>
 
             <div className={styles.section}>
-                <h3 className={styles.sectionTitle}>All Keywords</h3>
+                <h3 className={styles.sectionTitle}>All Organic Keywords</h3>
                 <table className={styles.table}>
                     <thead>
                         <tr>
@@ -142,6 +151,228 @@ export default function KeywordsTab({ refreshKey }) {
                     </tbody>
                 </table>
             </div>
+
+            <PaidKeywordsSection
+                paidKeywords={paidKeywords}
+                loading={paid.loading}
+                error={paid.error}
+            />
+
+            <KeywordResearchSection refreshKey={refreshKey} />
         </>
+    );
+}
+
+function PaidKeywordsSection({ paidKeywords, loading, error }) {
+    return (
+        <div className={styles.section}>
+            <h3 className={styles.sectionTitle}>Paid Search Keywords (domain_adwords)</h3>
+            <p className={styles.sectionSubtitle}>
+                Keywords the domain is bidding on in Google Ads
+            </p>
+            {error ? (
+                <div className={styles.errorBanner}>{error}</div>
+            ) : loading && !paidKeywords.length ? (
+                <SkeletonBlock />
+            ) : paidKeywords.length === 0 ? (
+                <div className={styles.empty}>No paid search data available</div>
+            ) : (
+                <table className={styles.table}>
+                    <thead>
+                        <tr>
+                            <th>Keyword</th>
+                            <th>Position</th>
+                            <th>Volume</th>
+                            <th>CPC (€)</th>
+                            <th>Traffic %</th>
+                            <th>URL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {paidKeywords.map((k, i) => (
+                            <tr key={i}>
+                                <td>{k.keyword}</td>
+                                <td>{k.position}</td>
+                                <td>{k.volume.toLocaleString()}</td>
+                                <td>{k.cpc.toFixed(2)}</td>
+                                <td>{k.traffic.toFixed(2)}</td>
+                                <td className={styles.tablePage}>{k.url}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            )}
+        </div>
+    );
+}
+
+function KeywordResearchSection() {
+    const [input, setInput] = useState('');
+    const [phrase, setPhrase] = useState('');
+
+    const encoded = encodeURIComponent(phrase);
+    const url = phrase
+        ? `/api/admin/seo/semrush/keyword?phrase=${encoded}&include=overview,related,broad,difficulty,adwords`
+        : null;
+    const { data, loading, error } = useAdminFetch(url, { lazy: !phrase });
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (input.trim()) setPhrase(input.trim());
+    };
+
+    const overview = data?.overview;
+    const difficulty = data?.difficulty;
+    const related = data?.related || [];
+    const broad = data?.broadMatch || [];
+    const adwords = data?.adwords || [];
+
+    return (
+        <div className={styles.section}>
+            <h3 className={styles.sectionTitle}>Keyword Research</h3>
+            <p className={styles.sectionSubtitle}>
+                Look up a keyword to see overview, difficulty, related & broad-match phrases, and
+                top paid bidders.
+            </p>
+
+            <form className={styles.researchForm} onSubmit={handleSubmit}>
+                <input
+                    className={styles.researchInput}
+                    type="text"
+                    placeholder="e.g. apartments amsterdam"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                />
+                <button className={styles.researchButton} type="submit" disabled={!input.trim()}>
+                    {loading ? 'Loading…' : 'Research'}
+                </button>
+            </form>
+
+            {error && <div className={styles.errorBanner}>{error}</div>}
+            {phrase && !loading && !data && !error && (
+                <div className={styles.empty}>No data yet</div>
+            )}
+
+            {overview && (
+                <>
+                    <div className={styles.researchOverview}>
+                        <div className={styles.researchStat}>
+                            <div className={styles.researchStatLabel}>Volume</div>
+                            <div className={styles.researchStatValue}>
+                                {overview.volume.toLocaleString()}
+                            </div>
+                        </div>
+                        <div className={styles.researchStat}>
+                            <div className={styles.researchStatLabel}>CPC (€)</div>
+                            <div className={styles.researchStatValue}>
+                                {overview.cpc.toFixed(2)}
+                            </div>
+                        </div>
+                        <div className={styles.researchStat}>
+                            <div className={styles.researchStatLabel}>Competition</div>
+                            <div className={styles.researchStatValue}>
+                                {overview.competition.toFixed(2)}
+                            </div>
+                        </div>
+                        <div className={styles.researchStat}>
+                            <div className={styles.researchStatLabel}>SERP Results</div>
+                            <div className={styles.researchStatValue}>
+                                {overview.results.toLocaleString()}
+                            </div>
+                        </div>
+                        {difficulty && (
+                            <div className={styles.researchStat}>
+                                <div className={styles.researchStatLabel}>Difficulty</div>
+                                <div className={styles.researchStatValue}>
+                                    {difficulty.difficulty.toFixed(0)}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {related.length > 0 && (
+                        <div className={styles.subSection}>
+                            <h4 className={styles.sectionTitle}>Related Keywords (phrase_related)</h4>
+                            <table className={styles.table}>
+                                <thead>
+                                    <tr>
+                                        <th>Keyword</th>
+                                        <th>Volume</th>
+                                        <th>CPC (€)</th>
+                                        <th>Competition</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {related.map((k, i) => (
+                                        <tr key={i}>
+                                            <td>{k.keyword}</td>
+                                            <td>{k.volume.toLocaleString()}</td>
+                                            <td>{k.cpc.toFixed(2)}</td>
+                                            <td>{k.competition.toFixed(2)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    {broad.length > 0 && (
+                        <div className={styles.subSection}>
+                            <h4 className={styles.sectionTitle}>
+                                Broad-Match Keywords (phrase_fullsearch)
+                            </h4>
+                            <table className={styles.table}>
+                                <thead>
+                                    <tr>
+                                        <th>Keyword</th>
+                                        <th>Volume</th>
+                                        <th>CPC (€)</th>
+                                        <th>Competition</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {broad.map((k, i) => (
+                                        <tr key={i}>
+                                            <td>{k.keyword}</td>
+                                            <td>{k.volume.toLocaleString()}</td>
+                                            <td>{k.cpc.toFixed(2)}</td>
+                                            <td>{k.competition.toFixed(2)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    {adwords.length > 0 && (
+                        <div className={styles.subSection}>
+                            <h4 className={styles.sectionTitle}>
+                                Domains Bidding (phrase_adwords)
+                            </h4>
+                            <table className={styles.table}>
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Domain</th>
+                                        <th>URL</th>
+                                        <th>Visibility %</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {adwords.map((r, i) => (
+                                        <tr key={i}>
+                                            <td>{r.position}</td>
+                                            <td>{r.domain}</td>
+                                            <td className={styles.tablePage}>{r.url}</td>
+                                            <td>{r.visibility.toFixed(2)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </>
+            )}
+        </div>
     );
 }
