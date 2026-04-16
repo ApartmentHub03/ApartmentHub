@@ -11,7 +11,7 @@ export async function GET(request) {
         const { searchParams } = new URL(request.url);
         const domain = searchParams.get('domain') || 'apartmenthub.nl';
         const database = searchParams.get('database') || 'nl';
-        const limit = Number(searchParams.get('limit') || 50);
+        const limit = Number(searchParams.get('limit') || 25);
 
         const result = await getCachedOrFetch(
             `semrush:keywords:${domain}:${database}:${limit}`,

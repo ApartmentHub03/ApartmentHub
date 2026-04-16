@@ -573,3 +573,28 @@
     padding-top: 1.5rem;
     border-top: 1px dashed #e5e7eb;
 }
+
+/* Lazy-load prompt for expensive endpoints */
+.lazyPrompt {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: #f9fafb;
+    border: 1px dashed #d1d5db;
+    border-radius: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.lazyNote {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: #6b7280;
+    flex: 1;
+    min-width: 220px;
+}
+
+.lazyNote strong {
+    color: #111827;
+}

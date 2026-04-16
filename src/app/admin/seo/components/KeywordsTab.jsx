@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAdminFetch } from '@/hooks/useAdminFetch';
+import LazySection from './LazySection';
 import { SkeletonBlock } from './SkeletonCard';
 import styles from '../seo.module.css';
 import {
@@ -15,10 +16,10 @@ import {
 } from 'recharts';
 
 export default function KeywordsTab({ refreshKey }) {
+    // Organic keywords auto-load at route default (25 rows).
     const { data, loading, error } = useAdminFetch(
-        `/api/admin/seo/semrush/keywords?limit=50&_=${refreshKey}`
+        `/api/admin/seo/semrush/keywords?_=${refreshKey}`
     );
-    const paid = useAdminFetch(`/api/admin/seo/semrush/paid-keywords?limit=25&_=${refreshKey}`);
 
     if (loading && !data) return <SkeletonBlock />;
     if (error)
@@ -31,7 +32,6 @@ export default function KeywordsTab({ refreshKey }) {
         );
 
     const keywords = data?.keywords || [];
-    const paidKeywords = paid.data?.keywords || [];
     const topByTraffic = keywords.slice().sort((a, b) => b.traffic - a.traffic).slice(0, 15);
 
     const positionBuckets = keywords.reduce(
@@ -118,9 +118,6 @@ export default function KeywordsTab({ refreshKey }) {
                             {keywords.reduce((s, k) => s + k.traffic, 0).toLocaleString()}
                         </strong>
                     </p>
-                    <p className={styles.sectionSubtitle}>
-                        Paid keywords: <strong>{paidKeywords.length}</strong>
-                    </p>
                 </div>
             </div>
 
@@ -152,57 +149,47 @@ export default function KeywordsTab({ refreshKey }) {
                 </table>
             </div>
 
-            <PaidKeywordsSection
-                paidKeywords={paidKeywords}
-                loading={paid.loading}
-                error={paid.error}
-            />
+            <LazySection
+                title="Paid Search Keywords (domain_adwords)"
+                subtitle="Keywords the domain is bidding on in Google Ads"
+                url={`/api/admin/seo/semrush/paid-keywords?limit=10&_=${refreshKey}`}
+                unitsEstimate={200}
+            >
+                {(data) => {
+                    const rows = data?.keywords || [];
+                    if (rows.length === 0)
+                        return <div className={styles.empty}>No paid search data available</div>;
+                    return (
+                        <table className={styles.table}>
+                            <thead>
+                                <tr>
+                                    <th>Keyword</th>
+                                    <th>Position</th>
+                                    <th>Volume</th>
+                                    <th>CPC (€)</th>
+                                    <th>Traffic %</th>
+                                    <th>URL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rows.map((k, i) => (
+                                    <tr key={i}>
+                                        <td>{k.keyword}</td>
+                                        <td>{k.position}</td>
+                                        <td>{k.volume.toLocaleString()}</td>
+                                        <td>{k.cpc.toFixed(2)}</td>
+                                        <td>{k.traffic.toFixed(2)}</td>
+                                        <td className={styles.tablePage}>{k.url}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    );
+                }}
+            </LazySection>
 
             <KeywordResearchSection refreshKey={refreshKey} />
         </>
-    );
-}
-
-function PaidKeywordsSection({ paidKeywords, loading, error }) {
-    return (
-        <div className={styles.section}>
-            <h3 className={styles.sectionTitle}>Paid Search Keywords (domain_adwords)</h3>
-            <p className={styles.sectionSubtitle}>
-                Keywords the domain is bidding on in Google Ads
-            </p>
-            {error ? (
-                <div className={styles.errorBanner}>{error}</div>
-            ) : loading && !paidKeywords.length ? (
-                <SkeletonBlock />
-            ) : paidKeywords.length === 0 ? (
-                <div className={styles.empty}>No paid search data available</div>
-            ) : (
-                <table className={styles.table}>
-                    <thead>
-                        <tr>
-                            <th>Keyword</th>
-                            <th>Position</th>
-                            <th>Volume</th>
-                            <th>CPC (€)</th>
-                            <th>Traffic %</th>
-                            <th>URL</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {paidKeywords.map((k, i) => (
-                            <tr key={i}>
-                                <td>{k.keyword}</td>
-                                <td>{k.position}</td>
-                                <td>{k.volume.toLocaleString()}</td>
-                                <td>{k.cpc.toFixed(2)}</td>
-                                <td>{k.traffic.toFixed(2)}</td>
-                                <td className={styles.tablePage}>{k.url}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            )}
-        </div>
     );
 }
 
@@ -232,7 +219,7 @@ function KeywordResearchSection() {
             <h3 className={styles.sectionTitle}>Keyword Research</h3>
             <p className={styles.sectionSubtitle}>
                 Look up a keyword to see overview, difficulty, related & broad-match phrases, and
-                top paid bidders.
+                top paid bidders. Costs ~1,500 Semrush units per lookup (cached 24h).
             </p>
 
             <form className={styles.researchForm} onSubmit={handleSubmit}>
@@ -292,7 +279,9 @@ function KeywordResearchSection() {
 
                     {related.length > 0 && (
                         <div className={styles.subSection}>
-                            <h4 className={styles.sectionTitle}>Related Keywords (phrase_related)</h4>
+                            <h4 className={styles.sectionTitle}>
+                                Related Keywords (phrase_related)
+                            </h4>
                             <table className={styles.table}>
                                 <thead>
                                     <tr>
