@@ -60,15 +60,18 @@ export async function getRecentPosts(limit = 25) {
  */
 export async function getPostInsights(postId) {
     const data = await metaFetch(`${postId}/insights`, {
-        metric: 'post_impressions,post_engaged_users,post_clicks',
+        metric: 'post_impressions_unique,post_clicks,post_reactions_by_type_total',
     });
 
     const metrics = {};
     (data.data || []).forEach((m) => {
         const val = m.values?.[0]?.value;
-        if (m.name === 'post_impressions') metrics.impressions = Number(val || 0);
-        if (m.name === 'post_engaged_users') metrics.engagedUsers = Number(val || 0);
+        if (m.name === 'post_impressions_unique') metrics.impressions = Number(val || 0);
         if (m.name === 'post_clicks') metrics.clicks = Number(val || 0);
+        if (m.name === 'post_reactions_by_type_total') {
+            const reactions = val || {};
+            metrics.engagedUsers = Object.values(reactions).reduce((s, v) => s + Number(v || 0), 0);
+        }
     });
 
     return metrics;
@@ -83,8 +86,12 @@ export async function getPageInsights(period = 'day', days = 30) {
     const since = new Date(now);
     since.setDate(since.getDate() - days);
 
+    // Graph API v21.0 deprecated page_impressions and page_engaged_users.
+    // Valid replacements: page_posts_impressions, page_post_engagements,
+    // page_views_total, page_actions_post_reactions_total, page_follows,
+    // page_daily_follows, page_daily_unfollows, page_video_views.
     const data = await metaFetch(`${pageId}/insights`, {
-        metric: 'page_impressions,page_engaged_users,page_post_engagements,page_fans',
+        metric: 'page_posts_impressions,page_post_engagements,page_views_total,page_actions_post_reactions_total,page_follows',
         period,
         since: Math.floor(since.getTime() / 1000),
         until: Math.floor(now.getTime() / 1000),
@@ -103,10 +110,10 @@ export async function getPageInsights(period = 'day', days = 30) {
             value: Number(v.value || 0),
         }));
 
-        if (m.name === 'page_impressions') result.impressions = values;
-        if (m.name === 'page_engaged_users') result.engagedUsers = values;
+        if (m.name === 'page_posts_impressions') result.impressions = values;
+        if (m.name === 'page_views_total') result.engagedUsers = values;
         if (m.name === 'page_post_engagements') result.engagements = values;
-        if (m.name === 'page_fans') {
+        if (m.name === 'page_follows') {
             result.fans = values.length > 0 ? values[values.length - 1].value : 0;
         }
     });
