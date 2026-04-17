@@ -10,12 +10,11 @@ let service = null;
 function getService() {
     if (service) return service;
     const credentials = getGoogleCredentials();
-    const auth = new google.auth.JWT(
-        credentials.client_email,
-        null,
-        credentials.private_key,
-        ['https://www.googleapis.com/auth/webmasters.readonly']
-    );
+    const auth = new google.auth.JWT({
+        email: credentials.client_email,
+        key: credentials.private_key,
+        scopes: ['https://www.googleapis.com/auth/webmasters.readonly'],
+    });
     service = google.webmasters({ version: 'v3', auth });
     return service;
 }
