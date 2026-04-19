@@ -4,56 +4,70 @@ import { useState } from 'react';
 import { useAdminFetch } from '@/hooks/useAdminFetch';
 import Button from '@/components/ui/Button';
 import { SkeletonBlock } from './SkeletonCard';
-import { Sparkles, TrendingUp, CheckCircle, AlertCircle, Clock, BarChart2 } from 'lucide-react';
-import { toast } from 'sonner';
 import {
-    RadarChart,
-    PolarGrid,
-    PolarAngleAxis,
-    PolarRadiusAxis,
-    Radar,
-    ResponsiveContainer,
-} from 'recharts';
+    Sparkles,
+    AlertCircle,
+    Zap,
+    Target,
+    FileText,
+    Search,
+    Shield,
+    ChevronDown,
+    ChevronUp,
+    Loader2,
+} from 'lucide-react';
+import { toast } from 'sonner';
 import styles from '../seo.module.css';
 
+const PROVIDER_LABELS = { groq: 'Groq (Llama 3.3)', gemini: 'Gemini 2.5 Flash' };
+
 export default function AIInsightsTab({ refreshKey }) {
-    const [running, setRunning] = useState(false);
-    const [statusFilter, setStatusFilter] = useState('all');
-    const { data, loading, error, refresh } = useAdminFetch(
+    const [webhookRunning, setWebhookRunning] = useState(false);
+    const [webhookAnalysis, setWebhookAnalysis] = useState(null);
+    const [pollStatus, setPollStatus] = useState(null);
+    const [provider, setProvider] = useState('groq');
+    const { data, loading } = useAdminFetch(
         `/api/admin/seo/ai/results?_=${refreshKey}`
-    );
-    const { data: optData, refresh: refreshOpt } = useAdminFetch(
-        `/api/admin/seo/ai/optimizations?_=${refreshKey}`
     );
 
     const handleRunAnalysis = async () => {
-        setRunning(true);
-        toast.loading('Running AI council analysis... this may take 30-60s', { id: 'ai-run' });
+        const providerName = PROVIDER_LABELS[provider];
+        setWebhookRunning(true);
+        setWebhookAnalysis(null);
+        setPollStatus(`Gathering SEO data and sending to ${providerName}...`);
+        toast.loading(`Sending dashboard data to ${providerName}...`, { id: 'webhook-run' });
         try {
             const token = sessionStorage.getItem('admin_token');
-            const response = await fetch('/api/admin/seo/ai/analyze', {
+            const response = await fetch('/api/admin/seo/ai/webhook-analyze', {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ maxPages: 5 }),
+                body: JSON.stringify({ provider }),
             });
             const json = await response.json();
-            if (!response.ok) throw new Error(json.error || 'Analysis failed');
-            toast.success(`Analyzed ${json.pagesAnalyzed} pages`, { id: 'ai-run' });
-            refresh();
+            if (!response.ok) throw new Error(json.error || 'Failed to run analysis');
+            if (!json.analysis) throw new Error('Analysis returned no data');
+
+            setWebhookAnalysis(json.analysis);
+            toast.success(
+                json.analysis.sameAsPrevious
+                    ? 'Analysis complete — same as previous run'
+                    : 'Analysis complete',
+                { id: 'webhook-run' }
+            );
         } catch (err) {
-            toast.error(err.message, { id: 'ai-run' });
+            toast.error(err.message, { id: 'webhook-run' });
         } finally {
-            setRunning(false);
+            setWebhookRunning(false);
+            setPollStatus(null);
         }
     };
 
     if (loading && !data) return <SkeletonBlock />;
 
     const lastRun = data?.lastRun;
-    const results = data?.results || [];
 
     return (
         <>
@@ -62,340 +76,350 @@ export default function AIInsightsTab({ refreshKey }) {
                     <div>
                         <h3 className={styles.sectionTitle} style={{ margin: 0 }}>
                             <Sparkles size={18} style={{ display: 'inline', marginRight: 8 }} />
-                            AI SEO Council
+                            AI SEO Analysis
                         </h3>
                         <p className={styles.sectionSubtitle}>
                             {lastRun
                                 ? `Last run: ${new Date(lastRun.completed_at || lastRun.created_at).toLocaleString()}`
-                                : 'No analysis run yet'}
+                                : 'Analyzes all dashboard data via AI and suggests improvements'}
                         </p>
                     </div>
-                    <Button onClick={handleRunAnalysis} disabled={running} loading={running}>
-                        <Sparkles size={14} />
-                        Run Full Analysis
-                    </Button>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <select
+                            value={provider}
+                            onChange={(e) => setProvider(e.target.value)}
+                            disabled={webhookRunning}
+                            style={{
+                                padding: '0.5rem 0.75rem',
+                                border: '1px solid #d1d5db',
+                                borderRadius: '0.375rem',
+                                fontSize: '0.875rem',
+                                background: '#fff',
+                                cursor: webhookRunning ? 'not-allowed' : 'pointer',
+                            }}
+                        >
+                            <option value="groq">Groq (Llama 3.3, free)</option>
+                            <option value="gemini">Gemini 2.5 Flash</option>
+                        </select>
+                        <Button
+                            onClick={handleRunAnalysis}
+                            disabled={webhookRunning}
+                            loading={webhookRunning}
+                        >
+                            <Sparkles size={14} />
+                            {webhookRunning ? 'Analyzing...' : 'Run Analysis'}
+                        </Button>
+                    </div>
                 </div>
-                {error && <div className={styles.errorBanner}>{error}</div>}
             </div>
 
-            {results.length === 0 ? (
+            {webhookRunning && pollStatus && (
+                <div className={styles.section}>
+                    <div className={styles.empty} style={{ textAlign: 'center' }}>
+                        <Loader2 size={32} style={{ margin: '0 auto 1rem', color: '#009B8A', animation: 'spin 1s linear infinite' }} />
+                        <p style={{ fontWeight: 500 }}>{pollStatus}</p>
+                    </div>
+                    <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+                </div>
+            )}
+
+            {webhookAnalysis ? (
+                <WebhookResults analysis={webhookAnalysis} />
+            ) : !webhookRunning && (
                 <div className={styles.section}>
                     <div className={styles.empty}>
                         <AlertCircle size={32} style={{ margin: '0 auto 1rem', color: '#9ca3af' }} />
                         <p>
-                            No AI insights yet. Click <strong>Run Full Analysis</strong> to start.
+                            No AI insights yet. Click <strong>Run Analysis</strong> to start.
                         </p>
                         <p style={{ fontSize: '0.8125rem', marginTop: '0.5rem' }}>
-                            The AI council will analyze your top opportunity pages, compare against
-                            competitors, and generate specific before/after suggestions.
+                            The selected model will analyze your traffic, keywords, backlinks, search
+                            console data, and social metrics to generate specific improvement suggestions.
                         </p>
                     </div>
                 </div>
-            ) : (
-                results.map((page, i) => (
-                    <div key={i} className={styles.priorityCard}>
-                        <div className={styles.priorityHeader}>
-                            <div>
-                                <p className={styles.priorityPath}>
-                                    Priority #{i + 1}: {page.pagePath}
-                                </p>
-                                <p className={styles.sectionSubtitle} style={{ margin: '0.25rem 0 0' }}>
-                                    {page.gscData &&
-                                        `Impressions: ${page.gscData.impressions} · CTR: ${(page.gscData.ctr * 100).toFixed(1)}% · Position: ${page.gscData.position?.toFixed(1)}`}
-                                </p>
-                            </div>
-                            <div className={styles.priorityScore}>{page.overallScore}/100</div>
-                        </div>
-
-                        {page.scores && (
-                            <div className={styles.chartContainer} style={{ height: 220 }}>
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <RadarChart
-                                        data={[
-                                            { subject: 'Technical', score: page.scores.technical },
-                                            { subject: 'Content', score: page.scores.content },
-                                            { subject: 'Keywords', score: page.scores.keyword },
-                                            { subject: 'UX', score: page.scores.ux },
-                                        ]}
-                                    >
-                                        <PolarGrid stroke="#e5e7eb" />
-                                        <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12 }} />
-                                        <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
-                                        <Radar
-                                            name="Score"
-                                            dataKey="score"
-                                            stroke="#009B8A"
-                                            fill="#009B8A"
-                                            fillOpacity={0.3}
-                                        />
-                                    </RadarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        )}
-
-                        {page.competitorComparison && (
-                            <div style={{ marginTop: '1rem' }}>
-                                <p className={styles.sectionSubtitle}>
-                                    <strong>Title comparison:</strong>
-                                </p>
-                                <div className={styles.beforeAfter}>
-                                    <div>
-                                        <strong>Current:</strong> {page.competitorComparison.currentTitle}
-                                    </div>
-                                    <div style={{ marginTop: '0.25rem', color: '#059669' }}>
-                                        <strong>Suggested:</strong> {page.competitorComparison.suggestedTitle}
-                                    </div>
-                                    {page.competitorComparison.reasoning && (
-                                        <div style={{ marginTop: '0.25rem', fontStyle: 'italic' }}>
-                                            {page.competitorComparison.reasoning}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {page.actionItems && page.actionItems.length > 0 && (
-                            <div className={styles.actionList}>
-                                <p className={styles.sectionSubtitle} style={{ margin: 0 }}>
-                                    <strong>Action Items:</strong>
-                                </p>
-                                {page.actionItems.map((item, j) => (
-                                    <div key={j} className={styles.actionItem}>
-                                        <TrendingUp size={16} style={{ color: '#009B8A', flexShrink: 0 }} />
-                                        <div className={styles.actionText}>
-                                            <div>{item.action}</div>
-                                            {(item.before || item.after) && (
-                                                <div className={styles.beforeAfter}>
-                                                    {item.before && (
-                                                        <div>
-                                                            <strong>Before:</strong> {item.before}
-                                                        </div>
-                                                    )}
-                                                    {item.after && (
-                                                        <div>
-                                                            <strong>After:</strong> {item.after}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                            <div style={{ marginTop: '0.25rem' }}>
-                                                <span
-                                                    className={
-                                                        item.impact === 'high'
-                                                            ? styles.badgeHigh
-                                                            : item.impact === 'medium'
-                                                              ? styles.badgeMedium
-                                                              : styles.badgeLow
-                                                    }
-                                                >
-                                                    {item.impact} impact
-                                                </span>{' '}
-                                                <span className={styles.badgeLow}>{item.category}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                ))
             )}
 
-            <OptimizationTracker
-                optimizations={optData?.optimizations || []}
-                statusFilter={statusFilter}
-                onStatusFilterChange={setStatusFilter}
-                onRefresh={refreshOpt}
-            />
         </>
     );
 }
 
-function OptimizationTracker({ optimizations, statusFilter, onStatusFilterChange, onRefresh }) {
-    const [actionLoading, setActionLoading] = useState(null);
+function WebhookResults({ analysis }) {
+    const [expandedSection, setExpandedSection] = useState(null);
 
-    const statuses = ['all', 'suggested', 'applied', 'success', 'no_change'];
+    if (!analysis) return null;
 
-    const filtered =
-        statusFilter === 'all'
-            ? optimizations
-            : optimizations.filter((o) => o.status === statusFilter);
+    const toggleSection = (section) => {
+        setExpandedSection(expandedSection === section ? null : section);
+    };
 
-    const handleMarkApplied = async (id) => {
-        setActionLoading(id);
-        try {
-            const token = sessionStorage.getItem('admin_token');
-            const res = await fetch('/api/admin/seo/ai/optimizations', {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, status: 'applied' }),
-            });
-            if (!res.ok) throw new Error('Failed to update');
-            toast.success('Optimization marked as applied');
-            onRefresh?.();
-        } catch (err) {
-            toast.error(err.message);
-        } finally {
-            setActionLoading(null);
+    const impactColor = (impact) => {
+        switch (impact) {
+            case 'high': return '#dc2626';
+            case 'medium': return '#d97706';
+            case 'low': return '#059669';
+            default: return '#6b7280';
         }
-    };
-
-    const handleMeasure = async (id) => {
-        setActionLoading(id);
-        toast.loading('Measuring GSC performance...', { id: 'measure' });
-        try {
-            const token = sessionStorage.getItem('admin_token');
-            const res = await fetch('/api/admin/seo/ai/optimizations/measure', {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id }),
-            });
-            const json = await res.json();
-            if (!res.ok) throw new Error(json.error || 'Measurement failed');
-            const change = json.ctrChange != null ? (json.ctrChange * 100).toFixed(2) : '?';
-            toast.success(
-                `Result: ${json.status === 'success' ? 'Improved' : 'No change'} (CTR ${change >= 0 ? '+' : ''}${change}%)`,
-                { id: 'measure' }
-            );
-            onRefresh?.();
-        } catch (err) {
-            toast.error(err.message, { id: 'measure' });
-        } finally {
-            setActionLoading(null);
-        }
-    };
-
-    const daysSince = (dateStr) => {
-        if (!dateStr) return 0;
-        return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
-    };
-
-    const statusBadge = (status) => {
-        const map = {
-            suggested: styles.badgeLow,
-            applied: styles.badgeMedium,
-            success: styles.badgeSuccess,
-            no_change: styles.badgeNoChange,
-        };
-        return map[status] || styles.badgeLow;
     };
 
     return (
-        <div className={styles.section}>
-            <h3 className={styles.sectionTitle}>
-                <span>
-                    <BarChart2 size={18} style={{ display: 'inline', marginRight: 8 }} />
-                    Optimization Tracking Pipeline
-                </span>
-            </h3>
-            <p className={styles.sectionSubtitle}>
-                Track optimizations from suggestion through measurement
-            </p>
-
-            <div className={styles.statusFilters}>
-                {statuses.map((s) => (
-                    <button
-                        key={s}
-                        className={`${styles.statusFilter} ${statusFilter === s ? styles.statusFilterActive : ''}`}
-                        onClick={() => onStatusFilterChange(s)}
-                    >
-                        {s === 'all' ? 'All' : s === 'no_change' ? 'No Change' : s.charAt(0).toUpperCase() + s.slice(1)}
-                        {s !== 'all' && (
-                            <span style={{ marginLeft: 4, opacity: 0.7 }}>
-                                ({optimizations.filter((o) => o.status === s).length})
-                            </span>
-                        )}
-                    </button>
-                ))}
-            </div>
-
-            {filtered.length === 0 ? (
-                <div className={styles.empty}>
-                    No optimizations {statusFilter !== 'all' ? `with status "${statusFilter}"` : 'tracked yet'}
+        <>
+            {analysis.sameAsPrevious && (
+                <div
+                    className={styles.priorityCard}
+                    style={{
+                        background: '#fef3c7',
+                        borderColor: '#f59e0b',
+                        color: '#92400e',
+                    }}
+                >
+                    <p style={{ margin: 0, fontWeight: 600, fontSize: '0.95rem' }}>
+                        <AlertCircle size={16} style={{ display: 'inline', marginRight: 6 }} />
+                        Same suggestions as the previous one
+                    </p>
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8125rem' }}>
+                        The model had no new suggestions beyond the previous run.
+                    </p>
                 </div>
-            ) : (
-                <table className={styles.table}>
-                    <thead>
-                        <tr>
-                            <th>Page</th>
-                            <th>Type</th>
-                            <th>Before / After</th>
-                            <th>Status</th>
-                            <th>CTR Change</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filtered.map((opt) => (
-                            <tr key={opt.id}>
-                                <td className={styles.tablePage}>{opt.page_path}</td>
-                                <td>{opt.optimization_type}</td>
-                                <td>
-                                    <div className={styles.beforeAfter}>
-                                        {opt.before_value && (
-                                            <div><strong>Before:</strong> {opt.before_value.slice(0, 50)}</div>
-                                        )}
-                                        {opt.after_value && (
-                                            <div><strong>After:</strong> {opt.after_value.slice(0, 50)}</div>
-                                        )}
-                                    </div>
-                                </td>
-                                <td>
-                                    <span className={statusBadge(opt.status)}>
-                                        {opt.status === 'no_change' ? 'no change' : opt.status}
-                                    </span>
-                                </td>
-                                <td>
-                                    {opt.after_ctr != null && opt.before_ctr != null ? (
-                                        <span style={{ color: opt.after_ctr > opt.before_ctr ? '#059669' : '#dc2626' }}>
-                                            {((opt.after_ctr - opt.before_ctr) * 100).toFixed(2)}%
-                                        </span>
-                                    ) : (
-                                        '—'
-                                    )}
-                                </td>
-                                <td>
-                                    {opt.status === 'suggested' && (
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={() => handleMarkApplied(opt.id)}
-                                            loading={actionLoading === opt.id}
-                                        >
-                                            <CheckCircle size={12} />
-                                            Applied
-                                        </Button>
-                                    )}
-                                    {opt.status === 'applied' && (
-                                        <div>
-                                            <small style={{ color: '#6b7280' }}>
-                                                <Clock size={10} style={{ display: 'inline' }} />{' '}
-                                                {daysSince(opt.applied_at)}d ago
-                                            </small>
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() => handleMeasure(opt.id)}
-                                                loading={actionLoading === opt.id}
-                                                disabled={daysSince(opt.applied_at) < 14}
-                                                style={{ marginLeft: 8 }}
-                                            >
-                                                <BarChart2 size={12} />
-                                                Measure
-                                            </Button>
-                                        </div>
-                                    )}
-                                    {(opt.status === 'success' || opt.status === 'no_change') && (
-                                        <small style={{ color: '#6b7280' }}>
-                                            Measured {opt.measured_at ? new Date(opt.measured_at).toLocaleDateString() : '—'}
-                                        </small>
-                                    )}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
             )}
-        </div>
+
+            {/* Health Score & Summary */}
+            {(analysis.summary || analysis.healthScore != null) && (
+                <div className={styles.priorityCard}>
+                    <div className={styles.priorityHeader}>
+                        <div style={{ flex: 1 }}>
+                            <p className={styles.priorityPath}>
+                                <Shield size={16} style={{ display: 'inline', marginRight: 6 }} />
+                                SEO Health Assessment
+                            </p>
+                            <p style={{ margin: '0.5rem 0 0', fontSize: '0.875rem', color: '#374151', lineHeight: 1.6 }}>
+                                {analysis.summary}
+                            </p>
+                        </div>
+                        {analysis.healthScore != null && (
+                            <div className={styles.priorityScore} style={{
+                                color: analysis.healthScore >= 70 ? '#059669'
+                                    : analysis.healthScore >= 40 ? '#d97706' : '#dc2626'
+                            }}>
+                                {analysis.healthScore}/100
+                            </div>
+                        )}
+                    </div>
+
+                    {analysis.monthlyPriorities && analysis.monthlyPriorities.length > 0 && (
+                        <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#f0fdf4', borderRadius: '0.5rem' }}>
+                            <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 600, color: '#166534' }}>
+                                Monthly Priorities:
+                            </p>
+                            <ol style={{ margin: '0.5rem 0 0', paddingLeft: '1.25rem', fontSize: '0.8125rem', color: '#166534' }}>
+                                {analysis.monthlyPriorities.map((p, i) => (
+                                    <li key={i} style={{ marginBottom: '0.25rem' }}>{p}</li>
+                                ))}
+                            </ol>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Critical Issues */}
+            {analysis.criticalIssues && analysis.criticalIssues.length > 0 && (
+                <div className={styles.priorityCard}>
+                    <button
+                        onClick={() => toggleSection('critical')}
+                        style={{
+                            width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+                            padding: 0, textAlign: 'left', fontFamily: 'inherit',
+                        }}
+                    >
+                        <div className={styles.priorityHeader}>
+                            <p className={styles.priorityPath} style={{ color: '#dc2626' }}>
+                                <AlertCircle size={16} style={{ display: 'inline', marginRight: 6 }} />
+                                Critical Issues ({analysis.criticalIssues.length})
+                            </p>
+                            {expandedSection === 'critical' ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                        </div>
+                    </button>
+                    {expandedSection === 'critical' && (
+                        <div className={styles.actionList}>
+                            {analysis.criticalIssues.map((issue, i) => (
+                                <div key={i} className={styles.actionItem}>
+                                    <AlertCircle size={16} style={{ color: impactColor(issue.impact), flexShrink: 0 }} />
+                                    <div className={styles.actionText}>
+                                        <div style={{ fontWeight: 500 }}>{issue.issue}</div>
+                                        <div style={{ marginTop: '0.25rem', color: '#059669', fontSize: '0.8125rem' }}>
+                                            <strong>Fix:</strong> {issue.fix}
+                                        </div>
+                                        <span
+                                            className={
+                                                issue.impact === 'high' ? styles.badgeHigh
+                                                    : issue.impact === 'medium' ? styles.badgeMedium
+                                                        : styles.badgeLow
+                                            }
+                                            style={{ marginTop: '0.25rem', display: 'inline-block' }}
+                                        >
+                                            {issue.impact} impact
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Quick Wins */}
+            {analysis.quickWins && analysis.quickWins.length > 0 && (
+                <div className={styles.priorityCard}>
+                    <button
+                        onClick={() => toggleSection('quickwins')}
+                        style={{
+                            width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+                            padding: 0, textAlign: 'left', fontFamily: 'inherit',
+                        }}
+                    >
+                        <div className={styles.priorityHeader}>
+                            <p className={styles.priorityPath} style={{ color: '#059669' }}>
+                                <Zap size={16} style={{ display: 'inline', marginRight: 6 }} />
+                                Quick Wins ({analysis.quickWins.length})
+                            </p>
+                            {expandedSection === 'quickwins' ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                        </div>
+                    </button>
+                    {expandedSection === 'quickwins' && (
+                        <div className={styles.actionList}>
+                            {analysis.quickWins.map((win, i) => (
+                                <div key={i} className={styles.actionItem}>
+                                    <Zap size={16} style={{ color: '#059669', flexShrink: 0 }} />
+                                    <div className={styles.actionText}>
+                                        <div style={{ fontWeight: 500 }}>{win.action}</div>
+                                        <div style={{ marginTop: '0.25rem', fontSize: '0.8125rem', color: '#6b7280' }}>
+                                            {win.expectedImpact}
+                                        </div>
+                                        <div style={{ marginTop: '0.25rem' }}>
+                                            <span className={styles.badgeLow}>{win.category}</span>{' '}
+                                            <span className={
+                                                win.effort === 'low' ? styles.badgeSuccess
+                                                    : win.effort === 'medium' ? styles.badgeMedium
+                                                        : styles.badgeHigh
+                                            }>
+                                                {win.effort} effort
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Content Suggestions */}
+            {analysis.contentSuggestions && analysis.contentSuggestions.length > 0 && (
+                <div className={styles.priorityCard}>
+                    <button
+                        onClick={() => toggleSection('content')}
+                        style={{
+                            width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+                            padding: 0, textAlign: 'left', fontFamily: 'inherit',
+                        }}
+                    >
+                        <div className={styles.priorityHeader}>
+                            <p className={styles.priorityPath}>
+                                <FileText size={16} style={{ display: 'inline', marginRight: 6 }} />
+                                Content Suggestions ({analysis.contentSuggestions.length})
+                            </p>
+                            {expandedSection === 'content' ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                        </div>
+                    </button>
+                    {expandedSection === 'content' && (
+                        <div className={styles.actionList}>
+                            {analysis.contentSuggestions.map((sug, i) => (
+                                <div key={i} className={styles.actionItem}>
+                                    <FileText size={16} style={{ color: '#6366f1', flexShrink: 0 }} />
+                                    <div className={styles.actionText}>
+                                        <div style={{ fontWeight: 500 }}>{sug.page}</div>
+                                        <div className={styles.beforeAfter}>
+                                            <div><strong>Issue:</strong> {sug.currentIssue}</div>
+                                            <div style={{ color: '#059669' }}>
+                                                <strong>Suggestion:</strong> {sug.suggestion}
+                                            </div>
+                                        </div>
+                                        <span
+                                            className={
+                                                sug.priority === 'high' ? styles.badgeHigh
+                                                    : sug.priority === 'medium' ? styles.badgeMedium
+                                                        : styles.badgeLow
+                                            }
+                                            style={{ marginTop: '0.25rem', display: 'inline-block' }}
+                                        >
+                                            {sug.priority} priority
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Keyword Opportunities */}
+            {analysis.keywordOpportunities && analysis.keywordOpportunities.length > 0 && (
+                <div className={styles.priorityCard}>
+                    <button
+                        onClick={() => toggleSection('keywords')}
+                        style={{
+                            width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+                            padding: 0, textAlign: 'left', fontFamily: 'inherit',
+                        }}
+                    >
+                        <div className={styles.priorityHeader}>
+                            <p className={styles.priorityPath}>
+                                <Search size={16} style={{ display: 'inline', marginRight: 6 }} />
+                                Keyword Opportunities ({analysis.keywordOpportunities.length})
+                            </p>
+                            {expandedSection === 'keywords' ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                        </div>
+                    </button>
+                    {expandedSection === 'keywords' && (
+                        <table className={styles.table}>
+                            <thead>
+                                <tr>
+                                    <th>Keyword</th>
+                                    <th>Position</th>
+                                    <th>Impressions</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {analysis.keywordOpportunities.map((kw, i) => (
+                                    <tr key={i}>
+                                        <td style={{ fontWeight: 500 }}>{kw.keyword}</td>
+                                        <td>{kw.currentPosition ?? '—'}</td>
+                                        <td>{kw.impressions ?? '—'}</td>
+                                        <td style={{ fontSize: '0.8125rem' }}>{kw.action}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
+            )}
+
+            {/* Competitor Insights */}
+            {analysis.competitorInsights && (
+                <div className={styles.priorityCard}>
+                    <div className={styles.priorityHeader}>
+                        <p className={styles.priorityPath}>
+                            <Target size={16} style={{ display: 'inline', marginRight: 6 }} />
+                            Competitor Insights
+                        </p>
+                    </div>
+                    <p style={{ margin: '0.5rem 0 0', fontSize: '0.875rem', color: '#374151', lineHeight: 1.6 }}>
+                        {analysis.competitorInsights}
+                    </p>
+                </div>
+            )}
+        </>
     );
 }
+
