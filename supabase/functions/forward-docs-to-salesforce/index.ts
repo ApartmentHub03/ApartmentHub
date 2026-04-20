@@ -60,7 +60,7 @@ serve(async (req) => {
         const { data: rows, error } = await supabase
             .from("documenten")
             .select(
-                "id, type, status, bestandsnaam, bestandspad, personen!inner(id, voornaam, achternaam, telefoon, rol, dossier_id, dossiers!inner(id, phone_number))"
+                "id, type, status, bestandsnaam, bestandspad, personen!inner(id, naam, whatsapp, rol, dossier_id, dossiers!inner(id, phone_number))"
             )
             .eq("personen.dossiers.phone_number", phone_number);
 
@@ -81,8 +81,8 @@ serve(async (req) => {
         );
 
         const personMeta = (p: any) => ({
-            name: [p.voornaam, p.achternaam].filter(Boolean).join(" ").trim(),
-            phone_number: p.telefoon,
+            name: p.naam || "",
+            phone_number: p.whatsapp,
             role: roleMap[p.rol] ?? p.rol,
             server_id: p.dossiers?.id ?? p.dossier_id,
         });

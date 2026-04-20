@@ -772,7 +772,58 @@ const Aanvraag = () => {
         }
 
         setSaveStatus('saving');
+
+        // Save all person data to Supabase before triggering webhooks
+        if (data?.personen?.length) {
+            await saveAllPersonsToSupabase(data.personen);
+        }
+
         await updateAccountDocumentationStatus('Complete');
+
+        // Fire the Salesforce documents-complete webhook (fire-and-forget so it never blocks navigation)
+        const mainTenant = data.personen.find(p => p.rol === 'Hoofdhuurder');
+        const sfPayload = {
+            account_id: accountId,
+            tenant_name: mainTenant?.naam || '',
+            phone_number: phoneNumber,
+            salesforce_account_id: null, // Will be looked up by the edge function
+        };
+
+        // Fetch salesforce_account_id from accounts table if available
+        try {
+            const { supabase: sb } = await import('../integrations/supabase/client');
+            if (sb && accountId) {
+                const { data: accRow } = await sb
+                    .from('accounts')
+                    .select('salesforce_account_id')
+                    .eq('id', accountId)
+                    .single();
+                if (accRow?.salesforce_account_id) {
+                    sfPayload.salesforce_account_id = accRow.salesforce_account_id;
+                }
+            }
+        } catch (e) {
+            console.warn('[Aanvraag] Could not fetch salesforce_account_id:', e);
+        }
+
+        if (sfPayload.account_id && sfPayload.phone_number) {
+            fetch('/api/salesforce/documents-complete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(sfPayload),
+            })
+                .then(res => res.json())
+                .then(result => {
+                    if (result.success) {
+                        console.log('[Aanvraag] ✓ Salesforce webhook triggered:', result.batch_id, `(${result.docs_with_files} files)`);
+                    } else {
+                        console.error('[Aanvraag] ✗ Salesforce webhook failed:', result.error);
+                    }
+                })
+                .catch(err => console.error('[Aanvraag] ✗ Salesforce webhook error:', err));
+        } else {
+            console.warn('[Aanvraag] Skipping Salesforce webhook – missing account_id or phone_number');
+        }
 
         // Link offer to apartment and account (skip on general route)
         if (!isGeneralRoute && data.pand?.apartmentId && accountId) {
@@ -791,7 +842,6 @@ const Aanvraag = () => {
                 // 2. Apartment: push to offers_in JSONB array
                 const { data: aptData } = await sb.from('apartments').select('offers_in').eq('id', data.pand.apartmentId).single();
                 const offersIn = aptData?.offers_in || [];
-                const mainTenant = data.personen.find(p => p.rol === 'Hoofdhuurder');
 
                 // Check if we already have an offer for this account to avoid duplicates
                 const existingOfferIdx = offersIn.findIndex(o => o.account_id === accountId);
