@@ -1,15 +1,20 @@
 import "dotenv/config";
 import express from "express";
-import { appendFileSync, mkdirSync } from "node:fs";
+import { appendFileSync, mkdirSync, createWriteStream } from "node:fs";
 import { join } from "node:path";
-import { execSync } from "node:child_process";
+import { execSync, spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { loadPlugins } from "./plugin-loader.js";
 
 const PORT = process.env.PORT || 3100;
 const LOG_DIR = process.env.LOG_DIR || join(process.cwd(), "logs");
+const DISPATCH_LOG_DIR = process.env.DISPATCH_LOG_DIR || join(LOG_DIR, "dispatch");
+const CLAUDE_BIN = process.env.CLAUDE_BIN || "claude";
+const DISPATCH_BRANCH = process.env.DISPATCH_BRANCH || "seo";
 mkdirSync(LOG_DIR, { recursive: true });
+mkdirSync(DISPATCH_LOG_DIR, { recursive: true });
 
 // Parse VALID_TOKENS env: "tok_akshat:akshat,tok_david:david"
 const tokenMap = new Map();
@@ -157,6 +162,151 @@ app.delete("/mcp", authenticate, async (req, res) => {
     res.status(204).end();
   }
 });
+
+// --- Claude Code dispatch (SEO Develop button) ---
+//
+// Spawns a headless `claude -p` session on this server that autonomously
+// implements an SEO suggestion, commits to the configured dispatch branch,
+// and opens a PR. Fire-and-forget: returns 202 with a jobId immediately.
+app.post("/dispatch/seo-develop", authenticate, (req, res) => {
+  const { suggestion, type, dashboardContext } = req.body || {};
+  if (!suggestion || !type) {
+    return res.status(400).json({ error: "suggestion and type are required" });
+  }
+
+  const jobId = randomUUID();
+  const logFile = join(DISPATCH_LOG_DIR, `${jobId}.log`);
+  const logStream = createWriteStream(logFile, { flags: "a" });
+  const prompt = buildSeoDevelopPrompt({
+    type,
+    suggestion,
+    dashboardContext,
+    jobId,
+    user: req.username,
+  });
+
+  logStream.write(
+    `=== Job ${jobId} started ${new Date().toISOString()} ===\n` +
+    `User: ${req.username}\nType: ${type}\nBranch: ${DISPATCH_BRANCH}\nRepo: ${config.repoPath}\n\n` +
+    `--- PROMPT ---\n${prompt}\n\n--- OUTPUT ---\n`
+  );
+
+  log("dispatch_start", { jobId, user: req.username, type });
+
+  let child;
+  try {
+    child = spawn(
+      CLAUDE_BIN,
+      ["-p", prompt, "--dangerously-skip-permissions"],
+      {
+        cwd: config.repoPath,
+        detached: true,
+        stdio: ["ignore", "pipe", "pipe"],
+        env: process.env,
+      }
+    );
+  } catch (err) {
+    logStream.write(`\n=== Spawn failed: ${err.message} ===\n`);
+    logStream.end();
+    log("dispatch_spawn_error", { jobId, error: err.message });
+    return res.status(500).json({ error: `Failed to spawn claude: ${err.message}` });
+  }
+
+  child.stdout.pipe(logStream, { end: false });
+  child.stderr.pipe(logStream, { end: false });
+
+  child.on("exit", (code) => {
+    logStream.write(`\n=== Exited with code ${code} at ${new Date().toISOString()} ===\n`);
+    logStream.end();
+    log("dispatch_complete", { jobId, code });
+  });
+
+  child.on("error", (err) => {
+    logStream.write(`\n=== Process error: ${err.message} ===\n`);
+    logStream.end();
+    log("dispatch_process_error", { jobId, error: err.message });
+  });
+
+  child.unref();
+
+  res.status(202).json({ jobId, status: "dispatched", logFile: `${jobId}.log` });
+});
+
+// Peek at dispatch job logs (useful for debugging from the dashboard)
+app.get("/dispatch/seo-develop/:jobId/log", authenticate, async (req, res) => {
+  const { jobId } = req.params;
+  if (!/^[a-f0-9-]{36}$/.test(jobId)) {
+    return res.status(400).json({ error: "Invalid jobId" });
+  }
+  try {
+    const { readFileSync, existsSync } = await import("node:fs");
+    const path = join(DISPATCH_LOG_DIR, `${jobId}.log`);
+    if (!existsSync(path)) return res.status(404).json({ error: "Job not found" });
+    res.type("text/plain").send(readFileSync(path, "utf-8"));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+function buildSeoDevelopPrompt({ type, suggestion, dashboardContext, jobId, user }) {
+  const suggestionBlock = JSON.stringify(suggestion, null, 2);
+  const contextBlock = dashboardContext
+    ? JSON.stringify(dashboardContext, null, 2)
+    : "(not provided)";
+
+  return `You are being run HEADLESSLY to implement an SEO improvement flagged by the SEO dashboard. Work fully autonomously — do NOT ask questions, do NOT wait for confirmation, do NOT request clarification. Make decisions and proceed.
+
+TASK TYPE: ${type}
+TRIGGERED BY: ${user}
+JOB ID: ${jobId}
+
+SUGGESTION TO IMPLEMENT:
+${suggestionBlock}
+
+BROADER DASHBOARD CONTEXT (the full AI analysis this suggestion came from — use it to understand priorities and trade-offs):
+${contextBlock}
+
+=== INSTRUCTIONS (follow exactly) ===
+
+1. Read CLAUDE.md at the repo root. It describes ApartmentHub's architecture, conventions, and rules.
+2. Run: git fetch origin
+3. Checkout the branch "${DISPATCH_BRANCH}":
+   - If it exists on origin: git checkout ${DISPATCH_BRANCH} && git pull origin ${DISPATCH_BRANCH} --ff-only
+   - Else, cut it from latest main: git checkout main && git pull origin main --ff-only && git checkout -b ${DISPATCH_BRANCH}
+4. Analyze the suggestion against the codebase. Relevant areas are usually:
+   - src/app/(main)/nl/** and src/app/(main)/en/** — bilingual routes
+   - src/components/seo/** — SEO components (e.g. LocalBusinessSchema)
+   - src/app/layout.jsx and per-route metadata exports
+   - src/data/** — static content/translations
+5. Implement the change. STAY IN SCOPE — only implement this one suggestion. No refactoring, no unrelated cleanups, no new dependencies unless strictly required.
+6. If the change is content-facing and both /nl/ and /en/ routes exist for it, update both.
+7. Run: npm run lint — fix any errors YOU introduced. Ignore pre-existing errors in files you did not touch.
+8. Commit (stage only the specific files you changed):
+   git add <your files>
+   git commit -m "seo: <brief description> (job ${jobId.slice(0, 8)})"
+9. Push: git push -u origin ${DISPATCH_BRANCH}
+10. Open or update a PR:
+    - Check: gh pr list --head ${DISPATCH_BRANCH} --base main --state open
+    - If a PR exists, just add a comment summarizing this commit: gh pr comment <number> --body "..."
+    - Else open one: gh pr create --base main --head ${DISPATCH_BRANCH} --title "SEO: <brief>" --body "<summary, job ${jobId}, type: ${type}>"
+11. Exit.
+
+=== HARD RULES (never violate) ===
+- NEVER push to main. Only to ${DISPATCH_BRANCH}.
+- NEVER force-push anything.
+- NEVER modify .env files, secrets, credentials, or tokens.
+- NEVER edit files under mcp-server/ — that's the infrastructure running you.
+- NEVER delete or alter existing migration files.
+- NEVER bypass the lint with --no-verify.
+
+=== WHAT TO DO IF STUCK ===
+If the suggestion is ambiguous, not actionable from the codebase, or requires information you don't have: do NOT guess. Write a file .seo-dispatch-blocked-${jobId}.md at the repo root explaining what's blocking you, commit it to ${DISPATCH_BRANCH}, push, and exit WITHOUT opening a PR. A human will review.
+
+=== SCOPE GUARDRAIL ===
+If you find yourself touching more than 5 files, stop and reconsider — the suggestion is almost certainly narrower than your current approach. Revert overreach and redo with a tighter scope.
+
+Begin now.`;
+}
 
 // Health check
 app.get("/health", (_req, res) => {

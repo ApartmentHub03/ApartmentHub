@@ -15,6 +15,7 @@ import {
     ChevronDown,
     ChevronUp,
     Loader2,
+    Wrench,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import styles from '../seo.module.css';
@@ -144,6 +145,65 @@ export default function AIInsightsTab({ refreshKey }) {
     );
 }
 
+function DevelopButton({ type, suggestion, dashboardContext }) {
+    const [dispatching, setDispatching] = useState(false);
+
+    const handleDevelop = async () => {
+        if (dispatching) return;
+        setDispatching(true);
+        toast.loading('Dispatching to Claude Code on the Mac mini...', { id: 'dev-dispatch' });
+        try {
+            const token = sessionStorage.getItem('admin_token');
+            const res = await fetch('/api/admin/seo/ai/develop', {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ type, suggestion, dashboardContext }),
+            });
+            const json = await res.json();
+            if (!res.ok || !json.success) {
+                throw new Error(json.error || 'Dispatch failed');
+            }
+            toast.success(
+                `Claude is working on it — a PR will appear on GitHub in a few minutes (job ${String(json.jobId).slice(0, 8)})`,
+                { id: 'dev-dispatch', duration: 8000 }
+            );
+        } catch (err) {
+            toast.error(err.message, { id: 'dev-dispatch' });
+        } finally {
+            setDispatching(false);
+        }
+    };
+
+    return (
+        <button
+            onClick={handleDevelop}
+            disabled={dispatching}
+            title="Send this suggestion to Claude Code on the Mac mini to implement autonomously"
+            style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.35rem 0.75rem',
+                marginTop: '0.5rem',
+                border: '1px solid #009B8A',
+                background: dispatching ? '#e5f6f4' : '#009B8A',
+                color: dispatching ? '#009B8A' : '#fff',
+                borderRadius: '0.375rem',
+                fontSize: '0.75rem',
+                fontWeight: 500,
+                cursor: dispatching ? 'not-allowed' : 'pointer',
+                transition: 'all 0.15s',
+            }}
+        >
+            {dispatching ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <Wrench size={12} />}
+            {dispatching ? 'Dispatching...' : 'Develop'}
+        </button>
+    );
+}
+
 function WebhookResults({ analysis }) {
     const [expandedSection, setExpandedSection] = useState(null);
 
@@ -259,6 +319,13 @@ function WebhookResults({ analysis }) {
                                         >
                                             {issue.impact} impact
                                         </span>
+                                        <div>
+                                            <DevelopButton
+                                                type="criticalIssue"
+                                                suggestion={issue}
+                                                dashboardContext={analysis}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -304,6 +371,13 @@ function WebhookResults({ analysis }) {
                                             }>
                                                 {win.effort} effort
                                             </span>
+                                        </div>
+                                        <div>
+                                            <DevelopButton
+                                                type="quickWin"
+                                                suggestion={win}
+                                                dashboardContext={analysis}
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -354,6 +428,13 @@ function WebhookResults({ analysis }) {
                                         >
                                             {sug.priority} priority
                                         </span>
+                                        <div>
+                                            <DevelopButton
+                                                type="contentSuggestion"
+                                                suggestion={sug}
+                                                dashboardContext={analysis}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -388,6 +469,7 @@ function WebhookResults({ analysis }) {
                                     <th>Position</th>
                                     <th>Impressions</th>
                                     <th>Action</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -397,6 +479,13 @@ function WebhookResults({ analysis }) {
                                         <td>{kw.currentPosition ?? '—'}</td>
                                         <td>{kw.impressions ?? '—'}</td>
                                         <td style={{ fontSize: '0.8125rem' }}>{kw.action}</td>
+                                        <td>
+                                            <DevelopButton
+                                                type="keywordOpportunity"
+                                                suggestion={kw}
+                                                dashboardContext={analysis}
+                                            />
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
