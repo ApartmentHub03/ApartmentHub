@@ -699,15 +699,129 @@ export const translations = {
     },
     neighborhoods: {
         en: {
-            title: "Neighborhoods",
-            subtitle: "Discover Amsterdam's diverse neighborhoods and find your perfect area",
+            title: "Amsterdam Neighborhoods Guide",
+            subtitle: "A complete resource to every Amsterdam neighborhood — from the canals of Centrum to the waterfront of Noord — with rental price ranges, lifestyle insights, and links to apartments for rent in each area.",
             readMore: "Discover More",
+            introHeading: "Which Amsterdam neighborhood is right for you?",
+            introBody: "Amsterdam is compact but its districts are remarkably different in character, price and pace. This guide compares the city's nine most-requested neighborhoods so you can shortlist the areas that fit your budget and lifestyle before you start applying for apartments. Every card below links to a detailed neighborhood page with rental prices, market trends and livability scores.",
+            bestForTitle: "Best Amsterdam neighborhoods by lifestyle",
+            bestForSubtitle: "Jump straight to the areas that fit how you actually want to live in Amsterdam.",
+            bestFor: [
+                {
+                    label: "Best for expats & professionals",
+                    description: "International atmosphere, English-friendly services and strong transport links to the business districts.",
+                    picks: ["centrum", "zuidas", "oud-zuid"]
+                },
+                {
+                    label: "Best for families",
+                    description: "Spacious apartments, green parks, international schools and a calmer pace than the center.",
+                    picks: ["oud-zuid", "oost", "zeeburg"]
+                },
+                {
+                    label: "Best for students & young renters",
+                    description: "Lower rents, lively cafés and a short bike ride to the main universities.",
+                    picks: ["de-pijp", "oost", "nieuw-west"]
+                },
+                {
+                    label: "Best for creatives & nightlife",
+                    description: "Independent venues, arts hubs and some of Amsterdam's best food and nightlife.",
+                    picks: ["jordaan", "noord", "de-pijp"]
+                }
+            ],
+            priceGuideTitle: "Amsterdam rental prices by neighborhood",
+            priceGuideSubtitle: "Indicative monthly rent for a studio apartment in each area. Tap a neighborhood for full price trends and two- and three-bedroom benchmarks.",
+            priceGuideColArea: "Neighborhood",
+            priceGuideColStudio: "From (studio)",
+            priceGuideColCta: "Details",
+            priceGuideCta: "View area",
+            resourcesTitle: "Keep exploring apartmenthub.nl",
+            resourcesSubtitle: "Useful next steps once you've shortlisted an Amsterdam neighborhood.",
+            faqTitle: "FAQ: renting in an Amsterdam neighborhood",
+            faq: [
+                {
+                    q: "Which Amsterdam neighborhood has the cheapest apartments for rent?",
+                    a: "Nieuw-West and Amsterdam Noord consistently offer the lowest studio rents in the city, typically starting from €1,450–€1,600 per month, while still being connected to the center by metro, tram or ferry."
+                },
+                {
+                    q: "Where do most expats live in Amsterdam?",
+                    a: "Expats and international professionals tend to cluster in Centrum, Oud-Zuid, De Pijp and Zuidas because of English-friendly services, proximity to international schools, and fast connections to Schiphol and the main business districts."
+                },
+                {
+                    q: "Are Amsterdam rental prices still rising?",
+                    a: "Yes — across the nine districts we track, five-year rental growth ranges from roughly +12% in De Pijp to over +20% in Nieuw-West and Zeeburg. The biggest swings are outside the canal ring, where availability is higher but demand is catching up fast."
+                }
+            ]
         },
         nl: {
-            title: "Ontdek de Wijken van Amsterdam",
-            subtitle: "Ontdek het unieke karakter en de charme van elk stadsdeel om de perfecte plek voor jou te vinden.",
+            title: "Amsterdam Wijkengids",
+            subtitle: "Een complete gids voor elke Amsterdamse wijk — van de grachten van Centrum tot het water van Noord — met huurprijzen, sfeerbeschrijvingen en links naar huurappartementen per wijk.",
             readMore: "Ontdek Meer",
+            introHeading: "Welke Amsterdamse wijk past bij jou?",
+            introBody: "Amsterdam is compact, maar de wijken verschillen enorm in sfeer, prijs en tempo. Deze gids vergelijkt de negen meest gevraagde wijken van de stad, zodat je vóór je begint met reageren op huurwoningen een shortlist kunt maken die past bij je budget en levensstijl. Elke kaart hieronder linkt naar een uitgebreide wijkpagina met huurprijzen, markttrends en leefbaarheidsscores.",
+            bestForTitle: "De beste Amsterdamse wijken per levensstijl",
+            bestForSubtitle: "Spring direct naar de wijken die passen bij hoe jij écht wilt wonen in Amsterdam.",
+            bestFor: [
+                {
+                    label: "Beste voor expats & professionals",
+                    description: "Internationale sfeer, Engelstalige voorzieningen en snelle verbindingen met de zakendistricten.",
+                    picks: ["centrum", "zuidas", "oud-zuid"]
+                },
+                {
+                    label: "Beste voor gezinnen",
+                    description: "Ruime appartementen, groene parken, internationale scholen en een rustiger tempo dan in het centrum.",
+                    picks: ["oud-zuid", "oost", "zeeburg"]
+                },
+                {
+                    label: "Beste voor studenten & jonge huurders",
+                    description: "Lagere huren, levendige cafés en op de fiets bij de belangrijkste universiteiten.",
+                    picks: ["de-pijp", "oost", "nieuw-west"]
+                },
+                {
+                    label: "Beste voor creatievelingen & uitgaan",
+                    description: "Onafhankelijke podia, creatieve hubs en enkele van de beste food- en uitgaansplekken van Amsterdam.",
+                    picks: ["jordaan", "noord", "de-pijp"]
+                }
+            ],
+            priceGuideTitle: "Huurprijzen per wijk in Amsterdam",
+            priceGuideSubtitle: "Indicatieve maandhuur voor een studio per wijk. Klik op een wijk voor volledige prijsontwikkeling en benchmarks voor twee- en driekamerappartementen.",
+            priceGuideColArea: "Wijk",
+            priceGuideColStudio: "Vanaf (studio)",
+            priceGuideColCta: "Details",
+            priceGuideCta: "Bekijk wijk",
+            resourcesTitle: "Verder verkennen op apartmenthub.nl",
+            resourcesSubtitle: "Handige volgende stappen zodra je een Amsterdamse wijk hebt gekozen.",
+            faqTitle: "FAQ: huren in een Amsterdamse wijk",
+            faq: [
+                {
+                    q: "Welke Amsterdamse wijk heeft de goedkoopste huurappartementen?",
+                    a: "Nieuw-West en Amsterdam Noord bieden consistent de laagste studiohuren van de stad, meestal vanaf €1.450–€1.600 per maand, terwijl ze toch goed bereikbaar blijven met metro, tram of pont."
+                },
+                {
+                    q: "Waar wonen de meeste expats in Amsterdam?",
+                    a: "Expats en internationale professionals kiezen vaak voor Centrum, Oud-Zuid, De Pijp en Zuidas vanwege Engelstalige voorzieningen, internationale scholen en snelle verbindingen met Schiphol en de zakendistricten."
+                },
+                {
+                    q: "Blijven de huurprijzen in Amsterdam stijgen?",
+                    a: "Ja — in de negen wijken die wij volgen ligt de huurgroei over vijf jaar tussen circa +12% in De Pijp en ruim +20% in Nieuw-West en Zeeburg. De grootste bewegingen zien we buiten de grachtengordel, waar het aanbod groter is maar de vraag snel inloopt."
+                }
+            ]
         }
+    },
+    neighborhoodsResources: {
+        en: [
+            { key: "apartments", title: "Browse apartments for rent", description: "See every available apartment across all Amsterdam neighborhoods.", cta: "View apartments", href: "/en/apartments" },
+            { key: "rentIn", title: "Get matched with a home", description: "Tell us your budget and preferred neighborhoods and we'll send you off-market listings.", cta: "Start your search", href: "/en/rent-in" },
+            { key: "rentOut", title: "Rent out your apartment", description: "List your property with a local Amsterdam agency that handles viewings, screening and contracts.", cta: "List your property", href: "/en/rent-out" },
+            { key: "faq", title: "Renting in Amsterdam FAQ", description: "Income requirements, furnished vs. unfurnished, deposits and more.", cta: "Read the FAQ", href: "/en/faq" },
+            { key: "about", title: "About ApartmentHub", description: "Meet the Amsterdam rental team behind the guide.", cta: "About us", href: "/en/about-us" }
+        ],
+        nl: [
+            { key: "apartments", title: "Bekijk huurappartementen", description: "Zie elk beschikbaar appartement in alle Amsterdamse wijken.", cta: "Bekijk aanbod", href: "/nl/appartementen" },
+            { key: "rentIn", title: "Laat je matchen met een huis", description: "Deel je budget en favoriete wijken en wij sturen je off-market aanbod.", cta: "Start je zoektocht", href: "/nl/rent-in" },
+            { key: "rentOut", title: "Verhuur je appartement", description: "Zet je woning in de verhuur via een lokale Amsterdamse makelaar die bezichtigingen, screening en contracten regelt.", cta: "Woning aanmelden", href: "/nl/rent-out" },
+            { key: "faq", title: "Veelgestelde vragen over huren", description: "Inkomenseisen, gestoffeerd vs. gemeubileerd, borg en meer.", cta: "Lees de FAQ", href: "/nl/faq" },
+            { key: "about", title: "Over ApartmentHub", description: "Maak kennis met het Amsterdamse verhuurteam achter deze gids.", cta: "Over ons", href: "/nl/about-us" }
+        ]
     },
     faq: {
         en: {
