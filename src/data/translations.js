@@ -76,6 +76,85 @@ export const translations = {
             descZuidas: "Modern business district with international flair",
             descZeeburg: "Water-rich with relaxed atmosphere by the IJ",
             descNieuwWest: "Diverse and green with modern amenities",
+
+            guide: {
+                eyebrow: "Your Amsterdam apartment guide",
+                title: "The complete guide to renting an apartment in Amsterdam",
+                intro: "Finding apartments for rent in Amsterdam is a competitive process where the right preparation makes the difference between an inbox full of rejections and the keys to your new home. This guide walks you through the best Amsterdam neighborhoods for every lifestyle and budget, plus the rental tips our team uses every day to help tenants secure quality apartments in the Dutch capital.",
+                neighborhoods: [
+                    {
+                        slug: "centrum",
+                        name: "Amsterdam Centrum",
+                        tag: "Canals & city life",
+                        description: "The UNESCO-listed canal ring is the most iconic place to rent in Amsterdam. Expect characterful monumental apartments, a short walk to Central Station, and unmatched access to restaurants, museums and nightlife. Best for professionals and expats who want to live in the middle of everything.",
+                        priceRange: "From €2,100 studio / €3,500 two-bedroom"
+                    },
+                    {
+                        slug: "jordaan",
+                        name: "Jordaan",
+                        tag: "Charming & creative",
+                        description: "Narrow streets, brown cafés and independent boutiques make Jordaan one of Amsterdam's most sought-after rental neighborhoods. Apartments are often smaller but full of character, and the area is well connected by tram to the rest of the city.",
+                        priceRange: "From €1,950 studio / €3,200 two-bedroom"
+                    },
+                    {
+                        slug: "de-pijp",
+                        name: "De Pijp",
+                        tag: "Food & nightlife",
+                        description: "Home to the Albert Cuyp Market and a thriving culinary scene, De Pijp attracts young professionals and international tenants. A great fit if you want a lively neighborhood with great bars, brunch spots and green escapes like Sarphatipark.",
+                        priceRange: "From €1,900 studio / €3,000 two-bedroom"
+                    },
+                    {
+                        slug: "oud-zuid",
+                        name: "Oud-Zuid",
+                        tag: "Museums & green",
+                        description: "Elegant architecture around Vondelpark and the Museumplein makes Oud-Zuid a favourite for families and senior professionals. Expect spacious apartments, excellent international schools nearby and premium pricing.",
+                        priceRange: "From €2,300 studio / €3,800 two-bedroom"
+                    },
+                    {
+                        slug: "oost",
+                        name: "Amsterdam Oost",
+                        tag: "Up-and-coming",
+                        description: "Oost combines parks like Oosterpark and Flevopark with a multicultural food scene and easy access to Amstel Station. One of the best value neighborhoods for modern rental apartments close to the centre.",
+                        priceRange: "From €1,700 studio / €2,700 two-bedroom"
+                    },
+                    {
+                        slug: "noord",
+                        name: "Amsterdam Noord",
+                        tag: "Creative & modern",
+                        description: "A free ferry from Central Station lands you in Amsterdam's most rapidly developing district. New-build apartments, waterfront living, and creative hubs like NDSM make Noord perfect for tenants who want space and modern amenities.",
+                        priceRange: "From €1,600 studio / €2,600 two-bedroom"
+                    }
+                ],
+                tipsTitle: "Rental tips: how to land an Amsterdam apartment",
+                tipsSubtitle: "The Amsterdam rental market moves fast. These are the steps we recommend to every tenant.",
+                tips: [
+                    {
+                        heading: "Prepare your dossier in advance",
+                        text: "Landlords expect a complete tenant file on day one: a valid ID, the last three payslips, an employer contract, and a recent bank statement. Have everything ready in one PDF so you can apply within minutes of a listing going live."
+                    },
+                    {
+                        heading: "Know your budget rule",
+                        text: "Most Amsterdam landlords require a gross monthly income of at least three to four times the rent. Calculate your ceiling before you start viewing so you only apply for apartments you will actually qualify for."
+                    },
+                    {
+                        heading: "Match the neighborhood to your routine",
+                        text: "Amsterdam is compact, but the difference between Centrum, De Pijp and Noord is significant in terms of lifestyle, commute and price. Shortlist two or three neighborhoods based on your work location and the vibe you want."
+                    },
+                    {
+                        heading: "Move fast on viewings",
+                        text: "Quality rental apartments in Amsterdam are typically taken within days. Respond to viewing invitations immediately and be ready to confirm your interest the same evening."
+                    },
+                    {
+                        heading: "Understand furnished vs. unfurnished",
+                        text: "Listings marked 'gestoffeerd' include flooring and curtains but no furniture, while 'gemeubileerd' is fully furnished. Factor this into your offer — furnished apartments command a premium but save you moving costs."
+                    },
+                    {
+                        heading: "Use a trusted rental partner",
+                        text: "Working with a licensed Amsterdam rental agency like ApartmentHub means access to off-market listings, a vetted landlord network and support with contracts and deposits — all without upfront tenant fees."
+                    }
+                ],
+                cta: "Explore all Amsterdam neighborhoods"
+            },
         },
         nl: {
             heroTitle1: "Jouw perfecte thuis",
@@ -129,6 +208,85 @@ export const translations = {
             descZuidas: "Modern zakendistrict met internationale uitstraling",
             descZeeburg: "Waterrijk met ontspannen sfeer aan het IJ",
             descNieuwWest: "Divers en groen met moderne voorzieningen",
+
+            guide: {
+                eyebrow: "Jouw Amsterdamse appartementengids",
+                title: "De complete gids voor het huren van een appartement in Amsterdam",
+                intro: "Een appartement huren in Amsterdam is een competitief proces waarbij de juiste voorbereiding het verschil maakt tussen een inbox vol afwijzingen en de sleutels van je nieuwe huis. In deze gids vind je de beste wijken van Amsterdam voor elke lifestyle en elk budget, plus de verhuurtips die ons team dagelijks gebruikt om huurders een kwalitatief appartement in de hoofdstad te bezorgen.",
+                neighborhoods: [
+                    {
+                        slug: "centrum",
+                        name: "Amsterdam Centrum",
+                        tag: "Grachten & stadsleven",
+                        description: "De UNESCO-grachtengordel is dé iconische plek om in Amsterdam te huren. Verwacht karakteristieke monumentenpanden, op loopafstand van Centraal Station en ongeëvenaarde toegang tot restaurants, musea en uitgaansleven. Geschikt voor professionals en expats die midden in het centrum willen wonen.",
+                        priceRange: "Vanaf €2.100 studio / €3.500 tweekamer"
+                    },
+                    {
+                        slug: "jordaan",
+                        name: "Jordaan",
+                        tag: "Charmant & creatief",
+                        description: "Smalle straatjes, bruine cafés en onafhankelijke boetiekjes maken de Jordaan tot een van de meest gewilde huurwijken van Amsterdam. Appartementen zijn vaak compact maar vol karakter en de wijk is uitstekend aangesloten op het tramnet.",
+                        priceRange: "Vanaf €1.950 studio / €3.200 tweekamer"
+                    },
+                    {
+                        slug: "de-pijp",
+                        name: "De Pijp",
+                        tag: "Eten & uitgaan",
+                        description: "Met de Albert Cuyp Markt en een bruisende horecascene trekt De Pijp jonge professionals en internationale huurders. Een uitstekende match als je een levendige buurt wilt met leuke bars, brunchplekken en groene ruimtes zoals het Sarphatipark.",
+                        priceRange: "Vanaf €1.900 studio / €3.000 tweekamer"
+                    },
+                    {
+                        slug: "oud-zuid",
+                        name: "Oud-Zuid",
+                        tag: "Musea & groen",
+                        description: "Elegante architectuur rondom het Vondelpark en het Museumplein maakt Oud-Zuid populair bij gezinnen en senior professionals. Verwacht ruime appartementen, uitstekende internationale scholen in de buurt en een prijsniveau dat daarbij past.",
+                        priceRange: "Vanaf €2.300 studio / €3.800 tweekamer"
+                    },
+                    {
+                        slug: "oost",
+                        name: "Amsterdam Oost",
+                        tag: "In opkomst",
+                        description: "Oost combineert parken zoals Oosterpark en Flevopark met een multiculturele foodscene en vlotte verbinding met station Amstel. Een van de beste prijs-kwaliteitverhoudingen voor moderne huurappartementen dicht bij het centrum.",
+                        priceRange: "Vanaf €1.700 studio / €2.700 tweekamer"
+                    },
+                    {
+                        slug: "noord",
+                        name: "Amsterdam Noord",
+                        tag: "Creatief & modern",
+                        description: "Met een gratis veerpont vanaf Centraal Station sta je zo in de snelst groeiende wijk van Amsterdam. Nieuwbouwappartementen, wonen aan het water en creatieve hubs zoals NDSM maken Noord ideaal voor huurders die ruimte en moderne voorzieningen willen.",
+                        priceRange: "Vanaf €1.600 studio / €2.600 tweekamer"
+                    }
+                ],
+                tipsTitle: "Verhuurtips: zo scoor je een appartement in Amsterdam",
+                tipsSubtitle: "De Amsterdamse huurmarkt gaat snel. Dit zijn de stappen die we elke huurder adviseren.",
+                tips: [
+                    {
+                        heading: "Zorg dat je dossier klaarstaat",
+                        text: "Verhuurders verwachten op dag één een compleet huurdersdossier: een geldig ID-bewijs, de laatste drie loonstroken, een werkgeversverklaring en een recent bankafschrift. Bundel alles in één PDF zodat je binnen enkele minuten na publicatie kunt reageren."
+                    },
+                    {
+                        heading: "Ken je budget",
+                        text: "De meeste verhuurders in Amsterdam vragen een bruto maandinkomen van minimaal drie tot vier keer de huur. Bereken je plafond voordat je gaat bezichtigen, zodat je alleen reageert op appartementen waarvoor je ook daadwerkelijk in aanmerking komt."
+                    },
+                    {
+                        heading: "Kies de wijk die bij je past",
+                        text: "Amsterdam is compact, maar het verschil tussen Centrum, De Pijp en Noord is groot qua lifestyle, woon-werkverkeer en prijs. Maak een shortlist van twee of drie wijken op basis van je werklocatie en de sfeer die je zoekt."
+                    },
+                    {
+                        heading: "Wees snel bij bezichtigingen",
+                        text: "Kwalitatieve huurappartementen in Amsterdam zijn meestal binnen enkele dagen verhuurd. Reageer direct op uitnodigingen voor een bezichtiging en bevestig nog diezelfde avond je interesse."
+                    },
+                    {
+                        heading: "Begrijp gestoffeerd vs. gemeubileerd",
+                        text: "'Gestoffeerd' betekent inclusief vloer en gordijnen maar zonder meubels, 'gemeubileerd' is volledig ingericht. Houd hier rekening mee: een gemeubileerd appartement is duurder maar bespaart verhuiskosten."
+                    },
+                    {
+                        heading: "Werk samen met een betrouwbare verhuurpartner",
+                        text: "Samenwerken met een erkende Amsterdamse verhuurmakelaar zoals ApartmentHub geeft je toegang tot off-market aanbod, een gescreend netwerk van verhuurders en ondersteuning bij contracten en borg — zonder bemiddelingskosten vooraf voor huurders."
+                    }
+                ],
+                cta: "Ontdek alle Amsterdamse wijken"
+            },
         }
     },
     rentOut: {
