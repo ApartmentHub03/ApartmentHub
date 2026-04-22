@@ -7,7 +7,7 @@ export const metadata = {
         default: 'ApartmentHub - Find Your Perfect Apartment in Amsterdam',
         template: '%s | ApartmentHub',
     },
-    description: 'ApartmentHub - Find your perfect apartment in Amsterdam',
+    description: 'Browse rental listings across the Netherlands with ApartmentHub. Find your perfect Amsterdam apartment — start your search today.',
     metadataBase: new URL('https://apartmenthub.nl'),
     verification: {
         google: 'WEk3DyM5hwLTLGZl6tySEgdmRfr5fd21mH53OExkkx0',

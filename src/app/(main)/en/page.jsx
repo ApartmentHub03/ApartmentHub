@@ -2,7 +2,7 @@ import Home from '@/pages/Home';
 
 export const metadata = {
     title: 'ApartmentHub - Find Your Perfect Apartment in Amsterdam',
-    description: 'Find your perfect rental apartment in Amsterdam with ApartmentHub. Browse listings, apply online, and move in hassle-free.',
+    description: 'Browse verified rental listings across the Netherlands with ApartmentHub. Apply online for your perfect Amsterdam apartment — start your search today.',
     alternates: {
         canonical: 'https://apartmenthub.nl/en',
         languages: {
