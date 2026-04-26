@@ -1,8 +1,8 @@
 import RentIn from '@/pages/RentIn';
 
 export const metadata = {
-    title: 'Rent an Apartment in Amsterdam | ApartmentHub',
-    description: 'Looking to rent in Amsterdam? Browse available apartments and apply directly through ApartmentHub.',
+    title: 'Amsterdam Apartment Rental Service | ApartmentHub',
+    description: 'Full-service apartment rental in Amsterdam: handpicked listings, online viewing bookings, and end-to-end application support. Get started with ApartmentHub.',
     alternates: {
         canonical: 'https://apartmenthub.nl/en/rent-in',
         languages: {
