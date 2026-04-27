@@ -15,6 +15,28 @@ export const metadata = {
     icons: {
         icon: '/favicon.png',
     },
+    openGraph: {
+        type: 'website',
+        siteName: 'ApartmentHub',
+        title: 'ApartmentHub - Find Your Perfect Apartment in Amsterdam',
+        description: 'Browse rental listings across the Netherlands with ApartmentHub. Find your perfect Amsterdam apartment — start your search today.',
+        url: 'https://apartmenthub.nl',
+        locale: 'en_US',
+        images: [
+            {
+                url: '/images/site-logo.png',
+                width: 512,
+                height: 512,
+                alt: 'ApartmentHub',
+            },
+        ],
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'ApartmentHub - Find Your Perfect Apartment in Amsterdam',
+        description: 'Browse rental listings across the Netherlands with ApartmentHub. Find your perfect Amsterdam apartment — start your search today.',
+        images: ['/images/site-logo.png'],
+    },
 };
 
 export const viewport = {
