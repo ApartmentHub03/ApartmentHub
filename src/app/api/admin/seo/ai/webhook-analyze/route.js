@@ -37,7 +37,7 @@ export async function POST(request) {
 
     try {
         if (supabase) {
-            const { data: runRow } = await supabase
+            const { data: runRow, error: insertError } = await supabase
                 .from('seo_ai_runs')
                 .insert({
                     run_type: 'webhook_analysis',
@@ -47,11 +47,19 @@ export async function POST(request) {
                 })
                 .select()
                 .single();
+            if (insertError) {
+                console.error('[webhook-analyze] seo_ai_runs insert failed:', insertError);
+                throw new Error(
+                    `Failed to create analysis run record: ${insertError.message || insertError.code || 'unknown'}`
+                );
+            }
             runId = runRow?.id;
+        } else {
+            console.error('[webhook-analyze] Supabase server client is null — check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in the Next.js process env');
         }
 
         if (!runId) {
-            throw new Error('Failed to create analysis run record');
+            throw new Error('Failed to create analysis run record (supabase client unavailable or returned no id)');
         }
 
         const results = await Promise.allSettled([

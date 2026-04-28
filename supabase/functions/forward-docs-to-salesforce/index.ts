@@ -60,7 +60,7 @@ serve(async (req) => {
         const { data: rows, error } = await supabase
             .from("documenten")
             .select(
-                "id, type, status, bestandsnaam, bestandspad, personen!inner(id, naam, whatsapp, rol, dossier_id, dossiers!inner(id, phone_number))"
+                "id, type, status, bestandsnaam, bestandspad, personen!inner(id, naam, whatsapp, rol, dossier_id, dossiers!inner(id, phone_number, apartment_id))"
             )
             .eq("personen.dossiers.phone_number", phone_number);
 
@@ -134,6 +134,7 @@ serve(async (req) => {
                 batch_index: i + 1,
                 batch_total: withFiles.length,
                 account_id,
+                apartment_id: person?.dossiers?.apartment_id ?? null,
                 tenant_name,
                 phone_number,
                 salesforce_account_id,
@@ -143,7 +144,7 @@ serve(async (req) => {
                     type: d.type,
                     status: d.status,
                     file_name: fileName,
-                    file_path: d.bestandspad,
+                    file_path: `${BUCKET}/${d.bestandspad}`,
                     file_mime_type: mimeType,
                     file_size: fileSize,
                     file_base64: fileBase64,
@@ -181,11 +182,13 @@ serve(async (req) => {
         }
 
         // Metadata-only summary matching the original migration shape.
+        const firstPerson = docs[0]?.personen;
         const summaryPayload = {
             source: "AptHub",
             event_type: "documents_complete",
             batch_id: batchId,
             account_id,
+            apartment_id: firstPerson?.dossiers?.apartment_id ?? null,
             tenant_name,
             phone_number,
             salesforce_account_id,
@@ -195,7 +198,7 @@ serve(async (req) => {
                 type: d.type,
                 status: d.status,
                 file_name: d.bestandsnaam,
-                file_path: d.bestandspad,
+                file_path: d.bestandspad ? `${BUCKET}/${d.bestandspad}` : null,
                 person: personMeta(d.personen),
             })),
         };
