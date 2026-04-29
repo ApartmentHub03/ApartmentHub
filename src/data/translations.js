@@ -717,6 +717,84 @@ export const translations = {
             },
         }
     },
+    rentInFaq: {
+        en: {
+            eyebrow: "Apartments For Rent · Amsterdam",
+            title: "Renting an apartment in Amsterdam — everything you need to know",
+            intro: "Amsterdam apartments for rent move quickly. The questions below cover what most tenants ask before they apply, from price ranges and neighborhoods to documents, viewings and how to rent an apartment in Amsterdam without missing the best listings.",
+            cta: "Browse Amsterdam apartments for rent",
+            items: [
+                {
+                    question: "How do I find apartments for rent in Amsterdam?",
+                    answer: "Most Amsterdam apartments for rent are gone within 48 hours of being listed, so the fastest route is to register with a curated rental platform like ApartmentHub instead of refreshing public sites. Tell us your budget, preferred neighborhoods and move-in date, and our team WhatsApps you matching apartments for rent in Amsterdam — including off-market listings — before they appear elsewhere.",
+                    answerPlain: "Most Amsterdam apartments for rent are gone within 48 hours of listing. Register with a curated rental platform like ApartmentHub: share your budget, neighborhoods and move-in date, and our team will WhatsApp you matching apartments for rent in Amsterdam — including off-market listings — before they appear elsewhere."
+                },
+                {
+                    question: "How much does it cost to rent an apartment in Amsterdam?",
+                    answer: "Rent for an Amsterdam apartment typically ranges from €1,400 per month for a studio in the outer ring to €3,500+ per month for a two-bedroom in Centrum or Oud-Zuid. Most tenants pay one month deposit plus the first month's rent up front. Utility costs and a small service fee are usually charged separately.",
+                    answerPlain: "Rent for an Amsterdam apartment typically ranges from €1,400 per month for a studio in the outer ring to €3,500+ for a two-bedroom in Centrum or Oud-Zuid. Tenants pay one month deposit plus the first month's rent up front; utilities and a small service fee are usually separate."
+                },
+                {
+                    question: "What documents do I need to rent an apartment in Amsterdam?",
+                    answer: "To rent an apartment in Amsterdam you typically need a valid ID or passport, proof of income (3 recent payslips or an employer statement showing 3–4× the monthly rent), a recent bank statement, and — for expats — your work or residence permit. Self-employed tenants usually add the latest tax return. ApartmentHub builds your full digital dossier once and reuses it for every application.",
+                    answerPlain: "To rent an apartment in Amsterdam you typically need a valid ID or passport, proof of income (3 payslips or employer statement showing 3–4× the monthly rent), a recent bank statement, and a residence or work permit if you are an expat. ApartmentHub builds the digital dossier once and reuses it for every application."
+                },
+                {
+                    question: "Which neighborhoods are best for apartments for rent in Amsterdam?",
+                    answer: "Centrum, De Pijp and Jordaan suit renters who want walkable city living and nightlife. Oud-Zuid and Zuidas are popular with families and corporate professionals. Oost and Noord offer the best value and newer-build apartments. Our neighborhoods guide compares price ranges, demographics and average commute times so you can shortlist the right area before you view.",
+                    answerPlain: "Centrum, De Pijp and Jordaan suit walkable city living. Oud-Zuid and Zuidas are popular with families and professionals. Oost and Noord offer the best value and newer-build apartments. The neighborhoods guide compares price ranges, demographics and commute times."
+                },
+                {
+                    question: "Can expats and internationals rent an apartment in Amsterdam?",
+                    answer: "Yes. Many landlords prefer expats with a long-term employment contract, but the application process is the same. Expect to provide your BSN (or proof you have applied for one), passport, employer statement and residence permit. ApartmentHub provides English-speaking support throughout the rental process, including contract review and registration with the gemeente.",
+                    answerPlain: "Yes. Expats can rent an apartment in Amsterdam by providing BSN (or proof of application), passport, employer statement and residence permit. ApartmentHub gives English-speaking support throughout, including contract review and registration with the gemeente."
+                },
+                {
+                    question: "How fast can I move into an Amsterdam apartment for rent?",
+                    answer: "If your dossier is complete, most tenants move into an Amsterdam apartment within 2–3 weeks of their first viewing. We coordinate viewings the same day a listing goes live, send your dossier to the landlord within hours, and review the contract before you sign so the handover happens without delays.",
+                    answerPlain: "With a complete dossier, most tenants move into an Amsterdam apartment within 2–3 weeks of the first viewing. ApartmentHub coordinates viewings the same day a listing goes live, sends the dossier within hours, and reviews the contract before signing."
+                }
+            ]
+        },
+        nl: {
+            eyebrow: "Appartementen Te Huur · Amsterdam",
+            title: "Een appartement huren in Amsterdam — alles wat je moet weten",
+            intro: "Appartementen te huur in Amsterdam zijn snel weg. De onderstaande vragen behandelen wat de meeste huurders willen weten voordat ze reageren: prijzen, wijken, documenten, bezichtigingen en hoe je een appartement in Amsterdam huurt zonder de beste woningen te missen.",
+            cta: "Bekijk huurappartementen in Amsterdam",
+            items: [
+                {
+                    question: "Hoe vind ik een appartement te huur in Amsterdam?",
+                    answer: "De meeste huurappartementen in Amsterdam zijn binnen 48 uur na plaatsing weg, dus de snelste route is registreren bij een gecureerd huurplatform zoals ApartmentHub. Deel je budget, voorkeurswijken en gewenste verhuisdatum en ons team appt je via WhatsApp passende appartementen te huur in Amsterdam — inclusief off-market woningen — voordat ze elders verschijnen.",
+                    answerPlain: "De meeste huurappartementen in Amsterdam zijn binnen 48 uur weg. Registreer bij een gecureerd platform zoals ApartmentHub: deel budget, wijken en verhuisdatum en ons team stuurt via WhatsApp passende appartementen — inclusief off-market — voordat ze elders verschijnen."
+                },
+                {
+                    question: "Wat kost het om een appartement te huren in Amsterdam?",
+                    answer: "De huur van een Amsterdams appartement loopt doorgaans van €1.400 per maand voor een studio in de buitenring tot €3.500+ per maand voor een tweekamerappartement in Centrum of Oud-Zuid. De meeste huurders betalen vooraf één maand borg plus de eerste maand huur. Servicekosten en nutsvoorzieningen worden meestal apart berekend.",
+                    answerPlain: "De huur van een Amsterdams appartement loopt van €1.400 per maand voor een studio in de buitenring tot €3.500+ voor een tweekamerappartement in Centrum of Oud-Zuid. Vooraf één maand borg plus eerste maand huur; servicekosten en nuts apart."
+                },
+                {
+                    question: "Welke documenten heb ik nodig om een appartement te huren in Amsterdam?",
+                    answer: "Om een appartement te huren in Amsterdam heb je meestal een geldig ID of paspoort nodig, inkomensbewijs (3 recente loonstroken of werkgeversverklaring met 3–4× de maandhuur), een recent bankafschrift en — voor expats — je verblijfs- of werkvergunning. Zzp'ers voegen de laatste belastingaangifte toe. ApartmentHub bouwt je volledige digitale dossier één keer en hergebruikt het bij elke aanvraag.",
+                    answerPlain: "Voor het huren van een appartement in Amsterdam heb je meestal een ID of paspoort, inkomensbewijs (3 loonstroken of werkgeversverklaring met 3–4× de maandhuur), bankafschrift en bij expats verblijfs- of werkvergunning nodig. ApartmentHub bouwt het digitale dossier één keer en hergebruikt het."
+                },
+                {
+                    question: "In welke wijken vind je de beste appartementen te huur in Amsterdam?",
+                    answer: "Centrum, De Pijp en de Jordaan zijn ideaal voor huurders die het stadsleven en de horeca willen. Oud-Zuid en Zuidas zijn populair bij gezinnen en zakelijke professionals. Oost en Noord bieden de beste prijs-kwaliteitverhouding en nieuwbouw. Onze wijkgids vergelijkt prijsklassen, demografie en gemiddelde reistijden zodat je vooraf de juiste wijk kunt kiezen.",
+                    answerPlain: "Centrum, De Pijp en de Jordaan voor stadsleven. Oud-Zuid en Zuidas voor gezinnen en professionals. Oost en Noord bieden de beste prijs-kwaliteitverhouding en nieuwbouw. De wijkgids vergelijkt prijzen, demografie en reistijden."
+                },
+                {
+                    question: "Kunnen expats en internationals een appartement huren in Amsterdam?",
+                    answer: "Ja. Veel verhuurders geven de voorkeur aan expats met een langlopend arbeidscontract, en de procedure is hetzelfde. Houd rekening met BSN (of bewijs van aanvraag), paspoort, werkgeversverklaring en verblijfsvergunning. ApartmentHub biedt Engelstalige ondersteuning tijdens het hele huurproces, inclusief contractcontrole en inschrijving bij de gemeente.",
+                    answerPlain: "Ja. Expats kunnen in Amsterdam huren met BSN (of aanvraagbewijs), paspoort, werkgeversverklaring en verblijfsvergunning. ApartmentHub biedt Engelstalige ondersteuning, inclusief contractcontrole en inschrijving bij de gemeente."
+                },
+                {
+                    question: "Hoe snel kan ik een huurappartement in Amsterdam betrekken?",
+                    answer: "Met een compleet dossier verhuist de meeste huurders binnen 2–3 weken na de eerste bezichtiging naar hun Amsterdamse appartement. We plannen bezichtigingen op de dag dat een woning live gaat, sturen je dossier binnen enkele uren naar de verhuurder en controleren het contract voordat je tekent zodat de overdracht zonder vertraging verloopt.",
+                    answerPlain: "Met compleet dossier verhuizen de meeste huurders binnen 2–3 weken naar hun Amsterdamse appartement. Bezichtigingen worden op de dag van plaatsing gepland, dossier binnen uren naar verhuurder, contract gecontroleerd voor ondertekening."
+                }
+            ]
+        }
+    },
     neighborhoods: {
         en: {
             title: "Amsterdam Neighborhoods Guide",
