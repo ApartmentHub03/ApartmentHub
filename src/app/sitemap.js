@@ -218,6 +218,31 @@ export default function sitemap() {
         },
       },
     },
+    // Press / Media Kit
+    {
+      url: `${BASE_URL}/en/press`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.6,
+      alternates: {
+        languages: {
+          en: `${BASE_URL}/en/press`,
+          nl: `${BASE_URL}/nl/press`,
+        },
+      },
+    },
+    {
+      url: `${BASE_URL}/nl/press`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.6,
+      alternates: {
+        languages: {
+          en: `${BASE_URL}/en/press`,
+          nl: `${BASE_URL}/nl/press`,
+        },
+      },
+    },
     // Privacy Policy
     {
       url: `${BASE_URL}/en/privacy-policy`,
