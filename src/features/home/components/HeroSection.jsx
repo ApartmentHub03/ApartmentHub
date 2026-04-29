@@ -24,7 +24,7 @@ const HeroSection = () => {
                     <div className={styles.logoWrapper}>
                         <img
                             src="/images/5a9afd14-27a5-40d8-a185-fac727f64fdf.png"
-                            alt="ApartmentHub Logo"
+                            alt="ApartmentHub - Find apartments for rent in Amsterdam and the Netherlands"
                             className={styles.logoIcon}
                         />
                     </div>

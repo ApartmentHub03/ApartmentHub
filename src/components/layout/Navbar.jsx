@@ -136,7 +136,7 @@ const Navbar = () => {
                         <div className={styles.logoIconWrapper}>
                             <img
                                 src="/images/5a9afd14-27a5-40d8-a185-fac727f64fdf.png"
-                                alt="ApartmentHub Logo"
+                                alt="ApartmentHub - Apartments for rent in Amsterdam, Netherlands"
                                 className={styles.logoIcon}
                             />
                         </div>

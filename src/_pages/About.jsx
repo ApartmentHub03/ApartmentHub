@@ -47,7 +47,7 @@ const About = () => {
                             <div className={styles.imageWrapper}>
                                 <img
                                     src="/images/about-mission.jpg"
-                                    alt="Amsterdam cityscape overview"
+                                    alt="Amsterdam canal cityscape - ApartmentHub rental mission in the Netherlands"
                                     className={styles.image}
                                 />
                             </div>
@@ -90,7 +90,7 @@ const About = () => {
                             <div className={styles.imageWrapper}>
                                 <img
                                     src="/images/about2.jpg"
-                                    alt="ApartmentHub team at work"
+                                    alt="ApartmentHub team helping tenants find apartments for rent in Amsterdam"
                                     className={styles.image}
                                 />
                             </div>
