@@ -6,7 +6,13 @@ const PropertyCard = ({ property }) => {
     return (
         <div className={styles.card}>
             <div className={styles.imageContainer}>
-                <img src={property.imageUrl} alt={property.title} className={styles.image} />
+                <img
+                    src={property.imageUrl}
+                    alt={property.title}
+                    className={styles.image}
+                    loading="lazy"
+                    decoding="async"
+                />
                 <span className={styles.price}>€{property.price}/mo</span>
             </div>
             <div className={styles.content}>
