@@ -1058,7 +1058,10 @@ export const translations = {
             quickLinks: "Quick Links",
             linkRentOut: "Rent Out",
             linkRentIn: "Rent In",
+            linkApartments: "Apartments",
+            linkNeighborhoods: "Neighborhoods",
             linkAbout: "About Us",
+            linkContact: "Contact",
             linkFaq: "FAQ",
             linkTerms: "Terms & Conditions",
             linkPrivacy: "Privacy Policy",
@@ -1073,7 +1076,10 @@ export const translations = {
             quickLinks: "Snelle Links",
             linkRentOut: "Verhuren",
             linkRentIn: "Huren",
+            linkApartments: "Appartementen",
+            linkNeighborhoods: "Wijken",
             linkAbout: "Over Ons",
+            linkContact: "Contact",
             linkFaq: "FAQ",
             linkTerms: "Algemene Voorwaarden",
             linkPrivacy: "Privacyverklaring",
@@ -1119,6 +1125,22 @@ export const translations = {
             resendCode: "Code opnieuw versturen",
             backToPhone: "Ander nummer gebruiken",
             whatsappNote: "U ontvangt een WhatsApp bericht met uw verificatiecode"
+        }
+    },
+    apartmentsIntro: {
+        en: {
+            eyebrow: "Amsterdam Rentals",
+            title: "Amsterdam Apartments for Rent",
+            lead: "Browse verified Amsterdam apartments for rent and apply online in minutes. ApartmentHub connects tenants with trusted landlords and listings across every Amsterdam neighborhood, from the historic Centrum and Grachtengordel to family-friendly Oost, lively De Pijp, and the leafy streets of Oud-Zuid.",
+            paragraph1: "Every apartment on ApartmentHub is checked for accurate pricing, square meters, and rental conditions, so you spend less time vetting listings and more time choosing the home that fits your life. Filter by rental price, bedrooms, and surface area to compare apartments for rent in Amsterdam side by side, and see real photos and full addresses before you submit a bid.",
+            paragraph2: "Whether you are an expat moving to the Netherlands, a professional relocating from another Dutch city, or a couple searching for a long-term rental, our platform lets you apply to multiple Amsterdam apartments in a single dossier. Upload your documents once, send your offer with a personal motivation, and track each application in real time — all without paying tenant fees.",
+        },
+        nl: {
+            eyebrow: "Huurwoningen Amsterdam",
+            title: "Huurappartementen in Amsterdam",
+            lead: "Bekijk geverifieerde huurappartementen in Amsterdam en solliciteer binnen enkele minuten online. ApartmentHub verbindt huurders met betrouwbare verhuurders en aanbiedingen in elke Amsterdamse wijk, van het historische Centrum en de Grachtengordel tot het gezinsvriendelijke Oost, het bruisende De Pijp en de groene straten van Oud-Zuid.",
+            paragraph1: "Elk appartement op ApartmentHub is gecontroleerd op juiste prijs, vierkante meters en huurvoorwaarden, zodat u minder tijd kwijt bent aan het beoordelen van advertenties en sneller het huis kiest dat bij uw leven past. Filter op huurprijs, slaapkamers en oppervlakte om huurappartementen in Amsterdam naast elkaar te vergelijken, en zie echte foto's en het volledige adres voordat u een bod uitbrengt.",
+            paragraph2: "Of u nu een expat bent die naar Nederland verhuist, een professional die uit een andere Nederlandse stad komt, of een stel dat een huurwoning voor de lange termijn zoekt, op ons platform kunt u in één dossier op meerdere Amsterdamse appartementen solliciteren. Upload uw documenten één keer, stuur uw bod met een persoonlijke motivatie en volg elke aanvraag in realtime — zonder huurderskosten.",
         }
     },
     apartments: {
