@@ -582,8 +582,8 @@ export const translations = {
             heroTitle: "Find Your Perfect Home",
             heroSubtitle: "Let us help you discover your ideal rental property through our personalized WhatsApp service",
 
-            rentInHeroTitle: "Looking for a rental property?",
-            rentInHeroSubtitle: "Send us a WhatsApp message and we'll gladly help you",
+            rentInHeroTitle: "Rent an Apartment in Amsterdam",
+            rentInHeroSubtitle: "Looking to rent an apartment in Amsterdam? Chat with our local rental experts on WhatsApp and get matched with verified listings that fit your budget and neighborhood.",
             responseTime: "Average response within 1 minute",
             whatsappBtn: "Start conversation on WhatsApp",
 
@@ -651,8 +651,8 @@ export const translations = {
             heroTitle: "Vind Jouw Perfecte Huis",
             heroSubtitle: "Laat ons je helpen jouw ideale huurwoning te ontdekken via onze persoonlijke WhatsApp service",
 
-            rentInHeroTitle: "Op zoek naar een huurwoning?",
-            rentInHeroSubtitle: "Stuur ons een WhatsApp-bericht en wij helpen je graag",
+            rentInHeroTitle: "Een appartement huren in Amsterdam",
+            rentInHeroSubtitle: "Op zoek naar een huurappartement in Amsterdam? Chat met onze lokale verhuurexperts op WhatsApp en word gematcht met geverifieerde woningen die passen bij jouw budget en wijk.",
             responseTime: "Gemiddelde reactie binnen 1 minuut",
             whatsappBtn: "Start gesprek op WhatsApp",
 
