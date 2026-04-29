@@ -35,6 +35,16 @@ export const translations = {
             statsSupport: "24/7 support",
             statsService: "Premium service",
 
+            introEyebrow: "About ApartmentHub",
+            introTitle: "Apartments for rent in Amsterdam and across the Netherlands — without the stress",
+            introLead: "ApartmentHub.nl is a Dutch rental platform that connects tenants with verified apartments for rent in Amsterdam and beyond, and helps landlords find quality renters faster. We combine a hand-picked listing portfolio with a personal team that guides every step — from the first search to the signed lease.",
+            introParagraph1: "Renting an apartment in Amsterdam moves quickly, and the difference between a successful application and another rejection often comes down to preparation. That is why we built ApartmentHub: a single place where tenants can browse vetted Amsterdam apartments for rent, build a complete digital dossier in minutes, and apply to multiple homes with one click — while landlords get a screened shortlist of candidates instead of hundreds of incomplete inquiries.",
+            introParagraph2: "Every listing on ApartmentHub.nl is verified by our team, every tenant goes through ID and income checks, and every contract is reviewed against current Dutch rental law. Whether you are an expat looking to rent your first apartment in Amsterdam, a Dutch professional moving cities, or a private landlord renting out a single property, we offer the same transparent process — with WhatsApp support in Dutch and English at every step.",
+            introServiceHeading: "What we do",
+            introServiceTenants: "For tenants — Browse verified apartments for rent in Amsterdam, Utrecht, Rotterdam and The Hague, build your rental dossier once, and apply with confidence.",
+            introServiceLandlords: "For landlords — Free rental price assessment, professional photography, tenant screening, and a managed handover so your property is rented within days.",
+            introServiceExpats: "For expats — English-speaking guidance through Dutch rental contracts, registration, deposits, and BSN-related questions.",
+
             serviceTitle: "How ApartmentHub Works",
             landlordTitle: "Rent Out Your Property",
             landlordText: "Get your property ready for rental with our comprehensive landlord services. We help you determine the right rental price, find quality tenants, and manage the entire process.",
@@ -166,6 +176,16 @@ export const translations = {
             statsClients: "2500+ tevreden klanten",
             statsSupport: "24/7 ondersteuning",
             statsService: "Premium service",
+
+            introEyebrow: "Over ApartmentHub",
+            introTitle: "Appartementen huren in Amsterdam en heel Nederland — zonder stress",
+            introLead: "ApartmentHub.nl is hét Nederlandse huurplatform dat huurders koppelt aan geverifieerde huurappartementen in Amsterdam en daarbuiten, en verhuurders helpt om sneller kwaliteitshuurders te vinden. We combineren een zorgvuldig geselecteerd aanbod met een persoonlijk team dat je bij elke stap begeleidt — van de eerste zoekopdracht tot het getekende contract.",
+            introParagraph1: "De Amsterdamse huurmarkt gaat razendsnel en het verschil tussen een geslaagde aanvraag en weer een afwijzing zit vaak in de voorbereiding. Daarom hebben we ApartmentHub opgezet: één plek waar huurders door geverifieerde huurappartementen in Amsterdam bladeren, in een paar minuten een compleet digitaal dossier opbouwen en met één klik op meerdere woningen reageren — terwijl verhuurders een gescreende shortlist krijgen in plaats van honderden onvolledige reacties.",
+            introParagraph2: "Elke woning op ApartmentHub.nl wordt door ons team gecontroleerd, elke huurder doorloopt een ID- en inkomenscheck en elk contract wordt getoetst aan de huidige Nederlandse huurwetgeving. Of je nu een expat bent die voor het eerst een appartement in Amsterdam huurt, een Nederlandse professional die verhuist of een particuliere verhuurder met één pand: je krijgt hetzelfde transparante proces — met WhatsApp-ondersteuning in Nederlands en Engels bij iedere stap.",
+            introServiceHeading: "Wat wij doen",
+            introServiceTenants: "Voor huurders — Bekijk geverifieerde huurappartementen in Amsterdam, Utrecht, Rotterdam en Den Haag, bouw eenmalig je huurdersdossier op en reageer met vertrouwen.",
+            introServiceLandlords: "Voor verhuurders — Gratis huurwaarde-inschatting, professionele fotografie, huurdersscreening en een begeleide oplevering zodat je woning binnen enkele dagen verhuurd is.",
+            introServiceExpats: "Voor expats — Engelstalige begeleiding bij Nederlandse huurcontracten, inschrijving, borg en BSN-vragen.",
 
             serviceTitle: "Hoe ApartmentHub Werkt",
             landlordTitle: "Verhuur Uw Eigendom",

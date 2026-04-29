@@ -2,6 +2,7 @@
 
 import React from 'react';
 import HeroSection from '../features/home/components/HeroSection';
+import IntroductionSection from '../features/home/components/IntroductionSection';
 import ServiceSection from '../features/home/components/ServiceSection';
 import WhyChooseUsSection from '../features/home/components/WhyChooseUsSection';
 import NeighborhoodSection from '../features/home/components/NeighborhoodSection';
@@ -16,6 +17,7 @@ const Home = () => {
         <div className={styles.container}>
             <LocalBusinessSchema />
             <HeroSection />
+            <IntroductionSection />
             <ServiceSection />
             <WhyChooseUsSection />
             <NeighborhoodSection />
