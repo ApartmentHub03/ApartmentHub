@@ -8,7 +8,7 @@ const PropertyCard = ({ property }) => {
             <div className={styles.imageContainer}>
                 <img
                     src={property.imageUrl}
-                    alt={property.title}
+                    alt={`${property.title} - apartment for rent in ${property.location || 'Amsterdam'}`}
                     className={styles.image}
                     loading="lazy"
                     decoding="async"

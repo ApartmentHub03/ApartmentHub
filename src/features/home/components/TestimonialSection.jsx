@@ -221,7 +221,7 @@ const TestimonialSection = () => {
                             <div className={styles.cardHeader}>
                                 <div className={styles.userInfo}>
                                     <span className={styles.avatar}>
-                                        <img className={styles.avatarImg} alt={robertData.name} src={robertData.avatar} loading="lazy" decoding="async" />
+                                        <img className={styles.avatarImg} alt={`${robertData.name} - ApartmentHub tenant testimonial from ${robertData.location}, Amsterdam`} src={robertData.avatar} loading="lazy" decoding="async" />
                                     </span>
                                     <div className={styles.userDetails}>
                                         <div className={styles.userNameWrapper}>
@@ -246,7 +246,7 @@ const TestimonialSection = () => {
                             <div className={styles.cardBody}>
                                 <div className={styles.messageReceived}>
                                     <div className={styles.messageAvatar}>
-                                        <img src="/images/chatlogo.png" alt="ApartmentHub" className={styles.messageAvatarImg} loading="lazy" decoding="async" />
+                                        <img src="/images/chatlogo.png" alt="ApartmentHub - Amsterdam apartment rental platform" className={styles.messageAvatarImg} loading="lazy" decoding="async" />
                                     </div>
                                     <div className={styles.messageBubbleReceived}>
                                         <p className={styles.messageText}>{robertPreview[currentLang]?.received}</p>
@@ -265,7 +265,7 @@ const TestimonialSection = () => {
                                         </div>
                                     </div>
                                     <span className={styles.avatarSmall}>
-                                        <img className={styles.avatarImg} alt={robertData.name} src={robertData.avatar} loading="lazy" decoding="async" />
+                                        <img className={styles.avatarImg} alt={`${robertData.name} - ApartmentHub tenant in ${robertData.location}, Amsterdam`} src={robertData.avatar} loading="lazy" decoding="async" />
                                     </span>
                                 </div>
                                 <div className={styles.cardFooter}>
@@ -287,7 +287,7 @@ const TestimonialSection = () => {
                             <div className={styles.cardHeader}>
                                 <div className={styles.userInfo}>
                                     <span className={styles.avatar}>
-                                        <img className={styles.avatarImg} alt={mariaData.name} src={mariaData.avatar} loading="lazy" decoding="async" />
+                                        <img className={styles.avatarImg} alt={`${mariaData.name} - ApartmentHub tenant testimonial from ${mariaData.location}, Amsterdam`} src={mariaData.avatar} loading="lazy" decoding="async" />
                                     </span>
                                     <div className={styles.userDetails}>
                                         <div className={styles.userNameWrapper}>
@@ -312,7 +312,7 @@ const TestimonialSection = () => {
                             <div className={styles.cardBody}>
                                 <div className={styles.messageReceived}>
                                     <div className={styles.messageAvatar}>
-                                        <img src="/images/chatlogo.png" alt="ApartmentHub" className={styles.messageAvatarImg} loading="lazy" decoding="async" />
+                                        <img src="/images/chatlogo.png" alt="ApartmentHub - Amsterdam apartment rental platform" className={styles.messageAvatarImg} loading="lazy" decoding="async" />
                                     </div>
                                     <div className={styles.messageBubbleReceived}>
                                         <p className={styles.messageText}>{mariaPreview[currentLang]?.received}</p>
@@ -331,7 +331,7 @@ const TestimonialSection = () => {
                                         </div>
                                     </div>
                                     <span className={styles.avatarSmall}>
-                                        <img className={styles.avatarImg} alt={mariaData.name} src={mariaData.avatar} loading="lazy" decoding="async" />
+                                        <img className={styles.avatarImg} alt={`${mariaData.name} - ApartmentHub tenant in ${mariaData.location}, Amsterdam`} src={mariaData.avatar} loading="lazy" decoding="async" />
                                     </span>
                                 </div>
                                 <div className={styles.cardFooter}>
@@ -353,7 +353,7 @@ const TestimonialSection = () => {
                             <div className={styles.cardHeader}>
                                 <div className={styles.userInfo}>
                                     <span className={styles.avatar}>
-                                        <img className={styles.avatarImg} alt={janData.name} src={janData.avatar} loading="lazy" decoding="async" />
+                                        <img className={styles.avatarImg} alt={`${janData.name} - ApartmentHub tenant testimonial from Amsterdam ${janData.location}`} src={janData.avatar} loading="lazy" decoding="async" />
                                     </span>
                                     <div className={styles.userDetails}>
                                         <div className={styles.userNameWrapper}>
@@ -378,7 +378,7 @@ const TestimonialSection = () => {
                             <div className={styles.cardBody}>
                                 <div className={styles.messageReceived}>
                                     <div className={styles.messageAvatar}>
-                                        <img src="/images/chatlogo.png" alt="ApartmentHub" className={styles.messageAvatarImg} loading="lazy" decoding="async" />
+                                        <img src="/images/chatlogo.png" alt="ApartmentHub - Amsterdam apartment rental platform" className={styles.messageAvatarImg} loading="lazy" decoding="async" />
                                     </div>
                                     <div className={styles.messageBubbleReceived}>
                                         <p className={styles.messageText}>{janPreview[currentLang]?.received}</p>
@@ -397,7 +397,7 @@ const TestimonialSection = () => {
                                         </div>
                                     </div>
                                     <span className={styles.avatarSmall}>
-                                        <img className={styles.avatarImg} alt={janData.name} src={janData.avatar} loading="lazy" decoding="async" />
+                                        <img className={styles.avatarImg} alt={`${janData.name} - ApartmentHub tenant in Amsterdam ${janData.location}`} src={janData.avatar} loading="lazy" decoding="async" />
                                     </span>
                                 </div>
                                 <div className={styles.cardFooter}>
