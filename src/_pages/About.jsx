@@ -110,6 +110,60 @@ const About = () => {
                 </div>
             </section>
 
+            <section className={styles.statsSection}>
+                <div className={styles.heroContainer}>
+                    <div className={styles.heroContent}>
+                        <h2 className={styles.statsTitle}>{t.servicesTitle}</h2>
+                        <p className={styles.statsSubtitle}>{t.servicesSubtitle}</p>
+                    </div>
+                    <div className={styles.valuesGrid}>
+                        <div className={styles.valueCard}>
+                            <h3 className={styles.valueTitle}>{t.service1Title}</h3>
+                            <p className={styles.statLabel}>{t.service1Desc}</p>
+                        </div>
+                        <div className={styles.valueCard}>
+                            <h3 className={styles.valueTitle}>{t.service2Title}</h3>
+                            <p className={styles.statLabel}>{t.service2Desc}</p>
+                        </div>
+                        <div className={styles.valueCard}>
+                            <h3 className={styles.valueTitle}>{t.service3Title}</h3>
+                            <p className={styles.statLabel}>{t.service3Desc}</p>
+                        </div>
+                        <div className={styles.valueCard}>
+                            <h3 className={styles.valueTitle}>{t.service4Title}</h3>
+                            <p className={styles.statLabel}>{t.service4Desc}</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section className={styles.teamSection}>
+                <div className={styles.heroContainer}>
+                    <div className={styles.heroContent}>
+                        <h2 className={styles.statsTitle}>{t.apartmentTypesTitle}</h2>
+                        <p className={styles.statsSubtitle}>{t.apartmentTypesSubtitle}</p>
+                    </div>
+                    <div className={styles.valuesGrid}>
+                        <div className={styles.valueCard}>
+                            <h3 className={styles.valueTitle}>{t.type1Title}</h3>
+                            <p className={styles.statLabel}>{t.type1Desc}</p>
+                        </div>
+                        <div className={styles.valueCard}>
+                            <h3 className={styles.valueTitle}>{t.type2Title}</h3>
+                            <p className={styles.statLabel}>{t.type2Desc}</p>
+                        </div>
+                        <div className={styles.valueCard}>
+                            <h3 className={styles.valueTitle}>{t.type3Title}</h3>
+                            <p className={styles.statLabel}>{t.type3Desc}</p>
+                        </div>
+                        <div className={styles.valueCard}>
+                            <h3 className={styles.valueTitle}>{t.type4Title}</h3>
+                            <p className={styles.statLabel}>{t.type4Desc}</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <section className={styles.valuesSection}>
                 <div className={styles.heroContainer}>
                     <div className={styles.heroContent}>
