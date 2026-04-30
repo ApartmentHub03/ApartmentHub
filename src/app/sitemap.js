@@ -93,6 +93,31 @@ export default function sitemap() {
         },
       },
     },
+    // Apartments for Rent in Amsterdam (keyword landing page)
+    {
+      url: `${BASE_URL}/en/apartments-for-rent-in-amsterdam`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.9,
+      alternates: {
+        languages: {
+          en: `${BASE_URL}/en/apartments-for-rent-in-amsterdam`,
+          nl: `${BASE_URL}/nl/appartementen-te-huur-in-amsterdam`,
+        },
+      },
+    },
+    {
+      url: `${BASE_URL}/nl/appartementen-te-huur-in-amsterdam`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.9,
+      alternates: {
+        languages: {
+          en: `${BASE_URL}/en/apartments-for-rent-in-amsterdam`,
+          nl: `${BASE_URL}/nl/appartementen-te-huur-in-amsterdam`,
+        },
+      },
+    },
     // Neighborhoods
     {
       url: `${BASE_URL}/en/neighborhoods`,

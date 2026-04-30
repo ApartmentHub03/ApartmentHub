@@ -1,0 +1,260 @@
+.page {
+    color: #111827;
+}
+
+.container {
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.hero {
+    padding: 4rem 0 3rem;
+    background: linear-gradient(180deg, #f6fdf9 0%, #ffffff 100%);
+}
+
+.section {
+    padding: 3.5rem 0;
+}
+
+.sectionMuted {
+    background-color: #fafafa;
+}
+
+.eyebrow {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-primary-green, #0f5132);
+    margin-bottom: 0.75rem;
+}
+
+.h1 {
+    font-size: 2.25rem;
+    font-weight: 800;
+    line-height: 1.15;
+    color: #111827;
+    margin: 0 0 1rem;
+}
+
+@media (min-width: 768px) {
+    .h1 {
+        font-size: 3rem;
+    }
+}
+
+.h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #111827;
+    margin: 0 0 1rem;
+}
+
+@media (min-width: 768px) {
+    .h2 {
+        font-size: 2rem;
+    }
+}
+
+.lead {
+    font-size: 1.125rem;
+    color: #374151;
+    line-height: 1.65;
+    max-width: 56rem;
+    margin: 0 0 1.75rem;
+}
+
+.body {
+    font-size: 1rem;
+    color: #4b5563;
+    line-height: 1.7;
+    max-width: 56rem;
+    margin: 0 0 1rem;
+}
+
+.bulletList {
+    margin: 1rem 0 0;
+    padding-left: 1.25rem;
+    color: #4b5563;
+    line-height: 1.8;
+}
+
+.bulletList li {
+    margin-bottom: 0.25rem;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    margin-top: 1.75rem;
+}
+
+@media (min-width: 640px) {
+    .grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.card {
+    background-color: #ffffff;
+    border-radius: 1.25rem;
+    padding: 1.5rem;
+    box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.08);
+    border: 1px solid #f1f5f4;
+}
+
+.cardTitle {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 0.5rem;
+}
+
+.cardText {
+    font-size: 0.9375rem;
+    color: #4b5563;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.linkLine {
+    margin-top: 1.5rem;
+}
+
+.inlineLink {
+    color: var(--color-primary-green, #0f5132);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.inlineLink:hover {
+    color: var(--color-primary-orange, #f97316);
+}
+
+.steps {
+    list-style: none;
+    counter-reset: step;
+    padding: 0;
+    margin: 1.5rem 0 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .steps {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.step {
+    background: #ffffff;
+    border-radius: 1rem;
+    padding: 1.25rem 1.5rem;
+    border: 1px solid #eef2f0;
+}
+
+.stepTitle {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: #0f5132;
+    margin: 0 0 0.25rem;
+}
+
+.stepText {
+    font-size: 0.9375rem;
+    color: #4b5563;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.faqList {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .faqList {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.faqItem {
+    background: #ffffff;
+    border-radius: 1rem;
+    padding: 1.25rem 1.5rem;
+    border: 1px solid #eef2f0;
+}
+
+.faqQuestion {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 0.5rem;
+}
+
+.faqAnswer {
+    font-size: 0.9375rem;
+    color: #4b5563;
+    line-height: 1.65;
+    margin: 0;
+}
+
+.heroCtas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.ctaPrimary {
+    display: inline-flex;
+    align-items: center;
+    background-color: var(--color-primary-green, #0f5132);
+    color: #ffffff;
+    padding: 0.875rem 1.5rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    text-decoration: none;
+    transition: all 0.25s ease;
+}
+
+.ctaPrimary:hover {
+    background-color: var(--color-primary-orange, #f97316);
+    transform: translateY(-1px);
+}
+
+.ctaSecondary {
+    display: inline-flex;
+    align-items: center;
+    background-color: #ffffff;
+    color: var(--color-primary-green, #0f5132);
+    padding: 0.875rem 1.5rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    text-decoration: none;
+    border: 1px solid var(--color-primary-green, #0f5132);
+    transition: all 0.25s ease;
+}
+
+.ctaSecondary:hover {
+    background-color: #f0f7f3;
+}
+
+.ctaBlock {
+    padding: 4rem 0;
+    background: linear-gradient(180deg, #ffffff 0%, #f6fdf9 100%);
+}
