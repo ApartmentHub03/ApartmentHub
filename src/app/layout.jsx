@@ -4,10 +4,10 @@ import Script from 'next/script';
 
 export const metadata = {
     title: {
-        default: 'ApartmentHub - Find Your Perfect Apartment in Amsterdam',
+        default: 'Amsterdam Apartments for Rent | ApartmentHub - Verified Listings',
         template: '%s | ApartmentHub',
     },
-    description: 'Browse rental listings across the Netherlands with ApartmentHub. Find your perfect Amsterdam apartment — start your search today.',
+    description: 'Find Amsterdam apartments for rent on ApartmentHub. Browse verified rental listings across the Netherlands, build your dossier, and apply online — start your search today.',
     metadataBase: new URL('https://apartmenthub.nl'),
     verification: {
         google: 'WEk3DyM5hwLTLGZl6tySEgdmRfr5fd21mH53OExkkx0',
@@ -18,8 +18,8 @@ export const metadata = {
     openGraph: {
         type: 'website',
         siteName: 'ApartmentHub',
-        title: 'ApartmentHub - Find Your Perfect Apartment in Amsterdam',
-        description: 'Browse rental listings across the Netherlands with ApartmentHub. Find your perfect Amsterdam apartment — start your search today.',
+        title: 'Amsterdam Apartments for Rent | ApartmentHub - Verified Listings',
+        description: 'Find Amsterdam apartments for rent on ApartmentHub. Browse verified rental listings across the Netherlands, build your dossier, and apply online — start your search today.',
         url: 'https://apartmenthub.nl',
         locale: 'en_US',
         images: [
@@ -27,14 +27,14 @@ export const metadata = {
                 url: '/images/site-logo.png',
                 width: 512,
                 height: 512,
-                alt: 'ApartmentHub',
+                alt: 'ApartmentHub - Amsterdam apartments for rent',
             },
         ],
     },
     twitter: {
         card: 'summary_large_image',
-        title: 'ApartmentHub - Find Your Perfect Apartment in Amsterdam',
-        description: 'Browse rental listings across the Netherlands with ApartmentHub. Find your perfect Amsterdam apartment — start your search today.',
+        title: 'Amsterdam Apartments for Rent | ApartmentHub',
+        description: 'Find Amsterdam apartments for rent on ApartmentHub. Browse verified rental listings across the Netherlands and apply online today.',
         images: ['/images/site-logo.png'],
     },
 };
