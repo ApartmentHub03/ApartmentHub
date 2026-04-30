@@ -1,8 +1,8 @@
 import FAQ from '@/pages/FAQ';
 
 export const metadata = {
-    title: 'Frequently Asked Questions | ApartmentHub',
-    description: 'Find answers to common questions about renting in Amsterdam with ApartmentHub.',
+    title: 'Amsterdam Apartment Rental FAQ: Documents, Costs & Process | ApartmentHub',
+    description: 'Answers to the most-asked questions about renting an apartment in Amsterdam: required documents, deposit and income rules, viewing process, expat support, and what ApartmentHub does for you.',
     alternates: {
         canonical: 'https://apartmenthub.nl/en/faq',
         languages: {
