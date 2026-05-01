@@ -25,13 +25,15 @@ export async function POST(request) {
         return NextResponse.json({ success: false, error: 'Invalid JSON body' }, { status: 400 });
     }
 
-    const { suggestion, type, dashboardContext } = payload || {};
+    const { suggestion, type, dashboardContext, userPrompt } = payload || {};
     if (!suggestion || !type) {
         return NextResponse.json(
             { success: false, error: 'suggestion and type are required' },
             { status: 400 }
         );
     }
+
+    const trimmedPrompt = typeof userPrompt === 'string' ? userPrompt.trim() : '';
 
     try {
         const url = `${dispatchUrl.replace(/\/$/, '')}/dispatch/seo-develop`;
@@ -41,7 +43,12 @@ export async function POST(request) {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${dispatchToken}`,
             },
-            body: JSON.stringify({ suggestion, type, dashboardContext }),
+            body: JSON.stringify({
+                suggestion,
+                type,
+                dashboardContext,
+                ...(trimmedPrompt ? { userPrompt: trimmedPrompt } : {}),
+            }),
         });
 
         const json = await res.json().catch(() => ({}));
