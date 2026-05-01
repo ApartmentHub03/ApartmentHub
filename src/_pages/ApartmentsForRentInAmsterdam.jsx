@@ -211,12 +211,31 @@ const content = {
     },
 };
 
+const apartmentCategories = {
+    en: [
+        { name: 'Studio apartments in Amsterdam', floorSize: 35, bedrooms: 0, priceLow: 1500, priceHigh: 2200, description: 'Compact studio apartments for rent in Amsterdam — ideal for solo tenants, students, and short-term professionals.' },
+        { name: 'One-bedroom apartments in Amsterdam', floorSize: 55, bedrooms: 1, priceLow: 2000, priceHigh: 2800, description: 'One-bedroom apartments for rent in Amsterdam — popular with couples and expats relocating to the city.' },
+        { name: 'Two-bedroom apartments in Amsterdam', floorSize: 80, bedrooms: 2, priceLow: 2800, priceHigh: 3800, description: 'Two-bedroom apartments for rent in Amsterdam — suited to small families, roommates, and remote workers.' },
+        { name: 'Three-bedroom apartments and family homes in Amsterdam', floorSize: 110, bedrooms: 3, priceLow: 3500, priceHigh: 5500, description: 'Three-bedroom apartments and family homes for rent in Amsterdam — perfect for larger households and long-term tenants.' },
+    ],
+    nl: [
+        { name: "Studio's te huur in Amsterdam", floorSize: 35, bedrooms: 0, priceLow: 1500, priceHigh: 2200, description: "Compacte studio's te huur in Amsterdam — ideaal voor alleenstaanden, studenten en short-stay professionals." },
+        { name: 'Eenkamerappartementen te huur in Amsterdam', floorSize: 55, bedrooms: 1, priceLow: 2000, priceHigh: 2800, description: 'Eenkamerappartementen te huur in Amsterdam — geliefd bij stellen en expats die naar de stad verhuizen.' },
+        { name: 'Tweekamerappartementen te huur in Amsterdam', floorSize: 80, bedrooms: 2, priceLow: 2800, priceHigh: 3800, description: 'Tweekamerappartementen te huur in Amsterdam — passend bij kleine gezinnen, huisgenoten en thuiswerkers.' },
+        { name: 'Driekamerappartementen en gezinswoningen te huur in Amsterdam', floorSize: 110, bedrooms: 3, priceLow: 3500, priceHigh: 5500, description: 'Driekamerappartementen en gezinswoningen te huur in Amsterdam — ideaal voor grotere huishoudens en huurders voor de lange termijn.' },
+    ],
+};
+
 const ApartmentsForRentInAmsterdam = ({ lang = 'en' }) => {
     const t = content[lang] || content.en;
     const apartmentsHref = lang === 'nl' ? '/nl/appartementen' : '/en/apartments';
     const rentInHref = lang === 'nl' ? '/nl/rent-in' : '/en/rent-in';
     const neighborhoodsHref = lang === 'nl' ? '/nl/neighborhoods' : '/en/neighborhoods';
     const contactHref = lang === 'nl' ? '/nl/contact' : '/en/contact';
+    const pageUrl =
+        lang === 'nl'
+            ? 'https://apartmenthub.nl/nl/appartementen-te-huur-in-amsterdam'
+            : 'https://apartmenthub.nl/en/apartments-for-rent-in-amsterdam';
 
     const faqJsonLd = {
         '@context': 'https://schema.org',
@@ -231,11 +250,63 @@ const ApartmentsForRentInAmsterdam = ({ lang = 'en' }) => {
         })),
     };
 
+    const categories = apartmentCategories[lang] || apartmentCategories.en;
+    const apartmentItemListJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        name: t.h1,
+        url: pageUrl,
+        numberOfItems: categories.length,
+        itemListElement: categories.map((category, idx) => ({
+            '@type': 'ListItem',
+            position: idx + 1,
+            item: {
+                '@type': 'Apartment',
+                name: category.name,
+                description: category.description,
+                numberOfBedrooms: category.bedrooms,
+                floorSize: {
+                    '@type': 'QuantitativeValue',
+                    value: category.floorSize,
+                    unitCode: 'MTK',
+                },
+                address: {
+                    '@type': 'PostalAddress',
+                    addressLocality: 'Amsterdam',
+                    addressRegion: 'Noord-Holland',
+                    addressCountry: 'NL',
+                },
+                offers: {
+                    '@type': 'AggregateOffer',
+                    priceCurrency: 'EUR',
+                    lowPrice: category.priceLow,
+                    highPrice: category.priceHigh,
+                    availability: 'https://schema.org/InStock',
+                    priceSpecification: {
+                        '@type': 'UnitPriceSpecification',
+                        priceCurrency: 'EUR',
+                        price: category.priceLow,
+                        unitCode: 'MON',
+                        referenceQuantity: {
+                            '@type': 'QuantitativeValue',
+                            value: 1,
+                            unitCode: 'MON',
+                        },
+                    },
+                },
+            },
+        })),
+    };
+
     return (
         <main className={styles.page}>
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+            />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(apartmentItemListJsonLd) }}
             />
 
             <section className={styles.hero}>
