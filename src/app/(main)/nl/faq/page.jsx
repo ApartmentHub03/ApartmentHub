@@ -1,4 +1,5 @@
 import FAQ from '@/pages/FAQ';
+import FAQSchema from '@/components/seo/FAQSchema';
 
 export const metadata = {
     title: 'Appartement Huren in Amsterdam: Veelgestelde Vragen | ApartmentHub',
@@ -13,5 +14,10 @@ export const metadata = {
 };
 
 export default function Page() {
-    return <FAQ />;
+    return (
+        <>
+            <FAQSchema lang="nl" />
+            <FAQ />
+        </>
+    );
 }
