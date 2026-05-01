@@ -1,13 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { BarChart3, RefreshCw, ArrowLeft, LogOut } from 'lucide-react';
+import { BarChart3, RefreshCw, ArrowLeft, LogOut, ExternalLink } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { toast } from 'sonner';
 import styles from '../seo.module.css';
 
 export default function SEOHeader({ activeTab, onTabChange, onRefresh, refreshing }) {
     const router = useRouter();
+    const [loadingDeployment, setLoadingDeployment] = useState(false);
 
     const tabs = [
         { id: 'overview', label: 'Overview' },
@@ -38,6 +40,28 @@ export default function SEOHeader({ activeTab, onTabChange, onRefresh, refreshin
         router.push('/admin');
     };
 
+    const handleOpenDeployment = async () => {
+        if (loadingDeployment) return;
+        setLoadingDeployment(true);
+        toast.loading('Looking up the latest SEO deployment...', { id: 'deployment-lookup' });
+        try {
+            const token = sessionStorage.getItem('admin_token');
+            const res = await fetch('/api/admin/seo/deployment', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const json = await res.json();
+            if (!res.ok || !json.success || !json.url) {
+                throw new Error(json.error || 'Could not load deployment');
+            }
+            toast.success('Opening deployment...', { id: 'deployment-lookup' });
+            window.open(json.url, '_blank', 'noopener,noreferrer');
+        } catch (err) {
+            toast.error(err.message, { id: 'deployment-lookup' });
+        } finally {
+            setLoadingDeployment(false);
+        }
+    };
+
     return (
         <>
             <header className={styles.header}>
@@ -57,6 +81,17 @@ export default function SEOHeader({ activeTab, onTabChange, onRefresh, refreshin
                         >
                             <RefreshCw size={14} />
                             Refresh
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleOpenDeployment}
+                            disabled={loadingDeployment}
+                            loading={loadingDeployment}
+                            title="Open the latest Vercel deployment of the SEO branch"
+                        >
+                            <ExternalLink size={14} />
+                            Deployment
                         </Button>
                         <Button
                             variant="outline"

@@ -169,12 +169,23 @@ app.delete("/mcp", authenticate, async (req, res) => {
 // implements an SEO suggestion, commits to the configured dispatch branch,
 // and opens a PR. Fire-and-forget: returns 202 with a jobId immediately.
 app.post("/dispatch/seo-develop", authenticate, (req, res) => {
-  const { suggestion, type, dashboardContext } = req.body || {};
+  const {
+    suggestion,
+    type,
+    dashboardContext,
+    userPrompt,
+    priorPrompts,
+    isRefinement,
+    jobId: incomingJobId,
+  } = req.body || {};
   if (!suggestion || !type) {
     return res.status(400).json({ error: "suggestion and type are required" });
   }
 
-  const jobId = randomUUID();
+  const jobId =
+    typeof incomingJobId === "string" && /^[a-f0-9-]{36}$/.test(incomingJobId)
+      ? incomingJobId
+      : randomUUID();
   const logFile = join(DISPATCH_LOG_DIR, `${jobId}.log`);
   const logStream = createWriteStream(logFile, { flags: "a" });
   const prompt = buildSeoDevelopPrompt({
@@ -183,6 +194,9 @@ app.post("/dispatch/seo-develop", authenticate, (req, res) => {
     dashboardContext,
     jobId,
     user: req.username,
+    userPrompt: typeof userPrompt === "string" ? userPrompt : "",
+    priorPrompts: Array.isArray(priorPrompts) ? priorPrompts : [],
+    isRefinement: Boolean(isRefinement),
   });
 
   logStream.write(
@@ -248,23 +262,53 @@ app.get("/dispatch/seo-develop/:jobId/log", authenticate, async (req, res) => {
   }
 });
 
-function buildSeoDevelopPrompt({ type, suggestion, dashboardContext, jobId, user }) {
+function buildSeoDevelopPrompt({
+  type,
+  suggestion,
+  dashboardContext,
+  jobId,
+  user,
+  userPrompt,
+  priorPrompts,
+  isRefinement,
+}) {
   const suggestionBlock = JSON.stringify(suggestion, null, 2);
   const contextBlock = dashboardContext
     ? JSON.stringify(dashboardContext, null, 2)
     : "(not provided)";
+
+  const priorPromptsBlock =
+    priorPrompts && priorPrompts.length > 0
+      ? priorPrompts
+          .map((p, i) => `  [${i + 1}] ${p}`)
+          .join("\n")
+      : "(none)";
+
+  const currentPromptBlock = userPrompt
+    ? userPrompt
+    : "(none — implement the suggestion as-is)";
+
+  const refinementBanner = isRefinement
+    ? `\n=== REFINEMENT RUN ===\nThis is a follow-up on a previous dispatch for the same suggestion. The earlier work has already been pushed to "${DISPATCH_BRANCH}" and likely opened or amended a PR. Build on top of that work — do NOT redo it. If the new instruction conflicts with what was previously done, prefer the new instruction.\n`
+    : "";
 
   return `You are being run HEADLESSLY to implement an SEO improvement flagged by the SEO dashboard. Work fully autonomously — do NOT ask questions, do NOT wait for confirmation, do NOT request clarification. Make decisions and proceed.
 
 TASK TYPE: ${type}
 TRIGGERED BY: ${user}
 JOB ID: ${jobId}
-
+${refinementBanner}
 SUGGESTION TO IMPLEMENT:
 ${suggestionBlock}
 
 BROADER DASHBOARD CONTEXT (the full AI analysis this suggestion came from — use it to understand priorities and trade-offs):
 ${contextBlock}
+
+PRIOR USER INSTRUCTIONS for this job (oldest first — already acted on, included for continuity):
+${priorPromptsBlock}
+
+CURRENT USER INSTRUCTION (the thing to act on right now):
+${currentPromptBlock}
 
 === INSTRUCTIONS (follow exactly) ===
 

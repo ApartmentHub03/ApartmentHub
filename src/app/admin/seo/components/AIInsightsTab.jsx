@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAdminFetch } from '@/hooks/useAdminFetch';
 import Button from '@/components/ui/Button';
 import { SkeletonBlock } from './SkeletonCard';
@@ -16,6 +16,11 @@ import {
     ChevronUp,
     Loader2,
     Wrench,
+    GitMerge,
+    CheckCircle2,
+    ExternalLink,
+    Clock,
+    XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import styles from '../seo.module.css';
@@ -27,6 +32,8 @@ export default function AIInsightsTab({ refreshKey }) {
     const [webhookAnalysis, setWebhookAnalysis] = useState(null);
     const [pollStatus, setPollStatus] = useState(null);
     const [provider, setProvider] = useState('groq');
+    const [jobsRefreshKey, setJobsRefreshKey] = useState(0);
+    const bumpJobs = useCallback(() => setJobsRefreshKey((k) => k + 1), []);
     const { data, loading } = useAdminFetch(
         `/api/admin/seo/ai/results?_=${refreshKey}`
     );
@@ -72,6 +79,8 @@ export default function AIInsightsTab({ refreshKey }) {
 
     return (
         <>
+            <JobsSections refreshKey={jobsRefreshKey} onChange={bumpJobs} />
+
             <div className={styles.section}>
                 <div className={styles.priorityHeader}>
                     <div>
@@ -125,7 +134,7 @@ export default function AIInsightsTab({ refreshKey }) {
             )}
 
             {webhookAnalysis ? (
-                <WebhookResults analysis={webhookAnalysis} />
+                <WebhookResults analysis={webhookAnalysis} onDispatched={bumpJobs} />
             ) : !webhookRunning && (
                 <div className={styles.section}>
                     <div className={styles.empty}>
@@ -145,8 +154,10 @@ export default function AIInsightsTab({ refreshKey }) {
     );
 }
 
-function DevelopButton({ type, suggestion, dashboardContext }) {
+function DevelopButton({ type, suggestion, dashboardContext, onDispatched }) {
+    const [open, setOpen] = useState(false);
     const [dispatching, setDispatching] = useState(false);
+    const [userPrompt, setUserPrompt] = useState('');
 
     const handleDevelop = async () => {
         if (dispatching) return;
@@ -154,22 +165,25 @@ function DevelopButton({ type, suggestion, dashboardContext }) {
         toast.loading('Dispatching to Claude Code on the Mac mini...', { id: 'dev-dispatch' });
         try {
             const token = sessionStorage.getItem('admin_token');
-            const res = await fetch('/api/admin/seo/ai/develop', {
+            const res = await fetch('/api/admin/seo/develop/jobs', {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ type, suggestion, dashboardContext }),
+                body: JSON.stringify({ type, suggestion, dashboardContext, userPrompt }),
             });
             const json = await res.json();
             if (!res.ok || !json.success) {
                 throw new Error(json.error || 'Dispatch failed');
             }
             toast.success(
-                `Claude is working on it — a PR will appear on GitHub in a few minutes (job ${String(json.jobId).slice(0, 8)})`,
+                `Claude is working on it — moved to In Progress (job ${String(json.jobId || '').slice(0, 8)})`,
                 { id: 'dev-dispatch', duration: 8000 }
             );
+            setOpen(false);
+            setUserPrompt('');
+            onDispatched?.();
         } catch (err) {
             toast.error(err.message, { id: 'dev-dispatch' });
         } finally {
@@ -178,33 +192,193 @@ function DevelopButton({ type, suggestion, dashboardContext }) {
     };
 
     return (
-        <button
-            onClick={handleDevelop}
-            disabled={dispatching}
-            title="Send this suggestion to Claude Code on the Mac mini to implement autonomously"
-            style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.35rem 0.75rem',
-                marginTop: '0.5rem',
-                border: '1px solid #009B8A',
-                background: dispatching ? '#e5f6f4' : '#009B8A',
-                color: dispatching ? '#009B8A' : '#fff',
-                borderRadius: '0.375rem',
-                fontSize: '0.75rem',
-                fontWeight: 500,
-                cursor: dispatching ? 'not-allowed' : 'pointer',
-                transition: 'all 0.15s',
-            }}
-        >
-            {dispatching ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <Wrench size={12} />}
-            {dispatching ? 'Dispatching...' : 'Develop'}
-        </button>
+        <>
+            <button
+                onClick={() => setOpen(true)}
+                title="Send this suggestion to Claude Code on the Mac mini to implement autonomously"
+                style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.35rem 0.75rem',
+                    marginTop: '0.5rem',
+                    border: '1px solid #009B8A',
+                    background: '#009B8A',
+                    color: '#fff',
+                    borderRadius: '0.375rem',
+                    fontSize: '0.75rem',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                }}
+            >
+                <Wrench size={12} />
+                Develop
+            </button>
+            {open && (
+                <DevelopPromptModal
+                    suggestion={suggestion}
+                    type={type}
+                    userPrompt={userPrompt}
+                    onChangePrompt={setUserPrompt}
+                    onCancel={() => {
+                        if (!dispatching) {
+                            setOpen(false);
+                            setUserPrompt('');
+                        }
+                    }}
+                    onConfirm={handleDevelop}
+                    dispatching={dispatching}
+                />
+            )}
+        </>
     );
 }
 
-function WebhookResults({ analysis }) {
+function DevelopPromptModal({
+    suggestion,
+    type,
+    userPrompt,
+    onChangePrompt,
+    onCancel,
+    onConfirm,
+    dispatching,
+}) {
+    const summary =
+        suggestion?.issue ||
+        suggestion?.action ||
+        suggestion?.suggestion ||
+        suggestion?.keyword ||
+        suggestion?.page ||
+        'this suggestion';
+
+    return (
+        <div
+            onClick={onCancel}
+            style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(17, 24, 39, 0.55)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000,
+                padding: '1rem',
+            }}
+        >
+            <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                    width: '100%',
+                    maxWidth: 560,
+                    background: '#fff',
+                    borderRadius: '0.75rem',
+                    boxShadow: '0 20px 50px rgba(0,0,0,0.25)',
+                    padding: '1.5rem',
+                    fontFamily: 'inherit',
+                }}
+            >
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 600, color: '#111827' }}>
+                    <Wrench size={16} style={{ display: 'inline', marginRight: 6, verticalAlign: '-2px' }} />
+                    Develop suggestion
+                </h3>
+                <p style={{ margin: '0.5rem 0 1rem', fontSize: '0.8125rem', color: '#6b7280', lineHeight: 1.5 }}>
+                    Claude Code will work on the AI suggestion below. You can add extra instructions
+                    here — anything you want it to focus on, avoid, or do differently.
+                </p>
+
+                <div
+                    style={{
+                        background: '#f9fafb',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '0.5rem',
+                        padding: '0.75rem',
+                        marginBottom: '1rem',
+                        fontSize: '0.8125rem',
+                        color: '#374151',
+                    }}
+                >
+                    <div style={{ fontSize: '0.6875rem', textTransform: 'uppercase', color: '#6b7280', marginBottom: '0.25rem', letterSpacing: '0.025em' }}>
+                        AI suggestion ({type})
+                    </div>
+                    <div style={{ fontWeight: 500 }}>{summary}</div>
+                </div>
+
+                <label
+                    htmlFor="develop-prompt"
+                    style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}
+                >
+                    Additional instructions (optional)
+                </label>
+                <textarea
+                    id="develop-prompt"
+                    value={userPrompt}
+                    onChange={(e) => onChangePrompt(e.target.value)}
+                    disabled={dispatching}
+                    rows={5}
+                    placeholder="e.g. focus on the /nl/aanvraag page, keep changes minimal, don't touch the header component..."
+                    style={{
+                        width: '100%',
+                        padding: '0.625rem 0.75rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '0.5rem',
+                        fontSize: '0.875rem',
+                        fontFamily: 'inherit',
+                        resize: 'vertical',
+                        boxSizing: 'border-box',
+                    }}
+                />
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1.25rem' }}>
+                    <button
+                        onClick={onCancel}
+                        disabled={dispatching}
+                        style={{
+                            padding: '0.5rem 1rem',
+                            border: '1px solid #d1d5db',
+                            background: '#fff',
+                            color: '#374151',
+                            borderRadius: '0.375rem',
+                            fontSize: '0.875rem',
+                            fontWeight: 500,
+                            cursor: dispatching ? 'not-allowed' : 'pointer',
+                            fontFamily: 'inherit',
+                        }}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        disabled={dispatching}
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            padding: '0.5rem 1rem',
+                            border: '1px solid #009B8A',
+                            background: dispatching ? '#e5f6f4' : '#009B8A',
+                            color: dispatching ? '#009B8A' : '#fff',
+                            borderRadius: '0.375rem',
+                            fontSize: '0.875rem',
+                            fontWeight: 500,
+                            cursor: dispatching ? 'not-allowed' : 'pointer',
+                            fontFamily: 'inherit',
+                        }}
+                    >
+                        {dispatching ? (
+                            <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                        ) : (
+                            <Wrench size={14} />
+                        )}
+                        {dispatching ? 'Dispatching...' : 'Dispatch to Claude'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function WebhookResults({ analysis, onDispatched }) {
     const [expandedSection, setExpandedSection] = useState(null);
 
     if (!analysis) return null;
@@ -324,6 +498,7 @@ function WebhookResults({ analysis }) {
                                                 type="criticalIssue"
                                                 suggestion={issue}
                                                 dashboardContext={analysis}
+                                                onDispatched={onDispatched}
                                             />
                                         </div>
                                     </div>
@@ -377,6 +552,7 @@ function WebhookResults({ analysis }) {
                                                 type="quickWin"
                                                 suggestion={win}
                                                 dashboardContext={analysis}
+                                                onDispatched={onDispatched}
                                             />
                                         </div>
                                     </div>
@@ -433,6 +609,7 @@ function WebhookResults({ analysis }) {
                                                 type="contentSuggestion"
                                                 suggestion={sug}
                                                 dashboardContext={analysis}
+                                                onDispatched={onDispatched}
                                             />
                                         </div>
                                     </div>
@@ -484,6 +661,7 @@ function WebhookResults({ analysis }) {
                                                 type="keywordOpportunity"
                                                 suggestion={kw}
                                                 dashboardContext={analysis}
+                                                onDispatched={onDispatched}
                                             />
                                         </td>
                                     </tr>
@@ -509,6 +687,536 @@ function WebhookResults({ analysis }) {
                 </div>
             )}
         </>
+    );
+}
+
+function suggestionSummary(s) {
+    if (!s) return 'Suggestion';
+    return (
+        s.issue ||
+        s.action ||
+        s.suggestion ||
+        s.keyword ||
+        s.page ||
+        'Suggestion'
+    );
+}
+
+function JobsSections({ refreshKey, onChange }) {
+    const { data: inProgressData, loading: inProgressLoading } = useAdminFetch(
+        `/api/admin/seo/develop/jobs?status=in_progress&_=${refreshKey}`
+    );
+    const { data: completedData } = useAdminFetch(
+        `/api/admin/seo/develop/jobs?status=completed&_=${refreshKey}`
+    );
+
+    const inProgress = inProgressData?.jobs || [];
+    const completed = completedData?.jobs || [];
+
+    if (!inProgressLoading && inProgress.length === 0 && completed.length === 0) {
+        return null;
+    }
+
+    return (
+        <>
+            {(inProgressLoading || inProgress.length > 0) && (
+                <InProgressSection jobs={inProgress} onChange={onChange} />
+            )}
+            {completed.length > 0 && <CompletedSection jobs={completed} />}
+        </>
+    );
+}
+
+function InProgressSection({ jobs, onChange }) {
+    const [collapsed, setCollapsed] = useState(false);
+    const [prStatus, setPrStatus] = useState(null);
+    const [prLoading, setPrLoading] = useState(false);
+    const [merging, setMerging] = useState(false);
+    const pollRef = useRef(null);
+
+    const fetchPrStatus = useCallback(async () => {
+        try {
+            setPrLoading(true);
+            const token = sessionStorage.getItem('admin_token');
+            const res = await fetch('/api/admin/seo/develop/pr-status', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const json = await res.json();
+            if (res.ok && json.success) setPrStatus(json);
+        } catch {
+            // Silent — banner just won't show.
+        } finally {
+            setPrLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (jobs.length === 0) return;
+        fetchPrStatus();
+        pollRef.current = setInterval(fetchPrStatus, 30000);
+        return () => clearInterval(pollRef.current);
+    }, [jobs.length, fetchPrStatus]);
+
+    const handleMerge = async () => {
+        if (merging) return;
+        setMerging(true);
+        toast.loading('Merging seo branch into main...', { id: 'seo-merge' });
+        try {
+            const token = sessionStorage.getItem('admin_token');
+            const res = await fetch('/api/admin/seo/develop/merge', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const json = await res.json();
+            if (!res.ok || !json.success) {
+                throw new Error(json.error || 'Merge failed');
+            }
+            toast.success(`Merged PR #${json.pr_number} into main`, { id: 'seo-merge' });
+            onChange?.();
+            setPrStatus(null);
+        } catch (err) {
+            toast.error(err.message, { id: 'seo-merge', duration: 6000 });
+        } finally {
+            setMerging(false);
+        }
+    };
+
+    const mergeable = prStatus?.exists && prStatus.mergeable === true;
+    const conflicted = prStatus?.exists && prStatus.mergeable === false;
+    const computing = prStatus?.exists && prStatus.mergeable === null;
+
+    return (
+        <div className={styles.section}>
+            <button
+                onClick={() => setCollapsed((c) => !c)}
+                style={{
+                    width: '100%',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 0,
+                    textAlign: 'left',
+                    fontFamily: 'inherit',
+                }}
+            >
+                <div className={styles.priorityHeader}>
+                    <div>
+                        <h3 className={styles.sectionTitle} style={{ margin: 0 }}>
+                            <Clock size={18} style={{ display: 'inline', marginRight: 8, color: '#d97706' }} />
+                            In Progress ({jobs.length})
+                        </h3>
+                        <p className={styles.sectionSubtitle} style={{ margin: '0.25rem 0 0' }}>
+                            Suggestions Claude is working on. Add follow-up instructions or merge when ready.
+                        </p>
+                    </div>
+                    {collapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+                </div>
+            </button>
+
+            {!collapsed && (
+                <>
+                    <PrStatusBanner
+                        prStatus={prStatus}
+                        prLoading={prLoading}
+                        merging={merging}
+                        mergeable={mergeable}
+                        conflicted={conflicted}
+                        computing={computing}
+                        onMerge={handleMerge}
+                        onRefresh={fetchPrStatus}
+                    />
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+                        {jobs.map((job) => (
+                            <InProgressJobCard
+                                key={job.id}
+                                job={job}
+                                onRefined={onChange}
+                                onMerge={handleMerge}
+                                merging={merging}
+                                mergeable={mergeable}
+                                conflicted={conflicted}
+                                computing={computing}
+                            />
+                        ))}
+                    </div>
+                </>
+            )}
+            <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+        </div>
+    );
+}
+
+function PrStatusBanner({
+    prStatus,
+    prLoading,
+    merging,
+    mergeable,
+    conflicted,
+    computing,
+    onMerge,
+    onRefresh,
+}) {
+    let bg = '#f3f4f6';
+    let color = '#374151';
+    let icon = <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />;
+    let label = prLoading ? 'Checking PR status...' : 'No open PR yet';
+
+    if (prStatus?.exists) {
+        if (mergeable) {
+            bg = '#ecfdf5';
+            color = '#065f46';
+            icon = <CheckCircle2 size={14} />;
+            label = 'PR is mergeable — ready to merge into main';
+        } else if (conflicted) {
+            bg = '#fef2f2';
+            color = '#991b1b';
+            icon = <XCircle size={14} />;
+            label = 'Merge conflicts — resolve them on GitHub before merging';
+        } else if (computing) {
+            bg = '#fffbeb';
+            color = '#92400e';
+            icon = <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />;
+            label = 'GitHub is computing mergeability — try again in a moment';
+        }
+    }
+
+    return (
+        <div
+            style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '0.75rem',
+                padding: '0.75rem 1rem',
+                background: bg,
+                color,
+                borderRadius: '0.5rem',
+                fontSize: '0.8125rem',
+                fontWeight: 500,
+                flexWrap: 'wrap',
+            }}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {icon}
+                <span>{label}</span>
+                {prStatus?.exists && prStatus.url && (
+                    <a
+                        href={prStatus.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: 'inherit', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                    >
+                        PR #{prStatus.number} <ExternalLink size={12} />
+                    </a>
+                )}
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                    onClick={onRefresh}
+                    disabled={prLoading}
+                    style={{
+                        padding: '0.35rem 0.65rem',
+                        background: 'transparent',
+                        border: '1px solid currentColor',
+                        color: 'inherit',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.75rem',
+                        cursor: prLoading ? 'not-allowed' : 'pointer',
+                        fontFamily: 'inherit',
+                    }}
+                >
+                    Refresh
+                </button>
+                <button
+                    onClick={onMerge}
+                    disabled={!mergeable || merging}
+                    title={
+                        !prStatus?.exists
+                            ? 'No PR to merge yet'
+                            : conflicted
+                              ? 'Merge conflicts — resolve on GitHub first'
+                              : computing
+                                ? 'GitHub is computing mergeability'
+                                : 'Squash-merge into main'
+                    }
+                    style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        padding: '0.35rem 0.75rem',
+                        background: mergeable ? '#059669' : '#9ca3af',
+                        border: '1px solid transparent',
+                        color: '#fff',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        cursor: !mergeable || merging ? 'not-allowed' : 'pointer',
+                        fontFamily: 'inherit',
+                    }}
+                >
+                    {merging ? (
+                        <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
+                    ) : (
+                        <GitMerge size={12} />
+                    )}
+                    {merging ? 'Merging...' : 'Merge to main'}
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function InProgressJobCard({ job, onRefined, onMerge, merging, mergeable, conflicted, computing }) {
+    const [refinePrompt, setRefinePrompt] = useState('');
+    const [refining, setRefining] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
+
+    const prompts = Array.isArray(job.prompts) ? job.prompts : [];
+    const summary = suggestionSummary(job.suggestion);
+
+    const handleRefine = async () => {
+        const text = refinePrompt.trim();
+        if (!text || refining) return;
+        setRefining(true);
+        toast.loading('Sending refinement to Claude...', { id: `refine-${job.id}` });
+        try {
+            const token = sessionStorage.getItem('admin_token');
+            const res = await fetch(`/api/admin/seo/develop/jobs/${job.id}/refine`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userPrompt: text }),
+            });
+            const json = await res.json();
+            if (!res.ok || !json.success) {
+                throw new Error(json.error || 'Refine failed');
+            }
+            toast.success('Refinement dispatched — Claude will update the PR', {
+                id: `refine-${job.id}`,
+            });
+            setRefinePrompt('');
+            onRefined?.();
+        } catch (err) {
+            toast.error(err.message, { id: `refine-${job.id}` });
+        } finally {
+            setRefining(false);
+        }
+    };
+
+    return (
+        <div
+            style={{
+                border: '1px solid #e5e7eb',
+                borderRadius: '0.625rem',
+                padding: '1rem',
+                background: '#fff',
+            }}
+        >
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '0.6875rem', textTransform: 'uppercase', color: '#6b7280', letterSpacing: '0.025em', marginBottom: '0.25rem' }}>
+                        {job.suggestion_type}
+                    </div>
+                    <div style={{ fontWeight: 500, color: '#111827', fontSize: '0.9rem' }}>{summary}</div>
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#6b7280' }}>
+                        Started {new Date(job.created_at).toLocaleString()}
+                        {prompts.length > 0 && (
+                            <>
+                                {' · '}
+                                <button
+                                    onClick={() => setShowHistory((s) => !s)}
+                                    style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        padding: 0,
+                                        color: '#2563eb',
+                                        cursor: 'pointer',
+                                        fontSize: 'inherit',
+                                        fontFamily: 'inherit',
+                                    }}
+                                >
+                                    {prompts.length} prompt{prompts.length === 1 ? '' : 's'} {showHistory ? '▲' : '▼'}
+                                </button>
+                            </>
+                        )}
+                    </div>
+                </div>
+                <button
+                    onClick={onMerge}
+                    disabled={!mergeable || merging}
+                    title={
+                        conflicted
+                            ? 'Merge conflicts — resolve on GitHub first'
+                            : computing
+                              ? 'GitHub is computing mergeability'
+                              : !mergeable
+                                ? 'No mergeable PR yet'
+                                : 'Merge into main'
+                    }
+                    style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        padding: '0.35rem 0.75rem',
+                        background: mergeable ? '#059669' : '#e5e7eb',
+                        color: mergeable ? '#fff' : '#6b7280',
+                        border: '1px solid transparent',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        cursor: !mergeable || merging ? 'not-allowed' : 'pointer',
+                        fontFamily: 'inherit',
+                        flexShrink: 0,
+                    }}
+                >
+                    <GitMerge size={12} />
+                    Merge
+                </button>
+            </div>
+
+            {showHistory && prompts.length > 0 && (
+                <ol style={{ margin: '0.75rem 0 0', paddingLeft: '1.25rem', fontSize: '0.8125rem', color: '#374151' }}>
+                    {prompts.map((p, i) => (
+                        <li key={i} style={{ marginBottom: '0.25rem' }}>
+                            <span style={{ color: '#6b7280' }}>[{p.kind || 'prompt'}]</span> {p.text}
+                        </li>
+                    ))}
+                </ol>
+            )}
+
+            <div style={{ marginTop: '0.75rem' }}>
+                <textarea
+                    value={refinePrompt}
+                    onChange={(e) => setRefinePrompt(e.target.value)}
+                    disabled={refining}
+                    rows={2}
+                    placeholder="Add follow-up instruction (e.g. 'also update the EN version', 'revert the meta change on /aanvraag')..."
+                    style={{
+                        width: '100%',
+                        padding: '0.5rem 0.65rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.8125rem',
+                        fontFamily: 'inherit',
+                        resize: 'vertical',
+                        boxSizing: 'border-box',
+                    }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                    <button
+                        onClick={handleRefine}
+                        disabled={refining || !refinePrompt.trim()}
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            padding: '0.4rem 0.85rem',
+                            background: refining || !refinePrompt.trim() ? '#e5f6f4' : '#009B8A',
+                            color: refining || !refinePrompt.trim() ? '#009B8A' : '#fff',
+                            border: '1px solid #009B8A',
+                            borderRadius: '0.375rem',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            cursor: refining || !refinePrompt.trim() ? 'not-allowed' : 'pointer',
+                            fontFamily: 'inherit',
+                        }}
+                    >
+                        {refining ? (
+                            <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
+                        ) : (
+                            <Wrench size={12} />
+                        )}
+                        {refining ? 'Sending...' : 'Refine'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function CompletedSection({ jobs }) {
+    const [collapsed, setCollapsed] = useState(true);
+
+    return (
+        <div className={styles.section}>
+            <button
+                onClick={() => setCollapsed((c) => !c)}
+                style={{
+                    width: '100%',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 0,
+                    textAlign: 'left',
+                    fontFamily: 'inherit',
+                }}
+            >
+                <div className={styles.priorityHeader}>
+                    <div>
+                        <h3 className={styles.sectionTitle} style={{ margin: 0 }}>
+                            <CheckCircle2 size={18} style={{ display: 'inline', marginRight: 8, color: '#059669' }} />
+                            Completed ({jobs.length})
+                        </h3>
+                        <p className={styles.sectionSubtitle} style={{ margin: '0.25rem 0 0' }}>
+                            Suggestions that have been merged into main.
+                        </p>
+                    </div>
+                    {collapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+                </div>
+            </button>
+
+            {!collapsed && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.75rem' }}>
+                    {jobs.map((job) => (
+                        <div
+                            key={job.id}
+                            style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                gap: '0.75rem',
+                                padding: '0.75rem 1rem',
+                                border: '1px solid #e5e7eb',
+                                borderRadius: '0.5rem',
+                                background: '#f9fafb',
+                            }}
+                        >
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                                <div style={{ fontSize: '0.6875rem', textTransform: 'uppercase', color: '#6b7280', letterSpacing: '0.025em' }}>
+                                    {job.suggestion_type}
+                                </div>
+                                <div style={{ fontWeight: 500, fontSize: '0.875rem', color: '#111827' }}>
+                                    {suggestionSummary(job.suggestion)}
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.125rem' }}>
+                                    Merged {job.completed_at ? new Date(job.completed_at).toLocaleString() : '—'}
+                                </div>
+                            </div>
+                            {job.pr_url && (
+                                <a
+                                    href={job.pr_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '0.3rem',
+                                        fontSize: '0.75rem',
+                                        color: '#2563eb',
+                                        textDecoration: 'none',
+                                        flexShrink: 0,
+                                    }}
+                                >
+                                    PR #{job.pr_number} <ExternalLink size={12} />
+                                </a>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
     );
 }
 
