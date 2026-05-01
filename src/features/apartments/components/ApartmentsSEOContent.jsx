@@ -10,6 +10,49 @@ const content = {
         title: 'Your guide to renting an apartment in Amsterdam',
         lead: 'Whether you are searching for your first studio in De Pijp, a one-bedroom near Vondelpark, or a family apartment in Oost, this guide explains what to expect when you rent an apartment in Amsterdam — from typical prices and required documents to viewing etiquette and contract terms.',
 
+        neighborhoods: {
+            title: 'Apartments for rent in every Amsterdam neighborhood',
+            intro: 'Each Amsterdam neighborhood has its own atmosphere, price range, and rental supply. Use this overview to focus your search on the areas that match your budget and lifestyle, then come back to the listings above to apply.',
+            items: [
+                {
+                    name: 'Centrum & Grachtengordel',
+                    image: '/images/centrum-neighborhood-8xGBhlo4.jpg',
+                    alt: 'Canal-side apartments for rent in Amsterdam Centrum',
+                    text: 'Historic canal apartments in the heart of Amsterdam, walking distance to museums, restaurants, and Centraal Station. Expect compact studios and one-bedroom apartments from €1,800 to €3,200 per month.',
+                },
+                {
+                    name: 'De Pijp',
+                    image: '/images/de-pijp-neighborhood-CerLEEUD.jpg',
+                    alt: 'Apartment buildings on a street in De Pijp Amsterdam',
+                    text: 'A lively, café-rich neighborhood popular with young professionals and creatives. Apartments here often combine character with modern interiors, with two-bedroom homes typically around €2,800 – €3,800.',
+                },
+                {
+                    name: 'Oud-Zuid',
+                    image: '/images/oud-zuid-neighborhood-B-g-rFNe.jpg',
+                    alt: 'Leafy streets of Amsterdam Oud-Zuid with rental apartments',
+                    text: 'Upscale, leafy area next to Vondelpark and the Concertgebouw. A favourite of executives and international families looking for spacious apartments and townhouses.',
+                },
+                {
+                    name: 'Oost',
+                    image: '/images/oost-neighborhood-D0P6YpX3.jpg',
+                    alt: 'Modern apartment buildings in Amsterdam Oost',
+                    text: 'Modern, spacious apartments with great public transport, parks, and quick access to the IJ. Popular with families and remote workers looking for more square meters per euro.',
+                },
+                {
+                    name: 'Noord',
+                    image: '/images/noord-neighborhood-C3afdJ-w.jpg',
+                    alt: 'New-build rental apartments in Amsterdam Noord',
+                    text: "Amsterdam's fastest-growing district, with new-build apartments, creative hubs, and a short ferry ride to Centraal. Often the best value-for-money for renters new to the city.",
+                },
+                {
+                    name: 'Jordaan',
+                    image: '/images/jordaan-neighborhood-D10TAM1c.jpg',
+                    alt: 'Quiet street with apartments in the Amsterdam Jordaan',
+                    text: 'Charming townhouses and apartments along narrow streets and small canals. Loved by long-term renters who want a quieter, picturesque part of central Amsterdam.',
+                },
+            ],
+        },
+
         types: {
             title: 'Apartment types you will find on ApartmentHub',
             intro: 'Amsterdam apartments come in a wide range of formats, each suited to a different stage of life. Here is what you will see most often when browsing apartments for rent in Amsterdam:',
@@ -106,6 +149,49 @@ const content = {
         eyebrow: 'Huren in Amsterdam',
         title: 'Jouw gids voor het huren van een appartement in Amsterdam',
         lead: 'Of je nu zoekt naar je eerste studio in De Pijp, een eenkamerappartement bij het Vondelpark of een gezinswoning in Oost — deze gids legt uit wat je kunt verwachten bij het huren van een appartement in Amsterdam: van gemiddelde prijzen en benodigde documenten tot bezichtigingsetiquette en contractvoorwaarden.',
+
+        neighborhoods: {
+            title: 'Huurappartementen in elke Amsterdamse wijk',
+            intro: 'Elke Amsterdamse wijk heeft een eigen sfeer, prijsklasse en huuraanbod. Gebruik dit overzicht om je zoektocht te richten op de buurten die bij je budget en levensstijl passen en kom daarna terug naar het aanbod hierboven om te solliciteren.',
+            items: [
+                {
+                    name: 'Centrum & Grachtengordel',
+                    image: '/images/centrum-neighborhood-8xGBhlo4.jpg',
+                    alt: 'Grachtenappartementen te huur in Amsterdam Centrum',
+                    text: 'Historische grachtenappartementen in het hart van Amsterdam, op loopafstand van musea, restaurants en Centraal Station. Verwacht compacte studio’s en eenkamerappartementen van €1.800 tot €3.200 per maand.',
+                },
+                {
+                    name: 'De Pijp',
+                    image: '/images/de-pijp-neighborhood-CerLEEUD.jpg',
+                    alt: 'Appartementen aan een straat in De Pijp Amsterdam',
+                    text: 'Een levendige, café-rijke wijk populair bij young professionals en creatieven. Appartementen hier combineren karakter met modern comfort; tweekamerappartementen liggen meestal rond €2.800 – €3.800.',
+                },
+                {
+                    name: 'Oud-Zuid',
+                    image: '/images/oud-zuid-neighborhood-B-g-rFNe.jpg',
+                    alt: 'Groene straten van Amsterdam Oud-Zuid met huurappartementen',
+                    text: 'Chique, groene wijk naast het Vondelpark en het Concertgebouw. Geliefd bij directieleden en internationale gezinnen die ruime appartementen en stadshuizen zoeken.',
+                },
+                {
+                    name: 'Oost',
+                    image: '/images/oost-neighborhood-D0P6YpX3.jpg',
+                    alt: 'Moderne appartementsgebouwen in Amsterdam Oost',
+                    text: 'Moderne, ruime appartementen met uitstekend openbaar vervoer, parken en snelle toegang tot het IJ. Populair bij gezinnen en thuiswerkers die meer vierkante meters per euro zoeken.',
+                },
+                {
+                    name: 'Noord',
+                    image: '/images/noord-neighborhood-C3afdJ-w.jpg',
+                    alt: 'Nieuwbouw huurappartementen in Amsterdam Noord',
+                    text: 'Amsterdams snelst groeiende stadsdeel, met nieuwbouwappartementen, creatieve hubs en een korte pont naar Centraal. Vaak de beste prijs-kwaliteitverhouding voor nieuwe huurders.',
+                },
+                {
+                    name: 'Jordaan',
+                    image: '/images/jordaan-neighborhood-D10TAM1c.jpg',
+                    alt: 'Rustige straat met appartementen in de Amsterdamse Jordaan',
+                    text: 'Karakteristieke woningen en appartementen langs smalle straten en kleine grachtjes. Geliefd bij langetermijnhuurders die een rustiger, pittoresk deel van centraal Amsterdam zoeken.',
+                },
+            ],
+        },
 
         types: {
             title: 'Welke appartementen vind je op ApartmentHub?',
@@ -210,6 +296,31 @@ const ApartmentsSEOContent = () => {
                 <span className={styles.eyebrow}>{t.eyebrow}</span>
                 <h2 id="apartments-seo-title" className={styles.title}>{t.title}</h2>
                 <p className={styles.lead}>{t.lead}</p>
+
+                <div className={styles.block}>
+                    <h3 className={styles.h3}>{t.neighborhoods.title}</h3>
+                    <p className={styles.body}>{t.neighborhoods.intro}</p>
+                    <div className={styles.imageGrid}>
+                        {t.neighborhoods.items.map((item) => (
+                            <article key={item.name} className={styles.imageCard}>
+                                <div className={styles.imageWrapper}>
+                                    <img
+                                        src={item.image}
+                                        alt={item.alt}
+                                        loading="lazy"
+                                        width="640"
+                                        height="400"
+                                        className={styles.cardImage}
+                                    />
+                                </div>
+                                <div className={styles.imageCardBody}>
+                                    <h4 className={styles.cardTitle}>{item.name}</h4>
+                                    <p className={styles.cardText}>{item.text}</p>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                </div>
 
                 <div className={styles.block}>
                     <h3 className={styles.h3}>{t.types.title}</h3>
