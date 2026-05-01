@@ -232,6 +232,10 @@ const ApartmentsForRentInAmsterdam = ({ lang = 'en' }) => {
     const rentInHref = lang === 'nl' ? '/nl/rent-in' : '/en/rent-in';
     const neighborhoodsHref = lang === 'nl' ? '/nl/neighborhoods' : '/en/neighborhoods';
     const contactHref = lang === 'nl' ? '/nl/contact' : '/en/contact';
+    const rentGuideHref =
+        lang === 'nl'
+            ? '/nl/appartement-huren-in-amsterdam'
+            : '/en/rent-apartment-in-amsterdam';
     const pageUrl =
         lang === 'nl'
             ? 'https://apartmenthub.nl/nl/appartementen-te-huur-in-amsterdam'
@@ -377,6 +381,13 @@ const ApartmentsForRentInAmsterdam = ({ lang = 'en' }) => {
                             </li>
                         ))}
                     </ol>
+                    <p className={styles.linkLine}>
+                        <Link href={rentGuideHref} className={styles.inlineLink}>
+                            {lang === 'nl'
+                                ? 'Lees onze stappenplan: een appartement huren in Amsterdam →'
+                                : 'Read our step-by-step guide: rent an apartment in Amsterdam →'}
+                        </Link>
+                    </p>
                 </div>
             </section>
 
