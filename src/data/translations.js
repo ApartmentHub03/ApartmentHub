@@ -87,6 +87,40 @@ export const translations = {
             descZeeburg: "Water-rich with relaxed atmosphere by the IJ",
             descNieuwWest: "Diverse and green with modern amenities",
 
+            benefitsAmsterdam: {
+                eyebrow: "Why rent in Amsterdam",
+                title: "The benefits of renting an apartment in Amsterdam",
+                intro: "Amsterdam consistently ranks among Europe's most liveable capitals — and for good reason. Renting an apartment in Amsterdam means living in a compact, bike-friendly city with world-class culture, an international job market, and direct connections to the rest of Europe. Below are the reasons our tenants choose Amsterdam apartments for rent over any other city in the Netherlands.",
+                items: [
+                    {
+                        heading: "Strong international job market",
+                        text: "Amsterdam is home to the European headquarters of Booking.com, Adyen, Uber, Netflix, Tesla and hundreds of scale-ups. Renting an apartment in Amsterdam puts you within a 30-minute commute of more English-speaking employers than anywhere else in the Netherlands."
+                    },
+                    {
+                        heading: "Bike-first lifestyle",
+                        text: "With more than 500 km of dedicated cycling lanes, most Amsterdam apartments are 10–15 minutes by bike from work, supermarkets, and parks. Renters typically save €150+ per month versus a car and skip rush-hour traffic entirely."
+                    },
+                    {
+                        heading: "Schiphol on your doorstep",
+                        text: "From any Amsterdam rental apartment you can reach Schiphol Airport in under 30 minutes by direct train, and Paris, Berlin or London in a few hours. Ideal for renters who travel often for work or want easy weekend trips across Europe."
+                    },
+                    {
+                        heading: "Truly international community",
+                        text: "Around 180 nationalities live in Amsterdam and English is spoken almost everywhere — from coffee shops to government services. Renting an apartment in Amsterdam means you can settle in immediately, even before learning Dutch."
+                    },
+                    {
+                        heading: "Culture, food and green spaces",
+                        text: "Vondelpark on Sunday, the Albert Cuyp Market on Saturday, the Concertgebouw on Friday: Amsterdam packs world-class museums, restaurants and nature into a city you can cross in 30 minutes. Every neighborhood has its own character and pace."
+                    },
+                    {
+                        heading: "Renter-friendly Dutch law",
+                        text: "Dutch tenancy law gives renters strong protections: indefinite contracts, regulated rent increases, and clear rules around deposits and termination. Renting an apartment in Amsterdam is one of the most secure ways to live in a major European city."
+                    }
+                ],
+                outro: "Whether you are relocating for a new role, moving from another Dutch city, or returning to Amsterdam after years abroad, renting through ApartmentHub gives you verified listings, a streamlined dossier process and English-speaking support at every step.",
+                cta: "Browse apartments for rent in Amsterdam"
+            },
+
             guide: {
                 eyebrow: "Your Amsterdam apartment guide",
                 title: "The complete guide to renting an apartment in Amsterdam",
@@ -228,6 +262,40 @@ export const translations = {
             descZuidas: "Modern zakendistrict met internationale uitstraling",
             descZeeburg: "Waterrijk met ontspannen sfeer aan het IJ",
             descNieuwWest: "Divers en groen met moderne voorzieningen",
+
+            benefitsAmsterdam: {
+                eyebrow: "Waarom huren in Amsterdam",
+                title: "De voordelen van een appartement huren in Amsterdam",
+                intro: "Amsterdam staat steevast in de top van de meest leefbare hoofdsteden van Europa — en niet zonder reden. Een appartement huren in Amsterdam betekent wonen in een compacte fietsstad met wereldberoemde cultuur, een internationale arbeidsmarkt en directe verbindingen met de rest van Europa. Hieronder zie je waarom onze huurders kiezen voor een huurappartement in Amsterdam boven elke andere stad in Nederland.",
+                items: [
+                    {
+                        heading: "Sterke internationale arbeidsmarkt",
+                        text: "Amsterdam is het Europese hoofdkantoor van Booking.com, Adyen, Uber, Netflix, Tesla en honderden scale-ups. Een appartement huren in Amsterdam betekent dat je binnen 30 minuten reist naar meer Engelstalige werkgevers dan waar dan ook in Nederland."
+                    },
+                    {
+                        heading: "Fiets-first lifestyle",
+                        text: "Met meer dan 500 km aan vrijliggende fietspaden ligt vrijwel elk huurappartement in Amsterdam op 10 tot 15 minuten fietsen van je werk, supermarkt en parken. Huurders besparen al snel €150+ per maand ten opzichte van een auto en omzeilen de spits volledig."
+                    },
+                    {
+                        heading: "Schiphol om de hoek",
+                        text: "Vanuit elk huurappartement in Amsterdam ben je in minder dan 30 minuten met de directe trein op Schiphol, en in een paar uur in Parijs, Berlijn of Londen. Ideaal voor huurders die vaak reizen voor werk of er graag een weekend tussenuit willen."
+                    },
+                    {
+                        heading: "Echt internationale community",
+                        text: "Circa 180 nationaliteiten wonen in Amsterdam en Engels wordt vrijwel overal gesproken — van koffietentjes tot gemeentelijke diensten. Een appartement huren in Amsterdam betekent dat je direct kunt inburgeren, ook als je nog geen Nederlands spreekt."
+                    },
+                    {
+                        heading: "Cultuur, eten en groen",
+                        text: "Op zondag het Vondelpark, op zaterdag de Albert Cuyp Markt, op vrijdag het Concertgebouw: Amsterdam combineert musea, horeca en natuur in een stad die je in 30 minuten doorkruist. Elke wijk heeft een eigen karakter en tempo.",
+                    },
+                    {
+                        heading: "Huurder-vriendelijk Nederlands recht",
+                        text: "De Nederlandse huurwetgeving biedt huurders sterke bescherming: contracten voor onbepaalde tijd, gereguleerde huurverhogingen en duidelijke regels rond borg en opzegging. Een appartement huren in Amsterdam is een van de zekerste manieren om in een Europese hoofdstad te wonen."
+                    }
+                ],
+                outro: "Of je nu verhuist voor een nieuwe baan, vanuit een andere Nederlandse stad komt, of na jaren in het buitenland terugkeert naar Amsterdam: huren via ApartmentHub geeft je geverifieerde woningen, een gestroomlijnd dossierproces en Engelstalige ondersteuning bij elke stap.",
+                cta: "Bekijk appartementen te huur in Amsterdam"
+            },
 
             guide: {
                 eyebrow: "Jouw Amsterdamse appartementengids",
