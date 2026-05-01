@@ -8,6 +8,7 @@ import Button from '../components/ui/Button';
 import { supabase } from '../integrations/supabase/client';
 import { useAuth } from '../contexts/AuthContext';
 import ApartmentsIntroSection from '../features/apartments/components/ApartmentsIntroSection';
+import ApartmentsSEOContent from '../features/apartments/components/ApartmentsSEOContent';
 import styles from './AppartementenSelectie.module.css';
 
 const AppartementenSelectie = () => {
@@ -260,6 +261,7 @@ const AppartementenSelectie = () => {
                     </div>
                 </div>
             </div>
+            <ApartmentsSEOContent />
         </div>
     );
 };
