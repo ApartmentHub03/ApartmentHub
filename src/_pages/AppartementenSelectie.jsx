@@ -25,18 +25,17 @@ const AppartementenSelectie = () => {
             setLoading(true);
             setFetchError(null);
             try {
-                // Both main tenant and co-tenant see all active apartments
-                const { data, error } = await supabase
-                    .from('apartments')
-                    .select('id, "Full Address", street, area, zip_code, rental_price, bedrooms, square_meters, status')
-                    .in('status', ['Active', 'CreateLink'])
-                    .order('Full Address', { ascending: true });
-
-                if (error) {
-                    console.error('[AppartementenSelectie] Error fetching apartments:', error);
-                    setFetchError(error.message);
+                const res = await fetch('/api/salesforce/apartments');
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    const msg = data?.error || `HTTP ${res.status}`;
+                    console.error('[AppartementenSelectie] Error fetching apartments:', msg, data);
+                    setFetchError(msg);
                 } else {
-                    setApartments(data || []);
+                    const sorted = (data.apartments || []).slice().sort((a, b) =>
+                        (a['Full Address'] || '').localeCompare(b['Full Address'] || '')
+                    );
+                    setApartments(sorted);
                 }
             } catch (err) {
                 console.error('[AppartementenSelectie] Unexpected error:', err);
