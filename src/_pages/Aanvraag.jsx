@@ -1440,6 +1440,7 @@ const Aanvraag = () => {
             tenant_name: mainTenant?.naam || '',
             phone_number: phoneNumber,
             salesforce_account_id: null, // Will be looked up by the edge function
+            apartment_id: selectedPanden[0]?.apartmentId || null,
             trigger_source: 'aanvraag',
         };
 

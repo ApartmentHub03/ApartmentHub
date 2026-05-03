@@ -185,6 +185,7 @@ const LetterOfIntent = () => {
                         tenant_name: mainTenantName,
                         phone_number: phoneNumber,
                         salesforce_account_id: null,
+                        apartment_id: propertyInfo?.apartmentId || null,
                         trigger_source: 'letterofintent',
                     }),
                 })

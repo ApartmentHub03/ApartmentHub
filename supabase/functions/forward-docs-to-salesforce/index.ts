@@ -37,6 +37,7 @@ interface TriggerPayload {
     tenant_name: string | null;
     phone_number: string | null;
     salesforce_account_id?: string | null;
+    apartment_id?: string | null;
     // Identifies which page on the website fired the webhook. Salesforce
     // can use this to differentiate the partial-application submit
     // ("aanvraag") from the signed-LOI submit ("letterofintent").
@@ -71,7 +72,7 @@ serve(async (req) => {
         // affect the call. Zoko/CRM can later enrich the same row by
         // whatsapp_number — accounts.account_role allows 'tenant' |
         // 'co-tenant' | 'guarantor', so we use 'tenant' for self-provisioned rows.
-        let apartment_id: string | null = null;
+        let apartment_id: string | null = body.apartment_id ?? null;
 
         if (!account_id) {
             const normalized = phone_number.replace(/\s+/g, "");
@@ -89,9 +90,11 @@ serve(async (req) => {
                 if (!salesforce_account_id && existing.salesforce_account_id) {
                     salesforce_account_id = existing.salesforce_account_id;
                 }
-                const sel = (existing as any).apartment_selected;
-                if (Array.isArray(sel) && sel[0]?.apartment_id) {
-                    apartment_id = sel[0].apartment_id;
+                if (!apartment_id) {
+                    const sel = (existing as any).apartment_selected;
+                    if (Array.isArray(sel) && sel[0]?.apartment_id) {
+                        apartment_id = sel[0].apartment_id;
+                    }
                 }
             } else {
                 const { data: created, error: insertErr } = await supabase
@@ -122,9 +125,11 @@ serve(async (req) => {
             if (row?.salesforce_account_id && !salesforce_account_id) {
                 salesforce_account_id = row.salesforce_account_id;
             }
-            const sel = (row as any)?.apartment_selected;
-            if (Array.isArray(sel) && sel[0]?.apartment_id) {
-                apartment_id = sel[0].apartment_id;
+            if (!apartment_id) {
+                const sel = (row as any)?.apartment_selected;
+                if (Array.isArray(sel) && sel[0]?.apartment_id) {
+                    apartment_id = sel[0].apartment_id;
+                }
             }
         }
 
