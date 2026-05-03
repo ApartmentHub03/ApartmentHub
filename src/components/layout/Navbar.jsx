@@ -10,6 +10,59 @@ import { useAuth } from '@/contexts/AuthContext';
 import styles from './Navbar.module.css';
 import { translations } from '@/data/translations';
 
+// Slug pairs whose Dutch and English forms differ. Anything not listed
+// passes through unchanged (e.g. /faq, /contact, /signup).
+const SLUG_PAIRS = [
+    ['application', 'aanvraag'],
+    ['apartments', 'appartementen'],
+    ['letter-of-intent', 'intentieverklaring'],
+    ['terms-and-conditions', 'algemene-voorwaarden'],
+    ['privacy-policy', 'privacyverklaring'],
+];
+const EN_TO_NL = Object.fromEntries(SLUG_PAIRS);
+const NL_TO_EN = Object.fromEntries(SLUG_PAIRS.map(([en, nl]) => [nl, en]));
+
+// Legacy un-prefixed paths the app once exposed (e.g. /aanvraag, /tenants).
+const LEGACY_TO_LOCALE = {
+    '/aanvraag': { en: '/en/application', nl: '/nl/aanvraag' },
+    '/appartementen': { en: '/en/apartments', nl: '/nl/appartementen' },
+    '/application': { en: '/en/application', nl: '/nl/aanvraag' },
+    '/tenants': { en: '/en/rent-in', nl: '/nl/rent-in' },
+    '/landlords': { en: '/en/rent-out', nl: '/nl/rent-out' },
+    '/neighborhoods': { en: '/en/neighborhoods', nl: '/nl/neighborhoods' },
+    '/faq': { en: '/en/faq', nl: '/nl/faq' },
+    '/about': { en: '/en/about-us', nl: '/nl/about-us' },
+    '/contact': { en: '/en/contact', nl: '/nl/contact' },
+};
+
+// Translate a path between /en/ and /nl/, mapping the first segment via SLUG_PAIRS.
+// Falls through unchanged for paths that don't carry a locale prefix and aren't legacy.
+const translatePath = (currentPath, targetLang) => {
+    if (!currentPath) return currentPath;
+
+    if (currentPath === '/' && targetLang === 'nl') return '/nl';
+    if (currentPath === '/nl' && targetLang === 'en') return '/';
+
+    const legacy = LEGACY_TO_LOCALE[currentPath];
+    if (legacy) return legacy[targetLang] || currentPath;
+
+    const localeMatch = currentPath.match(/^\/(en|nl)(\/(.*))?$/);
+    if (!localeMatch) return currentPath;
+
+    const sourceLang = localeMatch[1];
+    const rest = localeMatch[3] || '';
+    if (sourceLang === targetLang) return currentPath;
+
+    if (!rest) return targetLang === 'en' ? '/' : '/nl';
+
+    const segments = rest.split('/');
+    const dict = sourceLang === 'en' ? EN_TO_NL : NL_TO_EN;
+    if (segments[0] && dict[segments[0]]) {
+        segments[0] = dict[segments[0]];
+    }
+    return `/${targetLang}/${segments.join('/')}`;
+};
+
 const Navbar = () => {
     const dispatch = useDispatch();
     const isMobileMenuOpen = useSelector((state) => state.ui.isMobileMenuOpen);
@@ -63,37 +116,8 @@ const Navbar = () => {
         dispatch(setLanguage(lang));
         setIsLangOpen(false);
 
-        // Handle URL update
         const currentPath = pathname;
-        let newPath = currentPath;
-
-        if (lang === 'nl') {
-            if (currentPath === '/') {
-                newPath = '/nl';
-            } else if (currentPath.startsWith('/en/')) {
-                newPath = currentPath.replace('/en/', '/nl/');
-            } else if (!currentPath.startsWith('/nl/')) {
-                if (currentPath === '/contact') newPath = '/nl/contact';
-                else if (currentPath === '/tenants') newPath = '/nl/rent-in';
-                else if (currentPath === '/landlords') newPath = '/nl/rent-out';
-                else if (currentPath === '/neighborhoods') newPath = '/nl/neighborhoods';
-                else if (currentPath === '/faq') newPath = '/nl/faq';
-                else if (currentPath === '/about') newPath = '/nl/about-us';
-                else if (currentPath === '/application' || currentPath.includes('/application')) newPath = '/nl/aanvraag';
-            }
-        } else {
-            if (currentPath === '/nl') {
-                newPath = '/';
-            } else if (currentPath.startsWith('/nl/')) {
-                if (currentPath.includes('/aanvraag')) {
-                    newPath = '/en/application';
-                } else {
-                    newPath = currentPath.replace('/nl/', '/en/');
-                }
-            } else if (currentPath === '/aanvraag') {
-                newPath = '/en/application';
-            }
-        }
+        const newPath = translatePath(currentPath, lang);
 
         if (newPath !== currentPath) {
             router.push(newPath);

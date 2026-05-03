@@ -33,10 +33,14 @@ const roleMap: Record<string, string> = {
 };
 
 interface TriggerPayload {
-    account_id: string;
+    account_id?: string | null;
     tenant_name: string | null;
     phone_number: string | null;
-    salesforce_account_id: string | null;
+    salesforce_account_id?: string | null;
+    // Identifies which page on the website fired the webhook. Salesforce
+    // can use this to differentiate the partial-application submit
+    // ("aanvraag") from the signed-LOI submit ("letterofintent").
+    trigger_source?: string | null;
 }
 
 serve(async (req) => {
@@ -46,10 +50,14 @@ serve(async (req) => {
 
     try {
         const body: TriggerPayload = await req.json();
-        const { account_id, tenant_name, phone_number, salesforce_account_id } = body;
+        const phone_number = body.phone_number;
+        const tenant_name = body.tenant_name ?? null;
+        let account_id = body.account_id ?? null;
+        let salesforce_account_id = body.salesforce_account_id ?? null;
+        const triggerSource = body.trigger_source || "aanvraag";
 
-        if (!account_id || !phone_number) {
-            return json({ success: false, error: "Missing account_id or phone_number" }, 400);
+        if (!phone_number) {
+            return json({ success: false, error: "Missing phone_number" }, 400);
         }
 
         const supabase = createClient(
@@ -57,10 +65,73 @@ serve(async (req) => {
             Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
         );
 
+        // Resolve or create the accounts row server-side. We do this here
+        // (inside the edge function on Supabase's own network) instead of
+        // in the Next.js API route so local Node networking issues don't
+        // affect the call. Zoko/CRM can later enrich the same row by
+        // whatsapp_number — accounts.account_role allows 'tenant' |
+        // 'co-tenant' | 'guarantor', so we use 'tenant' for self-provisioned rows.
+        let apartment_id: string | null = null;
+
+        if (!account_id) {
+            const normalized = phone_number.replace(/\s+/g, "");
+            const { data: existing, error: lookupErr } = await supabase
+                .from("accounts")
+                .select("id, salesforce_account_id, apartment_selected")
+                .or(`whatsapp_number.eq.${normalized},whatsapp_number.eq.${phone_number}`)
+                .limit(1)
+                .maybeSingle();
+            if (lookupErr) {
+                console.warn("[forward-docs] Account lookup error:", lookupErr.message);
+            }
+            if (existing?.id) {
+                account_id = existing.id;
+                if (!salesforce_account_id && existing.salesforce_account_id) {
+                    salesforce_account_id = existing.salesforce_account_id;
+                }
+                const sel = (existing as any).apartment_selected;
+                if (Array.isArray(sel) && sel[0]?.apartment_id) {
+                    apartment_id = sel[0].apartment_id;
+                }
+            } else {
+                const { data: created, error: insertErr } = await supabase
+                    .from("accounts")
+                    .insert({
+                        whatsapp_number: phone_number,
+                        tenant_name: tenant_name,
+                        documentation_status: "Complete",
+                        account_role: "tenant",
+                    })
+                    .select("id")
+                    .single();
+                if (insertErr || !created) {
+                    return json({
+                        success: false,
+                        error: `Could not provision account: ${insertErr?.message || "unknown"}`,
+                    }, 500);
+                }
+                account_id = created.id;
+                console.log("[forward-docs] Lazy-created accounts row:", account_id);
+            }
+        } else {
+            const { data: row } = await supabase
+                .from("accounts")
+                .select("salesforce_account_id, apartment_selected")
+                .eq("id", account_id)
+                .maybeSingle();
+            if (row?.salesforce_account_id && !salesforce_account_id) {
+                salesforce_account_id = row.salesforce_account_id;
+            }
+            const sel = (row as any)?.apartment_selected;
+            if (Array.isArray(sel) && sel[0]?.apartment_id) {
+                apartment_id = sel[0].apartment_id;
+            }
+        }
+
         const { data: rows, error } = await supabase
             .from("documenten")
             .select(
-                "id, type, status, bestandsnaam, bestandspad, personen!inner(id, naam, whatsapp, rol, dossier_id, dossiers!inner(id, phone_number, apartment_id))"
+                "id, type, status, bestandsnaam, bestandspad, personen!inner(id, voornaam, achternaam, telefoon, rol, dossier_id, dossiers!inner(id, phone_number))"
             )
             .eq("personen.dossiers.phone_number", phone_number);
 
@@ -81,8 +152,8 @@ serve(async (req) => {
         );
 
         const personMeta = (p: any) => ({
-            name: p.naam || "",
-            phone_number: p.whatsapp,
+            name: [p.voornaam, p.achternaam].filter(Boolean).join(" ").trim(),
+            phone_number: p.telefoon,
             role: roleMap[p.rol] ?? p.rol,
             server_id: p.dossiers?.id ?? p.dossier_id,
         });
@@ -129,12 +200,13 @@ serve(async (req) => {
 
             const payload = {
                 source: "AptHub",
+                trigger_source: triggerSource,
                 event_type: "document_file",
                 batch_id: batchId,
                 batch_index: i + 1,
                 batch_total: withFiles.length,
                 account_id,
-                apartment_id: person?.dossiers?.apartment_id ?? null,
+                apartment_id,
                 tenant_name,
                 phone_number,
                 salesforce_account_id,
@@ -182,13 +254,13 @@ serve(async (req) => {
         }
 
         // Metadata-only summary matching the original migration shape.
-        const firstPerson = docs[0]?.personen;
         const summaryPayload = {
             source: "AptHub",
+            trigger_source: triggerSource,
             event_type: "documents_complete",
             batch_id: batchId,
             account_id,
-            apartment_id: firstPerson?.dossiers?.apartment_id ?? null,
+            apartment_id,
             tenant_name,
             phone_number,
             salesforce_account_id,

@@ -148,8 +148,8 @@ const AppartementenSelectie = () => {
                 // Always redirect to letter-of-intent when coming from submit
                 router.push(currentLang === 'en' ? '/en/letter-of-intent' : '/letter-of-intent');
             } else {
-                // Normal flow — go back to aanvraag
-                router.push('/aanvraag');
+                // Normal flow — go back to aanvraag (lang-aware)
+                router.push(currentLang === 'en' ? '/en/application' : '/nl/aanvraag');
             }
         } catch (err) {
             console.error('[AppartementenSelectie] Error saving apartments:', err);

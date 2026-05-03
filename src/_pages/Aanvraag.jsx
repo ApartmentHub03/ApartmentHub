@@ -37,12 +37,29 @@ const buildPandFromApartment = (apt) => ({
     },
 });
 
+// Fallback when an apartment id stored on accounts.apartment_selected hasn't
+// been synced into the local Supabase apartments table yet (e.g. fresh
+// Salesforce-only listings). The saved entry already carries address +
+// rental_price, so we can render a usable pand without the full row.
+const buildPandFromSavedEntry = (entry) => ({
+    adres: entry.address || '',
+    apartmentId: entry.apartment_id,
+    voorwaarden: {
+        huurprijs: entry.rental_price || 0,
+        waarborgsom: entry.rental_price ? entry.rental_price * 2 : 0,
+        servicekosten: 'G/W/E exclusief',
+        beschikbaar: '-',
+        minBod: entry.rental_price || 0,
+        maxBod: entry.rental_price ? entry.rental_price * 2 : 0,
+    },
+});
+
 const Aanvraag = () => {
     const router = useRouter();
     const pathname = usePathname();
     const dispatch = useDispatch();
     const currentLang = useSelector((state) => state.ui.language);
-    const { logout, dossierId, phoneNumber, accountId, isMainTenant, userRole, persoonId: authPersoonId } = useAuth();
+    const { logout, dossierId, phoneNumber, accountId, isMainTenant, userRole, persoonId: authPersoonId, isLoading: authLoading } = useAuth();
     const [saveStatus, setSaveStatus] = useState('idle'); // 'idle', 'saving', 'saved', 'error'
 
     useEffect(() => {
@@ -88,8 +105,11 @@ const Aanvraag = () => {
 
     // Apartments are loaded from Supabase accounts.apartment_selected in the data loading effect below
 
-    // Load saved data on mount — apartments come from Supabase accounts.apartment_selected
+    // Load saved data on mount — apartments come from Supabase accounts.apartment_selected.
+    // Wait for the auth context to finish hydrating (otherwise a remount during a
+    // language toggle can run with accountId still null and lose the apartment list).
     useEffect(() => {
+        if (authLoading) return;
         const loadData = async () => {
             if (!dossierId) {
                 setLoading(false);
@@ -115,26 +135,33 @@ const Aanvraag = () => {
                         const savedApts = accData?.apartment_selected || [];
 
                         if (savedApts.length > 0) {
-                            // Fetch full apartment data for all saved IDs
+                            // Fetch full apartment data for all saved IDs. Some Salesforce
+                            // apartment ids may not yet exist in the local apartments table
+                            // (e.g. brand-new listings) — fall back to the saved entry's
+                            // address/rental_price so the apartment still renders.
                             const aptIds = savedApts.map(a => a.apartment_id).filter(Boolean);
                             const { data: aptRows } = await sb
                                 .from('apartments')
                                 .select('*')
                                 .in('id', aptIds);
 
-                            if (aptRows && aptRows.length > 0) {
-                                panden = aptRows.map(buildPandFromApartment);
-
-                                // Restore per-apartment bids from saved data
-                                const savedBids = {};
-                                savedApts.forEach(a => {
-                                    if (a.apartment_id && a.bid_amount) {
-                                        savedBids[a.apartment_id] = a.bid_amount;
-                                    }
+                            const rowById = new Map((aptRows || []).map(r => [r.id, r]));
+                            panden = savedApts
+                                .filter(a => a.apartment_id)
+                                .map(a => {
+                                    const row = rowById.get(a.apartment_id);
+                                    return row ? buildPandFromApartment(row) : buildPandFromSavedEntry(a);
                                 });
-                                if (Object.keys(savedBids).length > 0) {
-                                    setBidAmounts(prev => ({ ...savedBids, ...prev }));
+
+                            // Restore per-apartment bids from saved data
+                            const savedBids = {};
+                            savedApts.forEach(a => {
+                                if (a.apartment_id && a.bid_amount) {
+                                    savedBids[a.apartment_id] = a.bid_amount;
                                 }
+                            });
+                            if (Object.keys(savedBids).length > 0) {
+                                setBidAmounts(prev => ({ ...savedBids, ...prev }));
                             }
                         }
 
@@ -216,8 +243,15 @@ const Aanvraag = () => {
                             .select('*')
                             .in('id', mainAptIds);
 
-                        if (mainAptRows && mainAptRows.length > 0) {
-                            const mainPanden = mainAptRows.map(buildPandFromApartment);
+                        const mainRowById = new Map((mainAptRows || []).map(r => [r.id, r]));
+                        const mainPanden = mainApts
+                            .filter(a => a.apartment_id)
+                            .map(a => {
+                                const row = mainRowById.get(a.apartment_id);
+                                return row ? buildPandFromApartment(row) : buildPandFromSavedEntry(a);
+                            });
+
+                        if (mainPanden.length > 0) {
                             mainPandenLocal = mainPanden;
                             setMainTenantApartments(mainPanden);
 
@@ -294,9 +328,13 @@ const Aanvraag = () => {
                                 .select('*')
                                 .in('id', aptIds);
 
-                            if (aptRows && aptRows.length > 0) {
-                                panden = aptRows.map(buildPandFromApartment);
-                            }
+                            const pendingRowById = new Map((aptRows || []).map(r => [r.id, r]));
+                            panden = pendingApts
+                                .filter(a => a.apartment_id)
+                                .map(a => {
+                                    const row = pendingRowById.get(a.apartment_id);
+                                    return row ? buildPandFromApartment(row) : buildPandFromSavedEntry(a);
+                                });
                         }
 
                         // If account now exists, persist and clear localStorage
@@ -394,8 +432,8 @@ const Aanvraag = () => {
                                         .from('apartments')
                                         .select('*')
                                         .eq('id', a.apartment_id)
-                                        .single();
-                                    if (aptRow) sidebarApts.push(buildPandFromApartment(aptRow));
+                                        .maybeSingle();
+                                    sidebarApts.push(aptRow ? buildPandFromApartment(aptRow) : buildPandFromSavedEntry(a));
                                 }
                             }
                         }
@@ -419,7 +457,7 @@ const Aanvraag = () => {
         };
 
         loadData();
-    }, [dossierId, accountId]);
+    }, [dossierId, accountId, authLoading]);
 
     // Auto-save with debouncing
     const saveTimeoutRef = useRef(null);
@@ -722,6 +760,23 @@ const Aanvraag = () => {
     };
 
     const canSubmit = Object.values(bidAmounts).some(b => b > 0) && startDate !== '' && isAllDocsComplete() && isAllFormsComplete() && !hasPhoneDuplicates();
+
+    const submitBlockedReasons = (() => {
+        if (canSubmit) return [];
+        const en = currentLang === 'en';
+        const reasons = [];
+        const selectedPanden = data?.panden || (data?.pand?.apartmentId ? [data.pand] : []);
+        if (selectedPanden.length === 0) reasons.push(en ? 'Select an apartment' : 'Selecteer een appartement');
+        if (!Object.values(bidAmounts).some(b => b > 0)) reasons.push(en ? 'Enter your bid amount' : 'Vul een biedbedrag in');
+        if (!startDate) reasons.push(en ? 'Pick a start date' : 'Kies een startdatum');
+        if (hasPhoneDuplicates()) reasons.push(en ? 'Two people share the same phone number' : 'Twee personen hebben hetzelfde telefoonnummer');
+        if (!isAllFormsComplete()) reasons.push(en ? 'Complete all tenant form fields' : 'Vul alle huurdersgegevens volledig in');
+        if (!isAllDocsComplete()) reasons.push(en ? 'Upload all required documents' : 'Upload alle vereiste documenten');
+        return reasons;
+    })();
+    const submitBlockedTitle = submitBlockedReasons.length > 0
+        ? (currentLang === 'en' ? 'Before submitting:\n• ' : 'Voor indienen:\n• ') + submitBlockedReasons.join('\n• ')
+        : '';
 
     const handleDocumentUpload = async (persoonId, type, fileOrFiles) => {
         // Handle both single file and array of files
@@ -1297,6 +1352,19 @@ const Aanvraag = () => {
         setSelectedPanden(newPanden);
         setData(prev => prev ? { ...prev, panden: newPanden, pand: newPanden[0] } : prev);
 
+        // Keep the sidebar's union list in sync with the toggle so the rental-conditions
+        // panel reflects the currently-selected apartment immediately (without a remount).
+        setAllSidebarPanden(prev => {
+            const keptOthers = prev.filter(p =>
+                !currentIds.includes(p.apartmentId) || newPanden.some(np => np.apartmentId === p.apartmentId)
+            );
+            const merged = [...keptOthers];
+            for (const p of newPanden) {
+                if (!merged.some(m => m.apartmentId === p.apartmentId)) merged.push(p);
+            }
+            return merged;
+        });
+
         // Initialize bid for newly added apartment
         if (!isSelected) {
             const added = mainTenantApartments.find(p => p.apartmentId === apartmentId);
@@ -1362,35 +1430,37 @@ const Aanvraag = () => {
 
         await updateAccountDocumentationStatus('Complete');
 
-        // Fire the Salesforce documents-complete webhook (fire-and-forget so it never blocks navigation)
+        // Fire the Salesforce documents-complete webhook (fire-and-forget so it never blocks navigation).
+        // accountId may be null in useAuth() when the user signed up (Signup.jsx never sets it) or
+        // logged in before the matching accounts row existed — fall back to a phone-based lookup so
+        // the webhook still fires for those sessions.
         const mainTenant = data.personen.find(p => p.rol === 'Hoofdhuurder');
         const sfPayload = {
             account_id: accountId,
             tenant_name: mainTenant?.naam || '',
             phone_number: phoneNumber,
             salesforce_account_id: null, // Will be looked up by the edge function
+            trigger_source: 'aanvraag',
         };
 
-        try {
-            const { supabase: sb } = await import('../integrations/supabase/client');
-            if (sb && accountId) {
-                const { data: accRow } = await sb
-                    .from('accounts')
-                    .select('salesforce_account_id')
-                    .eq('id', accountId)
-                    .single();
-                if (accRow?.salesforce_account_id) {
-                    sfPayload.salesforce_account_id = accRow.salesforce_account_id;
-                }
-            }
-        } catch (e) {
-            console.warn('[Aanvraag] Could not fetch salesforce_account_id:', e);
-        }
+        // Account resolution (look up by phone, lazy-create if missing) happens
+        // server-side in /api/salesforce/documents-complete using the service-role
+        // key, so RLS doesn't block it. Frontend just needs phone_number.
 
-        if (sfPayload.account_id && sfPayload.phone_number) {
-            fetch('/api/salesforce/documents-complete', {
+        // Call the forward-docs-to-salesforce edge function directly from
+        // the browser (verify_jwt: false). Account resolve-or-create lives
+        // inside the edge function, so we don't need a Next.js relay — and
+        // local Node fetch quirks don't affect us.
+        if (sfPayload.phone_number) {
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+            const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+            fetch(`${supabaseUrl}/functions/v1/forward-docs-to-salesforce`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': publishableKey,
+                    'Authorization': `Bearer ${publishableKey}`,
+                },
                 body: JSON.stringify(sfPayload),
             })
                 .then(res => res.json())
@@ -1403,7 +1473,7 @@ const Aanvraag = () => {
                 })
                 .catch(err => console.error('[Aanvraag] ✗ Salesforce webhook error:', err));
         } else {
-            console.warn('[Aanvraag] Skipping Salesforce webhook – missing account_id or phone_number');
+            console.warn('[Aanvraag] Skipping Salesforce webhook – missing phone_number');
         }
 
         // Save current form state synchronously so the LOI page sees the latest values
@@ -1631,7 +1701,7 @@ const Aanvraag = () => {
                             {userRole !== 'guarantor' && (
                                 <button
                                     type="button"
-                                    onClick={() => router.push('/appartementen')}
+                                    onClick={() => router.push(currentLang === 'en' ? '/en/apartments' : '/nl/appartementen')}
                                     className={styles.selectApartmentButton}
                                 >
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -1816,16 +1886,48 @@ const Aanvraag = () => {
                             </div>
                         </div>
 
-                        <button
-                            className={styles.submitButton}
-                            onClick={handleSubmitClick}
-                            disabled={!canSubmit || isSubmitting}
+                        {/* Wrapper exists so the hover tooltip works even when the button itself is disabled (disabled buttons don't fire pointer events in all browsers). */}
+                        <div
+                            style={{ position: 'relative', display: 'inline-block', width: '100%' }}
+                            title={!canSubmit && !isSubmitting ? submitBlockedTitle : undefined}
                         >
-                            <CheckCircle size={24} />
-                            {isSubmitting
-                                ? (currentLang === 'en' ? 'Submitting...' : 'Indienen...')
-                                : (currentLang === 'en' ? 'Submit Application' : 'Aanvraag Versturen')}
-                        </button>
+                            <button
+                                className={styles.submitButton}
+                                onClick={handleSubmitClick}
+                                disabled={!canSubmit || isSubmitting}
+                                title={!canSubmit && !isSubmitting ? submitBlockedTitle : undefined}
+                                aria-describedby={submitBlockedReasons.length > 0 ? 'submit-blocked-reasons' : undefined}
+                                style={{ width: '100%' }}
+                            >
+                                <CheckCircle size={24} />
+                                {isSubmitting
+                                    ? (currentLang === 'en' ? 'Submitting...' : 'Indienen...')
+                                    : (currentLang === 'en' ? 'Submit Application' : 'Aanvraag Versturen')}
+                            </button>
+                        </div>
+                        {submitBlockedReasons.length > 0 && !isSubmitting && (
+                            <div
+                                id="submit-blocked-reasons"
+                                style={{
+                                    fontSize: '0.8125rem',
+                                    color: '#b45309',
+                                    background: '#fffbeb',
+                                    border: '1px solid #fde68a',
+                                    borderRadius: '0.375rem',
+                                    padding: '0.5rem 0.75rem',
+                                    marginTop: '0.5rem'
+                                }}
+                            >
+                                <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>
+                                    {currentLang === 'en' ? 'Before submitting, complete:' : 'Voor indienen, vul aan:'}
+                                </div>
+                                <ul style={{ margin: 0, paddingLeft: '1.25rem' }}>
+                                    {submitBlockedReasons.map((r, i) => (
+                                        <li key={i}>{r}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
 
                         {!isMainTenant && (
                             <button
