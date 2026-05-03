@@ -64,6 +64,8 @@ One POST per uploaded document, with the PDF carried as base64 in `document.file
   "start_date": "2026-06-01",
   "motivation": "Looking for a long-term home...",
   "months_advance": 2,
+  "signature_image_url": "",
+  "signature_date": "",
   "timestamp": "2026-05-03T08:30:46.504Z",
   "updated_at": "2026-05-03T08:25:12.118Z",
   "document": {
@@ -116,6 +118,8 @@ Fired once per batch, **after** all `document_file` POSTs. Contains all document
   "start_date": "2026-06-01",
   "motivation": "Looking for a long-term home...",
   "months_advance": 2,
+  "signature_image_url": "https://diovljzaabbfftcqmwub.supabase.co/storage/v1/object/sign/dossier-documents/31612345678/loi/signature-1777817657218.png?token=...",
+  "signature_date": "2026-05-03T08:30:46.504Z",
   "timestamp": "2026-05-03T08:30:46.504Z",
   "updated_at": "2026-05-03T08:25:12.118Z",
   "documents": [
@@ -191,6 +195,8 @@ Fired once per batch, **after** all `document_file` POSTs. Contains all document
 | `start_date` | string (YYYY-MM-DD) | yes | Tenant's preferred move-in date. `""` if missing. |
 | `motivation` | string | yes | Tenant's motivation text. `""` if missing. |
 | `months_advance` | number | yes | Months of rent the tenant is willing to pay upfront. `0` if missing. |
+| `signature_image_url` | string | yes | Signed Supabase URL of the tenant's signature PNG. Only populated for `trigger_source: "letterofintent"`; `""` for `aanvraag`. URL is valid for ~10 years. |
+| `signature_date` | string (ISO 8601) | yes | When the tenant signed. Only populated for LOI; `""` for `aanvraag`. |
 | `timestamp` | string (ISO 8601) | yes | When the batch was assembled (request time) |
 | `updated_at` | string (ISO 8601) | yes | Dossier's `updated_at`. Falls back to `timestamp` if not available. |
 

@@ -149,6 +149,23 @@ const LetterOfIntent = () => {
 
             const signatureImage = await getSignatureBlob();
 
+            // Read the signature blob as base64 so it can travel through the
+            // SF webhook payload (the edge function uploads it + signs a URL).
+            let signatureBase64 = '';
+            const signatureDate = new Date().toISOString();
+            if (signatureImage instanceof Blob) {
+                signatureBase64 = await new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const result = reader.result || '';
+                        const comma = String(result).indexOf(',');
+                        resolve(comma >= 0 ? String(result).slice(comma + 1) : '');
+                    };
+                    reader.onerror = () => resolve('');
+                    reader.readAsDataURL(signatureImage);
+                });
+            }
+
             await sendLetterOfIntentEvent({
                 bidAmount: bidData.amount,
                 startDate: bidData.startDate,
@@ -193,6 +210,8 @@ const LetterOfIntent = () => {
                         start_date: startDate || '',
                         motivation: motivation || '',
                         months_advance: monthsAdvance || 0,
+                        signature_image_base64: signatureBase64,
+                        signature_date: signatureDate,
                         trigger_source: 'letterofintent',
                     }),
                 })

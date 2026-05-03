@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
+import { encodeBase64, decodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 // Forwards all documents for an account to the Salesforce unified webhook.
 // Invoked by the DB trigger `trigger_salesforce_documents_complete_webhook`
@@ -45,6 +45,11 @@ interface TriggerPayload {
     start_date?: string | null;
     motivation?: string | null;
     months_advance?: number | null;
+    // Signature payload — only sent on the LOI submit. The base64 PNG is
+    // uploaded to dossier-documents and a 10-year signed URL is added to
+    // the SF payload. signature_date defaults to the request timestamp.
+    signature_image_base64?: string | null;
+    signature_date?: string | null;
     // Identifies which page on the website fired the webhook. Salesforce
     // can use this to differentiate the partial-application submit
     // ("aanvraag") from the signed-LOI submit ("letterofintent").
@@ -166,6 +171,34 @@ serve(async (req) => {
         // Falls back to the request timestamp if the join didn't surface it.
         const dossierUpdatedAt =
             (docs[0] as any)?.personen?.dossiers?.updated_at || timestamp;
+
+        // Optional signature handling (LOI submit only). Upload the PNG to
+        // dossier-documents and mint a 10-year signed URL so Salesforce can
+        // fetch it on demand. If no signature was supplied, both fields are "".
+        let signature_image_url = "";
+        const signature_date = body.signature_date || (body.signature_image_base64 ? timestamp : "");
+        if (body.signature_image_base64) {
+            try {
+                const sigPath = `${phone_number.replace(/\D/g, "")}/loi/signature-${Date.now()}.png`;
+                const sigBytes = decodeBase64(body.signature_image_base64);
+                const { error: upErr } = await supabase.storage
+                    .from(BUCKET)
+                    .upload(sigPath, sigBytes, {
+                        contentType: "image/png",
+                        upsert: true,
+                    });
+                if (upErr) throw upErr;
+                const tenYearsSec = 10 * 365 * 24 * 60 * 60;
+                const { data: signed, error: signErr } = await supabase.storage
+                    .from(BUCKET)
+                    .createSignedUrl(sigPath, tenYearsSec);
+                if (signErr) throw signErr;
+                signature_image_url = signed?.signedUrl || "";
+                console.log(`[forward-docs] Signature uploaded: ${sigPath}`);
+            } catch (sigErr: any) {
+                console.error("[forward-docs] Signature upload failed:", sigErr.message);
+            }
+        }
         const withFiles = docs.filter(
             (d: any) => d.bestandspad && d.bestandspad.trim() !== ""
         );
@@ -240,6 +273,8 @@ serve(async (req) => {
                 start_date,
                 motivation,
                 months_advance,
+                signature_image_url,
+                signature_date,
                 timestamp,
                 updated_at: dossierUpdatedAt,
                 document: {
@@ -315,6 +350,8 @@ serve(async (req) => {
             start_date,
             motivation,
             months_advance,
+            signature_image_url,
+            signature_date,
             timestamp,
             updated_at: dossierUpdatedAt,
             documents: docs.map((d: any) => ({
