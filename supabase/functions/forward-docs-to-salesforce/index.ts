@@ -229,6 +229,19 @@ serve(async (req) => {
                 person: personMeta(person),
             };
 
+            // Log the outgoing payload (with base64 redacted) so production
+            // failures can be diagnosed from edge-function logs.
+            const loggablePayload = {
+                ...payload,
+                document: {
+                    ...payload.document,
+                    file_base64: `<${fileSize} bytes redacted>`,
+                },
+            };
+            console.log(
+                `[forward-docs] REQUEST doc ${i + 1}/${withFiles.length} ${d.id}: ${JSON.stringify(loggablePayload)}`
+            );
+
             try {
                 const res = await fetch(SALESFORCE_URL, {
                     method: "POST",
@@ -246,7 +259,7 @@ serve(async (req) => {
                     error: res.ok ? undefined : text.slice(0, 200),
                 });
                 console.log(
-                    `[forward-docs] doc ${i + 1}/${withFiles.length} ${d.id} -> ${res.status}`
+                    `[forward-docs] RESPONSE doc ${i + 1}/${withFiles.length} ${d.id} -> ${res.status} ${res.ok ? "OK" : text.slice(0, 500)}`
                 );
             } catch (fetchErr: any) {
                 results.push({
@@ -280,6 +293,10 @@ serve(async (req) => {
             })),
         };
 
+        console.log(
+            `[forward-docs] REQUEST summary batch=${batchId}: ${JSON.stringify(summaryPayload)}`
+        );
+
         let summary: { status: number; ok: boolean; error?: string };
         try {
             const res = await fetch(SALESFORCE_URL, {
@@ -296,8 +313,14 @@ serve(async (req) => {
                 status: res.status,
                 error: res.ok ? undefined : text.slice(0, 200),
             };
+            console.log(
+                `[forward-docs] RESPONSE summary batch=${batchId} -> ${res.status} ${res.ok ? "OK" : text.slice(0, 500)}`
+            );
         } catch (e: any) {
             summary = { ok: false, status: 0, error: `summary_fetch_failed: ${e.message}` };
+            console.error(
+                `[forward-docs] RESPONSE summary batch=${batchId} -> FETCH_FAILED ${e.message}`
+            );
         }
 
         return json({
