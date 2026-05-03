@@ -36,8 +36,15 @@ interface TriggerPayload {
     account_id?: string | null;
     tenant_name: string | null;
     phone_number: string | null;
+    email?: string | null;
     salesforce_account_id?: string | null;
     apartment_id?: string | null;
+    apartment_name?: string | null;
+    property_address?: string | null;
+    bid_amount?: number | null;
+    start_date?: string | null;
+    motivation?: string | null;
+    months_advance?: number | null;
     // Identifies which page on the website fired the webhook. Salesforce
     // can use this to differentiate the partial-application submit
     // ("aanvraag") from the signed-LOI submit ("letterofintent").
@@ -52,10 +59,17 @@ serve(async (req) => {
     try {
         const body: TriggerPayload = await req.json();
         const phone_number = body.phone_number;
-        const tenant_name = body.tenant_name ?? null;
+        const tenant_name = body.tenant_name ?? "";
         let account_id = body.account_id ?? null;
-        let salesforce_account_id = body.salesforce_account_id ?? null;
+        let salesforce_account_id = body.salesforce_account_id ?? "";
         const triggerSource = body.trigger_source || "aanvraag";
+        const email = body.email ?? "";
+        const apartment_name = body.apartment_name ?? "";
+        const property_address = body.property_address ?? "";
+        const bid_amount = body.bid_amount ?? 0;
+        const start_date = body.start_date ?? "";
+        const motivation = body.motivation ?? "";
+        const months_advance = body.months_advance ?? 0;
 
         if (!phone_number) {
             return json({ success: false, error: "Missing phone_number" }, 400);
@@ -72,7 +86,7 @@ serve(async (req) => {
         // affect the call. Zoko/CRM can later enrich the same row by
         // whatsapp_number — accounts.account_role allows 'tenant' |
         // 'co-tenant' | 'guarantor', so we use 'tenant' for self-provisioned rows.
-        let apartment_id: string | null = body.apartment_id ?? null;
+        let apartment_id: string = body.apartment_id ?? "";
 
         if (!account_id) {
             const normalized = phone_number.replace(/\s+/g, "");
@@ -136,7 +150,7 @@ serve(async (req) => {
         const { data: rows, error } = await supabase
             .from("documenten")
             .select(
-                "id, type, status, bestandsnaam, bestandspad, personen!inner(id, voornaam, achternaam, telefoon, rol, dossier_id, dossiers!inner(id, phone_number))"
+                "id, type, status, bestandsnaam, bestandspad, personen!inner(id, voornaam, achternaam, telefoon, rol, dossier_id, dossiers!inner(id, phone_number, updated_at))"
             )
             .eq("personen.dossiers.phone_number", phone_number);
 
@@ -148,6 +162,10 @@ serve(async (req) => {
         const docs = rows ?? [];
         const batchId = `${account_id}-${Date.now()}`;
         const timestamp = new Date().toISOString();
+        // Pull the dossier's updated_at as the canonical "last edit" time.
+        // Falls back to the request timestamp if the join didn't surface it.
+        const dossierUpdatedAt =
+            (docs[0] as any)?.personen?.dossiers?.updated_at || timestamp;
         const withFiles = docs.filter(
             (d: any) => d.bestandspad && d.bestandspad.trim() !== ""
         );
@@ -212,10 +230,18 @@ serve(async (req) => {
                 batch_total: withFiles.length,
                 account_id,
                 apartment_id,
+                apartment_name,
                 tenant_name,
                 phone_number,
+                email,
                 salesforce_account_id,
+                property_address,
+                bid_amount,
+                start_date,
+                motivation,
+                months_advance,
                 timestamp,
+                updated_at: dossierUpdatedAt,
                 document: {
                     id: d.id,
                     type: d.type,
@@ -279,10 +305,18 @@ serve(async (req) => {
             batch_id: batchId,
             account_id,
             apartment_id,
+            apartment_name,
             tenant_name,
             phone_number,
+            email,
             salesforce_account_id,
+            property_address,
+            bid_amount,
+            start_date,
+            motivation,
+            months_advance,
             timestamp,
+            updated_at: dossierUpdatedAt,
             documents: docs.map((d: any) => ({
                 id: d.id,
                 type: d.type,

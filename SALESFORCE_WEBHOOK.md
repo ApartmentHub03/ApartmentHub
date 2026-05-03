@@ -54,10 +54,18 @@ One POST per uploaded document, with the PDF carried as base64 in `document.file
   "batch_total": 9,
   "account_id": "cfaffcab-3d99-426c-9b5f-79fe178b85fc",
   "apartment_id": "a0XAo000002Tc4fMAC",
+  "apartment_name": "ApartmentHub Hello Amsterdam",
   "tenant_name": "John Doe",
   "phone_number": "+31612345678",
-  "salesforce_account_id": null,
+  "email": "john.doe@example.com",
+  "salesforce_account_id": "",
+  "property_address": "Keizersgracht 123, 1015 Amsterdam",
+  "bid_amount": 2350,
+  "start_date": "2026-06-01",
+  "motivation": "Looking for a long-term home...",
+  "months_advance": 2,
   "timestamp": "2026-05-03T08:30:46.504Z",
+  "updated_at": "2026-05-03T08:25:12.118Z",
   "document": {
     "id": "d7ecf82c-c393-4a10-8c8c-db943d556298",
     "type": "id_bewijs",
@@ -82,6 +90,7 @@ One POST per uploaded document, with the PDF carried as base64 in `document.file
 - `document` and `person` are **siblings at the top level** — `person` is **NOT** nested inside `document`.
 - `batch_index` is **1-based**.
 - `file_base64` is the **raw base64 of the PDF bytes** (no `data:` prefix, no line breaks).
+- Missing `apartment_id` / `salesforce_account_id` are sent as `""` (empty string), not `null`.
 
 ---
 
@@ -97,10 +106,18 @@ Fired once per batch, **after** all `document_file` POSTs. Contains all document
   "batch_id": "cfaffcab-3d99-426c-9b5f-79fe178b85fc-1777800579123",
   "account_id": "cfaffcab-3d99-426c-9b5f-79fe178b85fc",
   "apartment_id": "a0XAo000002Tc4fMAC",
+  "apartment_name": "ApartmentHub Hello Amsterdam",
   "tenant_name": "John Doe",
   "phone_number": "+31612345678",
-  "salesforce_account_id": null,
+  "email": "john.doe@example.com",
+  "salesforce_account_id": "",
+  "property_address": "Keizersgracht 123, 1015 Amsterdam",
+  "bid_amount": 2350,
+  "start_date": "2026-06-01",
+  "motivation": "Looking for a long-term home...",
+  "months_advance": 2,
   "timestamp": "2026-05-03T08:30:46.504Z",
+  "updated_at": "2026-05-03T08:25:12.118Z",
   "documents": [
     {
       "id": "d7ecf82c-c393-4a10-8c8c-db943d556298",
@@ -163,11 +180,19 @@ Fired once per batch, **after** all `document_file` POSTs. Contains all document
 | `event_type` | string | yes | `"document_file"` or `"documents_complete"` |
 | `batch_id` | string | yes | `<account_id>-<unix_ms>` — groups all POSTs for one submission |
 | `account_id` | string (UUID) | yes | ApartmentHub account id |
-| `apartment_id` | string \| null | yes | Salesforce apartment id the tenant selected. May be null. |
-| `tenant_name` | string \| null | yes | Main tenant's display name |
+| `apartment_id` | string | yes | Salesforce apartment id the tenant selected. `""` if no apartment selected. |
+| `apartment_name` | string | yes | Apartment listing name (typically the SF apartment's `Name` field). `""` if missing. |
+| `tenant_name` | string | yes | Main tenant's display name. `""` if missing. |
 | `phone_number` | string | yes | Main tenant's WhatsApp number, with `+` country code |
-| `salesforce_account_id` | string \| null | yes | If known to AptHub; otherwise null and SF should resolve by phone |
-| `timestamp` | string (ISO 8601) | yes | When the batch was assembled |
+| `email` | string | yes | Main tenant's email. `""` if missing. |
+| `salesforce_account_id` | string | yes | If known to AptHub; `""` otherwise (SF should resolve by phone). |
+| `property_address` | string | yes | Full address of the selected apartment. `""` if missing. |
+| `bid_amount` | number | yes | Tenant's bid (numeric, no currency code — always EUR). `0` if no bid. |
+| `start_date` | string (YYYY-MM-DD) | yes | Tenant's preferred move-in date. `""` if missing. |
+| `motivation` | string | yes | Tenant's motivation text. `""` if missing. |
+| `months_advance` | number | yes | Months of rent the tenant is willing to pay upfront. `0` if missing. |
+| `timestamp` | string (ISO 8601) | yes | When the batch was assembled (request time) |
+| `updated_at` | string (ISO 8601) | yes | Dossier's `updated_at`. Falls back to `timestamp` if not available. |
 
 ### `document_file` only
 

@@ -26,6 +26,7 @@ import styles from './Aanvraag.module.css';
  */
 const buildPandFromApartment = (apt) => ({
     adres: apt["Full Address"] || [apt.street, apt.area].filter(Boolean).join(', ') || apt.name || '',
+    name: apt.name || apt["Full Address"] || '',
     apartmentId: apt.id,
     voorwaarden: {
         huurprijs: apt.rental_price || 0,
@@ -43,6 +44,7 @@ const buildPandFromApartment = (apt) => ({
 // rental_price, so we can render a usable pand without the full row.
 const buildPandFromSavedEntry = (entry) => ({
     adres: entry.address || '',
+    name: entry.name || entry.address || '',
     apartmentId: entry.apartment_id,
     voorwaarden: {
         huurprijs: entry.rental_price || 0,
@@ -1435,12 +1437,24 @@ const Aanvraag = () => {
         // logged in before the matching accounts row existed — fall back to a phone-based lookup so
         // the webhook still fires for those sessions.
         const mainTenant = data.personen.find(p => p.rol === 'Hoofdhuurder');
+        const firstPand = selectedPanden[0];
+        const bidAmount =
+            (firstPand?.apartmentId && bidAmounts[firstPand.apartmentId]) ||
+            Object.values(bidAmounts).find(b => b > 0) ||
+            0;
         const sfPayload = {
             account_id: accountId,
             tenant_name: mainTenant?.naam || '',
             phone_number: phoneNumber,
-            salesforce_account_id: null, // Will be looked up by the edge function
-            apartment_id: selectedPanden[0]?.apartmentId || null,
+            email: mainTenant?.email || '',
+            salesforce_account_id: '',
+            apartment_id: firstPand?.apartmentId || '',
+            apartment_name: firstPand?.name || firstPand?.adres || '',
+            property_address: firstPand?.adres || '',
+            bid_amount: bidAmount,
+            start_date: startDate || '',
+            motivation: motivation || '',
+            months_advance: monthsAdvance || 0,
             trigger_source: 'aanvraag',
         };
 
