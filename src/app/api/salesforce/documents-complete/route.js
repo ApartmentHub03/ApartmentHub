@@ -1,21 +1,23 @@
-import { createClient } from '@supabase/supabase-js';
-
 /**
  * POST /api/salesforce/documents-complete
  *
- * Triggers the forward-docs-to-salesforce edge function on demand.
- * Called when the user clicks "Submit Application" on the Aanvraag page.
+ * Thin pass-through to the forward-docs-to-salesforce edge function.
+ * The edge function (running on Supabase's network, not the local Next.js
+ * dev server) handles account resolution / lazy creation + Salesforce
+ * forwarding. We do NOT call Supabase from this route, so local Node
+ * networking issues (e.g. IPv6/DNS quirks on Linux) don't affect it.
  *
- * Body: { account_id, tenant_name, phone_number, salesforce_account_id }
+ * Body: { account_id?, tenant_name?, phone_number, salesforce_account_id?, trigger_source? }
  */
 export async function POST(request) {
     try {
         const body = await request.json();
         const { account_id, tenant_name, phone_number, salesforce_account_id } = body;
+        const trigger_source = body.trigger_source || 'aanvraag';
 
-        if (!account_id || !phone_number) {
+        if (!phone_number) {
             return Response.json(
-                { success: false, error: 'Missing account_id or phone_number' },
+                { success: false, error: 'Missing phone_number' },
                 { status: 400 }
             );
         }
@@ -31,13 +33,13 @@ export async function POST(request) {
             );
         }
 
-        // Call the forward-docs-to-salesforce edge function directly
         const edgeFunctionUrl = `${supabaseUrl}/functions/v1/forward-docs-to-salesforce`;
 
         console.log('[Salesforce Docs] Calling edge function:', edgeFunctionUrl, {
-            account_id,
+            account_id: account_id || '(will resolve server-side)',
             tenant_name,
-            phone_number: phone_number?.slice(0, 6) + '***', // Mask PII in logs
+            phone_number: phone_number?.slice(0, 6) + '***',
+            trigger_source,
         });
 
         const edgeResponse = await fetch(edgeFunctionUrl, {
@@ -48,10 +50,11 @@ export async function POST(request) {
                 'User-Agent': 'ApartmentHub-Submit-Trigger',
             },
             body: JSON.stringify({
-                account_id,
-                tenant_name,
+                account_id: account_id || null,
+                tenant_name: tenant_name || null,
                 phone_number,
-                salesforce_account_id,
+                salesforce_account_id: salesforce_account_id || null,
+                trigger_source,
             }),
         });
 
@@ -75,10 +78,12 @@ export async function POST(request) {
             batch_id: responseData.batch_id,
             docs_total: responseData.docs_total,
             docs_with_files: responseData.docs_with_files,
+            trigger_source,
         });
 
         return Response.json({
             success: true,
+            account_id: responseData.account_id,
             batch_id: responseData.batch_id,
             docs_total: responseData.docs_total,
             docs_with_files: responseData.docs_with_files,

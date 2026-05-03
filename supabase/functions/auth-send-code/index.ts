@@ -55,6 +55,23 @@ async function sendWhatsAppOTP(phoneNumber: string, otp: string): Promise<{ ok: 
       return { ok: false, error: `Webhook failed: ${response.status} - ${responseText}` };
     }
 
+    // n8n returns HTTP 200 even when the workflow itself errors. The body is
+    // either JSON with an "error" field or the literal string "Error" / "error".
+    const trimmed = responseText.trim();
+    const lower = trimmed.toLowerCase();
+    if (lower === 'error' || lower.startsWith('error')) {
+      console.error('N8N workflow returned error body:', responseText);
+      return { ok: false, error: `Webhook workflow failed: ${responseText}` };
+    }
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed && (parsed.error || parsed.success === false)) {
+        return { ok: false, error: `Webhook workflow failed: ${responseText}` };
+      }
+    } catch {
+      // body was not JSON — already handled above
+    }
+
     return { ok: true };
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -131,11 +148,18 @@ serve(async (req: Request) => {
 
     if (!sendResult.ok) {
       console.error('Failed to send WhatsApp OTP:', sendResult.error);
-      // Still return success - code is stored, user can use test mode
-    } else {
-      console.log(`[SUCCESS] OTP sent to ${formattedPhone}`);
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          message: "We couldn't send the WhatsApp code. Please try again shortly.",
+          message_nl: "We konden de WhatsApp-code niet versturen. Probeer het zo opnieuw.",
+          debug: sendResult.error,
+        }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
+    console.log(`[SUCCESS] OTP sent to ${formattedPhone}`);
     return new Response(
       JSON.stringify({
         ok: true,

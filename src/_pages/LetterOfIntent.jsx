@@ -13,7 +13,7 @@ import styles from './LetterOfIntent.module.css';
 
 const LetterOfIntent = () => {
     const router = useRouter();
-    const { phoneNumber } = useAuth();
+    const { phoneNumber, accountId } = useAuth();
     const currentLang = useSelector((state) => state.ui.language);
 
     const canvasRef = useRef(null);
@@ -161,6 +161,45 @@ const LetterOfIntent = () => {
                 phoneNumber,
                 signatureImage
             });
+
+            // Fire the Salesforce documents-complete webhook a second time
+            // for the LOI submit. Same endpoint, same shape — only the
+            // `trigger_source` field differs ("letterofintent" vs "aanvraag").
+            // Account resolution / lazy-create happens server-side in the
+            // API route using the service-role key (RLS would block an
+            // anon-key INSERT from the browser). Fire-and-forget so signing
+            // UX never blocks on the webhook.
+            if (phoneNumber) {
+                const mainTenantName = dossier?.personen?.find(p => p.rol === 'Hoofdhuurder')?.naam || '';
+                const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+                const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+                fetch(`${supabaseUrl}/functions/v1/forward-docs-to-salesforce`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': publishableKey,
+                        'Authorization': `Bearer ${publishableKey}`,
+                    },
+                    body: JSON.stringify({
+                        account_id: accountId || null,
+                        tenant_name: mainTenantName,
+                        phone_number: phoneNumber,
+                        salesforce_account_id: null,
+                        trigger_source: 'letterofintent',
+                    }),
+                })
+                    .then(res => res.json())
+                    .then(result => {
+                        if (result.success) {
+                            console.log('[LOI] ✓ Salesforce webhook (letterofintent) triggered:', result.batch_id, `(${result.docs_with_files} files)`);
+                        } else {
+                            console.error('[LOI] ✗ Salesforce webhook (letterofintent) failed:', result.error);
+                        }
+                    })
+                    .catch(err => console.error('[LOI] ✗ Salesforce webhook (letterofintent) error:', err));
+            } else {
+                console.warn('[LOI] Skipping Salesforce webhook – missing phoneNumber');
+            }
 
             setIsConfirmed(true);
 
