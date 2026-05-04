@@ -35,6 +35,16 @@ export const translations = {
             statsSupport: "24/7 support",
             statsService: "Premium service",
 
+            introEyebrow: "About ApartmentHub",
+            introTitle: "Apartments for rent in Amsterdam and across the Netherlands — without the stress",
+            introLead: "ApartmentHub.nl is a Dutch rental platform that connects tenants with verified apartments for rent in Amsterdam and beyond, and helps landlords find quality renters faster. We combine a hand-picked listing portfolio with a personal team that guides every step — from the first search to the signed lease.",
+            introParagraph1: "Renting an apartment in Amsterdam moves quickly, and the difference between a successful application and another rejection often comes down to preparation. That is why we built ApartmentHub: a single place where tenants can browse vetted Amsterdam apartments for rent, build a complete digital dossier in minutes, and apply to multiple homes with one click — while landlords get a screened shortlist of candidates instead of hundreds of incomplete inquiries.",
+            introParagraph2: "Every listing on ApartmentHub.nl is verified by our team, every tenant goes through ID and income checks, and every contract is reviewed against current Dutch rental law. Whether you are an expat looking to rent your first apartment in Amsterdam, a Dutch professional moving cities, or a private landlord renting out a single property, we offer the same transparent process — with WhatsApp support in Dutch and English at every step.",
+            introServiceHeading: "What we do",
+            introServiceTenants: "For tenants — Browse verified apartments for rent in Amsterdam, Utrecht, Rotterdam and The Hague, build your rental dossier once, and apply with confidence.",
+            introServiceLandlords: "For landlords — Free rental price assessment, professional photography, tenant screening, and a managed handover so your property is rented within days.",
+            introServiceExpats: "For expats — English-speaking guidance through Dutch rental contracts, registration, deposits, and BSN-related questions.",
+
             serviceTitle: "How ApartmentHub Works",
             landlordTitle: "Rent Out Your Property",
             landlordText: "Get your property ready for rental with our comprehensive landlord services. We help you determine the right rental price, find quality tenants, and manage the entire process.",
@@ -76,6 +86,119 @@ export const translations = {
             descZuidas: "Modern business district with international flair",
             descZeeburg: "Water-rich with relaxed atmosphere by the IJ",
             descNieuwWest: "Diverse and green with modern amenities",
+
+            benefitsAmsterdam: {
+                eyebrow: "Why rent in Amsterdam",
+                title: "The benefits of renting an apartment in Amsterdam",
+                intro: "Amsterdam consistently ranks among Europe's most liveable capitals — and for good reason. Renting an apartment in Amsterdam means living in a compact, bike-friendly city with world-class culture, an international job market, and direct connections to the rest of Europe. Below are the reasons our tenants choose Amsterdam apartments for rent over any other city in the Netherlands.",
+                items: [
+                    {
+                        heading: "Strong international job market",
+                        text: "Amsterdam is home to the European headquarters of Booking.com, Adyen, Uber, Netflix, Tesla and hundreds of scale-ups. Renting an apartment in Amsterdam puts you within a 30-minute commute of more English-speaking employers than anywhere else in the Netherlands."
+                    },
+                    {
+                        heading: "Bike-first lifestyle",
+                        text: "With more than 500 km of dedicated cycling lanes, most Amsterdam apartments are 10–15 minutes by bike from work, supermarkets, and parks. Renters typically save €150+ per month versus a car and skip rush-hour traffic entirely."
+                    },
+                    {
+                        heading: "Schiphol on your doorstep",
+                        text: "From any Amsterdam rental apartment you can reach Schiphol Airport in under 30 minutes by direct train, and Paris, Berlin or London in a few hours. Ideal for renters who travel often for work or want easy weekend trips across Europe."
+                    },
+                    {
+                        heading: "Truly international community",
+                        text: "Around 180 nationalities live in Amsterdam and English is spoken almost everywhere — from coffee shops to government services. Renting an apartment in Amsterdam means you can settle in immediately, even before learning Dutch."
+                    },
+                    {
+                        heading: "Culture, food and green spaces",
+                        text: "Vondelpark on Sunday, the Albert Cuyp Market on Saturday, the Concertgebouw on Friday: Amsterdam packs world-class museums, restaurants and nature into a city you can cross in 30 minutes. Every neighborhood has its own character and pace."
+                    },
+                    {
+                        heading: "Renter-friendly Dutch law",
+                        text: "Dutch tenancy law gives renters strong protections: indefinite contracts, regulated rent increases, and clear rules around deposits and termination. Renting an apartment in Amsterdam is one of the most secure ways to live in a major European city."
+                    }
+                ],
+                outro: "Whether you are relocating for a new role, moving from another Dutch city, or returning to Amsterdam after years abroad, renting through ApartmentHub gives you verified listings, a streamlined dossier process and English-speaking support at every step.",
+                cta: "Browse apartments for rent in Amsterdam"
+            },
+
+            guide: {
+                eyebrow: "Your Amsterdam apartment guide",
+                title: "The complete guide to renting an apartment in Amsterdam",
+                intro: "Finding apartments for rent in Amsterdam is a competitive process where the right preparation makes the difference between an inbox full of rejections and the keys to your new home. This guide walks you through the best Amsterdam neighborhoods for every lifestyle and budget, plus the rental tips our team uses every day to help tenants secure quality apartments in the Dutch capital.",
+                neighborhoods: [
+                    {
+                        slug: "centrum",
+                        name: "Amsterdam Centrum",
+                        tag: "Canals & city life",
+                        description: "The UNESCO-listed canal ring is the most iconic place to rent in Amsterdam. Expect characterful monumental apartments, a short walk to Central Station, and unmatched access to restaurants, museums and nightlife. Best for professionals and expats who want to live in the middle of everything.",
+                        priceRange: "From €2,100 studio / €3,500 two-bedroom"
+                    },
+                    {
+                        slug: "jordaan",
+                        name: "Jordaan",
+                        tag: "Charming & creative",
+                        description: "Narrow streets, brown cafés and independent boutiques make Jordaan one of Amsterdam's most sought-after rental neighborhoods. Apartments are often smaller but full of character, and the area is well connected by tram to the rest of the city.",
+                        priceRange: "From €1,950 studio / €3,200 two-bedroom"
+                    },
+                    {
+                        slug: "de-pijp",
+                        name: "De Pijp",
+                        tag: "Food & nightlife",
+                        description: "Home to the Albert Cuyp Market and a thriving culinary scene, De Pijp attracts young professionals and international tenants. A great fit if you want a lively neighborhood with great bars, brunch spots and green escapes like Sarphatipark.",
+                        priceRange: "From €1,900 studio / €3,000 two-bedroom"
+                    },
+                    {
+                        slug: "oud-zuid",
+                        name: "Oud-Zuid",
+                        tag: "Museums & green",
+                        description: "Elegant architecture around Vondelpark and the Museumplein makes Oud-Zuid a favourite for families and senior professionals. Expect spacious apartments, excellent international schools nearby and premium pricing.",
+                        priceRange: "From €2,300 studio / €3,800 two-bedroom"
+                    },
+                    {
+                        slug: "oost",
+                        name: "Amsterdam Oost",
+                        tag: "Up-and-coming",
+                        description: "Oost combines parks like Oosterpark and Flevopark with a multicultural food scene and easy access to Amstel Station. One of the best value neighborhoods for modern rental apartments close to the centre.",
+                        priceRange: "From €1,700 studio / €2,700 two-bedroom"
+                    },
+                    {
+                        slug: "noord",
+                        name: "Amsterdam Noord",
+                        tag: "Creative & modern",
+                        description: "A free ferry from Central Station lands you in Amsterdam's most rapidly developing district. New-build apartments, waterfront living, and creative hubs like NDSM make Noord perfect for tenants who want space and modern amenities.",
+                        priceRange: "From €1,600 studio / €2,600 two-bedroom"
+                    }
+                ],
+                tipsTitle: "Rental tips: how to land an Amsterdam apartment",
+                tipsSubtitle: "The Amsterdam rental market moves fast. These are the steps we recommend to every tenant.",
+                tips: [
+                    {
+                        heading: "Prepare your dossier in advance",
+                        text: "Landlords expect a complete tenant file on day one: a valid ID, the last three payslips, an employer contract, and a recent bank statement. Have everything ready in one PDF so you can apply within minutes of a listing going live."
+                    },
+                    {
+                        heading: "Know your budget rule",
+                        text: "Most Amsterdam landlords require a gross monthly income of at least three to four times the rent. Calculate your ceiling before you start viewing so you only apply for apartments you will actually qualify for."
+                    },
+                    {
+                        heading: "Match the neighborhood to your routine",
+                        text: "Amsterdam is compact, but the difference between Centrum, De Pijp and Noord is significant in terms of lifestyle, commute and price. Shortlist two or three neighborhoods based on your work location and the vibe you want."
+                    },
+                    {
+                        heading: "Move fast on viewings",
+                        text: "Quality rental apartments in Amsterdam are typically taken within days. Respond to viewing invitations immediately and be ready to confirm your interest the same evening."
+                    },
+                    {
+                        heading: "Understand furnished vs. unfurnished",
+                        text: "Listings marked 'gestoffeerd' include flooring and curtains but no furniture, while 'gemeubileerd' is fully furnished. Factor this into your offer — furnished apartments command a premium but save you moving costs."
+                    },
+                    {
+                        heading: "Use a trusted rental partner",
+                        text: "Working with a licensed Amsterdam rental agency like ApartmentHub means access to off-market listings, a vetted landlord network and support with contracts and deposits — all without upfront tenant fees."
+                    }
+                ],
+                cta: "Explore all Amsterdam neighborhoods"
+            },
         },
         nl: {
             heroTitle1: "Jouw perfecte thuis",
@@ -87,6 +210,16 @@ export const translations = {
             statsClients: "2500+ tevreden klanten",
             statsSupport: "24/7 ondersteuning",
             statsService: "Premium service",
+
+            introEyebrow: "Over ApartmentHub",
+            introTitle: "Appartementen huren in Amsterdam en heel Nederland — zonder stress",
+            introLead: "ApartmentHub.nl is hét Nederlandse huurplatform dat huurders koppelt aan geverifieerde huurappartementen in Amsterdam en daarbuiten, en verhuurders helpt om sneller kwaliteitshuurders te vinden. We combineren een zorgvuldig geselecteerd aanbod met een persoonlijk team dat je bij elke stap begeleidt — van de eerste zoekopdracht tot het getekende contract.",
+            introParagraph1: "De Amsterdamse huurmarkt gaat razendsnel en het verschil tussen een geslaagde aanvraag en weer een afwijzing zit vaak in de voorbereiding. Daarom hebben we ApartmentHub opgezet: één plek waar huurders door geverifieerde huurappartementen in Amsterdam bladeren, in een paar minuten een compleet digitaal dossier opbouwen en met één klik op meerdere woningen reageren — terwijl verhuurders een gescreende shortlist krijgen in plaats van honderden onvolledige reacties.",
+            introParagraph2: "Elke woning op ApartmentHub.nl wordt door ons team gecontroleerd, elke huurder doorloopt een ID- en inkomenscheck en elk contract wordt getoetst aan de huidige Nederlandse huurwetgeving. Of je nu een expat bent die voor het eerst een appartement in Amsterdam huurt, een Nederlandse professional die verhuist of een particuliere verhuurder met één pand: je krijgt hetzelfde transparante proces — met WhatsApp-ondersteuning in Nederlands en Engels bij iedere stap.",
+            introServiceHeading: "Wat wij doen",
+            introServiceTenants: "Voor huurders — Bekijk geverifieerde huurappartementen in Amsterdam, Utrecht, Rotterdam en Den Haag, bouw eenmalig je huurdersdossier op en reageer met vertrouwen.",
+            introServiceLandlords: "Voor verhuurders — Gratis huurwaarde-inschatting, professionele fotografie, huurdersscreening en een begeleide oplevering zodat je woning binnen enkele dagen verhuurd is.",
+            introServiceExpats: "Voor expats — Engelstalige begeleiding bij Nederlandse huurcontracten, inschrijving, borg en BSN-vragen.",
 
             serviceTitle: "Hoe ApartmentHub Werkt",
             landlordTitle: "Verhuur Uw Eigendom",
@@ -129,6 +262,119 @@ export const translations = {
             descZuidas: "Modern zakendistrict met internationale uitstraling",
             descZeeburg: "Waterrijk met ontspannen sfeer aan het IJ",
             descNieuwWest: "Divers en groen met moderne voorzieningen",
+
+            benefitsAmsterdam: {
+                eyebrow: "Waarom huren in Amsterdam",
+                title: "De voordelen van een appartement huren in Amsterdam",
+                intro: "Amsterdam staat steevast in de top van de meest leefbare hoofdsteden van Europa — en niet zonder reden. Een appartement huren in Amsterdam betekent wonen in een compacte fietsstad met wereldberoemde cultuur, een internationale arbeidsmarkt en directe verbindingen met de rest van Europa. Hieronder zie je waarom onze huurders kiezen voor een huurappartement in Amsterdam boven elke andere stad in Nederland.",
+                items: [
+                    {
+                        heading: "Sterke internationale arbeidsmarkt",
+                        text: "Amsterdam is het Europese hoofdkantoor van Booking.com, Adyen, Uber, Netflix, Tesla en honderden scale-ups. Een appartement huren in Amsterdam betekent dat je binnen 30 minuten reist naar meer Engelstalige werkgevers dan waar dan ook in Nederland."
+                    },
+                    {
+                        heading: "Fiets-first lifestyle",
+                        text: "Met meer dan 500 km aan vrijliggende fietspaden ligt vrijwel elk huurappartement in Amsterdam op 10 tot 15 minuten fietsen van je werk, supermarkt en parken. Huurders besparen al snel €150+ per maand ten opzichte van een auto en omzeilen de spits volledig."
+                    },
+                    {
+                        heading: "Schiphol om de hoek",
+                        text: "Vanuit elk huurappartement in Amsterdam ben je in minder dan 30 minuten met de directe trein op Schiphol, en in een paar uur in Parijs, Berlijn of Londen. Ideaal voor huurders die vaak reizen voor werk of er graag een weekend tussenuit willen."
+                    },
+                    {
+                        heading: "Echt internationale community",
+                        text: "Circa 180 nationaliteiten wonen in Amsterdam en Engels wordt vrijwel overal gesproken — van koffietentjes tot gemeentelijke diensten. Een appartement huren in Amsterdam betekent dat je direct kunt inburgeren, ook als je nog geen Nederlands spreekt."
+                    },
+                    {
+                        heading: "Cultuur, eten en groen",
+                        text: "Op zondag het Vondelpark, op zaterdag de Albert Cuyp Markt, op vrijdag het Concertgebouw: Amsterdam combineert musea, horeca en natuur in een stad die je in 30 minuten doorkruist. Elke wijk heeft een eigen karakter en tempo.",
+                    },
+                    {
+                        heading: "Huurder-vriendelijk Nederlands recht",
+                        text: "De Nederlandse huurwetgeving biedt huurders sterke bescherming: contracten voor onbepaalde tijd, gereguleerde huurverhogingen en duidelijke regels rond borg en opzegging. Een appartement huren in Amsterdam is een van de zekerste manieren om in een Europese hoofdstad te wonen."
+                    }
+                ],
+                outro: "Of je nu verhuist voor een nieuwe baan, vanuit een andere Nederlandse stad komt, of na jaren in het buitenland terugkeert naar Amsterdam: huren via ApartmentHub geeft je geverifieerde woningen, een gestroomlijnd dossierproces en Engelstalige ondersteuning bij elke stap.",
+                cta: "Bekijk appartementen te huur in Amsterdam"
+            },
+
+            guide: {
+                eyebrow: "Jouw Amsterdamse appartementengids",
+                title: "De complete gids voor het huren van een appartement in Amsterdam",
+                intro: "Een appartement huren in Amsterdam is een competitief proces waarbij de juiste voorbereiding het verschil maakt tussen een inbox vol afwijzingen en de sleutels van je nieuwe huis. In deze gids vind je de beste wijken van Amsterdam voor elke lifestyle en elk budget, plus de verhuurtips die ons team dagelijks gebruikt om huurders een kwalitatief appartement in de hoofdstad te bezorgen.",
+                neighborhoods: [
+                    {
+                        slug: "centrum",
+                        name: "Amsterdam Centrum",
+                        tag: "Grachten & stadsleven",
+                        description: "De UNESCO-grachtengordel is dé iconische plek om in Amsterdam te huren. Verwacht karakteristieke monumentenpanden, op loopafstand van Centraal Station en ongeëvenaarde toegang tot restaurants, musea en uitgaansleven. Geschikt voor professionals en expats die midden in het centrum willen wonen.",
+                        priceRange: "Vanaf €2.100 studio / €3.500 tweekamer"
+                    },
+                    {
+                        slug: "jordaan",
+                        name: "Jordaan",
+                        tag: "Charmant & creatief",
+                        description: "Smalle straatjes, bruine cafés en onafhankelijke boetiekjes maken de Jordaan tot een van de meest gewilde huurwijken van Amsterdam. Appartementen zijn vaak compact maar vol karakter en de wijk is uitstekend aangesloten op het tramnet.",
+                        priceRange: "Vanaf €1.950 studio / €3.200 tweekamer"
+                    },
+                    {
+                        slug: "de-pijp",
+                        name: "De Pijp",
+                        tag: "Eten & uitgaan",
+                        description: "Met de Albert Cuyp Markt en een bruisende horecascene trekt De Pijp jonge professionals en internationale huurders. Een uitstekende match als je een levendige buurt wilt met leuke bars, brunchplekken en groene ruimtes zoals het Sarphatipark.",
+                        priceRange: "Vanaf €1.900 studio / €3.000 tweekamer"
+                    },
+                    {
+                        slug: "oud-zuid",
+                        name: "Oud-Zuid",
+                        tag: "Musea & groen",
+                        description: "Elegante architectuur rondom het Vondelpark en het Museumplein maakt Oud-Zuid populair bij gezinnen en senior professionals. Verwacht ruime appartementen, uitstekende internationale scholen in de buurt en een prijsniveau dat daarbij past.",
+                        priceRange: "Vanaf €2.300 studio / €3.800 tweekamer"
+                    },
+                    {
+                        slug: "oost",
+                        name: "Amsterdam Oost",
+                        tag: "In opkomst",
+                        description: "Oost combineert parken zoals Oosterpark en Flevopark met een multiculturele foodscene en vlotte verbinding met station Amstel. Een van de beste prijs-kwaliteitverhoudingen voor moderne huurappartementen dicht bij het centrum.",
+                        priceRange: "Vanaf €1.700 studio / €2.700 tweekamer"
+                    },
+                    {
+                        slug: "noord",
+                        name: "Amsterdam Noord",
+                        tag: "Creatief & modern",
+                        description: "Met een gratis veerpont vanaf Centraal Station sta je zo in de snelst groeiende wijk van Amsterdam. Nieuwbouwappartementen, wonen aan het water en creatieve hubs zoals NDSM maken Noord ideaal voor huurders die ruimte en moderne voorzieningen willen.",
+                        priceRange: "Vanaf €1.600 studio / €2.600 tweekamer"
+                    }
+                ],
+                tipsTitle: "Verhuurtips: zo scoor je een appartement in Amsterdam",
+                tipsSubtitle: "De Amsterdamse huurmarkt gaat snel. Dit zijn de stappen die we elke huurder adviseren.",
+                tips: [
+                    {
+                        heading: "Zorg dat je dossier klaarstaat",
+                        text: "Verhuurders verwachten op dag één een compleet huurdersdossier: een geldig ID-bewijs, de laatste drie loonstroken, een werkgeversverklaring en een recent bankafschrift. Bundel alles in één PDF zodat je binnen enkele minuten na publicatie kunt reageren."
+                    },
+                    {
+                        heading: "Ken je budget",
+                        text: "De meeste verhuurders in Amsterdam vragen een bruto maandinkomen van minimaal drie tot vier keer de huur. Bereken je plafond voordat je gaat bezichtigen, zodat je alleen reageert op appartementen waarvoor je ook daadwerkelijk in aanmerking komt."
+                    },
+                    {
+                        heading: "Kies de wijk die bij je past",
+                        text: "Amsterdam is compact, maar het verschil tussen Centrum, De Pijp en Noord is groot qua lifestyle, woon-werkverkeer en prijs. Maak een shortlist van twee of drie wijken op basis van je werklocatie en de sfeer die je zoekt."
+                    },
+                    {
+                        heading: "Wees snel bij bezichtigingen",
+                        text: "Kwalitatieve huurappartementen in Amsterdam zijn meestal binnen enkele dagen verhuurd. Reageer direct op uitnodigingen voor een bezichtiging en bevestig nog diezelfde avond je interesse."
+                    },
+                    {
+                        heading: "Begrijp gestoffeerd vs. gemeubileerd",
+                        text: "'Gestoffeerd' betekent inclusief vloer en gordijnen maar zonder meubels, 'gemeubileerd' is volledig ingericht. Houd hier rekening mee: een gemeubileerd appartement is duurder maar bespaart verhuiskosten."
+                    },
+                    {
+                        heading: "Werk samen met een betrouwbare verhuurpartner",
+                        text: "Samenwerken met een erkende Amsterdamse verhuurmakelaar zoals ApartmentHub geeft je toegang tot off-market aanbod, een gescreend netwerk van verhuurders en ondersteuning bij contracten en borg — zonder bemiddelingskosten vooraf voor huurders."
+                    }
+                ],
+                cta: "Ontdek alle Amsterdamse wijken"
+            },
         }
     },
     rentOut: {
@@ -404,8 +650,8 @@ export const translations = {
             heroTitle: "Find Your Perfect Home",
             heroSubtitle: "Let us help you discover your ideal rental property through our personalized WhatsApp service",
 
-            rentInHeroTitle: "Looking for a rental property?",
-            rentInHeroSubtitle: "Send us a WhatsApp message and we'll gladly help you",
+            rentInHeroTitle: "Rent an Apartment in Amsterdam",
+            rentInHeroSubtitle: "Looking to rent an apartment in Amsterdam? Chat with our local rental experts on WhatsApp and get matched with verified listings that fit your budget and neighborhood.",
             responseTime: "Average response within 1 minute",
             whatsappBtn: "Start conversation on WhatsApp",
 
@@ -473,8 +719,8 @@ export const translations = {
             heroTitle: "Vind Jouw Perfecte Huis",
             heroSubtitle: "Laat ons je helpen jouw ideale huurwoning te ontdekken via onze persoonlijke WhatsApp service",
 
-            rentInHeroTitle: "Op zoek naar een huurwoning?",
-            rentInHeroSubtitle: "Stuur ons een WhatsApp-bericht en wij helpen je graag",
+            rentInHeroTitle: "Een appartement huren in Amsterdam",
+            rentInHeroSubtitle: "Op zoek naar een huurappartement in Amsterdam? Chat met onze lokale verhuurexperts op WhatsApp en word gematcht met geverifieerde woningen die passen bij jouw budget en wijk.",
             responseTime: "Gemiddelde reactie binnen 1 minuut",
             whatsappBtn: "Start gesprek op WhatsApp",
 
@@ -539,17 +785,209 @@ export const translations = {
             },
         }
     },
-    neighborhoods: {
+    rentInFaq: {
         en: {
-            title: "Neighborhoods",
-            subtitle: "Discover Amsterdam's diverse neighborhoods and find your perfect area",
-            readMore: "Discover More",
+            eyebrow: "Apartments For Rent · Amsterdam",
+            title: "Renting an apartment in Amsterdam — everything you need to know",
+            intro: "Amsterdam apartments for rent move quickly. The questions below cover what most tenants ask before they apply, from price ranges and neighborhoods to documents, viewings and how to rent an apartment in Amsterdam without missing the best listings.",
+            cta: "Browse Amsterdam apartments for rent",
+            items: [
+                {
+                    question: "How do I find apartments for rent in Amsterdam?",
+                    answer: "Most Amsterdam apartments for rent are gone within 48 hours of being listed, so the fastest route is to register with a curated rental platform like ApartmentHub instead of refreshing public sites. Tell us your budget, preferred neighborhoods and move-in date, and our team WhatsApps you matching apartments for rent in Amsterdam — including off-market listings — before they appear elsewhere.",
+                    answerPlain: "Most Amsterdam apartments for rent are gone within 48 hours of listing. Register with a curated rental platform like ApartmentHub: share your budget, neighborhoods and move-in date, and our team will WhatsApp you matching apartments for rent in Amsterdam — including off-market listings — before they appear elsewhere."
+                },
+                {
+                    question: "How much does it cost to rent an apartment in Amsterdam?",
+                    answer: "Rent for an Amsterdam apartment typically ranges from €1,400 per month for a studio in the outer ring to €3,500+ per month for a two-bedroom in Centrum or Oud-Zuid. Most tenants pay one month deposit plus the first month's rent up front. Utility costs and a small service fee are usually charged separately.",
+                    answerPlain: "Rent for an Amsterdam apartment typically ranges from €1,400 per month for a studio in the outer ring to €3,500+ for a two-bedroom in Centrum or Oud-Zuid. Tenants pay one month deposit plus the first month's rent up front; utilities and a small service fee are usually separate."
+                },
+                {
+                    question: "What documents do I need to rent an apartment in Amsterdam?",
+                    answer: "To rent an apartment in Amsterdam you typically need a valid ID or passport, proof of income (3 recent payslips or an employer statement showing 3–4× the monthly rent), a recent bank statement, and — for expats — your work or residence permit. Self-employed tenants usually add the latest tax return. ApartmentHub builds your full digital dossier once and reuses it for every application.",
+                    answerPlain: "To rent an apartment in Amsterdam you typically need a valid ID or passport, proof of income (3 payslips or employer statement showing 3–4× the monthly rent), a recent bank statement, and a residence or work permit if you are an expat. ApartmentHub builds the digital dossier once and reuses it for every application."
+                },
+                {
+                    question: "Which neighborhoods are best for apartments for rent in Amsterdam?",
+                    answer: "Centrum, De Pijp and Jordaan suit renters who want walkable city living and nightlife. Oud-Zuid and Zuidas are popular with families and corporate professionals. Oost and Noord offer the best value and newer-build apartments. Our neighborhoods guide compares price ranges, demographics and average commute times so you can shortlist the right area before you view.",
+                    answerPlain: "Centrum, De Pijp and Jordaan suit walkable city living. Oud-Zuid and Zuidas are popular with families and professionals. Oost and Noord offer the best value and newer-build apartments. The neighborhoods guide compares price ranges, demographics and commute times."
+                },
+                {
+                    question: "Can expats and internationals rent an apartment in Amsterdam?",
+                    answer: "Yes. Many landlords prefer expats with a long-term employment contract, but the application process is the same. Expect to provide your BSN (or proof you have applied for one), passport, employer statement and residence permit. ApartmentHub provides English-speaking support throughout the rental process, including contract review and registration with the gemeente.",
+                    answerPlain: "Yes. Expats can rent an apartment in Amsterdam by providing BSN (or proof of application), passport, employer statement and residence permit. ApartmentHub gives English-speaking support throughout, including contract review and registration with the gemeente."
+                },
+                {
+                    question: "How fast can I move into an Amsterdam apartment for rent?",
+                    answer: "If your dossier is complete, most tenants move into an Amsterdam apartment within 2–3 weeks of their first viewing. We coordinate viewings the same day a listing goes live, send your dossier to the landlord within hours, and review the contract before you sign so the handover happens without delays.",
+                    answerPlain: "With a complete dossier, most tenants move into an Amsterdam apartment within 2–3 weeks of the first viewing. ApartmentHub coordinates viewings the same day a listing goes live, sends the dossier within hours, and reviews the contract before signing."
+                }
+            ]
         },
         nl: {
-            title: "Ontdek de Wijken van Amsterdam",
-            subtitle: "Ontdek het unieke karakter en de charme van elk stadsdeel om de perfecte plek voor jou te vinden.",
-            readMore: "Ontdek Meer",
+            eyebrow: "Appartementen Te Huur · Amsterdam",
+            title: "Een appartement huren in Amsterdam — alles wat je moet weten",
+            intro: "Appartementen te huur in Amsterdam zijn snel weg. De onderstaande vragen behandelen wat de meeste huurders willen weten voordat ze reageren: prijzen, wijken, documenten, bezichtigingen en hoe je een appartement in Amsterdam huurt zonder de beste woningen te missen.",
+            cta: "Bekijk huurappartementen in Amsterdam",
+            items: [
+                {
+                    question: "Hoe vind ik een appartement te huur in Amsterdam?",
+                    answer: "De meeste huurappartementen in Amsterdam zijn binnen 48 uur na plaatsing weg, dus de snelste route is registreren bij een gecureerd huurplatform zoals ApartmentHub. Deel je budget, voorkeurswijken en gewenste verhuisdatum en ons team appt je via WhatsApp passende appartementen te huur in Amsterdam — inclusief off-market woningen — voordat ze elders verschijnen.",
+                    answerPlain: "De meeste huurappartementen in Amsterdam zijn binnen 48 uur weg. Registreer bij een gecureerd platform zoals ApartmentHub: deel budget, wijken en verhuisdatum en ons team stuurt via WhatsApp passende appartementen — inclusief off-market — voordat ze elders verschijnen."
+                },
+                {
+                    question: "Wat kost het om een appartement te huren in Amsterdam?",
+                    answer: "De huur van een Amsterdams appartement loopt doorgaans van €1.400 per maand voor een studio in de buitenring tot €3.500+ per maand voor een tweekamerappartement in Centrum of Oud-Zuid. De meeste huurders betalen vooraf één maand borg plus de eerste maand huur. Servicekosten en nutsvoorzieningen worden meestal apart berekend.",
+                    answerPlain: "De huur van een Amsterdams appartement loopt van €1.400 per maand voor een studio in de buitenring tot €3.500+ voor een tweekamerappartement in Centrum of Oud-Zuid. Vooraf één maand borg plus eerste maand huur; servicekosten en nuts apart."
+                },
+                {
+                    question: "Welke documenten heb ik nodig om een appartement te huren in Amsterdam?",
+                    answer: "Om een appartement te huren in Amsterdam heb je meestal een geldig ID of paspoort nodig, inkomensbewijs (3 recente loonstroken of werkgeversverklaring met 3–4× de maandhuur), een recent bankafschrift en — voor expats — je verblijfs- of werkvergunning. Zzp'ers voegen de laatste belastingaangifte toe. ApartmentHub bouwt je volledige digitale dossier één keer en hergebruikt het bij elke aanvraag.",
+                    answerPlain: "Voor het huren van een appartement in Amsterdam heb je meestal een ID of paspoort, inkomensbewijs (3 loonstroken of werkgeversverklaring met 3–4× de maandhuur), bankafschrift en bij expats verblijfs- of werkvergunning nodig. ApartmentHub bouwt het digitale dossier één keer en hergebruikt het."
+                },
+                {
+                    question: "In welke wijken vind je de beste appartementen te huur in Amsterdam?",
+                    answer: "Centrum, De Pijp en de Jordaan zijn ideaal voor huurders die het stadsleven en de horeca willen. Oud-Zuid en Zuidas zijn populair bij gezinnen en zakelijke professionals. Oost en Noord bieden de beste prijs-kwaliteitverhouding en nieuwbouw. Onze wijkgids vergelijkt prijsklassen, demografie en gemiddelde reistijden zodat je vooraf de juiste wijk kunt kiezen.",
+                    answerPlain: "Centrum, De Pijp en de Jordaan voor stadsleven. Oud-Zuid en Zuidas voor gezinnen en professionals. Oost en Noord bieden de beste prijs-kwaliteitverhouding en nieuwbouw. De wijkgids vergelijkt prijzen, demografie en reistijden."
+                },
+                {
+                    question: "Kunnen expats en internationals een appartement huren in Amsterdam?",
+                    answer: "Ja. Veel verhuurders geven de voorkeur aan expats met een langlopend arbeidscontract, en de procedure is hetzelfde. Houd rekening met BSN (of bewijs van aanvraag), paspoort, werkgeversverklaring en verblijfsvergunning. ApartmentHub biedt Engelstalige ondersteuning tijdens het hele huurproces, inclusief contractcontrole en inschrijving bij de gemeente.",
+                    answerPlain: "Ja. Expats kunnen in Amsterdam huren met BSN (of aanvraagbewijs), paspoort, werkgeversverklaring en verblijfsvergunning. ApartmentHub biedt Engelstalige ondersteuning, inclusief contractcontrole en inschrijving bij de gemeente."
+                },
+                {
+                    question: "Hoe snel kan ik een huurappartement in Amsterdam betrekken?",
+                    answer: "Met een compleet dossier verhuist de meeste huurders binnen 2–3 weken na de eerste bezichtiging naar hun Amsterdamse appartement. We plannen bezichtigingen op de dag dat een woning live gaat, sturen je dossier binnen enkele uren naar de verhuurder en controleren het contract voordat je tekent zodat de overdracht zonder vertraging verloopt.",
+                    answerPlain: "Met compleet dossier verhuizen de meeste huurders binnen 2–3 weken naar hun Amsterdamse appartement. Bezichtigingen worden op de dag van plaatsing gepland, dossier binnen uren naar verhuurder, contract gecontroleerd voor ondertekening."
+                }
+            ]
         }
+    },
+    neighborhoods: {
+        en: {
+            title: "Amsterdam Neighborhoods Guide",
+            subtitle: "A complete resource to every Amsterdam neighborhood — from the canals of Centrum to the waterfront of Noord — with rental price ranges, lifestyle insights, and links to apartments for rent in each area.",
+            readMore: "Discover More",
+            introHeading: "Which Amsterdam neighborhood is right for you?",
+            introBody: "Amsterdam is compact but its districts are remarkably different in character, price and pace. This guide compares the city's nine most-requested neighborhoods so you can shortlist the areas that fit your budget and lifestyle before you start applying for apartments. Every card below links to a detailed neighborhood page with rental prices, market trends and livability scores.",
+            bestForTitle: "Best Amsterdam neighborhoods by lifestyle",
+            bestForSubtitle: "Jump straight to the areas that fit how you actually want to live in Amsterdam.",
+            bestFor: [
+                {
+                    label: "Best for expats & professionals",
+                    description: "International atmosphere, English-friendly services and strong transport links to the business districts.",
+                    picks: ["centrum", "zuidas", "oud-zuid"]
+                },
+                {
+                    label: "Best for families",
+                    description: "Spacious apartments, green parks, international schools and a calmer pace than the center.",
+                    picks: ["oud-zuid", "oost", "zeeburg"]
+                },
+                {
+                    label: "Best for students & young renters",
+                    description: "Lower rents, lively cafés and a short bike ride to the main universities.",
+                    picks: ["de-pijp", "oost", "nieuw-west"]
+                },
+                {
+                    label: "Best for creatives & nightlife",
+                    description: "Independent venues, arts hubs and some of Amsterdam's best food and nightlife.",
+                    picks: ["jordaan", "noord", "de-pijp"]
+                }
+            ],
+            priceGuideTitle: "Amsterdam rental prices by neighborhood",
+            priceGuideSubtitle: "Indicative monthly rent for a studio apartment in each area. Tap a neighborhood for full price trends and two- and three-bedroom benchmarks.",
+            priceGuideColArea: "Neighborhood",
+            priceGuideColStudio: "From (studio)",
+            priceGuideColCta: "Details",
+            priceGuideCta: "View area",
+            resourcesTitle: "Keep exploring apartmenthub.nl",
+            resourcesSubtitle: "Useful next steps once you've shortlisted an Amsterdam neighborhood.",
+            faqTitle: "FAQ: renting in an Amsterdam neighborhood",
+            faq: [
+                {
+                    q: "Which Amsterdam neighborhood has the cheapest apartments for rent?",
+                    a: "Nieuw-West and Amsterdam Noord consistently offer the lowest studio rents in the city, typically starting from €1,450–€1,600 per month, while still being connected to the center by metro, tram or ferry."
+                },
+                {
+                    q: "Where do most expats live in Amsterdam?",
+                    a: "Expats and international professionals tend to cluster in Centrum, Oud-Zuid, De Pijp and Zuidas because of English-friendly services, proximity to international schools, and fast connections to Schiphol and the main business districts."
+                },
+                {
+                    q: "Are Amsterdam rental prices still rising?",
+                    a: "Yes — across the nine districts we track, five-year rental growth ranges from roughly +12% in De Pijp to over +20% in Nieuw-West and Zeeburg. The biggest swings are outside the canal ring, where availability is higher but demand is catching up fast."
+                }
+            ]
+        },
+        nl: {
+            title: "Amsterdam Wijkengids",
+            subtitle: "Een complete gids voor elke Amsterdamse wijk — van de grachten van Centrum tot het water van Noord — met huurprijzen, sfeerbeschrijvingen en links naar huurappartementen per wijk.",
+            readMore: "Ontdek Meer",
+            introHeading: "Welke Amsterdamse wijk past bij jou?",
+            introBody: "Amsterdam is compact, maar de wijken verschillen enorm in sfeer, prijs en tempo. Deze gids vergelijkt de negen meest gevraagde wijken van de stad, zodat je vóór je begint met reageren op huurwoningen een shortlist kunt maken die past bij je budget en levensstijl. Elke kaart hieronder linkt naar een uitgebreide wijkpagina met huurprijzen, markttrends en leefbaarheidsscores.",
+            bestForTitle: "De beste Amsterdamse wijken per levensstijl",
+            bestForSubtitle: "Spring direct naar de wijken die passen bij hoe jij écht wilt wonen in Amsterdam.",
+            bestFor: [
+                {
+                    label: "Beste voor expats & professionals",
+                    description: "Internationale sfeer, Engelstalige voorzieningen en snelle verbindingen met de zakendistricten.",
+                    picks: ["centrum", "zuidas", "oud-zuid"]
+                },
+                {
+                    label: "Beste voor gezinnen",
+                    description: "Ruime appartementen, groene parken, internationale scholen en een rustiger tempo dan in het centrum.",
+                    picks: ["oud-zuid", "oost", "zeeburg"]
+                },
+                {
+                    label: "Beste voor studenten & jonge huurders",
+                    description: "Lagere huren, levendige cafés en op de fiets bij de belangrijkste universiteiten.",
+                    picks: ["de-pijp", "oost", "nieuw-west"]
+                },
+                {
+                    label: "Beste voor creatievelingen & uitgaan",
+                    description: "Onafhankelijke podia, creatieve hubs en enkele van de beste food- en uitgaansplekken van Amsterdam.",
+                    picks: ["jordaan", "noord", "de-pijp"]
+                }
+            ],
+            priceGuideTitle: "Huurprijzen per wijk in Amsterdam",
+            priceGuideSubtitle: "Indicatieve maandhuur voor een studio per wijk. Klik op een wijk voor volledige prijsontwikkeling en benchmarks voor twee- en driekamerappartementen.",
+            priceGuideColArea: "Wijk",
+            priceGuideColStudio: "Vanaf (studio)",
+            priceGuideColCta: "Details",
+            priceGuideCta: "Bekijk wijk",
+            resourcesTitle: "Verder verkennen op apartmenthub.nl",
+            resourcesSubtitle: "Handige volgende stappen zodra je een Amsterdamse wijk hebt gekozen.",
+            faqTitle: "FAQ: huren in een Amsterdamse wijk",
+            faq: [
+                {
+                    q: "Welke Amsterdamse wijk heeft de goedkoopste huurappartementen?",
+                    a: "Nieuw-West en Amsterdam Noord bieden consistent de laagste studiohuren van de stad, meestal vanaf €1.450–€1.600 per maand, terwijl ze toch goed bereikbaar blijven met metro, tram of pont."
+                },
+                {
+                    q: "Waar wonen de meeste expats in Amsterdam?",
+                    a: "Expats en internationale professionals kiezen vaak voor Centrum, Oud-Zuid, De Pijp en Zuidas vanwege Engelstalige voorzieningen, internationale scholen en snelle verbindingen met Schiphol en de zakendistricten."
+                },
+                {
+                    q: "Blijven de huurprijzen in Amsterdam stijgen?",
+                    a: "Ja — in de negen wijken die wij volgen ligt de huurgroei over vijf jaar tussen circa +12% in De Pijp en ruim +20% in Nieuw-West en Zeeburg. De grootste bewegingen zien we buiten de grachtengordel, waar het aanbod groter is maar de vraag snel inloopt."
+                }
+            ]
+        }
+    },
+    neighborhoodsResources: {
+        en: [
+            { key: "apartments", title: "Browse apartments for rent", description: "See every available apartment across all Amsterdam neighborhoods.", cta: "View apartments", href: "/en/apartments" },
+            { key: "rentIn", title: "Get matched with a home", description: "Tell us your budget and preferred neighborhoods and we'll send you off-market listings.", cta: "Start your search", href: "/en/rent-in" },
+            { key: "rentOut", title: "Rent out your apartment", description: "List your property with a local Amsterdam agency that handles viewings, screening and contracts.", cta: "List your property", href: "/en/rent-out" },
+            { key: "faq", title: "Renting in Amsterdam FAQ", description: "Income requirements, furnished vs. unfurnished, deposits and more.", cta: "Read the FAQ", href: "/en/faq" },
+            { key: "about", title: "About ApartmentHub", description: "Meet the Amsterdam rental team behind the guide.", cta: "About us", href: "/en/about-us" }
+        ],
+        nl: [
+            { key: "apartments", title: "Bekijk huurappartementen", description: "Zie elk beschikbaar appartement in alle Amsterdamse wijken.", cta: "Bekijk aanbod", href: "/nl/appartementen" },
+            { key: "rentIn", title: "Laat je matchen met een huis", description: "Deel je budget en favoriete wijken en wij sturen je off-market aanbod.", cta: "Start je zoektocht", href: "/nl/rent-in" },
+            { key: "rentOut", title: "Verhuur je appartement", description: "Zet je woning in de verhuur via een lokale Amsterdamse makelaar die bezichtigingen, screening en contracten regelt.", cta: "Woning aanmelden", href: "/nl/rent-out" },
+            { key: "faq", title: "Veelgestelde vragen over huren", description: "Inkomenseisen, gestoffeerd vs. gemeubileerd, borg en meer.", cta: "Lees de FAQ", href: "/nl/faq" },
+            { key: "about", title: "Over ApartmentHub", description: "Maak kennis met het Amsterdamse verhuurteam achter deze gids.", cta: "Over ons", href: "/nl/about-us" }
+        ]
     },
     faq: {
         en: {
@@ -644,6 +1082,28 @@ export const translations = {
             teamText1: "Our experienced team consists of local real estate experts who know the Amsterdam market inside out. We combine years of experience with a fresh perspective and modern approach.",
             teamText2: "Each team member has a specialization, from market analysis to customer guidance, so you always get the right expertise for your specific situation.",
 
+            servicesTitle: "What we do at ApartmentHub",
+            servicesSubtitle: "ApartmentHub is a full-service rental agency for the Amsterdam housing market. We help international tenants and locals secure apartments for rent in Amsterdam, and we help landlords place their properties with vetted, long-term renters. Every listing is verified, every tenant dossier is reviewed, and every step from first viewing to signed lease is supported by a real person who knows the city.",
+            service1Title: "Verified rental listings",
+            service1Desc: "A hand-checked feed of apartments for rent across every Amsterdam neighborhood, with no scams, no duplicates, and no hidden agent fees for tenants.",
+            service2Title: "Tenant dossier support",
+            service2Desc: "We build, review, and resubmit your rental dossier so you stand out in Amsterdam's competitive market and never miss a viewing window.",
+            service3Title: "Expat relocation help",
+            service3Desc: "WhatsApp viewings, English-language lease contracts, and guidance on BSN registration and the 30% ruling for expats moving to Amsterdam.",
+            service4Title: "Landlord management",
+            service4Desc: "Tenant screening, lease drafting, and move-in coordination for property owners renting out apartments anywhere in Amsterdam.",
+
+            apartmentTypesTitle: "Types of apartments we help you rent in Amsterdam",
+            apartmentTypesSubtitle: "From compact city studios to family homes along the canals, ApartmentHub lists every type of rental property in Amsterdam. Browse what fits your budget and lifestyle.",
+            type1Title: "Studios",
+            type1Desc: "Compact, often furnished studios from €1,500 per month, ideal for solo renters and short-term stays in Centrum, De Pijp, and Oost.",
+            type2Title: "One-bedroom apartments",
+            type2Desc: "Couples and young professionals rent one-bedroom apartments from €2,000 in Jordaan, Oud-West, and Amsterdam-Noord.",
+            type3Title: "Two-bedroom apartments",
+            type3Desc: "Spacious two-bedroom apartments for sharers and small families, typically €2,800–€3,800 per month across the city.",
+            type4Title: "Family homes & penthouses",
+            type4Desc: "Three-bedroom apartments, family homes, and penthouses in Oud-Zuid, IJburg, and Westerpark for long-term renters.",
+
             valuesTitle: "Our core values",
             valuesSubtitle: "What makes us unique in the Amsterdam housing market",
             val1Title: "Trust",
@@ -683,6 +1143,28 @@ export const translations = {
             teamTitle: "Ons Expert Team",
             teamText1: "Ons ervaren team bestaat uit lokale vastgoedexperts die de Amsterdamse markt door en door kennen. Wij combineren jarenlange ervaring met een frisse blik en moderne aanpak.",
             teamText2: "Elk teamlid heeft een specialisatie, van marktanalyse tot klantbegeleiding, zodat u altijd de juiste expertise krijgt voor uw specifieke situatie.",
+
+            servicesTitle: "Wat ApartmentHub voor je doet",
+            servicesSubtitle: "ApartmentHub is een full-service verhuurmakelaar voor de Amsterdamse woningmarkt. Wij helpen internationale huurders en lokale Amsterdammers aan een appartement te huur in Amsterdam, en verhuurders aan zorgvuldig geselecteerde huurders voor de lange termijn. Elke woning is geverifieerd, elk huurdersdossier wordt nagekeken en elke stap van bezichtiging tot getekend huurcontract wordt persoonlijk begeleid.",
+            service1Title: "Geverifieerde huurwoningen",
+            service1Desc: "Een handmatig gecontroleerd aanbod appartementen te huur in elke Amsterdamse wijk, zonder oplichting, dubbele advertenties of verborgen courtage voor huurders.",
+            service2Title: "Begeleiding huurdersdossier",
+            service2Desc: "We stellen je dossier samen, controleren het en dienen het opnieuw in zodat je opvalt in de competitieve Amsterdamse markt en geen bezichtiging mist.",
+            service3Title: "Expatbegeleiding",
+            service3Desc: "WhatsApp-bezichtigingen, Engelstalige huurcontracten en hulp bij BSN-inschrijving en de 30%-regeling voor expats die naar Amsterdam verhuizen.",
+            service4Title: "Verhuurdersbeheer",
+            service4Desc: "Huurdersscreening, contractopstelling en oplevering voor eigenaren die hun appartement in Amsterdam verhuren.",
+
+            apartmentTypesTitle: "Soorten appartementen die wij in Amsterdam verhuren",
+            apartmentTypesSubtitle: "Van compacte stadstudio's tot ruime gezinswoningen aan de gracht — bij ApartmentHub vind je elk type huurwoning in Amsterdam. Bekijk welk type het beste bij jouw budget en levensstijl past.",
+            type1Title: "Studio's",
+            type1Desc: "Compacte, vaak gemeubileerde studio's vanaf €1.500 per maand, ideaal voor solo-huurders en kort verblijf in Centrum, De Pijp en Oost.",
+            type2Title: "Eenkamerappartementen",
+            type2Desc: "Stellen en young professionals huren eenkamerappartementen vanaf €2.000 in Jordaan, Oud-West en Amsterdam-Noord.",
+            type3Title: "Tweekamerappartementen",
+            type3Desc: "Ruime tweekamerappartementen voor stellen en kleine gezinnen, doorgaans €2.800–€3.800 per maand verspreid over de stad.",
+            type4Title: "Gezinswoningen & penthouses",
+            type4Desc: "Driekamerappartementen, gezinswoningen en penthouses in Oud-Zuid, IJburg en Westerpark voor huurders op de lange termijn.",
 
             valuesTitle: "Onze kernwaarden",
             valuesSubtitle: "Wat ons uniek maakt in de Amsterdamse woningmarkt",
@@ -766,7 +1248,10 @@ export const translations = {
             quickLinks: "Quick Links",
             linkRentOut: "Rent Out",
             linkRentIn: "Rent In",
+            linkApartments: "Apartments",
+            linkNeighborhoods: "Neighborhoods",
             linkAbout: "About Us",
+            linkContact: "Contact",
             linkFaq: "FAQ",
             linkTerms: "Terms & Conditions",
             linkPrivacy: "Privacy Policy",
@@ -781,7 +1266,10 @@ export const translations = {
             quickLinks: "Snelle Links",
             linkRentOut: "Verhuren",
             linkRentIn: "Huren",
+            linkApartments: "Appartementen",
+            linkNeighborhoods: "Wijken",
             linkAbout: "Over Ons",
+            linkContact: "Contact",
             linkFaq: "FAQ",
             linkTerms: "Algemene Voorwaarden",
             linkPrivacy: "Privacyverklaring",
@@ -827,6 +1315,22 @@ export const translations = {
             resendCode: "Code opnieuw versturen",
             backToPhone: "Ander nummer gebruiken",
             whatsappNote: "U ontvangt een WhatsApp bericht met uw verificatiecode"
+        }
+    },
+    apartmentsIntro: {
+        en: {
+            eyebrow: "Amsterdam Rentals",
+            title: "Amsterdam Apartments for Rent",
+            lead: "Browse verified Amsterdam apartments for rent and apply online in minutes. ApartmentHub connects tenants with trusted landlords and listings across every Amsterdam neighborhood, from the historic Centrum and Grachtengordel to family-friendly Oost, lively De Pijp, and the leafy streets of Oud-Zuid.",
+            paragraph1: "Every apartment on ApartmentHub is checked for accurate pricing, square meters, and rental conditions, so you spend less time vetting listings and more time choosing the home that fits your life. Filter by rental price, bedrooms, and surface area to compare apartments for rent in Amsterdam side by side, and see real photos and full addresses before you submit a bid.",
+            paragraph2: "Whether you are an expat moving to the Netherlands, a professional relocating from another Dutch city, or a couple searching for a long-term rental, our platform lets you apply to multiple Amsterdam apartments in a single dossier. Upload your documents once, send your offer with a personal motivation, and track each application in real time — all without paying tenant fees.",
+        },
+        nl: {
+            eyebrow: "Huurwoningen Amsterdam",
+            title: "Huurappartementen in Amsterdam",
+            lead: "Bekijk geverifieerde huurappartementen in Amsterdam en solliciteer binnen enkele minuten online. ApartmentHub verbindt huurders met betrouwbare verhuurders en aanbiedingen in elke Amsterdamse wijk, van het historische Centrum en de Grachtengordel tot het gezinsvriendelijke Oost, het bruisende De Pijp en de groene straten van Oud-Zuid.",
+            paragraph1: "Elk appartement op ApartmentHub is gecontroleerd op juiste prijs, vierkante meters en huurvoorwaarden, zodat u minder tijd kwijt bent aan het beoordelen van advertenties en sneller het huis kiest dat bij uw leven past. Filter op huurprijs, slaapkamers en oppervlakte om huurappartementen in Amsterdam naast elkaar te vergelijken, en zie echte foto's en het volledige adres voordat u een bod uitbrengt.",
+            paragraph2: "Of u nu een expat bent die naar Nederland verhuist, een professional die uit een andere Nederlandse stad komt, of een stel dat een huurwoning voor de lange termijn zoekt, op ons platform kunt u in één dossier op meerdere Amsterdamse appartementen solliciteren. Upload uw documenten één keer, stuur uw bod met een persoonlijke motivatie en volg elke aanvraag in realtime — zonder huurderskosten.",
         }
     },
     apartments: {

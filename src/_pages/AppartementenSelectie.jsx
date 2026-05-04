@@ -7,6 +7,8 @@ import { translations } from '../data/translations';
 import Button from '../components/ui/Button';
 import { supabase } from '../integrations/supabase/client';
 import { useAuth } from '../contexts/AuthContext';
+import ApartmentsIntroSection from '../features/apartments/components/ApartmentsIntroSection';
+import ApartmentsSEOContent from '../features/apartments/components/ApartmentsSEOContent';
 import styles from './AppartementenSelectie.module.css';
 
 const AppartementenSelectie = () => {
@@ -168,10 +170,11 @@ const AppartementenSelectie = () => {
 
     return (
         <div className={styles.page}>
+            <ApartmentsIntroSection />
             <div className={styles.container}>
                 <div className={styles.card}>
                     <div className={styles.header}>
-                        <h1 className={styles.title}>{t.title}</h1>
+                        <h2 className={styles.title}>{t.title}</h2>
                         <p className={styles.subtitle}>{subtitle}</p>
                     </div>
 
@@ -257,6 +260,7 @@ const AppartementenSelectie = () => {
                     </div>
                 </div>
             </div>
+            <ApartmentsSEOContent />
         </div>
     );
 };

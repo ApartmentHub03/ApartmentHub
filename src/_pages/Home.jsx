@@ -2,9 +2,12 @@
 
 import React from 'react';
 import HeroSection from '../features/home/components/HeroSection';
+import IntroductionSection from '../features/home/components/IntroductionSection';
 import ServiceSection from '../features/home/components/ServiceSection';
 import WhyChooseUsSection from '../features/home/components/WhyChooseUsSection';
+import BenefitsAmsterdamSection from '../features/home/components/BenefitsAmsterdamSection';
 import NeighborhoodSection from '../features/home/components/NeighborhoodSection';
+import AmsterdamGuideSection from '../features/home/components/AmsterdamGuideSection';
 import TestimonialSection from '../features/home/components/TestimonialSection';
 import LocalBusinessSchema from '../components/seo/LocalBusinessSchema';
 
@@ -15,9 +18,12 @@ const Home = () => {
         <div className={styles.container}>
             <LocalBusinessSchema />
             <HeroSection />
+            <IntroductionSection />
             <ServiceSection />
             <WhyChooseUsSection />
+            <BenefitsAmsterdamSection />
             <NeighborhoodSection />
+            <AmsterdamGuideSection />
             <TestimonialSection />
         </div>
     );

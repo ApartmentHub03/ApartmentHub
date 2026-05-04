@@ -1,8 +1,8 @@
 import RentOut from '@/pages/RentOut';
 
 export const metadata = {
-    title: 'Verhuur Uw Woning in Amsterdam | ApartmentHub',
-    description: 'Plaats uw appartement bij ApartmentHub. Wij verbinden verhuurders met kwaliteitshuurders in Amsterdam.',
+    title: 'Verhuur Uw Appartement in Amsterdam | Gratis Huurschatting',
+    description: 'Verhuur uw Amsterdamse appartement zonder zorgen. Gratis huurprijsschatting, professionele foto\'s en gescreende huurders — eerste bezichtiging vaak binnen 72 uur.',
     alternates: {
         canonical: 'https://apartmenthub.nl/nl/rent-out',
         languages: {

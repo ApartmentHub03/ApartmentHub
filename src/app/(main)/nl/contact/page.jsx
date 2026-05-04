@@ -1,8 +1,8 @@
 import Contact from '@/pages/Contact';
 
 export const metadata = {
-    title: 'Neem Contact Op | ApartmentHub Amsterdam',
-    description: 'Neem contact op met ApartmentHub. Wij helpen u graag bij uw zoektocht naar een appartement in Amsterdam.',
+    title: 'Contact ApartmentHub Amsterdam | WhatsApp, E-mail & Hulp',
+    description: 'Hulp nodig bij het huren van een appartement in Amsterdam? Mail ApartmentHub op info@apartmenthub.nl of WhatsApp +31 6 58 97 54 49 — wij reageren binnen 24 uur.',
     alternates: {
         canonical: 'https://apartmenthub.nl/nl/contact',
         languages: {
