@@ -46,8 +46,10 @@ interface TriggerPayload {
     motivation?: string | null;
     months_advance?: number | null;
     // Signature payload — only sent on the LOI submit. The base64 PNG is
-    // uploaded to dossier-documents and a 10-year signed URL is added to
-    // the SF payload. signature_date defaults to the request timestamp.
+    // uploaded to dossier-documents (private, audit copy) and the same
+    // bytes are forwarded inline to Salesforce so SF can ingest+store the
+    // image without any public URL ever being minted. signature_date
+    // defaults to the request timestamp.
     signature_image_base64?: string | null;
     signature_date?: string | null;
     // Identifies which page on the website fired the webhook. Salesforce
@@ -92,12 +94,13 @@ serve(async (req) => {
         // whatsapp_number — accounts.account_role allows 'tenant' |
         // 'co-tenant' | 'guarantor', so we use 'tenant' for self-provisioned rows.
         let apartment_id: string = body.apartment_id ?? "";
+        let storedBatchId: string | null = null;
 
         if (!account_id) {
             const normalized = phone_number.replace(/\s+/g, "");
             const { data: existing, error: lookupErr } = await supabase
                 .from("accounts")
-                .select("id, salesforce_account_id, apartment_selected")
+                .select("id, salesforce_account_id, apartment_selected, last_salesforce_batch_id")
                 .or(`whatsapp_number.eq.${normalized},whatsapp_number.eq.${phone_number}`)
                 .limit(1)
                 .maybeSingle();
@@ -115,6 +118,7 @@ serve(async (req) => {
                         apartment_id = sel[0].apartment_id;
                     }
                 }
+                storedBatchId = (existing as any).last_salesforce_batch_id ?? null;
             } else {
                 const { data: created, error: insertErr } = await supabase
                     .from("accounts")
@@ -138,7 +142,7 @@ serve(async (req) => {
         } else {
             const { data: row } = await supabase
                 .from("accounts")
-                .select("salesforce_account_id, apartment_selected")
+                .select("salesforce_account_id, apartment_selected, last_salesforce_batch_id")
                 .eq("id", account_id)
                 .maybeSingle();
             if (row?.salesforce_account_id && !salesforce_account_id) {
@@ -150,12 +154,13 @@ serve(async (req) => {
                     apartment_id = sel[0].apartment_id;
                 }
             }
+            storedBatchId = (row as any)?.last_salesforce_batch_id ?? null;
         }
 
         const { data: rows, error } = await supabase
             .from("documenten")
             .select(
-                "id, type, status, bestandsnaam, bestandspad, personen!inner(id, voornaam, achternaam, telefoon, rol, dossier_id, dossiers!inner(id, phone_number, updated_at))"
+                "id, type, status, bestandsnaam, bestandspad, personen!inner(id, voornaam, achternaam, telefoon, email, werk_status, bruto_maandinkomen, huidige_adres, postcode, woonplaats, rol, dossier_id, dossiers!inner(id, phone_number, updated_at))"
             )
             .eq("personen.dossiers.phone_number", phone_number);
 
@@ -165,7 +170,36 @@ serve(async (req) => {
         }
 
         const docs = rows ?? [];
-        const batchId = `${account_id}-${Date.now()}`;
+        // Aanvraag and the follow-up letterofintent submission must share the
+        // same batch_id so Salesforce can correlate them as one transaction.
+        // Aanvraag mints a fresh id and persists it on the accounts row; later
+        // triggers (letterofintent) read it back. If a non-aanvraag trigger
+        // runs without a stored id (e.g. someone signs an LOI without ever
+        // submitting the aanvraag), we fall back to a fresh id rather than
+        // failing.
+        let batchId: string;
+        if (triggerSource === "aanvraag") {
+            batchId = `${account_id}-${Date.now()}`;
+            const { error: persistErr } = await supabase
+                .from("accounts")
+                .update({ last_salesforce_batch_id: batchId })
+                .eq("id", account_id);
+            if (persistErr) {
+                console.warn(
+                    `[forward-docs] Failed to persist batch_id on accounts row ${account_id}: ${persistErr.message}`
+                );
+            }
+        } else if (storedBatchId) {
+            batchId = storedBatchId;
+            console.log(
+                `[forward-docs] Reusing batch_id from accounts row ${account_id} for trigger=${triggerSource}: ${batchId}`
+            );
+        } else {
+            batchId = `${account_id}-${Date.now()}`;
+            console.warn(
+                `[forward-docs] No stored batch_id on accounts row ${account_id} for trigger=${triggerSource}; minting fresh id ${batchId}`
+            );
+        }
         const timestamp = new Date().toISOString();
         // Pull the dossier's updated_at as the canonical "last edit" time.
         // Falls back to the request timestamp if the join didn't surface it.
@@ -173,9 +207,14 @@ serve(async (req) => {
             (docs[0] as any)?.personen?.dossiers?.updated_at || timestamp;
 
         // Optional signature handling (LOI submit only). Upload the PNG to
-        // dossier-documents and mint a 10-year signed URL so Salesforce can
-        // fetch it on demand. If no signature was supplied, both fields are "".
-        let signature_image_url = "";
+        // private storage as an audit copy, and forward the same bytes
+        // inline as base64 so Salesforce can ingest+store the image without
+        // any public URL or long-lived signed URL existing anywhere. If no
+        // signature was supplied, all fields are empty/zero.
+        let signature_image_base64 = "";
+        let signature_image_mime_type = "";
+        let signature_image_size = 0;
+        let signature_image_path = "";
         const signature_date = body.signature_date || (body.signature_image_base64 ? timestamp : "");
         if (body.signature_image_base64) {
             try {
@@ -188,13 +227,11 @@ serve(async (req) => {
                         upsert: true,
                     });
                 if (upErr) throw upErr;
-                const tenYearsSec = 10 * 365 * 24 * 60 * 60;
-                const { data: signed, error: signErr } = await supabase.storage
-                    .from(BUCKET)
-                    .createSignedUrl(sigPath, tenYearsSec);
-                if (signErr) throw signErr;
-                signature_image_url = signed?.signedUrl || "";
-                console.log(`[forward-docs] Signature uploaded: ${sigPath}`);
+                signature_image_base64 = body.signature_image_base64;
+                signature_image_mime_type = "image/png";
+                signature_image_size = sigBytes.byteLength;
+                signature_image_path = `${BUCKET}/${sigPath}`;
+                console.log(`[forward-docs] Signature uploaded: ${sigPath} (${signature_image_size} bytes)`);
             } catch (sigErr: any) {
                 console.error("[forward-docs] Signature upload failed:", sigErr.message);
             }
@@ -210,6 +247,12 @@ serve(async (req) => {
         const personMeta = (p: any) => ({
             name: [p.voornaam, p.achternaam].filter(Boolean).join(" ").trim(),
             phone_number: p.telefoon,
+            email: p.email ?? "",
+            werkstatus: p.werk_status ?? "",
+            inkomen: p.bruto_maandinkomen ?? 0,
+            adres: p.huidige_adres ?? "",
+            postcode: p.postcode ?? "",
+            woonplaats: p.woonplaats ?? "",
             role: roleMap[p.rol] ?? p.rol,
             server_id: p.dossiers?.id ?? p.dossier_id,
         });
@@ -273,7 +316,10 @@ serve(async (req) => {
                 start_date,
                 motivation,
                 months_advance,
-                signature_image_url,
+                signature_image_base64,
+                signature_image_mime_type,
+                signature_image_size,
+                signature_image_path,
                 signature_date,
                 timestamp,
                 updated_at: dossierUpdatedAt,
@@ -294,6 +340,9 @@ serve(async (req) => {
             // failures can be diagnosed from edge-function logs.
             const loggablePayload = {
                 ...payload,
+                signature_image_base64: signature_image_base64
+                    ? `<${signature_image_size} bytes redacted>`
+                    : "",
                 document: {
                     ...payload.document,
                     file_base64: `<${fileSize} bytes redacted>`,
@@ -350,7 +399,10 @@ serve(async (req) => {
             start_date,
             motivation,
             months_advance,
-            signature_image_url,
+            signature_image_base64,
+            signature_image_mime_type,
+            signature_image_size,
+            signature_image_path,
             signature_date,
             timestamp,
             updated_at: dossierUpdatedAt,
@@ -364,8 +416,14 @@ serve(async (req) => {
             })),
         };
 
+        const loggableSummary = {
+            ...summaryPayload,
+            signature_image_base64: signature_image_base64
+                ? `<${signature_image_size} bytes redacted>`
+                : "",
+        };
         console.log(
-            `[forward-docs] REQUEST summary batch=${batchId}: ${JSON.stringify(summaryPayload)}`
+            `[forward-docs] REQUEST summary batch=${batchId}: ${JSON.stringify(loggableSummary)}`
         );
 
         let summary: { status: number; ok: boolean; error?: string };

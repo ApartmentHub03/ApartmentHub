@@ -64,7 +64,10 @@ One POST per uploaded document, with the PDF carried as base64 in `document.file
   "start_date": "2026-06-01",
   "motivation": "Looking for a long-term home...",
   "months_advance": 2,
-  "signature_image_url": "",
+  "signature_image_base64": "",
+  "signature_image_mime_type": "",
+  "signature_image_size": 0,
+  "signature_image_path": "",
   "signature_date": "",
   "timestamp": "2026-05-03T08:30:46.504Z",
   "updated_at": "2026-05-03T08:25:12.118Z",
@@ -81,6 +84,12 @@ One POST per uploaded document, with the PDF carried as base64 in `document.file
   "person": {
     "name": "John Doe",
     "phone_number": "+31612345678",
+    "email": "john.doe@example.com",
+    "werkstatus": "employed",
+    "inkomen": 4500,
+    "adres": "Keizersgracht 123",
+    "postcode": "1015CJ",
+    "woonplaats": "Amsterdam",
     "role": "main_tenant",
     "server_id": "a8093a54-4ea9-4681-82d8-e32a59f871d2"
   }
@@ -118,7 +127,10 @@ Fired once per batch, **after** all `document_file` POSTs. Contains all document
   "start_date": "2026-06-01",
   "motivation": "Looking for a long-term home...",
   "months_advance": 2,
-  "signature_image_url": "https://diovljzaabbfftcqmwub.supabase.co/storage/v1/object/sign/dossier-documents/31612345678/loi/signature-1777817657218.png?token=...",
+  "signature_image_base64": "iVBORw0KGgoAAAANSUhEUgAA...",
+  "signature_image_mime_type": "image/png",
+  "signature_image_size": 18432,
+  "signature_image_path": "dossier-documents/31612345678/loi/signature-1777817657218.png",
   "signature_date": "2026-05-03T08:30:46.504Z",
   "timestamp": "2026-05-03T08:30:46.504Z",
   "updated_at": "2026-05-03T08:25:12.118Z",
@@ -132,6 +144,12 @@ Fired once per batch, **after** all `document_file` POSTs. Contains all document
       "person": {
         "name": "John Doe",
         "phone_number": "+31612345678",
+        "email": "john.doe@example.com",
+        "werkstatus": "employed",
+        "inkomen": 4500,
+        "adres": "Keizersgracht 123",
+        "postcode": "1015CJ",
+        "woonplaats": "Amsterdam",
         "role": "main_tenant",
         "server_id": "a8093a54-4ea9-4681-82d8-e32a59f871d2"
       }
@@ -145,6 +163,12 @@ Fired once per batch, **after** all `document_file` POSTs. Contains all document
       "person": {
         "name": "Suresh",
         "phone_number": "+919090909090",
+        "email": "suresh@example.com",
+        "werkstatus": "self_employed",
+        "inkomen": 6200,
+        "adres": "MG Road 42",
+        "postcode": "560001",
+        "woonplaats": "Bangalore",
         "role": "guarantor",
         "server_id": "a8093a54-4ea9-4681-82d8-e32a59f871d2"
       }
@@ -158,6 +182,12 @@ Fired once per batch, **after** all `document_file` POSTs. Contains all document
       "person": {
         "name": "Test User",
         "phone_number": "9999999999",
+        "email": "test@example.com",
+        "werkstatus": "student",
+        "inkomen": 0,
+        "adres": "Test Street 1",
+        "postcode": "1234AB",
+        "woonplaats": "Utrecht",
         "role": "co_tenant",
         "server_id": "a8093a54-4ea9-4681-82d8-e32a59f871d2"
       }
@@ -195,7 +225,10 @@ Fired once per batch, **after** all `document_file` POSTs. Contains all document
 | `start_date` | string (YYYY-MM-DD) | yes | Tenant's preferred move-in date. `""` if missing. |
 | `motivation` | string | yes | Tenant's motivation text. `""` if missing. |
 | `months_advance` | number | yes | Months of rent the tenant is willing to pay upfront. `0` if missing. |
-| `signature_image_url` | string | yes | Signed Supabase URL of the tenant's signature PNG. Only populated for `trigger_source: "letterofintent"`; `""` for `aanvraag`. URL is valid for ~10 years. |
+| `signature_image_base64` | string | yes | Base64-encoded PNG bytes of the tenant's signature (no `data:` prefix). Only populated for `trigger_source: "letterofintent"`; `""` for `aanvraag`. The bucket is private — no public/signed URL is minted; SF ingests the bytes directly. |
+| `signature_image_mime_type` | string | yes | MIME type of the signature image. `"image/png"` when present, `""` otherwise. |
+| `signature_image_size` | number | yes | Byte size of the signature PNG. `0` when not present. |
+| `signature_image_path` | string | yes | Storage path of the audit copy on Supabase (private bucket — informational only, not externally fetchable). `""` when not present. |
 | `signature_date` | string (ISO 8601) | yes | When the tenant signed. Only populated for LOI; `""` for `aanvraag`. |
 | `timestamp` | string (ISO 8601) | yes | When the batch was assembled (request time) |
 | `updated_at` | string (ISO 8601) | yes | Dossier's `updated_at`. Falls back to `timestamp` if not available. |
@@ -238,6 +271,12 @@ Fired once per batch, **after** all `document_file` POSTs. Contains all document
 |---|---|---|
 | `name` | string | Full name (`voornaam` + `achternaam` joined with a space) |
 | `phone_number` | string | Person's phone number |
+| `email` | string | Per-person email. `""` if missing. (Main tenant's email is also surfaced top-level.) |
+| `werkstatus` | string | Employment status (e.g. `employed`, `self_employed`, `student`). `""` if missing. |
+| `inkomen` | number | Gross monthly income in EUR. `0` if missing. |
+| `adres` | string | Current street address. `""` if missing. |
+| `postcode` | string | Current postal code. `""` if missing. |
+| `woonplaats` | string | Current city. `""` if missing. |
 | `role` | string | **English enum** — see §7 |
 | `server_id` | string (UUID) | Dossier id |
 
