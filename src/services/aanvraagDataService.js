@@ -283,8 +283,12 @@ export const saveAanvraagData = async (dossierId, formData) => {
                         console.error('Error updating persoon:', error);
                     }
                 } else {
-                    // Check if a person with same dossier_id, type, and phone already exists
-                    // to prevent duplicates on repeated saves
+                    // Try to find an existing matching row before inserting.
+                    // Order: phone match (strongest) → name match (for guarantors
+                    // and co-tenants without a phone) → main-tenant-by-role.
+                    // Without this, autosaves fired with stale form state (e.g.
+                    // after Salesforce-empty load resets supabaseId to null)
+                    // insert a brand-new empty placeholder every time.
                     let existingPerson = null;
                     if (persoon.telefoon) {
                         const { data: existing } = await supabase
@@ -293,6 +297,28 @@ export const saveAanvraagData = async (dossierId, formData) => {
                             .eq('dossier_id', dossierId)
                             .eq('telefoon', persoon.telefoon)
                             .eq('type', persoonData.type)
+                            .limit(1);
+                        existingPerson = existing?.[0] || null;
+                    }
+                    if (!existingPerson && persoonData.type === 'tenant') {
+                        // Only one main tenant per dossier — match by role alone.
+                        const { data: existing } = await supabase
+                            .from('personen')
+                            .select('id')
+                            .eq('dossier_id', dossierId)
+                            .eq('type', 'tenant')
+                            .limit(1);
+                        existingPerson = existing?.[0] || null;
+                    }
+                    if (!existingPerson && (voornaam || achternaam)) {
+                        // Co-tenant / guarantor without phone — match by name.
+                        const { data: existing } = await supabase
+                            .from('personen')
+                            .select('id')
+                            .eq('dossier_id', dossierId)
+                            .eq('type', persoonData.type)
+                            .eq('voornaam', voornaam)
+                            .eq('achternaam', achternaam)
                             .limit(1);
                         existingPerson = existing?.[0] || null;
                     }
@@ -305,7 +331,19 @@ export const saveAanvraagData = async (dossierId, formData) => {
                             .update(persoonData)
                             .eq('id', existingPerson.id);
                     } else {
-                        // Insert new
+                        // Don't create empty placeholder rows. A person is only
+                        // worth inserting once it has at least one identifying
+                        // field — otherwise the form has just rendered an empty
+                        // co-tenant/guarantor card and we'd be persisting noise.
+                        const hasMeaningfulData =
+                            voornaam || achternaam ||
+                            persoonData.telefoon || persoonData.email ||
+                            persoonData.werk_status || persoonData.bruto_maandinkomen ||
+                            persoonData.huidige_adres || persoonData.postcode ||
+                            persoonData.woonplaats;
+                        if (!hasMeaningfulData) {
+                            continue;
+                        }
                         const { data, error } = await supabase
                             .from('personen')
                             .insert({ ...persoonData, created_at: new Date().toISOString() })
