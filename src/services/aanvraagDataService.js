@@ -49,19 +49,79 @@ function groupDocumentsForPerson(docs) {
  * the source transparently. If Salesforce has no dossier for this phone,
  * returns { ok: false } so callers can fall back to Supabase.
  */
-export const loadAanvraagDataFromSalesforce = async (phoneNumber) => {
-    try {
-        const digits = String(phoneNumber || '').replace(/\D/g, '');
-        if (!digits) return { ok: false, error: 'Missing phone number' };
+// Build the empty form a fresh user would see — no dossier, no people, no
+// docs. Used when Salesforce is reachable and has answered "no record for
+// this phone": the page should NOT fall back to Supabase in that case
+// (per the SF team — they want SF to be the single source of truth, and
+// when they clear SF the form must show empty).
+const buildEmptyAanvraagForm = (phoneNumber) => ({
+    bidAmount: 0,
+    startDate: '',
+    motivation: '',
+    monthsAdvance: 0,
+    propertyAddress: '',
+    personen: [
+        {
+            persoonId: 'p1',
+            supabaseId: null,
+            naam: '',
+            email: '',
+            telefoon: phoneNumber || '',
+            rol: 'Hoofdhuurder',
+            werkstatus: '',
+            inkomen: '',
+            adres: '',
+            postcode: '',
+            woonplaats: '',
+            linkedToPersoonId: null,
+            documenten: [],
+            docsCompleet: false,
+        },
+    ],
+});
 
-        const res = await fetch(`/api/salesforce/dossier?phone=${encodeURIComponent(digits)}`);
-        const payload = await res.json();
-        if (!res.ok || payload?.success === false) {
+export const loadAanvraagDataFromSalesforce = async (phoneNumber) => {
+    const digits = String(phoneNumber || '').replace(/\D/g, '');
+    if (!digits) return { ok: false, error: 'Missing phone number' };
+
+    let res;
+    let payload;
+    try {
+        res = await fetch(`/api/salesforce/dossier?phone=${encodeURIComponent(digits)}`);
+        payload = await res.json();
+    } catch (error) {
+        // True network failure — let the caller fall back to Supabase.
+        console.error('Error in loadAanvraagDataFromSalesforce (unreachable):', error);
+        return { ok: false, error: error.message || 'Failed to load from Salesforce' };
+    }
+
+    try {
+        // Distinguish "SF reached, no record for this phone" from "SF / route
+        // unreachable". The /api/salesforce/dossier route returns 502 with
+        // `details.success === false` when SF itself responds "no dossier" —
+        // we treat that as a reachable-empty response so the form renders
+        // blank (no Supabase fallback). Genuine HTTP/network errors still
+        // return `ok: false` so the caller can fall back.
+        const sfRespondedEmpty =
+            payload?.details?.success === false ||
+            (res.ok && payload?.success !== false && !payload?.dossier) ||
+            (res.ok && payload?.dossier?.success === false);
+
+        if (!res.ok && !sfRespondedEmpty) {
             return { ok: false, error: payload?.error || `Salesforce ${res.status}` };
         }
-        const sf = payload.dossier;
-        if (!sf || sf.success === false) {
-            return { ok: false, error: sf?.message || 'Salesforce returned no dossier' };
+        if (payload?.success === false && !sfRespondedEmpty) {
+            return { ok: false, error: payload?.error || 'Salesforce error' };
+        }
+
+        const sf = payload?.dossier;
+        if (sfRespondedEmpty || !sf || sf.success === false) {
+            return {
+                ok: true,
+                data: buildEmptyAanvraagForm(phoneNumber),
+                source: 'salesforce',
+                empty: true,
+            };
         }
 
         // Group documents by person. Salesforce sends one document row per file,
