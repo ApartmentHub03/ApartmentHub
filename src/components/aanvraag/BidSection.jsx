@@ -51,8 +51,11 @@ const BidSection = ({
                                 type="number"
                                 className={styles.bidInput}
                                 placeholder={String(safeConditions.huurprijs)}
-                                value={bidAmount}
-                                onChange={(e) => onBidAmountChange?.(Number(e.target.value))}
+                                value={bidAmount ? bidAmount : ''}
+                                onChange={(e) => {
+                                    const v = e.target.value;
+                                    onBidAmountChange?.(v === '' ? 0 : Number(v));
+                                }}
                                 disabled={readOnly}
                             />
                         </div>
