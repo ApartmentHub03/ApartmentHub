@@ -7,7 +7,7 @@ import { setLanguage } from '../features/ui/uiSlice';
 import { LogOut, CheckCircle, Plus, AlertCircle } from 'lucide-react';
 import { translations } from '../data/translations';
 import { useAuth } from '../contexts/AuthContext';
-import { loadAanvraagData, saveAanvraagData, deletePersonFromSupabase } from '../services/aanvraagDataService';
+import { loadAanvraagData, loadAanvraagDataFromSalesforce, saveAanvraagData, deletePersonFromSupabase } from '../services/aanvraagDataService';
 import { uploadDocument, deleteDocument } from '../services/documentStorageService';
 import { getRequiredDocuments } from '../utils/documentRequirements';
 import { sendTenantDataEvent, sendDocumentUploadEvent, sendMultipleDocumentsEvent } from '../services/webhookService';
@@ -118,7 +118,38 @@ const Aanvraag = () => {
                 return;
             }
 
-            const result = await loadAanvraagData(dossierId);
+            // Prefer Salesforce as the source of truth — lookup by phone.
+            // Supabase remains the fallback while the SF migration is in
+            // flight, so the page still works for dossiers SF hasn't been
+            // told about yet and for co-tenants whose own phone isn't the
+            // dossier key.
+            let result = null;
+            if (phoneNumber) {
+                result = await loadAanvraagDataFromSalesforce(phoneNumber);
+                if (result?.ok) {
+                    console.log('[Aanvraag] ✓ Loaded dossier from Salesforce for', phoneNumber);
+                } else {
+                    console.log('[Aanvraag] Salesforce load failed, falling back to Supabase:', result?.error);
+                }
+            }
+            if (!result?.ok) {
+                result = await loadAanvraagData(dossierId);
+            }
+
+            // Build the Salesforce apartments catalog once so every apartment
+            // lookup below resolves against SF (same endpoint AppartementenSelectie
+            // uses). Returns a Map keyed by SF apartment id. If SF is unreachable
+            // we fall back to per-saved-entry rendering via buildPandFromSavedEntry.
+            const sfApts = new Map();
+            try {
+                const aptRes = await fetch('/api/salesforce/apartments');
+                const aptPayload = await aptRes.json();
+                if (aptPayload?.success && Array.isArray(aptPayload.apartments)) {
+                    for (const a of aptPayload.apartments) sfApts.set(a.id, a);
+                }
+            } catch (e) {
+                console.warn('[Aanvraag] Could not load Salesforce apartments catalog', e);
+            }
             let panden = [];
             let mainPandenLocal = []; // local capture so sidebar logic doesn't read stale state
 
@@ -137,21 +168,13 @@ const Aanvraag = () => {
                         const savedApts = accData?.apartment_selected || [];
 
                         if (savedApts.length > 0) {
-                            // Fetch full apartment data for all saved IDs. Some Salesforce
-                            // apartment ids may not yet exist in the local apartments table
-                            // (e.g. brand-new listings) — fall back to the saved entry's
-                            // address/rental_price so the apartment still renders.
-                            const aptIds = savedApts.map(a => a.apartment_id).filter(Boolean);
-                            const { data: aptRows } = await sb
-                                .from('apartments')
-                                .select('*')
-                                .in('id', aptIds);
-
-                            const rowById = new Map((aptRows || []).map(r => [r.id, r]));
+                            // Resolve full apartment details from the SF catalog we
+                            // fetched above. IDs SF doesn't return fall back to the
+                            // saved entry's stored address/rental_price.
                             panden = savedApts
                                 .filter(a => a.apartment_id)
                                 .map(a => {
-                                    const row = rowById.get(a.apartment_id);
+                                    const row = sfApts.get(a.apartment_id);
                                     return row ? buildPandFromApartment(row) : buildPandFromSavedEntry(a);
                                 });
 
@@ -171,12 +194,7 @@ const Aanvraag = () => {
                         if (panden.length === 0 && accData?.current_bookings?.length > 0) {
                             const booking = accData.current_bookings[0];
                             if (booking.apartment_id) {
-                                const { data: aptData } = await sb
-                                    .from('apartments')
-                                    .select('*')
-                                    .eq('id', booking.apartment_id)
-                                    .single();
-
+                                const aptData = sfApts.get(booking.apartment_id);
                                 if (aptData) {
                                     panden = [buildPandFromApartment(aptData)];
                                 }
@@ -239,17 +257,10 @@ const Aanvraag = () => {
 
                     if (mainAccountData?.apartment_selected?.length > 0) {
                         const mainApts = mainAccountData.apartment_selected;
-                        const mainAptIds = mainApts.map(a => a.apartment_id).filter(Boolean);
-                        const { data: mainAptRows } = await sb
-                            .from('apartments')
-                            .select('*')
-                            .in('id', mainAptIds);
-
-                        const mainRowById = new Map((mainAptRows || []).map(r => [r.id, r]));
                         const mainPanden = mainApts
                             .filter(a => a.apartment_id)
                             .map(a => {
-                                const row = mainRowById.get(a.apartment_id);
+                                const row = sfApts.get(a.apartment_id);
                                 return row ? buildPandFromApartment(row) : buildPandFromSavedEntry(a);
                             });
 
@@ -323,18 +334,11 @@ const Aanvraag = () => {
                 if (pending) {
                     try {
                         const pendingApts = JSON.parse(pending);
-                        const aptIds = pendingApts.map(a => a.apartment_id).filter(Boolean);
-                        if (aptIds.length > 0) {
-                            const { data: aptRows } = await sb
-                                .from('apartments')
-                                .select('*')
-                                .in('id', aptIds);
-
-                            const pendingRowById = new Map((aptRows || []).map(r => [r.id, r]));
+                        if (pendingApts.length > 0) {
                             panden = pendingApts
                                 .filter(a => a.apartment_id)
                                 .map(a => {
-                                    const row = pendingRowById.get(a.apartment_id);
+                                    const row = sfApts.get(a.apartment_id);
                                     return row ? buildPandFromApartment(row) : buildPandFromSavedEntry(a);
                                 });
                         }
@@ -430,11 +434,7 @@ const Aanvraag = () => {
                             const coApts = acc.apartment_selected || [];
                             for (const a of coApts) {
                                 if (a.apartment_id && !sidebarApts.some(p => p.apartmentId === a.apartment_id)) {
-                                    const { data: aptRow } = await sb
-                                        .from('apartments')
-                                        .select('*')
-                                        .eq('id', a.apartment_id)
-                                        .maybeSingle();
+                                    const aptRow = sfApts.get(a.apartment_id);
                                     sidebarApts.push(aptRow ? buildPandFromApartment(aptRow) : buildPandFromSavedEntry(a));
                                 }
                             }
