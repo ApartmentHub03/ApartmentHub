@@ -118,18 +118,22 @@ const Aanvraag = () => {
                 return;
             }
 
-            // Prefer Salesforce as the source of truth — lookup by phone.
-            // Supabase remains the fallback while the SF migration is in
-            // flight, so the page still works for dossiers SF hasn't been
-            // told about yet and for co-tenants whose own phone isn't the
-            // dossier key.
+            // Salesforce is the source of truth. We only fall back to Supabase
+            // when SF is genuinely unreachable (network error, route 5xx).
+            // If SF responds "no dossier for this phone", the SF team wants
+            // the form to render empty rather than back-filling from Supabase
+            // — so loadAanvraagDataFromSalesforce returns ok:true with an
+            // empty form in that case and we use it as-is.
             let result = null;
             if (phoneNumber) {
                 result = await loadAanvraagDataFromSalesforce(phoneNumber);
                 if (result?.ok) {
-                    console.log('[Aanvraag] ✓ Loaded dossier from Salesforce for', phoneNumber);
+                    console.log(
+                        `[Aanvraag] ✓ Loaded ${result.empty ? 'EMPTY ' : ''}dossier from Salesforce for`,
+                        phoneNumber
+                    );
                 } else {
-                    console.log('[Aanvraag] Salesforce load failed, falling back to Supabase:', result?.error);
+                    console.log('[Aanvraag] Salesforce unreachable, falling back to Supabase:', result?.error);
                 }
             }
             if (!result?.ok) {
