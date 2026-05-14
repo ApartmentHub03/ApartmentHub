@@ -263,51 +263,12 @@ export const saveAanvraagData = async (dossierId, formData) => {
             }
         }
 
-        // Delete persons from DB that are no longer in the local form data
-        // This handles the case where a person was removed from the UI
-        const { data: dbPersonen } = await supabase
-            .from('personen')
-            .select('id')
-            .eq('dossier_id', dossierId);
-
-        if (dbPersonen && formData.personen) {
-            const localSupabaseIds = new Set(
-                formData.personen
-                    .map(p => p.supabaseId)
-                    .filter(Boolean)
-            );
-
-            const toDelete = dbPersonen.filter(dbP => !localSupabaseIds.has(dbP.id));
-
-            for (const orphan of toDelete) {
-                // Delete documents first (storage files + metadata)
-                const { data: docs } = await supabase
-                    .from('documenten')
-                    .select('id, bestandspad')
-                    .eq('persoon_id', orphan.id);
-
-                if (docs && docs.length > 0) {
-                    const filePaths = docs.map(d => d.bestandspad).filter(Boolean);
-                    if (filePaths.length > 0) {
-                        await supabase.storage
-                            .from('dossier-documents')
-                            .remove(filePaths);
-                    }
-                    await supabase
-                        .from('documenten')
-                        .delete()
-                        .eq('persoon_id', orphan.id);
-                }
-
-                // Delete the person
-                await supabase
-                    .from('personen')
-                    .delete()
-                    .eq('id', orphan.id);
-
-                console.log('[saveAanvraagData] Deleted orphaned person:', orphan.id);
-            }
-        }
+        // Removals are handled only by the explicit Remove flow
+        // (deletePersonFromSupabase / deleteDocument). saveAanvraagData no
+        // longer diffs DB vs local state — that diff was destroying co-tenant
+        // and guarantor rows (and their docs) whenever a save fired with
+        // partial form state, e.g. after the page rehydrated from Salesforce
+        // (which loads with supabaseId=null) or re-mounted mid-load.
 
         return { ok: true, personen: formData.personen };
     } catch (error) {
