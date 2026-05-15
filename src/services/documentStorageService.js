@@ -83,6 +83,15 @@ export const uploadDocument = async (persoonId, dossierId, docType, file, phoneN
             .from('dossier-documents')
             .getPublicUrl(storagePath);
 
+        // Remove any existing documenten row for this exact storage path so a
+        // re-upload (or a fresh session that re-creates the persoon row)
+        // replaces the previous DB entry instead of accumulating duplicates.
+        // Storage already upserted the file in place above.
+        await supabase
+            .from('documenten')
+            .delete()
+            .eq('bestandspad', storagePath);
+
         // Save metadata to documenten table (includes phone_number)
         const { data: docData, error: dbError } = await supabase
             .from('documenten')
