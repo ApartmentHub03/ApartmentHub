@@ -26,6 +26,44 @@ const GuarantorCard = ({
     const [isExpanded, setIsExpanded] = useState(!isInitiallyComplete);
     const [workStatus, setWorkStatus] = useState(persoon.werkstatus || null);
 
+    // Controlled-input state. Previously the inputs used defaultValue with no
+    // onChange, so guarantor edits were never pushed back to the parent and
+    // never saved — the persoon row was always empty in the DB.
+    const [formData, setFormData] = useState({
+        naam: persoon.naam || '',
+        email: persoon.email || '',
+        telefoon: persoon.telefoon || '',
+        adres: persoon.adres || '',
+        postcode: persoon.postcode || '',
+        woonplaats: persoon.woonplaats || '',
+        inkomen: persoon.inkomen != null && persoon.inkomen !== '' ? persoon.inkomen.toString() : '',
+    });
+
+    // Re-sync local form state when the underlying persoon is freshly loaded
+    // from the DB (supabaseId becomes available). Don't depend on individual
+    // fields — that loop is `setFormData → onFormDataChange → parent setData
+    // → new persoon prop → setFormData → repeat`.
+    const prevSupabaseIdRef = useRef(persoon.supabaseId);
+    useEffect(() => {
+        if (persoon.supabaseId && persoon.supabaseId !== prevSupabaseIdRef.current) {
+            prevSupabaseIdRef.current = persoon.supabaseId;
+            setFormData({
+                naam: persoon.naam || '',
+                email: persoon.email || '',
+                telefoon: persoon.telefoon || '',
+                adres: persoon.adres || '',
+                postcode: persoon.postcode || '',
+                woonplaats: persoon.woonplaats || '',
+                inkomen: persoon.inkomen != null && persoon.inkomen !== '' ? persoon.inkomen.toString() : '',
+            });
+            if (persoon.werkstatus) setWorkStatus(persoon.werkstatus);
+        }
+    }, [persoon.supabaseId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const handleInputChange = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
     const requiredDocuments = getRequiredDocuments(workStatus, 'guarantor');
     const getDoc = (type) => (persoon.documenten || []).find(d => d.type === type);
     const isDocUploaded = (type) => {
@@ -40,18 +78,30 @@ const GuarantorCard = ({
     const isComplete = totalDocsCount > 0 ? completedDocsCount === totalDocsCount : true;
     const progress = totalDocsCount > 0 ? Math.round((completedDocsCount / totalDocsCount) * 100) : 100;
 
-    // Notify parent of document completion status
+    // Notify parent of both form fields and document completion status.
     const onFormDataChangeRef = useRef(onFormDataChange);
     onFormDataChangeRef.current = onFormDataChange;
 
     useEffect(() => {
         if (onFormDataChangeRef.current) {
             onFormDataChangeRef.current(persoon.persoonId, {
+                naam: formData.naam,
+                email: formData.email,
+                telefoon: formData.telefoon,
+                adres: formData.adres,
+                postcode: formData.postcode,
+                woonplaats: formData.woonplaats,
+                inkomen: formData.inkomen,
+                workStatus,
                 overallProgress: progress,
-                isDocsComplete: isComplete
+                isDocsComplete: isComplete,
             });
         }
-    }, [progress, isComplete, persoon.persoonId]);
+    }, [
+        formData.naam, formData.email, formData.telefoon, formData.adres,
+        formData.postcode, formData.woonplaats, formData.inkomen,
+        workStatus, progress, isComplete, persoon.persoonId,
+    ]);
 
     const handleWorkStatusChange = (status) => {
         setWorkStatus(status);
@@ -115,28 +165,59 @@ const GuarantorCard = ({
                     <div>
                         <div className={styles.formItem}>
                             <label className={styles.label}>{currentLang === 'en' ? 'Full Name' : 'Volledige Naam'} *</label>
-                            <input className={styles.input} placeholder={currentLang === 'en' ? 'John Doe' : 'Jan Jansen'} defaultValue={persoon.naam} disabled={readOnly} />
+                            <input
+                                className={styles.input}
+                                placeholder={currentLang === 'en' ? 'John Doe' : 'Jan Jansen'}
+                                value={formData.naam}
+                                onChange={(e) => handleInputChange('naam', e.target.value)}
+                                disabled={readOnly}
+                            />
                         </div>
 
                         <div className={styles.formItem}>
                             <label className={styles.label}>Email *</label>
-                            <input className={styles.input} type="email" placeholder="naam@voorbeeld.nl" defaultValue={persoon.email} disabled={readOnly} />
+                            <input
+                                className={styles.input}
+                                type="email"
+                                placeholder="naam@voorbeeld.nl"
+                                value={formData.email}
+                                onChange={(e) => handleInputChange('email', e.target.value)}
+                                disabled={readOnly}
+                            />
                         </div>
 
                         <div className={styles.grid}>
                             <div className={styles.formItem}>
                                 <label className={styles.label}>{currentLang === 'en' ? 'Current Address' : 'Huidig Adres'}</label>
-                                <input className={styles.input} placeholder={currentLang === 'en' ? 'Street 123' : 'Straat 123'} disabled={readOnly} />
+                                <input
+                                    className={styles.input}
+                                    placeholder={currentLang === 'en' ? 'Street 123' : 'Straat 123'}
+                                    value={formData.adres}
+                                    onChange={(e) => handleInputChange('adres', e.target.value)}
+                                    disabled={readOnly}
+                                />
                             </div>
                             <div className={styles.formItem}>
                                 <label className={styles.label}>{currentLang === 'en' ? 'Postcode' : 'Postcode'}</label>
-                                <input className={styles.input} placeholder="1234 AB" disabled={readOnly} />
+                                <input
+                                    className={styles.input}
+                                    placeholder="1234 AB"
+                                    value={formData.postcode}
+                                    onChange={(e) => handleInputChange('postcode', e.target.value)}
+                                    disabled={readOnly}
+                                />
                             </div>
                         </div>
 
                         <div className={styles.formItem}>
                             <label className={styles.label}>{currentLang === 'en' ? 'City' : 'Woonplaats'}</label>
-                            <input className={styles.input} placeholder={currentLang === 'en' ? 'Amsterdam' : 'Amsterdam'} disabled={readOnly} />
+                            <input
+                                className={styles.input}
+                                placeholder={currentLang === 'en' ? 'Amsterdam' : 'Amsterdam'}
+                                value={formData.woonplaats}
+                                onChange={(e) => handleInputChange('woonplaats', e.target.value)}
+                                disabled={readOnly}
+                            />
                         </div>
 
                         <div className={styles.formItem}>
@@ -149,7 +230,14 @@ const GuarantorCard = ({
                                 <label className={styles.label}>{currentLang === 'en' ? 'Gross Annual Income' : 'Bruto Jaarinkomen'} *</label>
                                 <div className={styles.inputWrapper}>
                                     <span className={styles.currencyPrefix}>€</span>
-                                    <input className={`${styles.input} ${styles.inputWithPrefix}`} type="number" placeholder="45000" disabled={readOnly} />
+                                    <input
+                                        className={`${styles.input} ${styles.inputWithPrefix}`}
+                                        type="number"
+                                        placeholder="45000"
+                                        value={formData.inkomen}
+                                        onChange={(e) => handleInputChange('inkomen', e.target.value)}
+                                        disabled={readOnly}
+                                    />
                                 </div>
                             </div>
                         )}
