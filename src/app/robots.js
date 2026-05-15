@@ -26,7 +26,7 @@ export default function robots() {
         ],
       },
     ],
-    sitemap: 'https://apartmenthub.nl/sitemap.xml',
-    host: 'https://apartmenthub.nl',
+    sitemap: 'https://www.apartmenthub.nl/sitemap.xml',
+    host: 'https://www.apartmenthub.nl',
   };
 }

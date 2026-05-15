@@ -4,10 +4,10 @@ export const metadata = {
     title: 'Algemene Voorwaarden | ApartmentHub',
     description: 'Lees de algemene voorwaarden voor het gebruik van de diensten van ApartmentHub.',
     alternates: {
-        canonical: 'https://apartmenthub.nl/nl/algemene-voorwaarden',
+        canonical: 'https://www.apartmenthub.nl/nl/algemene-voorwaarden',
         languages: {
-            en: 'https://apartmenthub.nl/en/terms-and-conditions',
-            nl: 'https://apartmenthub.nl/nl/algemene-voorwaarden',
+            en: 'https://www.apartmenthub.nl/en/terms-and-conditions',
+            nl: 'https://www.apartmenthub.nl/nl/algemene-voorwaarden',
         },
     },
 };

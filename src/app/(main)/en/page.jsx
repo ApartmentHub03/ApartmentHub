@@ -4,10 +4,10 @@ export const metadata = {
     title: 'ApartmentHub - Find Your Perfect Apartment in Amsterdam',
     description: 'Find your perfect rental apartment in Amsterdam with ApartmentHub. Browse listings, apply online, and move in hassle-free.',
     alternates: {
-        canonical: 'https://apartmenthub.nl/en',
+        canonical: 'https://www.apartmenthub.nl/en',
         languages: {
-            en: 'https://apartmenthub.nl/en',
-            nl: 'https://apartmenthub.nl/nl',
+            en: 'https://www.apartmenthub.nl/en',
+            nl: 'https://www.apartmenthub.nl/nl',
         },
     },
 };

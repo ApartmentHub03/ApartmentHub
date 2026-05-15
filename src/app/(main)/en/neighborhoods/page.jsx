@@ -4,10 +4,10 @@ export const metadata = {
     title: 'Amsterdam Neighborhoods Guide | ApartmentHub',
     description: "Discover Amsterdam's best neighborhoods. Find the perfect area to live with our comprehensive guide.",
     alternates: {
-        canonical: 'https://apartmenthub.nl/en/neighborhoods',
+        canonical: 'https://www.apartmenthub.nl/en/neighborhoods',
         languages: {
-            en: 'https://apartmenthub.nl/en/neighborhoods',
-            nl: 'https://apartmenthub.nl/nl/neighborhoods',
+            en: 'https://www.apartmenthub.nl/en/neighborhoods',
+            nl: 'https://www.apartmenthub.nl/nl/neighborhoods',
         },
     },
 };

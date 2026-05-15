@@ -22,6 +22,13 @@ const nextConfig = {
     // Redirect non-www to www and strip BOM characters
     async redirects() {
         return [
+            // Redirect non-www host to canonical www origin
+            {
+                source: '/:path*',
+                has: [{ type: 'host', value: 'apartmenthub.nl' }],
+                destination: 'https://www.apartmenthub.nl/:path*',
+                permanent: true,
+            },
             // Strip %EF%BB%BF (Zero Width No-Break Space / BOM) from the end of URLs
             {
                 source: '/:path*%EF%BB%BF',

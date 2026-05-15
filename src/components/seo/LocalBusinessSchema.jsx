@@ -3,16 +3,16 @@ import { useEffect } from 'react';
 const localBusinessSchema = {
     "@context": "https://schema.org",
     "@type": ["LocalBusiness", "RealEstateAgent"],
-    "@id": "https://apartmenthub.nl/#organization",
+    "@id": "https://www.apartmenthub.nl/#organization",
     "name": "ApartmentHub",
-    "url": "https://apartmenthub.nl",
+    "url": "https://www.apartmenthub.nl",
     "logo": {
         "@type": "ImageObject",
-        "url": "https://apartmenthub.nl/images/site-logo.png",
+        "url": "https://www.apartmenthub.nl/images/site-logo.png",
         "width": 512,
         "height": 512
     },
-    "image": "https://apartmenthub.nl/images/site-logo.png",
+    "image": "https://www.apartmenthub.nl/images/site-logo.png",
     "telephone": "+31 6 58 97 54 49",
     "email": "info@apartmenthub.nl",
     "address": {
