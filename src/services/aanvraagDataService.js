@@ -45,15 +45,10 @@ function groupDocumentsForPerson(docs) {
  * Load Aanvraag form data from Salesforce (apexrest/apthub/dossier).
  * Lookup id is the phone number (digits only — `+` is stripped).
  *
- * Returns the same shape as `loadAanvraagData` so the Aanvraag page can swap
- * the source transparently. If Salesforce has no dossier for this phone,
- * returns { ok: false } so callers can fall back to Supabase.
+ * Salesforce is the only source. There is no Supabase fallback: when SF is
+ * reachable but has no record, we hand back an empty form; only a real
+ * network/route 5xx returns ok:false.
  */
-// Build the empty form a fresh user would see — no dossier, no people, no
-// docs. Used when Salesforce is reachable and has answered "no record for
-// this phone": the page should NOT fall back to Supabase in that case
-// (per the SF team — they want SF to be the single source of truth, and
-// when they clear SF the form must show empty).
 const buildEmptyAanvraagForm = (phoneNumber) => ({
     bidAmount: 0,
     startDate: '',
@@ -63,7 +58,6 @@ const buildEmptyAanvraagForm = (phoneNumber) => ({
     personen: [
         {
             persoonId: 'p1',
-            supabaseId: null,
             naam: '',
             email: '',
             telefoon: phoneNumber || '',
@@ -90,7 +84,6 @@ export const loadAanvraagDataFromSalesforce = async (phoneNumber) => {
         res = await fetch(`/api/salesforce/dossier?phone=${encodeURIComponent(digits)}`);
         payload = await res.json();
     } catch (error) {
-        // True network failure — let the caller fall back to Supabase.
         console.error('Error in loadAanvraagDataFromSalesforce (unreachable):', error);
         return { ok: false, error: error.message || 'Failed to load from Salesforce' };
     }
@@ -100,8 +93,7 @@ export const loadAanvraagDataFromSalesforce = async (phoneNumber) => {
         // unreachable". The /api/salesforce/dossier route returns 502 with
         // `details.success === false` when SF itself responds "no dossier" —
         // we treat that as a reachable-empty response so the form renders
-        // blank (no Supabase fallback). Genuine HTTP/network errors still
-        // return `ok: false` so the caller can fall back.
+        // blank. Genuine HTTP/network errors still return `ok: false`.
         const sfRespondedEmpty =
             payload?.details?.success === false ||
             (res.ok && payload?.success !== false && !payload?.dossier) ||
@@ -167,7 +159,6 @@ export const loadAanvraagDataFromSalesforce = async (phoneNumber) => {
             const inkomen = inkomenRaw == null || inkomenRaw === '' ? '' : String(inkomenRaw);
             return {
                 persoonId: `p${idx + 1}`,
-                supabaseId: null,
                 naam: isMain ? (person.name || sf.tenant_name || '') : (person.name || ''),
                 email: (person.email || (isMain ? sf.email : '') || ''),
                 telefoon: person.phone_number || (isMain ? sf.phone_number : '') || '',
@@ -202,371 +193,53 @@ export const loadAanvraagDataFromSalesforce = async (phoneNumber) => {
 };
 
 /**
- * Save Aanvraag form data to Supabase
- * @param {string} dossierId - The dossier ID
- * @param {Object} formData - The form data from Aanvraag
- * @returns {Promise<{ok: boolean, error?: string}>}
+ * Collect every storage path attached to a person across both single-file
+ * and multi-file documenten entries. Used by the remove flows below to
+ * clean the bucket without consulting any database.
  */
-export const saveAanvraagData = async (dossierId, formData) => {
-    try {
-        if (!supabase) {
-            console.log('[Mock] saveAanvraagData for:', dossierId, formData);
-            return { ok: true };
-        }
-
-        // Extract main tenant email for the dossier
-        const mainTenant = formData.personen?.find(p => p.rol === 'Hoofdhuurder');
-        const mainTenantEmail = mainTenant?.email || null;
-
-        // Save bid data and main tenant email to dossiers table
-        const { error: dossierError } = await supabase
-            .from('dossiers')
-            .update({
-                bid_amount: formData.bidAmount,
-                start_date: formData.startDate || null,
-                motivation: formData.motivation,
-                months_advance: formData.monthsAdvance,
-                property_address: formData.propertyAddress,
-                email: mainTenantEmail,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', dossierId);
-
-        if (dossierError) {
-            console.error('Error updating dossier:', dossierError);
-            return { ok: false, error: dossierError.message };
-        }
-
-        // Save or update personen data
-        if (formData.personen && Array.isArray(formData.personen)) {
-            for (const persoon of formData.personen) {
-                // Split name into first and last name
-                const nameParts = (persoon.naam || '').trim().split(' ');
-                const voornaam = nameParts[0] || '';
-                const achternaam = nameParts.slice(1).join(' ') || '';
-
-                // Parse income - handle both string and number, and empty strings
-                let parsedIncome = null;
-                if (persoon.inkomen) {
-                    const incomeStr = persoon.inkomen.toString().trim();
-                    if (incomeStr !== '' && !isNaN(incomeStr)) {
-                        parsedIncome = parseFloat(incomeStr);
-                    }
-                }
-
-                const persoonData = {
-                    dossier_id: dossierId,
-                    type: persoon.rol === 'Hoofdhuurder' ? 'tenant' :
-                        persoon.rol === 'Medehuurder' ? 'co_tenant' : 'guarantor',
-                    voornaam,
-                    achternaam,
-                    email: persoon.email || null,
-                    telefoon: persoon.telefoon || null,
-                    werk_status: persoon.werkstatus || null,
-                    bruto_maandinkomen: parsedIncome,
-                    huidige_adres: persoon.adres || null,
-                    postcode: persoon.postcode || null,
-                    woonplaats: persoon.woonplaats || null,
-                    rol: persoon.rol,
-                    updated_at: new Date().toISOString()
-                };
-
-                // Check if this person already exists
-                if (persoon.supabaseId) {
-                    // Update existing
-                    const { error } = await supabase
-                        .from('personen')
-                        .update(persoonData)
-                        .eq('id', persoon.supabaseId);
-
-                    if (error) {
-                        console.error('Error updating persoon:', error);
-                    }
-                } else {
-                    // Try to find an existing matching row before inserting.
-                    // Order: phone match (strongest) → name match (for guarantors
-                    // and co-tenants without a phone) → main-tenant-by-role.
-                    // Without this, autosaves fired with stale form state (e.g.
-                    // after Salesforce-empty load resets supabaseId to null)
-                    // insert a brand-new empty placeholder every time.
-                    let existingPerson = null;
-                    if (persoon.telefoon) {
-                        const { data: existing } = await supabase
-                            .from('personen')
-                            .select('id')
-                            .eq('dossier_id', dossierId)
-                            .eq('telefoon', persoon.telefoon)
-                            .eq('type', persoonData.type)
-                            .limit(1);
-                        existingPerson = existing?.[0] || null;
-                    }
-                    if (!existingPerson && persoonData.type === 'tenant') {
-                        // Only one main tenant per dossier — match by role alone.
-                        const { data: existing } = await supabase
-                            .from('personen')
-                            .select('id')
-                            .eq('dossier_id', dossierId)
-                            .eq('type', 'tenant')
-                            .limit(1);
-                        existingPerson = existing?.[0] || null;
-                    }
-                    if (!existingPerson && (voornaam || achternaam)) {
-                        // Co-tenant / guarantor without phone — match by name.
-                        const { data: existing } = await supabase
-                            .from('personen')
-                            .select('id')
-                            .eq('dossier_id', dossierId)
-                            .eq('type', persoonData.type)
-                            .eq('voornaam', voornaam)
-                            .eq('achternaam', achternaam)
-                            .limit(1);
-                        existingPerson = existing?.[0] || null;
-                    }
-
-                    if (existingPerson) {
-                        // Already exists - update instead of inserting
-                        persoon.supabaseId = existingPerson.id;
-                        await supabase
-                            .from('personen')
-                            .update(persoonData)
-                            .eq('id', existingPerson.id);
-                    } else {
-                        // Don't create empty placeholder rows. A person is only
-                        // worth inserting once it has at least one identifying
-                        // field — otherwise the form has just rendered an empty
-                        // co-tenant/guarantor card and we'd be persisting noise.
-                        const hasMeaningfulData =
-                            voornaam || achternaam ||
-                            persoonData.telefoon || persoonData.email ||
-                            persoonData.werk_status || persoonData.bruto_maandinkomen ||
-                            persoonData.huidige_adres || persoonData.postcode ||
-                            persoonData.woonplaats;
-                        if (!hasMeaningfulData) {
-                            continue;
-                        }
-                        const { data, error } = await supabase
-                            .from('personen')
-                            .insert({ ...persoonData, created_at: new Date().toISOString() })
-                            .select('id')
-                            .single();
-
-                        if (error) {
-                            console.error('Error inserting persoon:', error);
-                        } else {
-                            // Store the supabaseId so we can update next time
-                            persoon.supabaseId = data.id;
-                        }
-                    }
-                }
+const collectPersonFilePaths = (persoon) => {
+    const paths = [];
+    for (const d of persoon?.documenten || []) {
+        if (d?.file?.filePath) paths.push(d.file.filePath);
+        if (d?.filePath) paths.push(d.filePath);
+        if (Array.isArray(d?.files)) {
+            for (const f of d.files) {
+                if (f?.filePath) paths.push(f.filePath);
             }
         }
-
-        // Removals are handled only by the explicit Remove flow
-        // (deletePersonFromSupabase / deleteDocument). saveAanvraagData no
-        // longer diffs DB vs local state — that diff was destroying co-tenant
-        // and guarantor rows (and their docs) whenever a save fired with
-        // partial form state, e.g. after the page rehydrated from Salesforce
-        // (which loads with supabaseId=null) or re-mounted mid-load.
-
-        return { ok: true, personen: formData.personen };
-    } catch (error) {
-        console.error('Error in saveAanvraagData:', error);
-        return { ok: false, error: 'Failed to save form data' };
     }
+    return paths.filter(Boolean);
 };
 
 /**
- * Load Aanvraag form data from Supabase
- * @param {string} dossierId - The dossier ID
- * @returns {Promise<{ok: boolean, data?: Object, error?: string}>}
- */
-export const loadAanvraagData = async (dossierId) => {
-    try {
-        if (!supabase) {
-            console.log('[Mock] loadAanvraagData for:', dossierId);
-            return { ok: true, data: null };
-        }
-
-        // Fetch dossier with bid data
-        const { data: dossier, error: dossierError } = await supabase
-            .from('dossiers')
-            .select('*')
-            .eq('id', dossierId)
-            .single();
-
-        if (dossierError) {
-            console.error('Error fetching dossier:', dossierError);
-            return { ok: false, error: dossierError.message };
-        }
-
-        // Fetch personen
-        const { data: personen, error: personenError } = await supabase
-            .from('personen')
-            .select('*')
-            .eq('dossier_id', dossierId);
-
-        if (personenError) {
-            console.error('Error fetching personen:', personenError);
-            return { ok: false, error: personenError.message };
-        }
-
-        // Fetch all documents for these personen
-        const personenIds = personen?.map(p => p.id) || [];
-        let allDocuments = [];
-
-        if (personenIds.length > 0) {
-            const { data: documenten, error: documentenError } = await supabase
-                .from('documenten')
-                .select('*')
-                .in('persoon_id', personenIds);
-
-            if (!documentenError) {
-                allDocuments = documenten || [];
-            } else {
-                console.warn('Error fetching documents:', documentenError);
-            }
-        }
-
-        // Transform personen data back to Aanvraag format
-        const transformedPersonen = personen?.map(p => {
-            // Get documents for this person and group by type
-            const persoonDocsRaw = allDocuments.filter(doc => doc.persoon_id === p.id);
-
-            // Group documents by type
-            const documentsByType = {};
-            persoonDocsRaw.forEach(doc => {
-                if (!documentsByType[doc.type]) {
-                    documentsByType[doc.type] = [];
-                }
-                documentsByType[doc.type].push({
-                    id: doc.id,
-                    type: doc.type,
-                    name: doc.bestandsnaam,
-                    fileName: doc.bestandsnaam,
-                    filePath: doc.bestandspad,
-                    status: doc.status === 'pending' ? 'ontvangen' : doc.status,
-                    uploadedAt: doc.uploaded_at
-                });
-            });
-
-            // Transform grouped documents into the expected format
-            // Check which document types are multi-file (e.g., 'loonstroken')
-            const allDocTypes = Object.values(documentsByWorkStatus).flat();
-            const multiFileTypes = allDocTypes
-                .filter(doc => doc.multiFile === true)
-                .map(doc => doc.type);
-
-            const persoonDocuments = Object.entries(documentsByType).map(([type, docs]) => {
-                // If it's a known multi-file type OR there are multiple files of this type, treat as multi-file
-                if (multiFileTypes.includes(type) || docs.length > 1) {
-                    // Multi-file document
-                    return {
-                        type,
-                        files: docs,
-                        status: docs.length > 0 ? 'ontvangen' : 'ontbreekt'
-                    };
-                } else {
-                    // Single-file document - use the first (and only) document
-                    return {
-                        type,
-                        file: docs[0],
-                        status: docs[0]?.status || 'ontvangen'
-                    };
-                }
-            });
-
-            // Convert income - handle null, undefined, 0, and numeric values
-            let inkomenValue = '';
-            if (p.bruto_maandinkomen != null) {
-                // Convert to string, handling both number and string types
-                inkomenValue = String(p.bruto_maandinkomen);
-            }
-
-            return {
-                persoonId: `p${p.id}`,
-                supabaseId: p.id, // Store for updates
-                naam: `${p.voornaam || ''} ${p.achternaam || ''}`.trim(),
-                email: p.email || '',
-                telefoon: p.telefoon || '',
-                rol: p.rol || (p.type === 'tenant' ? 'Hoofdhuurder' :
-                    p.type === 'co_tenant' ? 'Medehuurder' : 'Garantsteller'),
-                werkstatus: p.werk_status,
-                inkomen: inkomenValue,
-                adres: p.huidige_adres || '',
-                postcode: p.postcode || '',
-                woonplaats: p.woonplaats || '',
-                linkedToPersoonId: p.linked_to_persoon_id ? `p${p.linked_to_persoon_id}` : null,
-                documenten: persoonDocuments,
-                docsCompleet: persoonDocuments.length > 0 // Mark as complete if has docs
-            };
-        }) || [];
-
-        return {
-            ok: true,
-            data: {
-                bidAmount: dossier.bid_amount || 0,
-                startDate: dossier.start_date || '',
-                motivation: dossier.motivation || '',
-                monthsAdvance: dossier.months_advance || 0,
-                propertyAddress: dossier.property_address || '',
-                personen: transformedPersonen
-            }
-        };
-    } catch (error) {
-        console.error('Error in loadAanvraagData:', error);
-        return { ok: false, error: 'Failed to load form data' };
-    }
-};
-
-/**
- * Delete a person and their documents from Supabase
- * Also removes from the main tenant's co_tenants JSONB array in accounts
- * @param {string} supabaseId - The person's ID in personen table
- * @param {string} accountId - The main tenant's account ID (for co_tenants cleanup)
- * @param {string|null} linkedAccountId - The person's own account ID in accounts table
+ * Remove a person from the dossier. Salesforce holds the canonical personen
+ * list (and learns about the removal on the next submit), so this only
+ * cleans Supabase-side artifacts: their files in the bucket and their entry
+ * in the main tenant's `accounts.co_tenants` JSONB.
+ *
+ * @param {Object} persoon - The person object from the form's React state
+ * @param {string|null} accountId - Main tenant's account ID (for co_tenants JSONB cleanup)
  * @returns {Promise<{ok: boolean, error?: string}>}
  */
-export const deletePersonFromSupabase = async (supabaseId, accountId, linkedAccountId) => {
+export const deletePersonFromSupabase = async (persoon, accountId) => {
     try {
         if (!supabase) {
-            console.log('[Mock] deletePersonFromSupabase:', supabaseId);
+            console.log('[Mock] deletePersonFromSupabase:', persoon?.persoonId);
             return { ok: true };
         }
 
-        // 1. Delete all documents for this person (files from storage + metadata)
-        const { data: docs } = await supabase
-            .from('documenten')
-            .select('id, bestandspad')
-            .eq('persoon_id', supabaseId);
-
-        if (docs && docs.length > 0) {
-            // Delete files from storage
-            const filePaths = docs.map(d => d.bestandspad).filter(Boolean);
-            if (filePaths.length > 0) {
-                await supabase.storage
-                    .from('dossier-documents')
-                    .remove(filePaths);
+        const filePaths = collectPersonFilePaths(persoon);
+        if (filePaths.length > 0) {
+            const { error: storageError } = await supabase.storage
+                .from('dossier-documents')
+                .remove(filePaths);
+            if (storageError) {
+                console.warn('[aanvraagDataService] Storage cleanup error:', storageError.message);
             }
-
-            // Delete document metadata
-            await supabase
-                .from('documenten')
-                .delete()
-                .eq('persoon_id', supabaseId);
         }
 
-        // 2. Delete the person from personen table
-        const { error: deleteError } = await supabase
-            .from('personen')
-            .delete()
-            .eq('id', supabaseId);
+        const linkedAccountId = persoon?.accountId || null;
 
-        if (deleteError) {
-            console.error('Error deleting persoon:', deleteError);
-            return { ok: false, error: deleteError.message };
-        }
-
-        // 3. Remove from main tenant's co_tenants JSONB array
         if (accountId && linkedAccountId) {
             const { data: mainAcc } = await supabase
                 .from('accounts')
@@ -585,7 +258,6 @@ export const deletePersonFromSupabase = async (supabaseId, accountId, linkedAcco
             }
         }
 
-        // 4. Clean up the linked account (unlink it from main tenant)
         if (linkedAccountId) {
             await supabase
                 .from('accounts')
@@ -596,7 +268,7 @@ export const deletePersonFromSupabase = async (supabaseId, accountId, linkedAcco
                 .eq('id', linkedAccountId);
         }
 
-        console.log('[aanvraagDataService] ✓ Deleted person and documents:', supabaseId);
+        console.log('[aanvraagDataService] ✓ Cleaned storage + account links for:', persoon?.persoonId);
         return { ok: true };
     } catch (error) {
         console.error('Error in deletePersonFromSupabase:', error);

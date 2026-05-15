@@ -39,27 +39,6 @@ const GuarantorCard = ({
         inkomen: persoon.inkomen != null && persoon.inkomen !== '' ? persoon.inkomen.toString() : '',
     });
 
-    // Re-sync local form state when the underlying persoon is freshly loaded
-    // from the DB (supabaseId becomes available). Don't depend on individual
-    // fields — that loop is `setFormData → onFormDataChange → parent setData
-    // → new persoon prop → setFormData → repeat`.
-    const prevSupabaseIdRef = useRef(persoon.supabaseId);
-    useEffect(() => {
-        if (persoon.supabaseId && persoon.supabaseId !== prevSupabaseIdRef.current) {
-            prevSupabaseIdRef.current = persoon.supabaseId;
-            setFormData({
-                naam: persoon.naam || '',
-                email: persoon.email || '',
-                telefoon: persoon.telefoon || '',
-                adres: persoon.adres || '',
-                postcode: persoon.postcode || '',
-                woonplaats: persoon.woonplaats || '',
-                inkomen: persoon.inkomen != null && persoon.inkomen !== '' ? persoon.inkomen.toString() : '',
-            });
-            if (persoon.werkstatus) setWorkStatus(persoon.werkstatus);
-        }
-    }, [persoon.supabaseId]); // eslint-disable-line react-hooks/exhaustive-deps
-
     const handleInputChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
