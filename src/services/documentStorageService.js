@@ -11,25 +11,43 @@ const sanitizePhoneForPath = (phone) => {
 };
 
 /**
- * Upload a document to Supabase Storage and save metadata.
- * Documents are stored at: {phoneNumber}/{docType}.{ext}
- * For multi-file types, a file index is appended: {phoneNumber}/{docType}_{index}.{ext}
+ * Build the storage path a document will live at. Pulled out so callers can
+ * compute the path the same way uploadDocument would, without uploading.
+ */
+const buildStoragePath = (docType, fileExt, phoneNumber, fileIndex, personRole, mainTenantPhone) => {
+    const sanitizedPhone = sanitizePhoneForPath(phoneNumber);
+    const fileBaseName = fileIndex !== null && fileIndex !== undefined
+        ? `${docType}_${fileIndex + 1}`
+        : docType;
+
+    let subFolder = '';
+    if (personRole === 'Medehuurder') subFolder = 'co-tenant/';
+    else if (personRole === 'Garantsteller') subFolder = 'guarantor/';
+
+    const folderPhone = (subFolder && mainTenantPhone)
+        ? sanitizePhoneForPath(mainTenantPhone)
+        : sanitizedPhone;
+
+    return `${folderPhone}/${subFolder}${fileBaseName}.${fileExt}`;
+};
+
+/**
+ * Upload a document to Supabase Storage. Document metadata is held in React
+ * state on the form (and pushed to Salesforce on submit) — no `documenten`
+ * table writes happen here. The bucket is the only Supabase metadata.
  *
- * @param {string} persoonId - The person (supabase ID) to associate the document with
- * @param {string} dossierId - The dossier ID
  * @param {string} docType - Document type (e.g., 'id_bewijs', 'loonstroken')
  * @param {File} file - The file to upload
  * @param {string} phoneNumber - The person's phone number (required for storage path)
- * @param {string} [accountId] - The CRM account ID (optional)
  * @param {number} [fileIndex] - Index for multi-file uploads (0-based), omit for single-file
  * @param {string} [personRole] - Role of the person ('Hoofdhuurder', 'Medehuurder', 'Garantsteller')
  * @param {string} [mainTenantPhone] - Main tenant's phone number (used as parent folder for co-tenants/guarantors)
  * @returns {Promise<{ok: boolean, document?: Object, error?: string}>}
  */
-export const uploadDocument = async (persoonId, dossierId, docType, file, phoneNumber, accountId = null, fileIndex = null, personRole = null, mainTenantPhone = null) => {
+export const uploadDocument = async (docType, file, phoneNumber, fileIndex = null, personRole = null, mainTenantPhone = null) => {
     try {
         if (!supabase) {
-            console.log('[Mock] uploadDocument:', { persoonId, docType, fileName: file.name });
+            console.log('[Mock] uploadDocument:', { docType, fileName: file.name });
             return {
                 ok: true,
                 document: {
@@ -45,28 +63,12 @@ export const uploadDocument = async (persoonId, dossierId, docType, file, phoneN
             return { ok: false, error: 'Phone number is required for document storage' };
         }
 
-        // Create phone-based file path: {sanitizedPhone}/{docType}.{ext}
-        const sanitizedPhone = sanitizePhoneForPath(phoneNumber);
         const fileExt = file.name.split('.').pop();
+        const storagePath = buildStoragePath(docType, fileExt, phoneNumber, fileIndex, personRole, mainTenantPhone);
+        const fileBaseName = storagePath.split('/').pop();
 
-        // For multi-file types, append index; otherwise use docType directly
-        const fileBaseName = fileIndex !== null && fileIndex !== undefined
-            ? `${docType}_${fileIndex + 1}`
-            : docType;
-
-        // Determine sub-folder based on person role
-        let subFolder = '';
-        if (personRole === 'Medehuurder') subFolder = 'co-tenant/';
-        else if (personRole === 'Garantsteller') subFolder = 'guarantor/';
-
-        // Use main tenant's phone as parent folder for co-tenants/guarantors
-        const folderPhone = (subFolder && mainTenantPhone)
-            ? sanitizePhoneForPath(mainTenantPhone)
-            : sanitizedPhone;
-        const storagePath = `${folderPhone}/${subFolder}${fileBaseName}.${fileExt}`;
-
-        // Upload file to Storage (upsert: true to allow replacing existing files)
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        // upsert: true so a re-upload of the same slot replaces the previous file in place.
+        const { error: uploadError } = await supabase.storage
             .from('dossier-documents')
             .upload(storagePath, file, {
                 cacheControl: '3600',
@@ -78,57 +80,25 @@ export const uploadDocument = async (persoonId, dossierId, docType, file, phoneN
             return { ok: false, error: uploadError.message };
         }
 
-        // Get public URL
         const { data: urlData } = supabase.storage
             .from('dossier-documents')
             .getPublicUrl(storagePath);
 
-        // Remove any existing documenten row for this exact storage path so a
-        // re-upload (or a fresh session that re-creates the persoon row)
-        // replaces the previous DB entry instead of accumulating duplicates.
-        // Storage already upserted the file in place above.
-        await supabase
-            .from('documenten')
-            .delete()
-            .eq('bestandspad', storagePath);
-
-        // Save metadata to documenten table (includes phone_number)
-        const { data: docData, error: dbError } = await supabase
-            .from('documenten')
-            .insert({
-                persoon_id: persoonId,
-                phone_number: phoneNumber,
-                type: docType,
-                bestandsnaam: `${fileBaseName}.${fileExt}`,
-                bestandspad: storagePath,
-                status: 'ontvangen',
-                uploaded_at: new Date().toISOString()
-            })
-            .select()
-            .single();
-
-        if (dbError) {
-            // If DB insert fails, delete the uploaded file
-            await supabase.storage.from('dossier-documents').remove([storagePath]);
-            console.error('Error saving document metadata:', dbError);
-            return { ok: false, error: dbError.message };
-        }
-
-        // Note: accounts.documents and documentation_status are now synced
-        // automatically via the DB trigger sync_accounts_from_dossier_data()
-
         return {
             ok: true,
             document: {
-                id: docData.id,
-                type: docData.type,
+                // Use the storage path as the stable id — there is no longer a
+                // `documenten` row to point at. The form keeps this in React
+                // state and forwards it to Salesforce on submit.
+                id: storagePath,
+                type: docType,
                 name: file.name,
-                fileName: docData.bestandsnaam,
-                filePath: docData.bestandspad,
+                fileName: fileBaseName,
+                filePath: storagePath,
                 publicUrl: urlData.publicUrl,
-                status: docData.status,
+                status: 'ontvangen',
                 size: file.size,
-                uploadedAt: docData.uploaded_at
+                uploadedAt: new Date().toISOString()
             }
         };
     } catch (error) {
@@ -138,50 +108,29 @@ export const uploadDocument = async (persoonId, dossierId, docType, file, phoneN
 };
 
 /**
- * Delete a document from Supabase Storage and remove metadata
- * @param {string} documentId - The document ID from documenten table
+ * Delete a document from Supabase Storage. Caller passes the storage path
+ * directly — there's no `documenten` row to look it up from anymore.
+ * @param {string} filePath - The storage path inside the dossier-documents bucket
  * @returns {Promise<{ok: boolean, error?: string}>}
  */
-export const deleteDocument = async (documentId) => {
+export const deleteDocument = async (filePath) => {
     try {
         if (!supabase) {
-            console.log('[Mock] deleteDocument:', documentId);
+            console.log('[Mock] deleteDocument:', filePath);
             return { ok: true };
         }
 
-        // Get document metadata to find file path
-        const { data: docData, error: fetchError } = await supabase
-            .from('documenten')
-            .select('bestandspad')
-            .eq('id', documentId)
-            .single();
-
-        if (fetchError) {
-            console.error('Error fetching document:', fetchError);
-            return { ok: false, error: fetchError.message };
+        if (!filePath) {
+            return { ok: false, error: 'Missing filePath' };
         }
 
-        // Delete from storage
-        if (docData.bestandspad) {
-            const { error: storageError } = await supabase.storage
-                .from('dossier-documents')
-                .remove([docData.bestandspad]);
+        const { error: storageError } = await supabase.storage
+            .from('dossier-documents')
+            .remove([filePath]);
 
-            if (storageError) {
-                console.warn('Error deleting from storage:', storageError);
-                // Continue anyway to delete metadata
-            }
-        }
-
-        // Delete metadata
-        const { error: dbError } = await supabase
-            .from('documenten')
-            .delete()
-            .eq('id', documentId);
-
-        if (dbError) {
-            console.error('Error deleting document metadata:', dbError);
-            return { ok: false, error: dbError.message };
+        if (storageError) {
+            console.warn('Error deleting from storage:', storageError);
+            return { ok: false, error: storageError.message };
         }
 
         return { ok: true };
@@ -192,29 +141,23 @@ export const deleteDocument = async (documentId) => {
 };
 
 /**
- * Replace an existing document (delete old, upload new)
- * @param {string} oldDocumentId - The existing document ID to replace
- * @param {string} persoonId - The person (supabase ID)
- * @param {string} dossierId - The dossier ID
+ * Replace an existing document (delete old, upload new).
+ * @param {string} oldFilePath - Storage path of the file being replaced
  * @param {string} docType - Document type
  * @param {File} newFile - The new file to upload
  * @param {string} phoneNumber - The person's phone number
- * @param {string} [accountId] - The CRM account ID (optional)
  * @param {number} [fileIndex] - Index for multi-file uploads (optional)
  * @param {string} [personRole] - Role of the person
  * @param {string} [mainTenantPhone] - Main tenant's phone number
  * @returns {Promise<{ok: boolean, document?: Object, error?: string}>}
  */
-export const replaceDocument = async (oldDocumentId, persoonId, dossierId, docType, newFile, phoneNumber, accountId = null, fileIndex = null, personRole = null, mainTenantPhone = null) => {
+export const replaceDocument = async (oldFilePath, docType, newFile, phoneNumber, fileIndex = null, personRole = null, mainTenantPhone = null) => {
     try {
-        // Delete the old document
-        const deleteResult = await deleteDocument(oldDocumentId);
+        const deleteResult = await deleteDocument(oldFilePath);
         if (!deleteResult.ok) {
             return deleteResult;
         }
-
-        // Upload the new document
-        return await uploadDocument(persoonId, dossierId, docType, newFile, phoneNumber, accountId, fileIndex, personRole, mainTenantPhone);
+        return await uploadDocument(docType, newFile, phoneNumber, fileIndex, personRole, mainTenantPhone);
     } catch (error) {
         console.error('Error in replaceDocument:', error);
         return { ok: false, error: 'Failed to replace document' };

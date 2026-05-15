@@ -44,29 +44,6 @@ const TenantFormSection = ({
     const [uploadMethod, setUploadMethod] = useState(null);
     const [workStatus, setWorkStatus] = useState(persoon.werkstatus || null);
 
-    // Sync formData and workStatus only when data is loaded from DB (supabaseId changes)
-    // Do NOT depend on individual fields to avoid infinite update loops:
-    //   formData change → onFormDataChange → parent setState → new persoon prop → setFormData → repeat
-    const prevSupabaseIdRef = React.useRef(persoon.supabaseId);
-    useEffect(() => {
-        // Only sync when supabaseId is newly set (data loaded from DB)
-        if (persoon.supabaseId && persoon.supabaseId !== prevSupabaseIdRef.current) {
-            prevSupabaseIdRef.current = persoon.supabaseId;
-            setFormData({
-                naam: persoon.naam || '',
-                email: persoon.email || '',
-                telefoon: persoon.telefoon || '',
-                adres: persoon.adres || '',
-                postcode: persoon.postcode || '',
-                woonplaats: persoon.woonplaats || '',
-                inkomen: persoon.inkomen != null && persoon.inkomen !== '' ? persoon.inkomen.toString() : ''
-            });
-            if (persoon.werkstatus) {
-                setWorkStatus(persoon.werkstatus);
-            }
-        }
-    }, [persoon.supabaseId]); // eslint-disable-line react-hooks/exhaustive-deps
-
     // Derived
     const requiredDocuments = getRequiredDocuments(workStatus, 'tenant');
     const getDoc = (type) => (persoon.documenten || []).find(d => d.type === type);

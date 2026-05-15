@@ -7,7 +7,7 @@ import { setLanguage } from '../features/ui/uiSlice';
 import { LogOut, CheckCircle, Plus, AlertCircle } from 'lucide-react';
 import { translations } from '../data/translations';
 import { useAuth } from '../contexts/AuthContext';
-import { loadAanvraagData, loadAanvraagDataFromSalesforce, saveAanvraagData, deletePersonFromSupabase } from '../services/aanvraagDataService';
+import { loadAanvraagDataFromSalesforce, deletePersonFromSupabase } from '../services/aanvraagDataService';
 import { uploadDocument, deleteDocument } from '../services/documentStorageService';
 import { getRequiredDocuments } from '../utils/documentRequirements';
 import { sendTenantDataEvent, sendDocumentUploadEvent, sendMultipleDocumentsEvent } from '../services/webhookService';
@@ -61,7 +61,7 @@ const Aanvraag = () => {
     const pathname = usePathname();
     const dispatch = useDispatch();
     const currentLang = useSelector((state) => state.ui.language);
-    const { logout, dossierId, phoneNumber, accountId, isMainTenant, userRole, persoonId: authPersoonId, isLoading: authLoading } = useAuth();
+    const { logout, dossierId, phoneNumber, accountId, isMainTenant, userRole, isLoading: authLoading } = useAuth();
     const [saveStatus, setSaveStatus] = useState('idle'); // 'idle', 'saving', 'saved', 'error'
 
     useEffect(() => {
@@ -118,12 +118,12 @@ const Aanvraag = () => {
                 return;
             }
 
-            // Salesforce is the source of truth. We only fall back to Supabase
-            // when SF is genuinely unreachable (network error, route 5xx).
-            // If SF responds "no dossier for this phone", the SF team wants
-            // the form to render empty rather than back-filling from Supabase
-            // — so loadAanvraagDataFromSalesforce returns ok:true with an
-            // empty form in that case and we use it as-is.
+            // Salesforce is the only source for personen + dossier data.
+            // When SF has no record for this phone the loader hands back an
+            // empty form. When SF is genuinely unreachable we surface that
+            // rather than reading stale Supabase metadata — the dossiers /
+            // personen / documenten tables are no longer the source of truth
+            // for the form; only the storage bucket is.
             let result = null;
             if (phoneNumber) {
                 result = await loadAanvraagDataFromSalesforce(phoneNumber);
@@ -133,11 +133,21 @@ const Aanvraag = () => {
                         phoneNumber
                     );
                 } else {
-                    console.log('[Aanvraag] Salesforce unreachable, falling back to Supabase:', result?.error);
+                    console.warn('[Aanvraag] Salesforce unreachable; rendering empty form:', result?.error);
                 }
             }
             if (!result?.ok) {
-                result = await loadAanvraagData(dossierId);
+                result = {
+                    ok: true,
+                    data: {
+                        bidAmount: 0,
+                        startDate: '',
+                        motivation: '',
+                        monthsAdvance: 0,
+                        propertyAddress: '',
+                        personen: [],
+                    },
+                };
             }
 
             // Build the Salesforce apartments catalog once so every apartment
@@ -215,48 +225,27 @@ const Aanvraag = () => {
                 }
             }
 
-            // For co-tenants: load the main tenant's apartments and bids
-            // Uses the shared dossierId to find the main tenant's phone, then their account
-            if (!isMainTenant && dossierId) {
+            // For co-tenants: resolve the main tenant's account via the
+            // accounts.linked_account_id chain (we no longer query dossiers
+            // for their phone — the dossier table isn't the source of truth
+            // anymore).
+            if (!isMainTenant && accountId) {
                 try {
-                    // The dossier's phone_number belongs to the main tenant
-                    const { data: dossierRow } = await sb
-                        .from('dossiers')
-                        .select('phone_number')
-                        .eq('id', dossierId)
-                        .single();
-
                     let mainAccountData = null;
 
-                    if (dossierRow?.phone_number) {
-                        const mainPhone = dossierRow.phone_number.replace(/\s+/g, '');
-                        // Find the main tenant's account by their phone
-                        const { data: mainAccRow } = await sb
+                    const { data: myAcc } = await sb
+                        .from('accounts')
+                        .select('linked_account_id')
+                        .eq('id', accountId)
+                        .single();
+
+                    if (myAcc?.linked_account_id) {
+                        const { data: linkedAcc } = await sb
                             .from('accounts')
                             .select('id, apartment_selected')
-                            .or(`whatsapp_number.eq.${mainPhone},whatsapp_number.eq.${dossierRow.phone_number}`)
-                            .limit(1)
-                            .maybeSingle();
-
-                        mainAccountData = mainAccRow;
-                    }
-
-                    // Fallback: try via linked_account_id if we have an accountId
-                    if (!mainAccountData && accountId) {
-                        const { data: myAcc } = await sb
-                            .from('accounts')
-                            .select('linked_account_id')
-                            .eq('id', accountId)
+                            .eq('id', myAcc.linked_account_id)
                             .single();
-
-                        if (myAcc?.linked_account_id) {
-                            const { data: linkedAcc } = await sb
-                                .from('accounts')
-                                .select('id, apartment_selected')
-                                .eq('id', myAcc.linked_account_id)
-                                .single();
-                            mainAccountData = linkedAcc;
-                        }
+                        mainAccountData = linkedAcc;
                     }
 
                     if (mainAccountData?.apartment_selected?.length > 0) {
@@ -469,34 +458,16 @@ const Aanvraag = () => {
     const saveTimeoutRef = useRef(null);
 
     const autoSave = useCallback(async () => {
-        if (!dossierId || !data) return;
+        if (!data) return;
 
         setSaveStatus('saving');
 
-        // Use first apartment's bid for dossier-level save (backward compat)
-        const firstPand = data.panden?.[0] || data.pand;
-        const firstBid = firstPand?.apartmentId ? (bidAmounts[firstPand.apartmentId] || 0) : 0;
-        const allAddresses = (data.panden || []).map(p => p.adres).filter(Boolean).join(', ');
-
-        const formData = {
-            bidAmount: firstBid,
-            startDate,
-            motivation,
-            monthsAdvance,
-            propertyAddress: allAddresses || data.pand?.adres || '',
-            personen: data.personen || []
-        };
-
-        const result = await saveAanvraagData(dossierId, formData);
-
-        // Also save per-apartment bids to accounts.apartment_selected.
-        // Only the main tenant persists this — co-tenants and guarantors view
-        // the main tenant's pre-filled apartment/bid until they explicitly
-        // change the apartment via the /appartementen page (which writes to
-        // their own account directly). Otherwise the autoSave would freeze
-        // stale main-tenant data into the co-tenant's account and the
-        // pre-fill would never refresh.
-        if (result.ok && accountId && data.panden?.length > 0 && isMainTenant) {
+        // Persist per-apartment bids to accounts.apartment_selected so the
+        // co-tenant/guarantor view of the main tenant's selection stays
+        // current. Only the main tenant writes here — co-tenants/guarantors
+        // would otherwise freeze stale main-tenant data into their own
+        // account and the pre-fill would never refresh.
+        if (accountId && data.panden?.length > 0 && isMainTenant) {
             try {
                 const { supabase: sb } = await import('../integrations/supabase/client');
                 const updatedSelected = data.panden.map(p => ({
@@ -517,73 +488,43 @@ const Aanvraag = () => {
             }
         }
 
-        // After successful DB save, sync back any new supabaseIds to state
-        if (result.ok && result.personen) {
-            const needsUpdate = result.personen.some((p, i) =>
-                p.supabaseId && (!data.personen[i]?.supabaseId || data.personen[i].supabaseId !== p.supabaseId)
-            );
-            if (needsUpdate) {
-                setData(prev => {
-                    if (!prev) return prev;
-                    const updatedPersonen = prev.personen.map(person => {
-                        const saved = result.personen.find(p => p.persoonId === person.persoonId);
-                        if (saved?.supabaseId && !person.supabaseId) {
-                            return { ...person, supabaseId: saved.supabaseId };
-                        }
-                        return person;
-                    });
-                    return { ...prev, personen: updatedPersonen };
-                });
+        // Fire the per-person n8n event (fire-and-forget). Salesforce gets the
+        // canonical personen list on submit; this hook is only for CRM
+        // automation and never blocks the form.
+        const personen = data.personen || [];
+        personen.forEach((p) => {
+            sendTenantDataEvent({
+                personId: p.persoonId,
+                naam: p.naam,
+                email: p.email,
+                adres: p.adres,
+                postcode: p.postcode,
+                woonplaats: p.woonplaats,
+                inkomen: p.inkomen,
+                workStatus: p.werkstatus,
+                rol: p.rol,
+                telefoon: p.telefoon
+            }).catch(() => { });
+        });
+
+        // Best-effort 'Pending' marker on the accounts row when the user has
+        // started filling the form but no docs are uploaded yet. Once docs
+        // are complete the upload handler flips it to 'Complete'.
+        const hasData = !!(
+            Object.values(bidAmounts).some(b => b > 0) ||
+            startDate !== '' ||
+            (personen[0] && personen[0].naam?.trim() !== '')
+        );
+        if (hasData) {
+            const someDocs = personen.some(p => p.documenten?.length > 0);
+            if (!someDocs && accountId) {
+                updateAccountDocumentationStatus('Pending').catch(console.error);
             }
         }
 
-        // After successful DB save, also send data to n8n (fire-and-forget so webhook failures never block saving).
-        if (result.ok) {
-            const personen = (data.personen || []);
-
-            personen.forEach((p) => {
-                // Avoid PII in logs; webhook payload itself may contain PII and is required by product.
-                sendTenantDataEvent({
-                    personId: p.supabaseId || p.persoonId,
-                    naam: p.naam,
-                    email: p.email,
-                    adres: p.adres,
-                    postcode: p.postcode,
-                    woonplaats: p.woonplaats,
-                    inkomen: p.inkomen,
-                    workStatus: p.werkstatus,
-                    rol: p.rol,
-                    telefoon: p.telefoon
-                }).catch(() => { });
-            });
-        }
-
-        if (result.ok) {
-            // Check progress of page 1 to set 'Partial'
-            // If they have filled some core details but haven't uploaded docs yet
-            const hasData = !!(
-                Object.values(bidAmounts).some(b => b > 0) ||
-                startDate !== '' ||
-                (data.personen && data.personen[0] && data.personen[0].naam?.trim() !== '')
-            );
-
-            // We shouldn't override if docs are complete (Complete).
-            // This is just a best-effort set to Partial on autosave.
-            if (hasData) {
-                // Approximate completion check (avoids stale state dependency loop)
-                const someDocs = data.personen?.some(p => p.documenten?.length > 0);
-                if (!someDocs && accountId) {
-                    updateAccountDocumentationStatus('Pending').catch(console.error);
-                }
-            }
-
-            setSaveStatus('saved');
-            setTimeout(() => setSaveStatus('idle'), 2000);
-        } else {
-            setSaveStatus('error');
-            console.error('Auto-save failed:', result.error);
-        }
-    }, [dossierId, data, bidAmounts, startDate, motivation, monthsAdvance, accountId, isMainTenant, userRole]);
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+    }, [data, bidAmounts, startDate, motivation, monthsAdvance, accountId, isMainTenant]);
 
     // Trigger auto-save when data changes
     useEffect(() => {
@@ -672,46 +613,6 @@ const Aanvraag = () => {
             return progress.isDocsComplete === true;
         });
     };
-
-    /**
-     * Upsert all personen with their latest form data into Supabase.
-     * Called after all documents are uploaded so we store the final state.
-     */
-    const saveAllPersonsToSupabase = useCallback(async (personen) => {
-        const { supabase: sb } = await import('../integrations/supabase/client');
-        if (!sb || !dossierId) return;
-
-        for (const p of personen) {
-            if (!p.supabaseId) continue; // Skip persons not yet in DB
-            const nameParts = (p.naam || '').trim().split(' ');
-            const voornaam = nameParts[0] || '';
-            const achternaam = nameParts.slice(1).join(' ') || '';
-
-            const updates = {
-                voornaam,
-                achternaam,
-                email: p.email || null,
-                telefoon: p.telefoon || null,
-                werk_status: p.werkstatus || null,
-                bruto_maandinkomen: p.inkomen ? parseFloat(p.inkomen) : null,
-                huidige_adres: p.adres || null,
-                postcode: p.postcode || null,
-                woonplaats: p.woonplaats || null,
-                updated_at: new Date().toISOString(),
-            };
-
-            const { error } = await sb
-                .from('personen')
-                .update(updates)
-                .eq('id', p.supabaseId);
-
-            if (error) {
-                console.error('[Aanvraag] Error updating persoon:', p.supabaseId, error);
-            } else {
-                console.log('[Aanvraag] ✓ Saved persoon:', p.supabaseId);
-            }
-        }
-    }, [dossierId]);
 
     /**
      * Update accounts.documentation_status for the logged-in user.
@@ -803,79 +704,20 @@ const Aanvraag = () => {
             return;
         }
 
-        // Ensure person has a supabaseId - create in database if needed
-        let persoonSupabaseId = persoon.supabaseId;
-        if (!persoonSupabaseId) {
-            // Check if person has minimum required data (name is enough to create the record)
-            if (!persoon.naam) {
-                alert(currentLang === 'en' ? 'Please fill out at least the name before uploading documents' : 'Vul minstens de naam in voordat je documenten uploadt');
-                return;
-            }
-
-            // Create person in database
-            setSaveStatus('saving');
-            const nameParts = (persoon.naam || '').trim().split(' ');
-            const voornaam = nameParts[0] || '';
-            const achternaam = nameParts.slice(1).join(' ') || '';
-
-            const persoonData = {
-                dossier_id: dossierId,
-                type: persoon.rol === 'Hoofdhuurder' ? 'tenant' :
-                    persoon.rol === 'Medehuurder' ? 'co_tenant' : 'guarantor',
-                voornaam,
-                achternaam,
-                email: persoon.email || null,
-                telefoon: persoon.telefoon || null,
-                werk_status: persoon.werkstatus || null,
-                bruto_maandinkomen: persoon.inkomen ? parseFloat(persoon.inkomen) : null,
-                huidige_adres: persoon.adres || null,
-                postcode: persoon.postcode || null,
-                woonplaats: persoon.woonplaats || null,
-                rol: persoon.rol,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            };
-
-            const { supabase } = await import('../integrations/supabase/client');
-            if (supabase) {
-                const { data: newPersoon, error: insertError } = await supabase
-                    .from('personen')
-                    .insert(persoonData)
-                    .select('id')
-                    .single();
-
-                if (insertError) {
-                    console.error('Error creating person:', insertError);
-                    setSaveStatus('error');
-                    alert(`Failed to save person: ${insertError.message}`);
-                    return;
-                }
-
-                persoonSupabaseId = newPersoon.id;
-
-                // Update state with the new supabaseId
-                setData(prevData => {
-                    if (!prevData) return prevData;
-                    const updatedPersonen = prevData.personen.map(p => {
-                        if (p.persoonId === persoonId) {
-                            return { ...p, supabaseId: persoonSupabaseId };
-                        }
-                        return p;
-                    });
-                    return { ...prevData, personen: updatedPersonen };
-                });
-            } else {
-                // Mock mode - use a mock ID
-                persoonSupabaseId = 'mock-' + Date.now();
-            }
+        // Require at least a name before any file lands in the bucket. Without
+        // it the file would be associated with a nameless person on the next
+        // submit, which Salesforce rejects.
+        if (!persoon.naam) {
+            alert(currentLang === 'en' ? 'Please fill out at least the name before uploading documents' : 'Vul minstens de naam in voordat je documenten uploadt');
+            return;
         }
 
-        // Upload new files to Supabase
+        // Upload new files to Supabase storage. We no longer create a row in
+        // the personen table here — Salesforce learns about people on submit
+        // via the personen list the form sends inline.
         const uploadedDocs = [];
         if (filesToUpload.length > 0) {
-            // Resolve the phone number: prefer persoon.telefoon, fall back to dossier phoneNumber
             const docPhoneNumber = persoon.telefoon || phoneNumber;
-            const targetAccountId = persoon.accountId || (persoon.rol === 'Hoofdhuurder' ? accountId : null);
 
             // Resolve the main tenant's phone for sub-folder routing
             const hoofdhuurder = data.personen.find(p => p.rol === 'Hoofdhuurder');
@@ -889,7 +731,7 @@ const Aanvraag = () => {
             const useIndexedNames = filesToUpload.length > 1 || existingDocs.length > 0;
             const uploadPromises = filesToUpload.map((file, fi) => {
                 const fileIndex = useIndexedNames ? (existingDocs.length + fi) : null;
-                return uploadDocument(persoonSupabaseId, dossierId, type, file, docPhoneNumber, targetAccountId, fileIndex, persoon.rol, mainTenantPhone);
+                return uploadDocument(type, file, docPhoneNumber, fileIndex, persoon.rol, mainTenantPhone);
             });
 
             const results = await Promise.all(uploadPromises);
@@ -908,17 +750,17 @@ const Aanvraag = () => {
         // After successful upload, also send upload event(s) to n8n (fire-and-forget so webhook never blocks uploads).
         if (filesToUpload.length > 0) {
             console.log('[Aanvraag] Sending document upload to webhook:', {
-                personId: persoonSupabaseId,
+                personId: persoonId,
                 type,
                 fileCount: filesToUpload.length
             });
 
             if (filesToUpload.length === 1) {
-                sendDocumentUploadEvent(persoonSupabaseId, type, filesToUpload[0])
+                sendDocumentUploadEvent(persoonId, type, filesToUpload[0])
                     .then(() => console.log('[Aanvraag] ✓ Webhook call successful'))
                     .catch((err) => console.error('[Aanvraag] ✗ Webhook call failed:', err));
             } else {
-                sendMultipleDocumentsEvent(persoonSupabaseId, type, filesToUpload)
+                sendMultipleDocumentsEvent(persoonId, type, filesToUpload)
                     .then(() => console.log('[Aanvraag] ✓ Webhook call successful'))
                     .catch((err) => console.error('[Aanvraag] ✗ Webhook call failed:', err));
             }
@@ -941,7 +783,8 @@ const Aanvraag = () => {
             (existingDocs.length > 0);
 
         // Update local state with uploaded documents using callback form
-        // to preserve any concurrent state updates (e.g. supabaseId assignment)
+        // so we don't clobber concurrent state updates (e.g. form-field edits
+        // that fire while the upload is in flight).
         setData(prevData => {
             if (!prevData) return prevData;
             const updatedPersonen = prevData.personen.map(p => {
@@ -991,8 +834,6 @@ const Aanvraag = () => {
                 allPersonIds.every(id => tenantProgress[id]?.isDocsComplete === true);
 
             if (allNowComplete) {
-                console.log('[Aanvraag] All docs complete – saving persons to Supabase...');
-                saveAllPersonsToSupabase(updatedPersonen).catch(console.error);
                 updateAccountDocumentationStatus('Complete').catch(console.error);
             } else {
                 updateAccountDocumentationStatus('Pending').catch(console.error);
@@ -1022,14 +863,20 @@ const Aanvraag = () => {
         });
         setData({ ...data, personen: updatedPersonen });
 
-        // Delete from Supabase (storage + metadata)
-        if (doc?.file?.id) {
-            const result = await deleteDocument(doc.file.id);
-            if (!result.ok) {
-                console.error('[Aanvraag] Failed to delete document:', result.error);
+        // Remove the file(s) from the storage bucket. Multi-file slots carry
+        // an array under `files`; single-file slots either nest under `file`
+        // or live at the top level.
+        const filePaths = [];
+        if (Array.isArray(doc?.files)) {
+            for (const f of doc.files) {
+                if (f?.filePath) filePaths.push(f.filePath);
             }
-        } else if (doc?.id) {
-            const result = await deleteDocument(doc.id);
+        }
+        if (doc?.file?.filePath) filePaths.push(doc.file.filePath);
+        if (doc?.filePath) filePaths.push(doc.filePath);
+
+        for (const path of filePaths) {
+            const result = await deleteDocument(path);
             if (!result.ok) {
                 console.error('[Aanvraag] Failed to delete document:', result.error);
             }
@@ -1295,8 +1142,11 @@ const Aanvraag = () => {
     const handleRemovePerson = async (persoonId) => {
         const personToRemove = data.personen.find(p => p.persoonId === persoonId);
 
-        // Check if co-tenant is removing themselves — show confirmation
-        const isSelfRemoval = !isMainTenant && personToRemove?.supabaseId === authPersoonId;
+        // Self-removal is identified by phone match (see executeRemovePerson).
+        const normalizePhone = (s) => String(s || '').replace(/\D/g, '');
+        const isSelfRemoval = !isMainTenant
+            && normalizePhone(personToRemove?.telefoon) === normalizePhone(phoneNumber)
+            && normalizePhone(phoneNumber) !== '';
         if (isSelfRemoval) {
             setShowRemoveConfirm(persoonId);
             return;
@@ -1307,7 +1157,12 @@ const Aanvraag = () => {
 
     const executeRemovePerson = async (persoonId) => {
         const personToRemove = data.personen.find(p => p.persoonId === persoonId);
-        const isSelfRemoval = !isMainTenant && personToRemove?.supabaseId === authPersoonId;
+        // The form's persoonId is React-local (p1, p2, …); identify self-removal
+        // by matching the auth phone against the person's phone.
+        const normalizePhone = (s) => String(s || '').replace(/\D/g, '');
+        const isSelfRemoval = !isMainTenant
+            && normalizePhone(personToRemove?.telefoon) === normalizePhone(phoneNumber)
+            && normalizePhone(phoneNumber) !== '';
 
         // Remove from local state immediately
         setData({
@@ -1320,15 +1175,10 @@ const Aanvraag = () => {
             return updated;
         });
 
-        // Delete from Supabase if the person exists in DB
-        if (personToRemove?.supabaseId) {
-            const result = await deletePersonFromSupabase(
-                personToRemove.supabaseId,
-                accountId,
-                personToRemove.accountId || null
-            );
+        if (personToRemove) {
+            const result = await deletePersonFromSupabase(personToRemove, accountId);
             if (!result.ok) {
-                console.error('[Aanvraag] Failed to delete person from Supabase:', result.error);
+                console.error('[Aanvraag] Failed to clean person storage/account:', result.error);
             }
         }
 
@@ -1429,23 +1279,62 @@ const Aanvraag = () => {
         setIsSubmitting(true);
         setSaveStatus('saving');
 
-        // Save all person data to Supabase before triggering webhooks
-        if (data?.personen?.length) {
-            await saveAllPersonsToSupabase(data.personen);
-        }
-
         await updateAccountDocumentationStatus('Complete');
 
         // Fire the Salesforce documents-complete webhook (fire-and-forget so it never blocks navigation).
         // accountId may be null in useAuth() when the user signed up (Signup.jsx never sets it) or
-        // logged in before the matching accounts row existed — fall back to a phone-based lookup so
-        // the webhook still fires for those sessions.
+        // logged in before the matching accounts row existed — the edge function
+        // resolves it from the phone, so we just need to ship phone_number.
         const mainTenant = data.personen.find(p => p.rol === 'Hoofdhuurder');
         const firstPand = selectedPanden[0];
         const bidAmount =
             (firstPand?.apartmentId && bidAmounts[firstPand.apartmentId]) ||
             Object.values(bidAmounts).find(b => b > 0) ||
             0;
+
+        // Translate the form's personen + their attached documents into the
+        // shape forward-docs-to-salesforce expects. Only docs with a stored
+        // bucket path are forwarded — partial uploads in flight are ignored.
+        const personenPayload = (data.personen || []).map(p => {
+            const docs = [];
+            for (const d of p.documenten || []) {
+                if (Array.isArray(d.files)) {
+                    for (const f of d.files) {
+                        if (f?.filePath) {
+                            docs.push({
+                                type: d.type,
+                                file_path: f.filePath,
+                                file_name: f.fileName || f.name || null,
+                                status: f.status || 'ontvangen',
+                            });
+                        }
+                    }
+                } else {
+                    const f = d.file || d;
+                    if (f?.filePath) {
+                        docs.push({
+                            type: d.type,
+                            file_path: f.filePath,
+                            file_name: f.fileName || f.name || null,
+                            status: d.status || f.status || 'ontvangen',
+                        });
+                    }
+                }
+            }
+            return {
+                name: p.naam || '',
+                rol: p.rol || '',
+                phone_number: p.telefoon || null,
+                email: p.email || '',
+                werkstatus: p.werkstatus || '',
+                inkomen: p.inkomen ? Number(p.inkomen) : 0,
+                adres: p.adres || '',
+                postcode: p.postcode || '',
+                woonplaats: p.woonplaats || '',
+                documenten: docs,
+            };
+        });
+
         const sfPayload = {
             account_id: accountId,
             tenant_name: mainTenant?.naam || '',
@@ -1460,6 +1349,7 @@ const Aanvraag = () => {
             motivation: motivation || '',
             months_advance: monthsAdvance || 0,
             trigger_source: 'aanvraag',
+            personen: personenPayload,
         };
 
         // Account resolution (look up by phone, lazy-create if missing) happens
@@ -1494,17 +1384,6 @@ const Aanvraag = () => {
         } else {
             console.warn('[Aanvraag] Skipping Salesforce webhook – missing phone_number');
         }
-
-        // Save current form state synchronously so the LOI page sees the latest values
-        const formData = {
-            bidAmount: Object.values(bidAmounts).find(b => b > 0) || 0,
-            startDate,
-            motivation,
-            monthsAdvance,
-            propertyAddress: (data.panden || []).map(p => p.adres).filter(Boolean).join(', ') || data.pand?.adres || '',
-            personen: data.personen || []
-        };
-        await saveAanvraagData(dossierId, formData);
 
         // Store LOI data in sessionStorage for the next page
         if (typeof window !== 'undefined') {
@@ -1589,6 +1468,14 @@ const Aanvraag = () => {
 
     const alleHuurders = data.personen.filter(p => p.rol === 'Hoofdhuurder' || p.rol === 'Medehuurder');
     const garantstellers = data.personen.filter(p => p.rol === 'Garantsteller');
+    // Phone-based "is this the logged-in user?" check — the form and the auth
+    // context share only the phone number now that personen rows are gone.
+    const myPhoneDigits = String(phoneNumber || '').replace(/\D/g, '');
+    const isOwnPersoon = (p) => {
+        if (!myPhoneDigits) return false;
+        const phone = String(p?.telefoon || '').replace(/\D/g, '');
+        return !!phone && phone === myPhoneDigits;
+    };
 
     return (
         <div className={styles.pageContainer}>
@@ -1802,12 +1689,12 @@ const Aanvraag = () => {
                                 {alleHuurders.map((huurder) => {
                                     const linkedGuarantors = garantstellers.filter(g => g.linkedToPersoonId === huurder.persoonId);
                                     // Determine if this person's card is editable by the current user
-                                    const isOwnCard = !isMainTenant && huurder.supabaseId === authPersoonId;
+                                    const isOwnCard = !isMainTenant && isOwnPersoon(huurder);
                                     const huurderReadOnly = !isMainTenant && !isOwnCard;
                                     // Income is only visible on your own card
                                     const isViewingOwnTenantCard = isMainTenant
                                         ? huurder.rol === 'Hoofdhuurder'
-                                        : huurder.supabaseId === authPersoonId;
+                                        : isOwnPersoon(huurder);
                                     // Co-tenant can add guarantor for themselves
                                     const canAddGuarantor = isMainTenant || isOwnCard;
 
@@ -1828,11 +1715,11 @@ const Aanvraag = () => {
 
                                             {linkedGuarantors.map(g => {
                                                 // Co-tenant can edit: guarantor linked to their own card, or if they ARE the guarantor
-                                                const gIsOwn = !isMainTenant && g.supabaseId === authPersoonId;
+                                                const gIsOwn = !isMainTenant && isOwnPersoon(g);
                                                 const gLinkedToOwn = isOwnCard;
                                                 const gReadOnly = !isMainTenant && !gIsOwn && !gLinkedToOwn;
                                                 // Only the guarantor themselves can see their own income
-                                                const gIsself = g.supabaseId === authPersoonId;
+                                                const gIsself = isOwnPersoon(g);
                                                 return (
                                                     <div key={g.persoonId} className={styles.guarantorWrapper}>
                                                         <GuarantorFormSection
@@ -1867,9 +1754,9 @@ const Aanvraag = () => {
                                 {garantstellers
                                     .filter(g => !g.linkedToPersoonId || !alleHuurders.some(h => h.persoonId === g.linkedToPersoonId))
                                     .map(g => {
-                                        const gIsOwn = !isMainTenant && g.supabaseId === authPersoonId;
+                                        const gIsOwn = !isMainTenant && isOwnPersoon(g);
                                         const gReadOnly = !isMainTenant && !gIsOwn;
-                                        const gIsself = g.supabaseId === authPersoonId;
+                                        const gIsself = isOwnPersoon(g);
                                         return (
                                             <div key={g.persoonId} className={styles.guarantorWrapper}>
                                                 <GuarantorFormSection
@@ -1960,16 +1847,15 @@ const Aanvraag = () => {
                                 onClick={async () => {
                                     if (notifyingSent) return;
                                     try {
-                                        const { supabase: sb } = await import('../integrations/supabase/client');
-                                        const { data: dossierRow } = await sb
-                                            .from('dossiers')
-                                            .select('phone_number')
-                                            .eq('id', dossierId)
-                                            .single();
+                                        // Resolve the main tenant from what's already on the page
+                                        // (loaded from Salesforce). The dossiers/personen tables
+                                        // are no longer the source of truth for this lookup.
+                                        const mainTenantPerson = data?.personen?.find(p => p.rol === 'Hoofdhuurder');
+                                        const mainPhone = mainTenantPerson?.telefoon || '';
+                                        const mainTenantName = (mainTenantPerson?.naam || '').trim() || 'there';
+                                        const myPerson = data?.personen?.find(isOwnPersoon);
 
-                                        if (dossierRow?.phone_number) {
-                                            const myPerson = data?.personen?.find(p => p.supabaseId === authPersoonId);
-
+                                        if (mainPhone) {
                                             // Fire CRM webhook (non-blocking)
                                             try {
                                                 await fetch('https://davidvanwachem.app.n8n.cloud/webhook/get-agenda-page-details', {
@@ -1977,7 +1863,7 @@ const Aanvraag = () => {
                                                     headers: { 'Content-Type': 'application/json' },
                                                     body: JSON.stringify({
                                                         eventType: 'notify_main_tenant_to_submit',
-                                                        main_tenant_phone: dossierRow.phone_number,
+                                                        main_tenant_phone: mainPhone,
                                                         requester_name: myPerson?.naam || '',
                                                         requester_phone: phoneNumber,
                                                         role: userRole === 'co_tenant' ? 'Medehuurder' : 'Garantsteller',
@@ -1989,26 +1875,12 @@ const Aanvraag = () => {
                                                 console.warn('[Aanvraag] notify-main-tenant webhook failed (non-blocking):', err);
                                             }
 
-                                            // Send the "you_can_now_start_applying_to_apartments" template
-                                            // directly to the main tenant via Zoko.
                                             try {
-                                                // Look up main tenant name (Hoofdhuurder) via personen on the shared dossier.
-                                                const { data: mainTenantRow } = await sb
-                                                    .from('personen')
-                                                    .select('voornaam, achternaam')
-                                                    .eq('dossier_id', dossierId)
-                                                    .eq('rol', 'Hoofdhuurder')
-                                                    .limit(1)
-                                                    .maybeSingle();
-
-                                                const mainTenantName = [mainTenantRow?.voornaam, mainTenantRow?.achternaam]
-                                                    .filter(Boolean).join(' ').trim() || 'there';
-
                                                 const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
                                                 const applyLink = `${baseUrl}/appartementen`;
 
                                                 await sendReadyToApplyNotification({
-                                                    recipient: dossierRow.phone_number,
+                                                    recipient: mainPhone,
                                                     name: mainTenantName,
                                                     applyLink,
                                                 });

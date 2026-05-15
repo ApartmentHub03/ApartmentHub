@@ -2,19 +2,16 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 import { encodeBase64, decodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
-// Forwards all documents for an account to the Salesforce unified webhook.
-// Invoked by the DB trigger `trigger_salesforce_documents_complete_webhook`
-// whenever accounts.documentation_status flips to 'Complete'.
+// Forwards aanvraag/LOI submissions to the Salesforce unified webhook.
 //
-// One HTTP call per document so we never hit Salesforce's request-body limit.
-// Each call carries the document's PDF bytes as base64 plus the same person &
-// dossier metadata shipped in the original migration.
+// The caller (the form) sends the full personen list inline — each persoon
+// carries the documents they're about to submit, with bucket paths pointing
+// at the actual files. Salesforce is the source of truth for who/what is on
+// a dossier; this function is just the postman that ships the bytes.
 //
-// Column names map to the *live* schema (Dutch):
-//   documenten.bestandspad   -> file_path in payload
-//   documenten.bestandsnaam  -> file_name in payload
-//   personen.voornaam/achternaam -> person.name
-//   personen.telefoon        -> person.phone_number
+// One HTTP call per document so we never hit Salesforce's request-body limit,
+// followed by one `documents_complete` summary that lists every document
+// the caller sent.
 
 const SALESFORCE_URL =
     "https://apartmenthub--hubdev.sandbox.my.salesforce-sites.com/services/apexrest/unified/webhook?source=AptHub";
@@ -31,6 +28,29 @@ const roleMap: Record<string, string> = {
     Medehuurder: "co_tenant",
     Garantsteller: "guarantor",
 };
+
+// Doc payload shape sent by the form. `file_path` is the storage path
+// inside the dossier-documents bucket (no bucket prefix).
+interface InlineDoc {
+    type: string;
+    file_path: string;
+    file_name?: string | null;
+    status?: string | null;
+}
+
+interface InlinePerson {
+    name?: string | null;
+    rol?: string | null; // Dutch role from the form (Hoofdhuurder, etc.)
+    role?: string | null; // SF-style role, if the caller pre-mapped it
+    phone_number?: string | null;
+    email?: string | null;
+    werkstatus?: string | null;
+    inkomen?: number | string | null;
+    adres?: string | null;
+    postcode?: string | null;
+    woonplaats?: string | null;
+    documenten?: InlineDoc[] | null;
+}
 
 interface TriggerPayload {
     account_id?: string | null;
@@ -56,6 +76,10 @@ interface TriggerPayload {
     // can use this to differentiate the partial-application submit
     // ("aanvraag") from the signed-LOI submit ("letterofintent").
     trigger_source?: string | null;
+    // Personen + their documents, as held in the form's React state. This
+    // is the authoritative list for the submission — we no longer query
+    // Supabase metadata tables to discover who/what to send.
+    personen?: InlinePerson[] | null;
 }
 
 serve(async (req) => {
@@ -77,6 +101,7 @@ serve(async (req) => {
         const start_date = body.start_date ?? "";
         const motivation = body.motivation ?? "";
         const months_advance = body.months_advance ?? 0;
+        const personenInput = Array.isArray(body.personen) ? body.personen : [];
 
         if (!phone_number) {
             return json({ success: false, error: "Missing phone_number" }, 400);
@@ -87,12 +112,9 @@ serve(async (req) => {
             Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
         );
 
-        // Resolve or create the accounts row server-side. We do this here
-        // (inside the edge function on Supabase's own network) instead of
-        // in the Next.js API route so local Node networking issues don't
-        // affect the call. Zoko/CRM can later enrich the same row by
-        // whatsapp_number — accounts.account_role allows 'tenant' |
-        // 'co-tenant' | 'guarantor', so we use 'tenant' for self-provisioned rows.
+        // Resolve or create the accounts row. Accounts is the only Supabase
+        // metadata we still touch — it carries the salesforce_account_id and
+        // the cross-event batch_id that ties aanvraag + LOI together.
         let apartment_id: string = body.apartment_id ?? "";
         let storedBatchId: string | null = null;
 
@@ -157,19 +179,6 @@ serve(async (req) => {
             storedBatchId = (row as any)?.last_salesforce_batch_id ?? null;
         }
 
-        const { data: rows, error } = await supabase
-            .from("documenten")
-            .select(
-                "id, type, status, bestandsnaam, bestandspad, personen!inner(id, voornaam, achternaam, telefoon, email, werk_status, bruto_maandinkomen, huidige_adres, postcode, woonplaats, rol, dossier_id, dossiers!inner(id, phone_number, updated_at))"
-            )
-            .eq("personen.dossiers.phone_number", phone_number);
-
-        if (error) {
-            console.error("[forward-docs] Query failed:", error);
-            return json({ success: false, error: error.message }, 500);
-        }
-
-        const docs = rows ?? [];
         // Aanvraag and the follow-up letterofintent submission must share the
         // same batch_id so Salesforce can correlate them as one transaction.
         // Aanvraag mints a fresh id and persists it on the accounts row; later
@@ -201,10 +210,6 @@ serve(async (req) => {
             );
         }
         const timestamp = new Date().toISOString();
-        // Pull the dossier's updated_at as the canonical "last edit" time.
-        // Falls back to the request timestamp if the join didn't surface it.
-        const dossierUpdatedAt =
-            (docs[0] as any)?.personen?.dossiers?.updated_at || timestamp;
 
         // Optional signature handling (LOI submit only). Upload the PNG to
         // private storage as an audit copy, and forward the same bytes
@@ -236,45 +241,64 @@ serve(async (req) => {
                 console.error("[forward-docs] Signature upload failed:", sigErr.message);
             }
         }
-        const withFiles = docs.filter(
-            (d: any) => d.bestandspad && d.bestandspad.trim() !== ""
-        );
+
+        // Flatten the inline personen → docs into the per-doc work list, and
+        // build the accompanying summary entries. We keep the person object
+        // beside each doc so we can attach it to the per-doc payload below.
+        type DocWithPerson = {
+            doc: InlineDoc;
+            person: InlinePerson;
+        };
+        const allDocs: DocWithPerson[] = [];
+        for (const person of personenInput) {
+            const docs = Array.isArray(person.documenten) ? person.documenten : [];
+            for (const doc of docs) {
+                if (!doc?.file_path) continue;
+                allDocs.push({ doc, person });
+            }
+        }
+        const withFiles = allDocs.filter((entry) => entry.doc.file_path && entry.doc.file_path.trim() !== "");
 
         console.log(
-            `[forward-docs] account=${account_id} phone=${phone_number} total_docs=${docs.length} with_files=${withFiles.length}`
+            `[forward-docs] account=${account_id} phone=${phone_number} personen=${personenInput.length} total_docs=${allDocs.length} with_files=${withFiles.length}`
         );
 
-        const personMeta = (p: any) => ({
-            name: [p.voornaam, p.achternaam].filter(Boolean).join(" ").trim(),
-            phone_number: p.telefoon,
-            email: p.email ?? "",
-            werkstatus: p.werk_status ?? "",
-            inkomen: p.bruto_maandinkomen ?? 0,
-            adres: p.huidige_adres ?? "",
-            postcode: p.postcode ?? "",
-            woonplaats: p.woonplaats ?? "",
-            role: roleMap[p.rol] ?? p.rol,
-            server_id: p.dossiers?.id ?? p.dossier_id,
-        });
+        const personMeta = (p: InlinePerson) => {
+            const dutchRole = p.rol || "";
+            const sfRole = p.role || roleMap[dutchRole] || dutchRole || "";
+            return {
+                name: (p.name || "").trim(),
+                phone_number: p.phone_number ?? null,
+                email: p.email ?? "",
+                werkstatus: p.werkstatus ?? "",
+                inkomen: p.inkomen ?? 0,
+                adres: p.adres ?? "",
+                postcode: p.postcode ?? "",
+                woonplaats: p.woonplaats ?? "",
+                role: sfRole,
+            };
+        };
 
         const results: Array<{ id: string; ok: boolean; status: number; error?: string }> = [];
 
         for (let i = 0; i < withFiles.length; i++) {
-            const d: any = withFiles[i];
-            const person = d.personen;
+            const { doc, person } = withFiles[i];
 
             let fileBase64: string | null = null;
             let fileSize = 0;
             let mimeType = "application/pdf";
             const fileName =
-                d.bestandsnaam ||
-                d.bestandspad.split("/").pop() ||
-                `${d.type}.pdf`;
+                doc.file_name ||
+                doc.file_path.split("/").pop() ||
+                `${doc.type}.pdf`;
+            // Use the storage path as a stable per-doc identifier in the response,
+            // since we no longer have a documenten.id to point at.
+            const docId = doc.file_path;
 
             try {
                 const { data: fileBlob, error: dlError } = await supabase.storage
                     .from(BUCKET)
-                    .download(d.bestandspad);
+                    .download(doc.file_path);
 
                 if (dlError || !fileBlob) {
                     throw new Error(dlError?.message || "File download returned empty");
@@ -286,10 +310,10 @@ serve(async (req) => {
                 fileBase64 = encodeBase64(buf);
             } catch (dlErr: any) {
                 console.warn(
-                    `[forward-docs] Download failed for ${d.bestandspad}: ${dlErr.message}`
+                    `[forward-docs] Download failed for ${doc.file_path}: ${dlErr.message}`
                 );
                 results.push({
-                    id: d.id,
+                    id: docId,
                     ok: false,
                     status: 0,
                     error: `download_failed: ${dlErr.message}`,
@@ -322,13 +346,13 @@ serve(async (req) => {
                 signature_image_path,
                 signature_date,
                 timestamp,
-                updated_at: dossierUpdatedAt,
+                updated_at: timestamp,
                 document: {
-                    id: d.id,
-                    type: d.type,
-                    status: d.status,
+                    id: docId,
+                    type: doc.type,
+                    status: doc.status || "ontvangen",
                     file_name: fileName,
-                    file_path: `${BUCKET}/${d.bestandspad}`,
+                    file_path: `${BUCKET}/${doc.file_path}`,
                     file_mime_type: mimeType,
                     file_size: fileSize,
                     file_base64: fileBase64,
@@ -349,7 +373,7 @@ serve(async (req) => {
                 },
             };
             console.log(
-                `[forward-docs] REQUEST doc ${i + 1}/${withFiles.length} ${d.id}: ${JSON.stringify(loggablePayload)}`
+                `[forward-docs] REQUEST doc ${i + 1}/${withFiles.length} ${docId}: ${JSON.stringify(loggablePayload)}`
             );
 
             try {
@@ -363,17 +387,17 @@ serve(async (req) => {
                 });
                 const text = await res.text();
                 results.push({
-                    id: d.id,
+                    id: docId,
                     ok: res.ok,
                     status: res.status,
                     error: res.ok ? undefined : text.slice(0, 200),
                 });
                 console.log(
-                    `[forward-docs] RESPONSE doc ${i + 1}/${withFiles.length} ${d.id} -> ${res.status} ${res.ok ? "OK" : text.slice(0, 500)}`
+                    `[forward-docs] RESPONSE doc ${i + 1}/${withFiles.length} ${docId} -> ${res.status} ${res.ok ? "OK" : text.slice(0, 500)}`
                 );
             } catch (fetchErr: any) {
                 results.push({
-                    id: d.id,
+                    id: docId,
                     ok: false,
                     status: 0,
                     error: `fetch_failed: ${fetchErr.message}`,
@@ -381,7 +405,10 @@ serve(async (req) => {
             }
         }
 
-        // Metadata-only summary matching the original migration shape.
+        // Metadata-only summary built from the inline personen list. SF gets
+        // the full snapshot of what the form just submitted, so any persons
+        // or documents the form removed since the last submit are simply
+        // absent from this payload.
         const summaryPayload = {
             source: "AptHub",
             trigger_source: triggerSource,
@@ -405,14 +432,14 @@ serve(async (req) => {
             signature_image_path,
             signature_date,
             timestamp,
-            updated_at: dossierUpdatedAt,
-            documents: docs.map((d: any) => ({
-                id: d.id,
-                type: d.type,
-                status: d.status,
-                file_name: d.bestandsnaam,
-                file_path: d.bestandspad ? `${BUCKET}/${d.bestandspad}` : null,
-                person: personMeta(d.personen),
+            updated_at: timestamp,
+            documents: allDocs.map(({ doc, person }) => ({
+                id: doc.file_path,
+                type: doc.type,
+                status: doc.status || "ontvangen",
+                file_name: doc.file_name || doc.file_path.split("/").pop() || `${doc.type}.pdf`,
+                file_path: doc.file_path ? `${BUCKET}/${doc.file_path}` : null,
+                person: personMeta(person),
             })),
         };
 
@@ -456,7 +483,7 @@ serve(async (req) => {
             success: true,
             batch_id: batchId,
             account_id,
-            docs_total: docs.length,
+            docs_total: allDocs.length,
             docs_with_files: withFiles.length,
             results,
             summary,
