@@ -204,7 +204,8 @@
 
 .subtext2 {
     font-size: 1.125rem;
-    color: #9CA3AF;
+    color: #6B7280;
+    /* gray-500 — meets WCAG AA contrast (≥4.5:1) on white */
     margin-bottom: 2rem;
     /* Reduced from 3rem to 2rem */
     max-width: 64rem;

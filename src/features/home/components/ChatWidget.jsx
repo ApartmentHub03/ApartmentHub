@@ -23,16 +23,21 @@ const ChatWidget = () => {
                     </div>
                     <div className={styles.triggerContent}>
                         <div className={styles.triggerHeader}>
-                            <h3 className={styles.triggerName}>Robert van Dijk</h3>
-                            <CircleCheck className={styles.triggerVerified} size={16} />
+                            <h2 className={styles.triggerName}>Robert van Dijk</h2>
+                            <CircleCheck className={styles.triggerVerified} size={16} aria-hidden="true" />
                         </div>
                         <div className={styles.triggerStatus}>
-                            <div className={styles.statusDot}></div>
+                            <div className={styles.statusDot} aria-hidden="true"></div>
                             <span className={styles.statusText}>Online</span>
                         </div>
                     </div>
-                    <button className={styles.closeButton} onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}>
-                        <X size={20} />
+                    <button
+                        type="button"
+                        className={styles.closeButton}
+                        onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}
+                        aria-label="Dismiss chat preview"
+                    >
+                        <X size={20} aria-hidden="true" />
                     </button>
                 </div>
             </div>
@@ -49,16 +54,21 @@ const ChatWidget = () => {
                     </div>
                     <div className={styles.modalInfo}>
                         <div className={styles.modalNameRow}>
-                            <h3 className={styles.modalName}>Robert van Dijk</h3>
-                            <CircleCheck className={styles.triggerVerified} size={16} />
+                            <h2 className={styles.modalName}>Robert van Dijk</h2>
+                            <CircleCheck className={styles.triggerVerified} size={16} aria-hidden="true" />
                         </div>
                         <div className={styles.modalStatusRow}>
-                            <div className={styles.statusDot}></div>
+                            <div className={styles.statusDot} aria-hidden="true"></div>
                             <span className={styles.statusText}>Online</span>
                         </div>
                     </div>
-                    <button className={styles.modalCloseBtn} onClick={toggleChat}>
-                        <X size={24} className="text-gray-600" />
+                    <button
+                        type="button"
+                        className={styles.modalCloseBtn}
+                        onClick={toggleChat}
+                        aria-label="Close chat"
+                    >
+                        <X size={24} className="text-gray-600" aria-hidden="true" />
                     </button>
                 </div>
 

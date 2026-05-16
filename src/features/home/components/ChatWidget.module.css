@@ -116,8 +116,8 @@
 
 .statusText {
     font-size: 0.75rem;
-    color: #16a34a;
-    /* green-600 */
+    color: #15803d;
+    /* green-700 — meets WCAG AA contrast (≥4.5:1) on white */
     font-weight: 500;
 }
 

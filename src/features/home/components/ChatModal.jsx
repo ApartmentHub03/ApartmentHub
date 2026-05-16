@@ -56,8 +56,13 @@ const ChatModal = ({ isOpen, onClose, data }) => {
                             <span className={styles.statusText}>Online</span>
                         </div>
                     </div>
-                    <button className={styles.modalCloseBtn} onClick={onClose}>
-                        <X size={24} className="text-gray-600" />
+                    <button
+                        type="button"
+                        className={styles.modalCloseBtn}
+                        onClick={onClose}
+                        aria-label="Close conversation"
+                    >
+                        <X size={24} className="text-gray-600" aria-hidden="true" />
                     </button>
                 </div>
 
