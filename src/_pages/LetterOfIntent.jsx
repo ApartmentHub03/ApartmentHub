@@ -188,6 +188,45 @@ const LetterOfIntent = () => {
             // UX never blocks on the webhook.
             if (phoneNumber) {
                 const mainTenantName = dossier?.personen?.find(p => p.rol === 'Hoofdhuurder')?.naam || '';
+                const personenPayload = (dossier?.personen || []).map(p => {
+                    const docs = [];
+                    for (const d of p.documenten || []) {
+                        if (Array.isArray(d.files)) {
+                            for (const f of d.files) {
+                                if (f?.filePath) {
+                                    docs.push({
+                                        type: d.type,
+                                        file_path: f.filePath,
+                                        file_name: f.fileName || f.name || null,
+                                        status: f.status || 'ontvangen',
+                                    });
+                                }
+                            }
+                        } else {
+                            const f = d.file || d;
+                            if (f?.filePath) {
+                                docs.push({
+                                    type: d.type,
+                                    file_path: f.filePath,
+                                    file_name: f.fileName || f.name || null,
+                                    status: d.status || f.status || 'ontvangen',
+                                });
+                            }
+                        }
+                    }
+                    return {
+                        name: p.naam || '',
+                        rol: p.rol || '',
+                        phone_number: p.telefoon || null,
+                        email: p.email || '',
+                        werkstatus: p.werkstatus || '',
+                        inkomen: p.inkomen ? Number(p.inkomen) : 0,
+                        adres: p.adres || '',
+                        postcode: p.postcode || '',
+                        woonplaats: p.woonplaats || '',
+                        documenten: docs,
+                    };
+                });
                 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
                 const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
                 fetch(`${supabaseUrl}/functions/v1/forward-docs-to-salesforce`, {
@@ -213,6 +252,7 @@ const LetterOfIntent = () => {
                         signature_image_base64: signatureBase64,
                         signature_date: signatureDate,
                         trigger_source: 'letterofintent',
+                        personen: personenPayload,
                     }),
                 })
                     .then(res => res.json())
