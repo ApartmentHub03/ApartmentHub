@@ -1048,3 +1048,67 @@ export const neighborhoodsData = {
         }
     }
 };
+
+export const neighborhoodSlugs = Object.keys(neighborhoodsData);
+
+const SITE_URL = 'https://apartmenthub.nl';
+
+function clampDescription(text, maxLength = 158) {
+    if (!text) return '';
+    const collapsed = text.replace(/\s+/g, ' ').trim();
+    if (collapsed.length <= maxLength) return collapsed;
+    const sliced = collapsed.slice(0, maxLength - 1);
+    const lastSpace = sliced.lastIndexOf(' ');
+    return `${sliced.slice(0, lastSpace > 0 ? lastSpace : sliced.length)}…`;
+}
+
+export function getNeighborhoodMetadata(slug, locale = 'en') {
+    const neighborhood = neighborhoodsData[slug];
+    if (!neighborhood) return null;
+
+    const data = neighborhood[locale] ?? neighborhood.en;
+    if (!data) return null;
+
+    const name = data.title;
+    const landmarks = (data.highlights || []).slice(0, 2).join(', ');
+
+    const enUrl = `${SITE_URL}/en/neighborhood/${slug}`;
+    const nlUrl = `${SITE_URL}/nl/neighborhood/${slug}`;
+    const canonical = locale === 'nl' ? nlUrl : enUrl;
+
+    const title = locale === 'nl'
+        ? `Huurappartementen in ${name}, Amsterdam | ApartmentHub`
+        : `Apartments for Rent in ${name}, Amsterdam | ApartmentHub`;
+
+    const descriptionLead = locale === 'nl'
+        ? `Vind huurappartementen in ${name}, Amsterdam${landmarks ? ` nabij ${landmarks}` : ''}.`
+        : `Find apartments for rent in ${name}, Amsterdam${landmarks ? ` near ${landmarks}` : ''}.`;
+
+    const description = clampDescription(`${descriptionLead} ${data.description}`);
+
+    return {
+        title,
+        description,
+        alternates: {
+            canonical,
+            languages: {
+                en: enUrl,
+                nl: nlUrl,
+                'x-default': enUrl,
+            },
+        },
+        openGraph: {
+            title,
+            description,
+            url: canonical,
+            type: 'website',
+            locale: locale === 'nl' ? 'nl_NL' : 'en_US',
+            siteName: 'ApartmentHub',
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title,
+            description,
+        },
+    };
+}
