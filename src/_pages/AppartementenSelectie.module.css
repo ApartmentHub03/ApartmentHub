@@ -152,11 +152,24 @@
     border-color: hsl(var(--myrtle));
 }
 
+.apartmentHeaderText {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-width: 0;
+}
+
 .apartmentAddress {
     font-size: 0.9375rem;
     font-weight: 600;
     color: #111827;
     margin: 0;
+    line-height: 1.4;
+}
+
+.apartmentLocation {
+    font-size: 0.8125rem;
+    color: #6b7280;
     line-height: 1.4;
 }
 
