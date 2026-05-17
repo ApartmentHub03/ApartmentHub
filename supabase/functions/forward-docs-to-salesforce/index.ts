@@ -212,11 +212,8 @@ serve(async (req) => {
         const timestamp = new Date().toISOString();
 
         // Optional signature handling (LOI submit only). Upload the PNG to
-        // private storage as an audit copy, and forward the same bytes
-        // inline as base64 so Salesforce can ingest+store the image without
-        // any public URL or long-lived signed URL existing anywhere. If no
-        // signature was supplied, all fields are empty/zero.
-        let signature_image_base64 = "";
+        // private storage as an audit copy; the base64 itself is never
+        // forwarded to Salesforce.
         let signature_image_mime_type = "";
         let signature_image_size = 0;
         let signature_image_path = "";
@@ -232,7 +229,6 @@ serve(async (req) => {
                         upsert: true,
                     });
                 if (upErr) throw upErr;
-                signature_image_base64 = body.signature_image_base64;
                 signature_image_mime_type = "image/png";
                 signature_image_size = sigBytes.byteLength;
                 signature_image_path = `${BUCKET}/${sigPath}`;
@@ -340,7 +336,6 @@ serve(async (req) => {
                 start_date,
                 motivation,
                 months_advance,
-                signature_image_base64,
                 signature_image_mime_type,
                 signature_image_size,
                 signature_image_path,
@@ -364,9 +359,6 @@ serve(async (req) => {
             // failures can be diagnosed from edge-function logs.
             const loggablePayload = {
                 ...payload,
-                signature_image_base64: signature_image_base64
-                    ? `<${signature_image_size} bytes redacted>`
-                    : "",
                 document: {
                     ...payload.document,
                     file_base64: `<${fileSize} bytes redacted>`,
@@ -426,7 +418,6 @@ serve(async (req) => {
             start_date,
             motivation,
             months_advance,
-            signature_image_base64,
             signature_image_mime_type,
             signature_image_size,
             signature_image_path,
@@ -445,9 +436,6 @@ serve(async (req) => {
 
         const loggableSummary = {
             ...summaryPayload,
-            signature_image_base64: signature_image_base64
-                ? `<${signature_image_size} bytes redacted>`
-                : "",
         };
         console.log(
             `[forward-docs] REQUEST summary batch=${batchId}: ${JSON.stringify(loggableSummary)}`

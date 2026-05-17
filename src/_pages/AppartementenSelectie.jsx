@@ -217,9 +217,16 @@ const AppartementenSelectie = () => {
                                                                 </svg>
                                                             )}
                                                         </div>
-                                                        <h3 className={styles.apartmentAddress}>
-                                                            {displayAddress(apt)}
-                                                        </h3>
+                                                        <div className={styles.apartmentHeaderText}>
+                                                            <h3 className={styles.apartmentAddress}>
+                                                                {displayAddress(apt)}
+                                                            </h3>
+                                                            {(apt.address || apt.city || apt.zipcode) && (
+                                                                <div className={styles.apartmentLocation}>
+                                                                    {[apt.address, apt.zipcode, apt.city].filter(Boolean).join(', ')}
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     <div className={styles.apartmentDetails}>
                                                         {apt.rental_price && (

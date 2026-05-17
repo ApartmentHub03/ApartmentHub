@@ -249,7 +249,6 @@ const LetterOfIntent = () => {
                         start_date: startDate || '',
                         motivation: motivation || '',
                         months_advance: monthsAdvance || 0,
-                        signature_image_base64: signatureBase64,
                         signature_date: signatureDate,
                         trigger_source: 'letterofintent',
                         personen: personenPayload,
