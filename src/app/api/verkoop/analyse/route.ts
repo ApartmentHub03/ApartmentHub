@@ -22,7 +22,15 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const MODEL = process.env.VERKOOP_MODEL || "claude-sonnet-4-6";
+// Haiku 4.5 by default — the synthesis input is already pre-digested
+// per-doc extracts (text only, no PDFs), and the output is a small JSON
+// object. Sonnet's extra reasoning isn't earning its ~25-30s latency cost
+// here. VERKOOP_ANALYSE_MODEL lets us override per-environment without
+// touching VERKOOP_MODEL (which other routes also read).
+const MODEL =
+  process.env.VERKOOP_ANALYSE_MODEL ||
+  process.env.VERKOOP_MODEL ||
+  "claude-haiku-4-5";
 const PARALLEL_EXTRACTS = 4;
 
 function buildSystemPrompt(sellerLang: "nl" | "en"): string {
@@ -212,7 +220,9 @@ ${extractBlocks.join("\n\n")}`;
   try {
     const msg = await client.messages.create({
       model: MODEL,
-      max_tokens: 4000,
+      // Tight cap — output is at most 15 short JSON questions + a summary,
+      // not prose. Cutting from 4000 trims wall-clock time on Haiku.
+      max_tokens: 2000,
       system: buildSystemPrompt(sellerLang),
       messages: [{ role: "user", content: propertyContext }],
     });
