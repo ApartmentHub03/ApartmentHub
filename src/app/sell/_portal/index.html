@@ -630,8 +630,22 @@
       <button type="button" data-lang="en">EN</button>
     </span>
     <a href="https://apartmenthub.nl" data-i18n="home">Terug naar home</a>
+    <a href="#" id="logoutLink" data-i18n="logout" onclick="event.preventDefault();logout()">Uitloggen</a>
   </span>
 </div>
+
+<script>
+  function logout() {
+    // The /api/auth/signout POST clears the verkoop_sessions row + ah_sess
+    // cookie and replies with a 303 redirect to /sell. From there the route
+    // handler sees no cookie and redirects to /sell/login. Using fetch then
+    // window.location instead of a form post so we stay on the same tab
+    // without a flash of the browser's POST-redirect intermediate page.
+    fetch("/api/auth/signout", { method: "POST", credentials: "same-origin" })
+      .catch(() => { /* even on network error, force the user to the login */ })
+      .finally(() => { window.location.href = "/sell"; });
+  }
+</script>
 
 <section class="hero">
   <div class="eyebrow" data-i18n="eyebrow"></div>
@@ -987,6 +1001,7 @@ const Q_GROUPS = [];
 const I18N = {
   nl: {
     home: "Terug naar home",
+    logout: "Uitloggen",
     eyebrow: "Verkoop je appartement",
     title: "Begin je verkoop in 15 minuten.",
     lead: "Vul je adres in, upload je stukken en beantwoord een paar korte vragen. Alles wat openbaar is (kadasteraktes, KvK uittreksel VvE, vergunningen, bouwtekeningen, funderingsstatus, energielabel) halen wij voor je op. Jij uploadt alleen wat alleen jij of je VvE beheerder heeft. Onze AI leest die documenten uit en bespaart je het meeste typewerk. Je makelaar belt binnen één werkdag terug.",
@@ -1167,6 +1182,7 @@ const I18N = {
 
   en: {
     home: "Back to home",
+    logout: "Sign out",
     eyebrow: "Selling your apartment",
     title: "Start your sale in 15 minutes.",
     lead: "Enter your address, upload your documents and answer a few short questions. Everything that's public (Kadaster deeds, your VvE's Chamber of Commerce excerpt, building permits, construction drawings, foundation status, energy label) we fetch for you. You only upload what only you or your VvE manager has. Our AI parses those files so you skip most of the typing. Your agent will call back within one business day.",
