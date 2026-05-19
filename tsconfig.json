@@ -22,19 +22,25 @@
         "name": "next"
       }
     ],
-    "baseUrl": ".",
     "paths": {
       "@/pages/*": ["./src/_pages/*"],
       "@/*": ["./src/*"]
-    }
+    },
+    "ignoreDeprecations": "6.0"
   },
   "include": [
     "next-env.d.ts",
     ".next/types/**/*.ts",
-    "**/*.ts",
-    "**/*.tsx"
+    "src/**/*.ts",
+    "src/**/*.tsx"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "supabase/functions",
+    "apartmenthub-verkoop",
+    "apartmenthub-rentals-oasis-main",
+    "mcp-server",
+    "tobecreated",
+    "tests"
   ]
 }
