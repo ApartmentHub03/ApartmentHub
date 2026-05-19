@@ -1,0 +1,2738 @@
+<!doctype html>
+<!--
+  ApartmentHub Sale Portal / Verkoop-portal
+  Voor: https://apartmenthub.nl/verkoop  (NL)  +  /sell  (EN)
+
+  Multi-step wizard:
+    Step 1: Address + seller details      (intake)
+    Step 2: Document uploads
+    Step 3: AI is processing...           (transition)
+    Step 4: Only the remaining questions  (post-extraction)
+    Step 5: Submit
+
+  Backend integration (see endpoints near bottom of <script>):
+    POST_URL:    receives the form data from step 1 + uploaded files
+    EXTRACT_URL: receives uploaded files; returns JSON with prefilled
+                 fields and a list of questions still open. The frontend
+                 then renders only the remaining questions.
+    SUBMIT_URL:  final submit with everything.
+-->
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Verkoop je appartement / Sell your apartment. ApartmentHub</title>
+<meta name="description" content="Begin je verkoop in 15 minuten. Upload je stukken, wij doen de rest." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --teal: #009B8A;
+    --teal-dark: #007A6D;
+    --orange: #FF7D28;
+    --orange-dark: #E66C1A;
+    --ink: #1A202C;
+    --grey: #4A5568;
+    --grey-soft: #718096;
+    --line: #E2E8F0;
+    --bg: #F7FAFC;
+    --soft: #E8F5F3;
+    --soft-orange: #FFF1E6;
+    --ok: #15803D;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--teal-dark); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .topbar {
+    background: var(--teal);
+    color: #fff;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar img { height: 32px; width: 32px; }
+  .topbar .brand { font-weight: 700; font-size: 17px; letter-spacing: -0.01em; }
+  .topbar .right { margin-left: auto; display: flex; gap: 18px; align-items: center; font-size: 14px; }
+  .topbar .right a { color: #fff; opacity: 0.95; }
+  .lang { display: inline-flex; background: rgba(255,255,255,0.18); border-radius: 999px; padding: 2px; font-size: 12px; font-weight: 600; }
+  .lang button { background: transparent; border: 0; color: #fff; padding: 4px 10px; border-radius: 999px; cursor: pointer; font: inherit; }
+  .lang button.active { background: #fff; color: var(--teal-dark); }
+
+  .hero { max-width: 980px; margin: 0 auto; padding: 40px 24px 16px; }
+  .eyebrow { color: var(--orange); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  h1 { font-size: 34px; line-height: 1.1; letter-spacing: -0.02em; margin: 0 0 14px; font-weight: 700; }
+  .lead { font-size: 16px; color: var(--grey); max-width: 640px; margin: 0 0 18px; }
+
+  .progress-bar {
+    background: #fff; border: 1px solid var(--line); border-radius: 14px;
+    padding: 10px 14px; display: flex; gap: 12px; align-items: center;
+    font-size: 13px; color: var(--grey); margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .progress-bar .step {
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 6px;
+    transition: background .12s;
+  }
+  .progress-bar .step.done:hover { background: var(--soft); }
+  .progress-bar .step.is-locked { cursor: default; }
+  .progress-bar .step.is-locked:hover { background: transparent; }
+  .progress-bar .dot {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--bg); border: 1.5px solid var(--line);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: var(--grey-soft);
+  }
+  .progress-bar .step.active .dot { background: var(--teal); border-color: var(--teal); color: #fff; }
+  .progress-bar .step.done .dot  { background: var(--teal-dark); border-color: var(--teal-dark); color: #fff; }
+  .progress-bar .sep { flex: 1; height: 1px; background: var(--line); min-width: 12px; }
+  @media (max-width: 600px) {
+    .progress-bar { font-size: 12px; gap: 8px; padding: 8px 10px; }
+    .progress-bar .sep { min-width: 8px; }
+  }
+
+  .trust-strip {
+    display: flex; gap: 18px; flex-wrap: wrap;
+    margin: 14px 0 0; font-size: 13px; color: var(--grey);
+  }
+  .trust-strip span { display: inline-flex; align-items: center; gap: 6px; }
+  .trust-strip span::before {
+    content: "✓"; color: var(--teal); font-weight: 700;
+  }
+
+  .lbl .req { color: #B42318; margin-left: 2px; font-weight: 700; }
+
+  /* Locked sign-in phone display in step 1 */
+  .phone-locked {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--soft);
+    border: 1px solid rgba(0, 155, 138, 0.25);
+    border-radius: 10px;
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .phone-locked-icon {
+    width: 22px; height: 22px;
+    background: var(--teal); color: #fff;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .phone-locked-value {
+    flex: 1;
+    font-variant-numeric: tabular-nums;
+    min-width: 0;
+    color: var(--teal-dark);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  @media (max-width: 480px) {
+    .phone-locked { flex-wrap: wrap; row-gap: 8px; }
+    .phone-locked-add { width: 100%; text-align: center; }
+  }
+  .phone-locked-add {
+    background: #fff;
+    border: 1px solid var(--line);
+    color: var(--teal-dark);
+    padding: 5px 12px;
+    border-radius: 999px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .12s, border-color .12s;
+  }
+  .phone-locked-add:hover {
+    background: var(--soft);
+    border-color: rgba(0, 155, 138, 0.4);
+  }
+  .phone-locked-add.is-open {
+    background: var(--bg);
+    color: var(--grey);
+  }
+
+  /* ===== Form validation ===== */
+  input.invalid, textarea.invalid, select.invalid {
+    border-color: #B42318 !important;
+    box-shadow: 0 0 0 3px rgba(180, 35, 24, 0.12);
+  }
+  .field-error {
+    color: #B42318;
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .field-error::before { content: "⚠"; font-size: 13px; }
+
+  .validation-banner {
+    background: #FEE4E2;
+    border: 1px solid #FDA29B;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin: 14px 0;
+    color: #7A271A;
+    font-size: 14px;
+    line-height: 1.5;
+    animation: shakeIn .35s ease-out;
+  }
+  .validation-banner .vb-title {
+    font-weight: 700;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #B42318;
+  }
+  .validation-banner ul {
+    margin: 0;
+    padding-left: 22px;
+    color: #912018;
+  }
+  .validation-banner li { margin: 2px 0; }
+  @keyframes shakeIn {
+    0% { opacity: 0; transform: translateY(-6px); }
+    60% { transform: translateY(2px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== Toast notifications ===== */
+  .toast-host {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+    max-width: calc(100vw - 32px);
+  }
+  .toast {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--teal);
+    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.12);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--ink);
+    pointer-events: auto;
+    min-width: 240px;
+    max-width: 380px;
+    animation: toastIn .25s ease-out;
+  }
+  .toast.toast-error   { border-left-color: #B42318; }
+  .toast.toast-success { border-left-color: #15803D; }
+  .toast.toast-warn    { border-left-color: var(--orange); }
+  .toast .toast-title { font-weight: 600; margin-bottom: 2px; }
+  .toast .toast-body  { color: var(--grey); font-size: 13px; }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .consent {
+    display: flex; gap: 12px; align-items: flex-start;
+    background: rgba(255,255,255,0.06); padding: 12px 14px;
+    border-radius: 10px; margin: 0 0 14px;
+    font-size: 13px; color: #CBD5DD; line-height: 1.45;
+  }
+  .consent input { margin-top: 3px; flex-shrink: 0; width: 16px; height: 16px; accent-color: var(--orange); cursor: pointer; }
+  .consent label { cursor: pointer; user-select: none; }
+  .consent a { color: var(--orange); text-decoration: underline; }
+
+  .saved-pill {
+    position: fixed; bottom: 16px; right: 16px;
+    background: var(--ink); color: #DCFCE7;
+    padding: 8px 12px; border-radius: 999px;
+    font-size: 12px; font-weight: 500;
+    opacity: 0; transition: opacity .25s;
+    z-index: 100;
+    pointer-events: none;
+  }
+  .saved-pill.show { opacity: 0.94; }
+  .saved-pill::before { content: "✓ "; color: #15803D; font-weight: 700; }
+
+  main { max-width: 980px; margin: 0 auto; padding: 16px 24px 80px; }
+
+  .step-section { display: none; animation: fadeIn .25s ease; }
+  .step-section.show { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .card {
+    background: #fff; border: 1px solid var(--line); border-radius: 14px;
+    padding: 24px; margin: 18px 0;
+  }
+  .card h2 {
+    font-size: 20px; margin: 0 0 4px; letter-spacing: -0.01em; color: var(--teal-dark);
+  }
+  .card .sub { color: var(--grey); font-size: 14px; margin: 0 0 16px; }
+  .field { margin-bottom: 14px; }
+  label.lbl { display: block; font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+  input[type="text"], input[type="email"], input[type="tel"], input[type="number"],
+  textarea, select {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: 10px; font: inherit; background: #fff; color: var(--ink);
+    transition: border-color .12s, box-shadow .12s;
+  }
+  input:focus, textarea:focus, select:focus {
+    outline: none; border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(0, 155, 138, 0.18);
+  }
+  textarea { min-height: 90px; resize: vertical; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 600px) { .row-2 { grid-template-columns: 1fr; } }
+
+  .docs { display: grid; gap: 14px; }
+  .doc { border: 1px solid var(--line); border-radius: 12px; background: #fff; overflow: hidden; }
+  .doc-head {
+    padding: 16px 18px; display: grid; grid-template-columns: 1fr auto;
+    gap: 12px; align-items: start;
+  }
+  .doc-name { font-weight: 600; font-size: 15px; margin: 0 0 3px; }
+  .doc-desc { font-size: 13px; color: var(--grey); margin: 0; }
+  .doc-tag {
+    font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 999px;
+    background: var(--soft); color: var(--teal-dark);
+    text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap;
+  }
+  .doc-tag.required    { background: #FEE4E2; color: #B42318; }
+  .doc-tag.important   { background: var(--soft); color: var(--teal-dark); }
+  .doc-tag.conditional { background: #F2F4F7; color: var(--grey); }
+
+  .group-title.group-required    { color: #B42318; }
+  .group-title.group-important   { color: var(--teal-dark); }
+  .group-title.group-conditional { color: var(--grey); }
+
+  .doc-skip {
+    border-top: 1px dashed var(--line);
+    padding: 10px 18px;
+    background: var(--bg);
+    font-size: 13px;
+    color: var(--grey);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .doc-skip input { width: 16px; height: 16px; accent-color: var(--teal); cursor: pointer; }
+  .doc-skip label { cursor: pointer; user-select: none; }
+  .doc.is-skipped .drop, .doc.is-skipped .filelist { display: none; }
+  .doc.is-skipped { opacity: 0.7; }
+
+  .where { border-top: 1px dashed var(--line); background: var(--bg); padding: 0; }
+  .where summary {
+    list-style: none; cursor: pointer; padding: 10px 18px;
+    color: var(--teal-dark); font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; gap: 6px; user-select: none;
+  }
+  .where summary::-webkit-details-marker { display: none; }
+  .where summary::before {
+    content: "?"; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--teal); color: #fff; font-size: 11px;
+    line-height: 16px; text-align: center; font-weight: 700;
+  }
+  .where[open] summary::before { content: "−"; }
+  .where-body { padding: 4px 18px 16px 40px; font-size: 13.5px; color: var(--grey); }
+  .where-body p { margin: 0 0 6px; }
+  .where-body a {
+    display: inline-block; margin-top: 4px; padding: 6px 12px;
+    background: var(--teal); color: #fff; border-radius: 8px;
+    font-weight: 600; font-size: 13px;
+  }
+  .where-body a:hover { background: var(--teal-dark); text-decoration: none; }
+
+  .drop {
+    border: 2px dashed var(--teal);
+    border-radius: 10px;
+    padding: 22px 18px;
+    margin: 14px 18px 18px;
+    background: var(--soft);
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .12s, background .12s, transform .08s;
+    display: block;
+  }
+  .drop:hover { background: #DCEFEC; transform: translateY(-1px); }
+  .drop.drag { border-color: var(--orange); background: var(--soft-orange); border-style: solid; }
+  .drop .drop-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px; height: 38px;
+    background: var(--teal);
+    color: #fff;
+    border-radius: 50%;
+    margin-bottom: 8px;
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .drop p { margin: 0; color: var(--ink); font-size: 14px; }
+  .drop strong { color: var(--teal-dark); font-weight: 600; }
+  .drop .drop-sub { color: var(--grey); font-size: 12px; margin-top: 3px; }
+  .drop input[type=file] { display: none; }
+
+  .filelist { padding: 0 18px 18px; display: grid; gap: 6px; }
+  .filelist:empty { display: none; }
+  .file-item {
+    display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+    background: var(--soft); border-radius: 8px; font-size: 13px;
+  }
+  .file-item .name { flex: 1; color: var(--ink); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-item .size { color: var(--grey); font-size: 12px; }
+  .file-item button { background: none; border: 0; color: var(--grey); cursor: pointer; padding: 2px 6px; font-size: 16px; line-height: 1; }
+  .file-item button:hover { color: var(--orange-dark); }
+  .file-item .status-tag {
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap;
+  }
+  .file-item.status-uploading .status-tag { background: var(--soft-orange); color: var(--orange-dark); }
+  .file-item.status-uploaded .status-tag  { background: var(--soft);        color: var(--teal-dark); }
+  .file-item.status-failed .status-tag    { background: #FEE4E2;            color: #B42318; }
+  .file-item.status-uploading { opacity: 0.85; }
+  .file-item.status-failed { background: #FFF5F4; }
+  .file-item .file-link {
+    color: var(--teal-dark); text-decoration: none; font-size: 12px; font-weight: 500;
+  }
+  .file-item .file-link:hover { text-decoration: underline; }
+
+  .btn {
+    background: var(--teal); color: #fff; border: 0; padding: 12px 22px;
+    border-radius: 10px; font: inherit; font-weight: 600; cursor: pointer;
+    transition: background .12s;
+  }
+  .btn:hover { background: var(--teal-dark); }
+  .btn:disabled { background: var(--grey-soft); cursor: not-allowed; }
+  .btn.ghost { background: transparent; color: var(--grey); border: 1px solid var(--line); }
+  .btn.ghost:hover { background: var(--bg); color: var(--ink); }
+  .btn.orange { background: var(--orange); }
+  .btn.orange:hover { background: var(--orange-dark); }
+
+  .nav-row {
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    margin-top: 24px; justify-content: space-between;
+  }
+  .nav-row .left { display: flex; gap: 12px; }
+  .nav-row .small { color: var(--grey-soft); font-size: 13px; }
+
+  .q-row {
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    background: #fff;
+  }
+  .q-row .q-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 14px;
+  }
+  .q-row .q-label { font-size: 14px; }
+  .q-row.q-prefilled {
+    background: linear-gradient(0deg, #fff 0%, #fff 100%), var(--soft);
+    border-color: #BDE5DE;
+    background: var(--soft);
+  }
+  .q-row.q-prefilled .q-label::after {
+    content: "AI";
+    margin-left: 8px;
+    font-size: 10px;
+    background: var(--teal);
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+  }
+  .yn-opts { display: flex; gap: 6px; flex-shrink: 0; }
+  .yn-opts label {
+    padding: 5px 12px; border: 1px solid var(--line); border-radius: 6px;
+    font-size: 13px; cursor: pointer; color: var(--grey); user-select: none;
+  }
+  .yn-opts input { display: none; }
+  .yn-opts input:checked + label {
+    background: var(--teal); color: #fff; border-color: var(--teal);
+  }
+  .q-followup, .q-amount, .q-open {
+    margin-top: 10px;
+  }
+  .q-followup textarea, .q-open textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: 8px; font: inherit; font-size: 13px;
+    min-height: 60px; resize: vertical;
+  }
+  .q-amount input {
+    padding: 8px 12px; border: 1px solid var(--line);
+    border-radius: 8px; font: inherit; font-size: 13px;
+    width: 180px;
+  }
+  .q-amount label, .q-followup label, .q-open label {
+    display: block; font-size: 12px; color: var(--grey-soft);
+    margin-bottom: 4px;
+  }
+  .q-radio { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .q-radio label {
+    padding: 8px 14px; border: 1px solid var(--line); border-radius: 8px;
+    font-size: 13px; cursor: pointer; color: var(--grey); user-select: none;
+  }
+  .q-radio input { display: none; }
+  .q-radio input:checked + label {
+    background: var(--teal); color: #fff; border-color: var(--teal);
+  }
+  .q-multi { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .q-multi label {
+    padding: 8px 14px; border: 1px solid var(--line); border-radius: 8px;
+    font-size: 13px; cursor: pointer; color: var(--grey); user-select: none;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .q-multi label::before {
+    content: ""; width: 14px; height: 14px;
+    border: 1.5px solid var(--line); border-radius: 3px; display: inline-block;
+  }
+  .q-multi input { display: none; }
+  .q-multi input:checked + label {
+    background: var(--soft); color: var(--teal-dark); border-color: var(--teal);
+  }
+  .q-multi input:checked + label::before {
+    background: var(--teal); border-color: var(--teal);
+    box-shadow: inset 0 0 0 2px var(--teal), inset 0 0 0 4px #fff;
+  }
+
+  .banner {
+    background: var(--soft); border-left: 4px solid var(--teal);
+    padding: 14px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 14px;
+  }
+  .banner.private {
+    background: var(--soft-orange); border-left-color: var(--orange);
+  }
+  .banner b { color: var(--teal-dark); }
+  .banner.private b { color: var(--orange-dark); }
+  .we-handle-list {
+    margin: 8px 0 0 18px; padding: 0; font-size: 13.5px; line-height: 1.55;
+    color: var(--grey);
+  }
+  .we-handle-list li { margin: 2px 0; }
+  .we-handle-list li::marker { color: var(--teal); }
+
+  .group-title {
+    margin: 26px 4px 10px; font-size: 14px; color: var(--grey-soft);
+    text-transform: uppercase; letter-spacing: .06em; font-weight: 600;
+  }
+  .qg-title {
+    margin-top: 22px; font-size: 14px; color: var(--ink); font-weight: 600;
+  }
+
+  .submit-card {
+    background: var(--ink); color: #fff; border-radius: 14px; padding: 28px; margin: 28px 0;
+  }
+  .submit-card h2 { color: #fff; margin: 0 0 8px; font-size: 22px; }
+  .submit-card p { color: #CBD5DD; margin: 0 0 16px; }
+  .submit-card .btn { background: var(--orange); }
+  .submit-card .btn:hover { background: var(--orange-dark); }
+  .submit-card .small { color: #9CA3AF; font-size: 13px; }
+
+  /* loader */
+  .loader-card {
+    background: #fff; border: 1px solid var(--line); border-radius: 14px;
+    padding: 56px 28px; text-align: center;
+  }
+  .loader {
+    width: 60px; height: 60px; margin: 0 auto 18px;
+    border-radius: 50%;
+    border: 4px solid var(--soft);
+    border-top-color: var(--teal);
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loader-card h3 { font-size: 20px; margin: 0 0 6px; color: var(--teal-dark); }
+  .loader-card p { color: var(--grey); margin: 0 0 20px; font-size: 14px; }
+  .loader-list {
+    max-width: 460px; margin: 0 auto; text-align: left;
+    background: var(--bg); border-radius: 10px; padding: 14px 18px;
+    font-size: 13.5px;
+  }
+  .loader-list .item {
+    display: flex; align-items: center; gap: 8px; padding: 4px 0;
+    color: var(--grey);
+  }
+  .loader-list .item.done { color: var(--ok); font-weight: 500; }
+  .loader-list .item .ico { width: 14px; flex-shrink: 0; text-align: center; }
+
+  /* prefilled badge for questions where AI extracted the answer */
+  .prefilled-banner {
+    background: var(--soft); border: 1px solid #BDE5DE; border-radius: 10px;
+    padding: 14px 16px; margin-bottom: 16px; font-size: 13.5px; color: var(--ink);
+  }
+  .prefilled-banner b { color: var(--teal-dark); }
+  .prefilled-banner ul { margin: 6px 0 0; padding-left: 20px; }
+  .prefilled-banner li { margin-bottom: 2px; }
+
+  /* price estimate */
+  .price-estimate {
+    background: var(--soft);
+    border: 1px solid #BDE5DE;
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 18px;
+  }
+  .pe-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+  .pe-icon {
+    width: 38px; height: 38px; flex-shrink: 0;
+    border-radius: 50%; background: var(--teal); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 17px; font-weight: 700;
+  }
+  .pe-title { font-weight: 700; color: var(--teal-dark); font-size: 14px; }
+  .pe-body { color: var(--grey); font-size: 13px; margin-top: 2px; }
+  .pe-range { margin: 8px 0 14px; }
+  .pe-bar { height: 6px; background: #fff; border: 1px solid #BDE5DE; border-radius: 3px; overflow: hidden; position: relative; }
+  .pe-bar-fill { position: absolute; top: 0; left: 18%; right: 18%; bottom: 0; background: var(--teal); }
+  .pe-numbers {
+    display: flex; justify-content: space-between;
+    font-size: 12px; color: var(--grey); margin-top: 6px;
+  }
+  .pe-numbers #peMid { font-weight: 700; color: var(--teal-dark); font-size: 14px; }
+  .pe-basis { color: var(--grey-soft); font-size: 12px; margin-bottom: 12px; }
+  .pe-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn-sm { padding: 8px 14px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <img src="data:image/png;base64,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" alt="ApartmentHub" />
+  <span class="brand">ApartmentHub</span>
+  <span class="right">
+    <span class="lang" role="group" aria-label="Language">
+      <button type="button" data-lang="nl" class="active">NL</button>
+      <button type="button" data-lang="en">EN</button>
+    </span>
+    <a href="https://apartmenthub.nl" data-i18n="home">Terug naar home</a>
+  </span>
+</div>
+
+<section class="hero">
+  <div class="eyebrow" data-i18n="eyebrow"></div>
+  <h1 data-i18n="title"></h1>
+  <p class="lead" data-i18n="lead"></p>
+
+  <div class="progress-bar" id="progressBar">
+    <span class="step" data-stepnum="1"><span class="dot">1</span> <span data-i18n="step1"></span></span>
+    <span class="sep"></span>
+    <span class="step" data-stepnum="2"><span class="dot">2</span> <span data-i18n="step2"></span></span>
+    <span class="sep"></span>
+    <span class="step" data-stepnum="3"><span class="dot">3</span> <span data-i18n="step3"></span></span>
+    <span class="sep"></span>
+    <span class="step" data-stepnum="4"><span class="dot">4</span> <span data-i18n="step4"></span></span>
+  </div>
+
+  <div class="trust-strip">
+    <span data-i18n="trust_no_fee"></span>
+    <span data-i18n="trust_response"></span>
+    <span data-i18n="trust_secure"></span>
+  </div>
+</section>
+
+<main>
+
+<!-- ========== STEP 1: address + seller ========== -->
+<section class="step-section show" data-step="1">
+  <div class="card">
+    <h2 data-i18n="step1_title"></h2>
+    <p class="sub" data-i18n="step1_sub"></p>
+    <div class="row-2">
+      <div class="field">
+        <label class="lbl" for="straat"><span data-i18n="lbl_street"></span><span class="req">*</span></label>
+        <input id="straat" type="text" autocomplete="street-address" data-placeholder="ph_street" required />
+      </div>
+      <div class="field">
+        <label class="lbl" for="postcode"><span data-i18n="lbl_postcode"></span><span class="req">*</span></label>
+        <input id="postcode" type="text" data-placeholder="ph_postcode" required />
+      </div>
+    </div>
+    <div class="row-2">
+      <div class="field">
+        <label class="lbl" for="naam"><span data-i18n="lbl_name"></span><span class="req">*</span></label>
+        <input id="naam" type="text" autocomplete="name" required />
+      </div>
+      <div class="field">
+        <label class="lbl" for="email"><span data-i18n="lbl_email"></span><span class="req">*</span></label>
+        <input id="email" type="email" autocomplete="email" required />
+      </div>
+    </div>
+    <div class="row-2">
+      <div class="field" id="phoneAuthField">
+        <label class="lbl"><span data-i18n="lbl_phone_signin"></span></label>
+        <div class="phone-locked" id="phoneLocked">
+          <span class="phone-locked-icon" aria-hidden>✓</span>
+          <span class="phone-locked-value" id="phoneLockedValue"></span>
+          <button type="button" class="phone-locked-add" id="phoneAltToggle">
+            <span data-i18n="phone_alt_toggle"></span>
+          </button>
+        </div>
+        <!-- Hidden until the seller clicks "Add alternative phone" -->
+        <div id="phoneAltWrap" style="display:none; margin-top:10px;">
+          <label class="lbl" for="tel" style="font-size:12px;">
+            <span data-i18n="lbl_phone_alt"></span>
+          </label>
+          <input id="tel" type="tel" autocomplete="tel" data-placeholder="ph_phone" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="lbl" for="moment" data-i18n="lbl_moment"></label>
+        <select id="moment">
+          <option value="" data-i18n="opt_no_pref"></option>
+          <option data-i18n="opt_morning"></option>
+          <option data-i18n="opt_afternoon"></option>
+          <option data-i18n="opt_evening"></option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="banner">
+    <b data-i18n="banner_public_title"></b><br />
+    <span data-i18n="banner_public_body"></span>
+  </div>
+
+  <div class="nav-row">
+    <span class="small" data-i18n="step1_hint"></span>
+    <button class="btn" type="button" data-next="2" data-i18n="btn_next"></button>
+  </div>
+</section>
+
+<!-- ========== STEP 2: documents ========== -->
+<section class="step-section" data-step="2">
+  <div class="card">
+    <h2 data-i18n="step2_title"></h2>
+    <p class="sub" data-i18n="step2_sub"></p>
+  </div>
+
+  <!-- Wat wij voor de klant ophalen. Geen upload nodig. -->
+  <div class="banner public" id="weHandleBanner">
+    <b data-i18n="we_handle_title"></b>
+    <ul class="we-handle-list">
+      <li data-i18n="we_handle_kadaster"></li>
+      <li data-i18n="we_handle_kvk"></li>
+      <li data-i18n="we_handle_omgevingsloket"></li>
+      <li data-i18n="we_handle_stadsarchief"></li>
+      <li data-i18n="we_handle_kcaf"></li>
+      <li data-i18n="we_handle_bag"></li>
+    </ul>
+  </div>
+
+  <h3 class="group-title group-important" data-i18n="grp_important"></h3>
+  <div class="docs" id="docs-important"></div>
+
+  <h3 class="group-title group-conditional" data-i18n="grp_conditional"></h3>
+  <div class="docs" id="docs-conditional"></div>
+
+  <div class="nav-row">
+    <div class="left">
+      <button class="btn ghost" type="button" data-prev="1" data-i18n="btn_prev"></button>
+    </div>
+    <button class="btn" type="button" data-next="3" data-i18n="btn_extract"></button>
+  </div>
+</section>
+
+<!-- ========== STEP 3: AI extraction (loading) ========== -->
+<section class="step-section" data-step="3">
+  <div class="loader-card">
+    <div class="loader" aria-hidden="true"></div>
+    <h3 data-i18n="loader_title"></h3>
+    <p data-i18n="loader_sub"></p>
+    <div class="loader-list" id="loaderList"></div>
+  </div>
+</section>
+
+<!-- ========== STEP 4: remaining questions ========== -->
+<section class="step-section" data-step="4">
+  <div class="card">
+    <h2 data-i18n="step4_title"></h2>
+    <p class="sub" data-i18n="step4_sub"></p>
+  </div>
+
+  <div class="prefilled-banner" id="enrichmentBanner" style="display:none;">
+    <b data-i18n="enrichment_title"></b>
+    <ul id="enrichmentList"></ul>
+  </div>
+
+  <div class="prefilled-banner" id="prefilledBanner" style="display:none;">
+    <b data-i18n="prefilled_title"></b>
+    <ul id="prefilledList"></ul>
+  </div>
+
+  <div class="card">
+    <div class="banner private">
+      <b data-i18n="banner_disclosure_title"></b>
+      <span data-i18n="banner_disclosure_body"></span>
+    </div>
+
+    <!-- Step 4 — 100% AI-generated. The static qs-gebreken / qs-vve /
+         qs-verbouw pools were removed so the seller only sees follow-up
+         questions derived from the actual uploaded documents. The
+         loading state below is shown while /api/verkoop/analyse runs
+         (typically 30-40s on a freshly-uploaded dossier). -->
+    <section id="aiQuestionsLoading" style="display:none; padding:18px 0;">
+      <div class="loader" aria-hidden></div>
+      <p class="sub" data-i18n="qg_ai_loading"></p>
+    </section>
+
+    <section id="aiQuestionsEmpty" style="display:none; padding:18px 0;">
+      <p class="sub" data-i18n="qg_ai_empty"></p>
+    </section>
+
+    <section id="aiQuestionsSection" style="display:none; margin-top:6px;">
+      <h3 class="qg-title" data-ai-title>✨ <span data-i18n="qg_ai"></span></h3>
+      <p class="sub" data-ai-sub data-i18n="qg_ai_sub"></p>
+      <div id="qs-ai"></div>
+    </section>
+
+    <h3 class="qg-title" data-i18n="qg_verkoop"></h3>
+
+    <div id="priceEstimateBox" class="price-estimate" style="display:none;">
+      <div class="pe-head">
+        <span class="pe-icon">€</span>
+        <div>
+          <div class="pe-title" data-i18n="price_estimate_title"></div>
+          <div class="pe-body" data-i18n="price_estimate_body"></div>
+        </div>
+      </div>
+      <div class="pe-range">
+        <div class="pe-bar"><div class="pe-bar-fill"></div></div>
+        <div class="pe-numbers">
+          <span id="peLow"></span>
+          <span id="peMid"></span>
+          <span id="peHigh"></span>
+        </div>
+      </div>
+      <div class="pe-basis" id="peBasis"></div>
+      <div class="pe-actions">
+        <button type="button" class="btn btn-sm" id="peUseBtn" data-i18n="price_klopt"></button>
+        <button type="button" class="btn ghost btn-sm" id="peOtherBtn" data-i18n="price_anders"></button>
+      </div>
+    </div>
+
+    <div class="row-2">
+      <div class="field">
+        <label class="lbl" for="vraagprijs" data-i18n="lbl_price"></label>
+        <input id="vraagprijs" type="text" data-placeholder="ph_price" />
+      </div>
+      <div class="field">
+        <label class="lbl" for="oplev" data-i18n="lbl_handover"></label>
+        <input id="oplev" type="text" data-placeholder="ph_handover" />
+      </div>
+    </div>
+    <div class="field">
+      <label class="lbl" for="motivatie" data-i18n="lbl_motivation"></label>
+      <textarea id="motivatie" data-placeholder="ph_motivation"></textarea>
+    </div>
+  </div>
+
+  <section class="submit-card">
+    <h2 data-i18n="submit_title"></h2>
+    <p data-i18n="submit_sub"></p>
+
+    <div class="consent">
+      <input type="checkbox" id="consent" />
+      <label for="consent" id="consentLabel"></label>
+    </div>
+
+    <!-- Validation banner — populated by validateBeforeSubmit() on submit click -->
+    <div id="validationBanner" class="validation-banner" style="display:none;">
+      <div class="vb-title">⚠ <span id="validationTitle"></span></div>
+      <div class="vb-sub" id="validationSub" style="margin-bottom:6px;"></div>
+      <ul id="validationList"></ul>
+    </div>
+
+    <div class="nav-row">
+      <div class="left">
+        <button class="btn ghost" type="button" data-prev="2" data-i18n="btn_prev_to_docs"></button>
+      </div>
+      <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+        <span class="small" data-i18n="submit_note"></span>
+        <button class="btn" id="submitBtn" type="button" data-i18n="submit_btn"></button>
+      </div>
+    </div>
+  </section>
+</section>
+
+</main>
+
+<div class="saved-pill" id="savedPill"></div>
+<div class="toast-host" id="toastHost" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+/* ========================================================================
+   ENDPOINTS. Replace for production.
+   ------------------------------------------------------------------------
+   POST_URL    : (optional) saves intake details from step 1
+   EXTRACT_URL : runs the Claude API on uploaded files; returns:
+                 { prefilled: { lekkages: false, mjop_aanwezig: true, ... },
+                   summary:   "Klantvriendelijke samenvatting per document",
+                   skipQuestions: ["qs-vve_2", "qs-verbouw_0"] }
+   SUBMIT_URL  : final submit
+   ======================================================================== */
+const POST_URL    = "/api/verkoop/intake";
+const EXTRACT_URL = "/api/verkoop/extract";
+const SUBMIT_URL  = "/api/verkoop/submit";
+const DOSSIER_URL = "/api/verkoop/dossier";  // Block F — GET + POST upsert
+const UPLOAD_URL  = "/api/verkoop/upload";    // Block B — per-file POST/DELETE
+// Per-doc AI pre-extract is now triggered server-side from /api/verkoop/upload
+// via waitUntil() — the portal no longer needs a fire-and-forget fetch. The
+// /api/verkoop/extract-doc route is kept for the analyse-route backfill path.
+
+/* DEMO MODE: open de pagina met ?demo=1 om de hele flow te testen
+   zonder backend. Mockt de AI-extractie en de submit.
+   Wordt automatisch geactiveerd als je het bestand opent via file://
+   (zonder server), zodat je nooit een lege errorbox krijgt. */
+const DEMO =
+  new URLSearchParams(location.search).get("demo") === "1" ||
+  location.protocol === "file:";
+
+function mockExtraction() {
+  const isNL = lang === "nl";
+  return {
+    summary: isNL ? [
+      "Splitsingsakte gevonden, modelreglement 2017",
+      "VvE-bijdrage € 175 per maand uit jaarrekening",
+      "MJOP geldig tot 2031, dak vervangen in 2024",
+      "Reservefonds saldo € 24.580 (voldoet aan 0,5% norm)",
+      "Notulen ALV 2023, 2024 en 2025 verwerkt"
+    ] : [
+      "Split deed found, model regulation 2017",
+      "VvE fee € 175 per month from annual accounts",
+      "MJOP valid through 2031, roof replaced in 2024",
+      "Reserve fund balance € 24,580 (meets 0.5% norm)",
+      "ALV minutes 2023, 2024 and 2025 processed"
+    ],
+    // Vragen die we kunnen beantwoorden uit de documenten -> verbergen
+    skipQuestions: ["qs-vve_uitgaven", "qs-vve_fundering"],
+    // Velden die we alvast invullen -> gebruiker kan overschrijven
+    prefilled: {
+      "qs-verbouw_door": isNL ? "Huidige eigenaar" : "Current owner",
+      "qs-verbouw_vergunning": "ja",
+      "qs-verbouw_aanbouw": isNL ? ["Dakkapel"] : ["Dormer"],
+      "qs-verbouw_constructief": isNL ? ["Geen"] : ["None"]
+    },
+    // Prijsschatting (voor productie via Funda/Pararius API)
+    priceEstimate: {
+      low: 485000,
+      mid: 525000,
+      high: 565000,
+      basis: isNL
+        ? "5 vergelijkbare appartementen op deze straat, mediaan €5.380/m²"
+        : "5 comparable apartments on this street, median €5,380/m²"
+    }
+  };
+}
+
+/* documents grouped by urgency level instead of category.
+   level: 'required'    (verplicht voor verkoop)
+        | 'important'   (belangrijk voor compleet dossier)
+        | 'conditional' (alleen als van toepassing) */
+const DOC_GROUPS = {
+  // De voorheen "Verplicht" categorie is verwijderd. Die docs (leveringsakte,
+  // splitsingsakte, KvK uittreksel VvE, vergunningen, bouwtekeningen, fundering)
+  // halen wij zelf op uit openbare registers (Kadaster, KvK, Omgevingsloket,
+  // Stadsarchief, KCAF) en BAG + EP online. De klant ziet boven aan stap 2 een
+  // banner met wat wij regelen.
+  "docs-important": [
+    { key: "mjop",          level: "important",   skippable: false, link: "" },
+    { key: "notulen",       level: "important",   skippable: false, link: "" },
+    { key: "jaarrekening",  level: "important",   skippable: false, link: "" },
+    { key: "reservefonds",  level: "important",   skippable: false, link: "" },
+    { key: "opstal",        level: "important",   skippable: false, link: "" }
+  ],
+  "docs-conditional": [
+    { key: "hypotheek",     level: "conditional", skippable: true,  link: "" },
+    { key: "erfpacht",      level: "conditional", skippable: true,  link: "https://www.amsterdam.nl/wonen-bouwen-verbouwen/erfpacht/" },
+    { key: "garanties",     level: "conditional", skippable: true,  link: "" },
+    { key: "cv-onderhoud",  level: "conditional", skippable: true,  link: "" },
+    { key: "zonnepanelen",  level: "conditional", skippable: true,  link: "" },
+    { key: "asbest",        level: "conditional", skippable: true,  link: "" }
+  ]
+};
+// Static question pool removed — step 4 is now driven entirely by the
+// AI-generated follow-up questions (see renderAiQuestions, fed by
+// /api/verkoop/analyse). Leaving Q_GROUPS empty makes renderQuestions /
+// clearGroups / the submit-time form serializer all no-ops for the legacy
+// qs-gebreken / qs-vve / qs-verbouw groups without having to refactor every
+// call site.
+const Q_GROUPS = [];
+
+/* translations */
+const I18N = {
+  nl: {
+    home: "Terug naar home",
+    eyebrow: "Verkoop je appartement",
+    title: "Begin je verkoop in 15 minuten.",
+    lead: "Vul je adres in, upload je stukken en beantwoord een paar korte vragen. Alles wat openbaar is (kadasteraktes, KvK uittreksel VvE, vergunningen, bouwtekeningen, funderingsstatus, energielabel) halen wij voor je op. Jij uploadt alleen wat alleen jij of je VvE beheerder heeft. Onze AI leest die documenten uit en bespaart je het meeste typewerk. Je makelaar belt binnen één werkdag terug.",
+    step1: "Intake", step2: "Documenten", step3: "Analyse", step4: "Vragen",
+
+    step1_title: "1. Adres + contact",
+    step1_sub: "Hiermee halen we publieke gegevens automatisch op (Kadaster, WOZ, energielabel, erfpachtstatus, monumentenstatus).",
+    lbl_street: "Straat + huisnummer",
+    lbl_postcode: "Postcode + plaats",
+    lbl_name: "Je naam",
+    lbl_email: "Emailadres",
+    lbl_phone: "Telefoon",
+    lbl_phone_signin: "Je telefoonnummer (inloggen)",
+    lbl_phone_alt: "Alternatief nummer",
+    phone_alt_toggle: "+ Voeg ander nummer toe",
+    lbl_moment: "Beste moment om te bellen",
+    ph_street: "Bijv. Prinsengracht 123-2",
+    ph_postcode: "1015 EA Amsterdam",
+    ph_phone: "06-...",
+    opt_no_pref: "Geen voorkeur",
+    opt_morning: "Ochtend (09 tot 12)",
+    opt_afternoon: "Middag (12 tot 17)",
+    opt_evening: "Avond (17 tot 20)",
+    banner_public_title: "Wat we voor je proberen op te halen",
+    banner_public_body: "Een groot deel regelen we zelf: leveringsakte en splitsingsakte bij Kadaster, KvK uittreksel van je VvE, vergunningen via Omgevingsloket, bouwtekeningen via Stadsarchief, funderingsstatus via KCAF, en bouwjaar/oppervlakte/energielabel via BAG en EP online. Jij hoeft alleen de stukken te uploaden die alleen jij of je VvE beheerder hebt.",
+    step1_hint: "Klaar? Ga door naar de documenten.",
+    btn_next: "Volgende",
+    btn_prev: "Vorige",
+
+    step2_title: "2. Documenten",
+    step2_sub: "De openbare stukken halen wij voor je op (zie hieronder). Jij uploadt alleen de papieren die je VvE beheerder of jij persoonlijk hebt. Heb je niet alles? Geen probleem, upload wat je hebt.",
+    btn_extract: "Documenten laten uitlezen",
+
+    we_handle_title: "Dit halen wij voor je op. Niet uploaden:",
+    we_handle_kadaster: "Leveringsakte + splitsingsakte (via Kadaster)",
+    we_handle_kvk: "KvK uittreksel van je VvE (via KvK)",
+    we_handle_omgevingsloket: "Omgevingsvergunningen (via Omgevingsloket)",
+    we_handle_stadsarchief: "Bouw en verbouwtekeningen (via Stadsarchief Amsterdam)",
+    we_handle_kcaf: "Funderingsstatus (via KCAF Funderingsviewer)",
+    we_handle_bag: "Bouwjaar, oppervlakte en energielabel (via BAG + EP online)",
+
+    grp_required: "Verplicht",
+    grp_important: "Belangrijk (VvE)",
+    grp_conditional: "Indien van toepassing",
+
+    loader_title: "We lezen je documenten uit",
+    loader_sub: "Onze AI haalt zoveel mogelijk informatie uit je geüploade stukken. Dat scheelt jou typewerk. Een paar seconden geduld.",
+    loader_step_upload: "Documenten geüpload",
+    loader_step_extract: "Tekst en velden extraheren",
+    loader_step_match: "Antwoorden matchen aan vragen",
+    loader_step_done: "Klaar voor de laatste vragen",
+
+    step4_title: "3. Alleen de openstaande vragen",
+    step4_sub: "Wat onze AI niet uit je documenten kon halen. Je doet dit deel in een paar minuten.",
+    enrichment_title: "Wat we uit openbare registers hebben opgehaald:",
+    enrichment_none: "Geen openbare registerdata gevonden voor dit adres.",
+    prefilled_title: "Wat we al voor je hebben ingevuld:",
+
+    banner_disclosure_title: "Mededelingsplicht (BW art. 7:17). ",
+    banner_disclosure_body: "Wat je hier meldt, beschermt jou achteraf. Niet melden van bekende gebreken kan tot een schadeclaim leiden, ook al is de woning verkocht.",
+
+    qg_gebreken: "Gebreken & lekkages",
+    qg_vve: "VvE & buren",
+    qg_verbouw: "Verbouwingen",
+    qg_ai: "Aanvullende AI-vragen",
+    qg_ai_sub: "Onze AI heeft een paar extra vragen op basis van jouw documenten. Korte antwoorden zijn prima — ze worden meteen opgeslagen.",
+    qg_ai_loading: "AI analyseert je documenten — dit duurt 30–40 seconden…",
+    qg_ai_empty: "De documenten dekken al onze vragen. Geen aanvullende vragen nodig.",
+    ai_followup_label: "Toelichting (optioneel)",
+    qg_verkoop: "Verkoop",
+
+    lbl_gebreken_toel: "Toelichting (per gebrek: wat, wanneer, hersteld door wie?)",
+    ph_gebreken: "Bijv. Lekkage badkamer 2022, hersteld door Jansen Loodgieters, geen restschade.",
+    lbl_vve_sfeer: "Sfeer in de VvE. Wat moet je makelaar weten?",
+    ph_vve: "Actief bestuur, recent dakproject met soepel verloop.",
+    lbl_verbouw_toel: "Welke verbouwingen, wanneer, door welke aannemer?",
+    ph_verbouw: "Bijv. Keuken vernieuwd 2021 door De Houtkamp, badkamer 2019.",
+    lbl_price: "Gewenste vraagprijs (€)",
+    ph_price: "Bijv. 525.000",
+    lbl_handover: "Gewenste opleverdatum",
+    ph_handover: "Bijv. medio juli, of 'flexibel'",
+    lbl_motivation: "Reden van verkoop & verwachtingen",
+    ph_motivation: "Bijv. Verhuizen naar groter, tijdsdruk laag.",
+
+    submit_title: "4. Klaar voor je makelaar",
+    submit_sub: "Wij sturen je een bevestigingsmail. Je makelaar belt je binnen één werkdag voor de bezichtigingsafspraak.",
+    submit_btn: "Verzenden",
+    submit_note: "Je gegevens worden vertrouwelijk behandeld (AVG conform).",
+    submit_done: "Verzonden. We bellen je binnen 1 werkdag.",
+    submit_error: "Er ging iets mis bij het verzenden. Probeer het opnieuw of bel ons direct.",
+    btn_prev_to_docs: "Terug naar documenten",
+
+    where_label: "Waar vind ik dit?",
+    drop_strong: "Klik hier of sleep bestanden",
+    drop_sub: "PDF, JPG, PNG, HEIC, Word of Excel",
+    open: "Openen",
+    yn_yes: "Ja",
+    yn_no: "Nee",
+    err_step1: "Vul je adres, naam en email in.",
+    err_email: "Vul een geldig emailadres in.",
+    err_postcode: "Vul een geldige Nederlandse postcode in (bijv. 1015 EA).",
+    err_step2_empty: "Upload minstens één document, of ga via 'Vorige' naar deel 1 als je liever zonder documenten verder gaat.",
+    err_file_too_big: "Bestand te groot (max 32 MB):",
+    consent_required: "Vink de privacyverklaring aan om te verzenden.",
+    validation_title: "Vul deze verplichte velden in",
+    validation_sub: "We hebben deze nog nodig om je dossier compleet te maken:",
+    validation_field_required: "Dit veld is verplicht",
+    validation_field_email: "Vul een geldig e-mailadres in",
+    validation_field_postcode: "Vul een geldige postcode in (bv. 1015 EA)",
+    validation_field_consent: "Je moet akkoord gaan met de privacyverklaring",
+    field_label_straat: "Straat + huisnummer",
+    field_label_postcode: "Postcode + plaats",
+    field_label_naam: "Je naam",
+    field_label_email: "Emailadres",
+    field_label_consent: "Privacyverklaring",
+    submit_saved: "Wijzigingen opgeslagen",
+    consent_label: "Ik ga akkoord met de [privacyverklaring](#privacy). Mijn gegevens worden vertrouwelijk gebruikt voor het opstellen van mijn verkoopdossier.",
+    trust_no_fee: "Geen kosten vooraf",
+    trust_response: "Reactie binnen 1 werkdag",
+    trust_secure: "AVG veilig",
+    required_marker: "*",
+    submitting: "Verzenden...",
+    saved_indicator: "Concept automatisch opgeslagen",
+    tag_required: "Verplicht",
+    tag_important: "Belangrijk",
+    tag_conditional: "Indien van toepassing",
+    open_placeholder: "Beantwoord in eigen woorden",
+    followup_no: "Wat speelt er?",
+    followup_no_permit: "Waarom niet?",
+    yn_amount_hint: "Hoeveel? (€)",
+    radio_owner_options: ["Huidige eigenaar", "Vorige eigenaar", "Beide", "Geen verbouwingen"],
+    multi_constr: ["Draagmuur weggehaald", "Vloer geopend", "Balken vervangen", "Anders", "Geen"],
+    multi_aanbouw: ["Aanbouw", "Dakkapel", "Dakterras", "Balkonuitbreiding", "Geen"],
+    price_estimate_title: "Schatting vraagprijs",
+    price_estimate_body: "Op basis van vergelijkbare panden in jouw straat en de huidige Funda data komen we op een richtprijs. Klopt deze schatting volgens jou?",
+    price_klopt: "Ja, gebruik deze prijs",
+    price_anders: "Nee, ik wil een andere prijs",
+    price_no_estimate: "Geen schatting beschikbaar voor dit adres. Vul je gewenste prijs in.",
+
+    docs: {
+      hypotheek: { naam: "Hypotheekgegevens (aflosnota of pro forma)", desc: "Voor de doorhaling bij de notaris en boeterente inzicht.", where: "Te downloaden in je klantportal van je hypotheekverstrekker (ABN, ING, Rabobank, etc.). Vaak heet het 'pro forma berekening'.", linkLabel: "", tag: "Privé", skipLabel: "Ik heb geen hypotheek op deze woning" },
+      garanties: { naam: "Garantiebewijzen", desc: "Garanties van dak, cv, kozijnen, keuken, badkamer, zonnepanelen.", where: "Eigen administratie. Vraag je aannemer of installateur om een kopie als je 'm kwijt bent.", linkLabel: "", tag: "Privé" },
+      "cv-onderhoud": { naam: "CV onderhoudscontract + laatste rapport", desc: "Contract en jaarlijkse keuring van de cv ketel.", where: "Bij je onderhoudspartij (bv. Feenstra, Energiewacht, Bonarius). Te vinden in hun klantportal of je emailarchief.", linkLabel: "", tag: "Privé" },
+      zonnepanelen: { naam: "Zonnepanelen: bon, garantie & monitoring", desc: "Aankoopbon, garantie, omvormer, salderingsafspraak.", where: "Bij je installateur of in je emailbox bij aankoop. Saldering staat bij je energieleverancier (regeling stopt 1-1-2027).", linkLabel: "", tag: "Privé" },
+      notulen: { naam: "Notulen ALV. Laatste 3 jaar.", desc: "Vergaderverslagen van de algemene ledenvergadering.", where: "Vraag je VvE beheerder of bestuur. Bij grote VvE's staan ze in het beheerportaal (Twinq, Bouwinvest, BVV, Pro VvE Beheer).", linkLabel: "", tag: "Via VvE" },
+      jaarrekening: { naam: "Jaarrekening + begroting VvE", desc: "Laatste twee boekjaren plus lopende begroting.", where: "Via je VvE beheerder of bestuur.", linkLabel: "", tag: "Via VvE" },
+      mjop: { naam: "MJOP. Meerjarenonderhoudsplan.", desc: "Maximaal 10 jaar oud. Verplicht voor VvE's met meer dan 8 woningen.", where: "Via je VvE beheerder. Geen MJOP? Geef dat aan in stap 4. Een ontbrekend MJOP is geen blokkade voor verkoop, wel een aandachtspunt.", linkLabel: "", tag: "Via VvE" },
+      reservefonds: { naam: "Bewijs saldo reservefonds", desc: "Banksaldo of jaarrekening waar het reservefonds uit blijkt.", where: "Via VvE beheerder. Wettelijk minimum sinds 2018: 0,5% van de herbouwwaarde of MJOP gebaseerd.", linkLabel: "", tag: "Via VvE" },
+      opstal: { naam: "Opstalverzekeringspolis VvE", desc: "Polis met dekking en herbouwwaarde van het gebouw.", where: "Via je VvE beheerder. Veelvoorkomend bij Centraal Beheer, Klaverblad, NN.", linkLabel: "", tag: "Via VvE" },
+      erfpacht: { naam: "Erfpachtstukken (Amsterdam)", desc: "Erfpachtakte, canon aanslag, afkoopbevestiging of overstapaanbieding.", where: "Log in met DigiD op het erfpachtdossier van gemeente Amsterdam. Daar staan al je erfpachtstukken bij elkaar.", linkLabel: "Open Erfpacht Amsterdam", tag: "Gemeente" },
+      asbest: { naam: "Asbestinventarisatie", desc: "Alleen relevant bij bouwjaar < 1994 of bij bekend asbest.", where: "Geen rapport? Niet verplicht voor verkoop, wel handig. Inventarisatie laten uitvoeren door SC 540 gecertificeerd bureau (€350 tot €500).", linkLabel: "", tag: "Privé" }
+    },
+    questions: {
+      "qs-gebreken": [
+        { id: "qs-gebreken_lekkages",  type: "yn", label: "Ooit lekkages gehad (dak, leidingen, badkamer, balkon, kozijnen)?" },
+        { id: "qs-gebreken_vocht",     type: "yn", label: "Vocht, schimmel of optrekkend vocht?" },
+        { id: "qs-gebreken_houtworm",  type: "yn", label: "Houtworm, boktor, zwam of ongedierte?" },
+        { id: "qs-gebreken_scheuren",  type: "yn", label: "Verzakkingen of scheuren in muren, plafonds of vloeren?" },
+        { id: "qs-gebreken_geluid",    type: "yn", label: "Geluidsoverlast (buren, horeca, tram, Schiphol)?" },
+        { id: "qs-gebreken_claims",    type: "yn", label: "Verzekeringsclaims geweest?" },
+        { id: "qs-gebreken_verborgen", type: "yn", label: "Verborgen gebreken die niet zichtbaar zijn voor een koper?" }
+      ],
+      "qs-vve": [
+        { id: "qs-vve_buren",       type: "yn_followup_no", label: "Goede relatie met directe buren?", followupKey: "followup_no" },
+        { id: "qs-vve_conflicten",  type: "open",           label: "Conflicten of ergernissen binnen de VvE?" },
+        { id: "qs-vve_uitgaven",    type: "yn",             label: "Geplande grote uitgaven (dak, fundering, lift, gevel) komende 5 jaar?" },
+        { id: "qs-vve_achterstand", type: "yn_amount_yes",  label: "Achterstand betaling VvE?" },
+        { id: "qs-vve_fundering",   type: "yn",             label: "Funderingsherstel gepland of uitgevoerd?" }
+      ],
+      "qs-verbouw": [
+        { id: "qs-verbouw_door",        type: "radio",            label: "Verbouwingen uitgevoerd door:", optionsKey: "radio_owner_options" },
+        { id: "qs-verbouw_vergunning",  type: "yn_followup_no",   label: "Voor de verbouwingen omgevingsvergunning aangevraagd én verkregen?", followupKey: "followup_no_permit" },
+        { id: "qs-verbouw_constructief",type: "multiselect",      label: "Constructieve wijzigingen geweest?", optionsKey: "multi_constr" },
+        { id: "qs-verbouw_aanbouw",     type: "multiselect",      label: "Aanbouw of toevoegingen aanwezig?", optionsKey: "multi_aanbouw" }
+      ]
+    }
+  },
+
+  en: {
+    home: "Back to home",
+    eyebrow: "Selling your apartment",
+    title: "Start your sale in 15 minutes.",
+    lead: "Enter your address, upload your documents and answer a few short questions. Everything that's public (Kadaster deeds, your VvE's Chamber of Commerce excerpt, building permits, construction drawings, foundation status, energy label) we fetch for you. You only upload what only you or your VvE manager has. Our AI parses those files so you skip most of the typing. Your agent will call back within one business day.",
+    step1: "Intake", step2: "Documents", step3: "Analysis", step4: "Questions",
+
+    step1_title: "1. Address + contact",
+    step1_sub: "We use this to automatically retrieve public records (Kadaster, WOZ, energy label, leasehold status, listed monument status).",
+    lbl_street: "Street + house number",
+    lbl_postcode: "Postcode + city",
+    lbl_name: "Your name",
+    lbl_email: "Email",
+    lbl_phone: "Phone",
+    lbl_phone_signin: "Your phone (sign-in)",
+    lbl_phone_alt: "Alternative number",
+    phone_alt_toggle: "+ Add another number",
+    lbl_moment: "Best time to call",
+    ph_street: "e.g. Prinsengracht 123-2",
+    ph_postcode: "1015 EA Amsterdam",
+    ph_phone: "06-...",
+    opt_no_pref: "No preference",
+    opt_morning: "Morning (09 to 12)",
+    opt_afternoon: "Afternoon (12 to 17)",
+    opt_evening: "Evening (17 to 20)",
+    banner_public_title: "What we try to fetch for you",
+    banner_public_body: "We handle most public records for you: title deed and apartment split deed (via Kadaster), VvE's Chamber of Commerce excerpt (via KvK), building permits (via Omgevingsloket), construction drawings (via Amsterdam City Archive), foundation status (via KCAF), and year built / floor area / energy label (via BAG + EP online). You only upload what only you or your VvE manager has.",
+    step1_hint: "Done? Continue to your documents.",
+    btn_next: "Next",
+    btn_prev: "Back",
+
+    step2_title: "2. Documents",
+    step2_sub: "We fetch the public documents for you (see below). You only upload what your VvE manager or you personally hold. Don't have everything? No problem, upload what you have.",
+    btn_extract: "Extract documents",
+
+    we_handle_title: "We fetch these for you. No upload needed:",
+    we_handle_kadaster: "Title deed + apartment split deed (via Kadaster)",
+    we_handle_kvk: "Chamber of Commerce excerpt for your VvE (via KvK)",
+    we_handle_omgevingsloket: "Building permits (via Omgevingsloket)",
+    we_handle_stadsarchief: "Construction & renovation drawings (via Amsterdam City Archive)",
+    we_handle_kcaf: "Foundation status (via KCAF Foundation Viewer)",
+    we_handle_bag: "Year built, floor area and energy label (via BAG + EP online)",
+
+    grp_required: "Required",
+    grp_important: "Important (VvE)",
+    grp_conditional: "If applicable",
+
+    loader_title: "Reading your documents",
+    loader_sub: "Our AI extracts as much as possible from your files. That saves you typing. A few seconds, please.",
+    loader_step_upload: "Documents uploaded",
+    loader_step_extract: "Extracting text and fields",
+    loader_step_match: "Matching answers to questions",
+    loader_step_done: "Ready for the final questions",
+
+    step4_title: "3. Just the open questions",
+    step4_sub: "What our AI couldn't extract from your documents. A few minutes to answer.",
+    enrichment_title: "What we pulled from public registers:",
+    enrichment_none: "No public register data found for this address.",
+    prefilled_title: "What we already filled in for you:",
+
+    banner_disclosure_title: "Disclosure obligation (Dutch Civil Code 7:17). ",
+    banner_disclosure_body: "What you disclose here protects you afterwards. Failing to disclose known defects may lead to a damage claim, even after the sale closes.",
+
+    qg_gebreken: "Defects & leaks",
+    qg_vve: "VvE & neighbours",
+    qg_verbouw: "Renovations",
+    qg_ai: "Extra AI questions",
+    qg_ai_sub: "Our AI has a few extra questions based on your documents. Short answers are fine — they're saved as you type.",
+    qg_ai_loading: "AI is analysing your documents — this takes 30–40 seconds…",
+    qg_ai_empty: "The documents cover all our questions. No follow-ups needed.",
+    ai_followup_label: "Notes (optional)",
+    qg_verkoop: "Sale",
+
+    lbl_gebreken_toel: "Notes (per defect: what, when, repaired by whom?)",
+    ph_gebreken: "e.g. Bathroom leak 2022, repaired by Jansen Plumbing, no residual damage.",
+    lbl_vve_sfeer: "Atmosphere within the VvE. What should your agent know?",
+    ph_vve: "Active board, recent roof project went smoothly.",
+    lbl_verbouw_toel: "Which renovations, when, by which contractor?",
+    ph_verbouw: "e.g. Kitchen redone 2021 by De Houtkamp, bathroom 2019.",
+    lbl_price: "Asking price (€)",
+    ph_price: "e.g. 525,000",
+    lbl_handover: "Preferred handover date",
+    ph_handover: "e.g. mid July, or 'flexible'",
+    lbl_motivation: "Reason for selling & expectations",
+    ph_motivation: "e.g. Moving to a larger home, no time pressure.",
+
+    submit_title: "4. Ready for your agent",
+    submit_sub: "We'll send you a confirmation email. Your agent will call within one business day to schedule the viewing.",
+    submit_btn: "Send",
+    submit_note: "Your data is handled confidentially (GDPR).",
+    submit_done: "Sent. We'll call you within 1 business day.",
+    submit_error: "Something went wrong while sending. Please try again or call us directly.",
+    btn_prev_to_docs: "Back to documents",
+
+    where_label: "Where do I find this?",
+    drop_strong: "Click here or drag files",
+    drop_sub: "PDF, JPG, PNG, HEIC, Word or Excel",
+    open: "Open",
+    yn_yes: "Yes",
+    yn_no: "No",
+    err_step1: "Please fill in your address, name and email.",
+    err_email: "Please enter a valid email address.",
+    err_postcode: "Please enter a valid Dutch postcode (e.g. 1015 EA).",
+    err_step2_empty: "Upload at least one document, or click 'Back' to skip the document step.",
+    err_file_too_big: "File too large (max 32 MB):",
+    consent_required: "Please accept the privacy notice to send.",
+    validation_title: "Please fill these required fields",
+    validation_sub: "We still need these to complete your dossier:",
+    validation_field_required: "This field is required",
+    validation_field_email: "Please enter a valid email address",
+    validation_field_postcode: "Please enter a valid postcode (e.g. 1015 EA)",
+    validation_field_consent: "You must accept the privacy notice",
+    field_label_straat: "Street + house number",
+    field_label_postcode: "Postcode + city",
+    field_label_naam: "Your name",
+    field_label_email: "Email address",
+    field_label_consent: "Privacy notice",
+    submit_saved: "Changes saved",
+    consent_label: "I agree to the [privacy policy](#privacy). My data is used confidentially to prepare my sale dossier.",
+    trust_no_fee: "No upfront fees",
+    trust_response: "Response within 1 business day",
+    trust_secure: "GDPR secure",
+    required_marker: "*",
+    submitting: "Sending...",
+    saved_indicator: "Draft autosaved",
+    tag_required: "Required",
+    tag_important: "Important",
+    tag_conditional: "If applicable",
+    open_placeholder: "Answer in your own words",
+    followup_no: "What's going on?",
+    followup_no_permit: "Why not?",
+    yn_amount_hint: "How much? (€)",
+    radio_owner_options: ["Current owner", "Previous owner", "Both", "No renovations"],
+    multi_constr: ["Load bearing wall removed", "Floor opened", "Beams replaced", "Other", "None"],
+    multi_aanbouw: ["Extension", "Dormer", "Roof terrace", "Balcony extension", "None"],
+    price_estimate_title: "Asking price estimate",
+    price_estimate_body: "Based on comparable apartments on your street and current Funda data, here's our suggested asking price. Does this estimate match yours?",
+    price_klopt: "Yes, use this price",
+    price_anders: "No, I want a different price",
+    price_no_estimate: "No estimate available for this address. Please enter your desired price.",
+
+    docs: {
+      hypotheek: { naam: "Mortgage details (payoff statement or pro forma)", desc: "Needed for cancellation by the notary and to check early redemption penalties.", where: "Download from your mortgage lender's customer portal (ABN, ING, Rabobank, etc.). Often called a 'pro forma calculation'.", linkLabel: "", tag: "Private", skipLabel: "I don't have a mortgage on this property" },
+      garanties: { naam: "Warranties", desc: "Warranties for roof, boiler, window frames, kitchen, bathroom, solar.", where: "Your own files. Ask your contractor or installer for a copy if missing.", linkLabel: "", tag: "Private" },
+      "cv-onderhoud": { naam: "Boiler service contract + last report", desc: "Contract and annual inspection of the boiler.", where: "From your service provider (e.g. Feenstra, Energiewacht, Bonarius). Found in their portal or your email.", linkLabel: "", tag: "Private" },
+      zonnepanelen: { naam: "Solar panels: invoice, warranty & monitoring", desc: "Purchase invoice, warranty, inverter info, net metering arrangement.", where: "From your installer or your email at purchase. Net metering is with your supplier (scheme ends 1 Jan 2027).", linkLabel: "", tag: "Private" },
+      notulen: { naam: "Minutes of general meetings (last 3 years)", desc: "Reports from the VvE's general meetings.", where: "Ask your VvE manager or board. Larger VvE's keep them in management portals (Twinq, Bouwinvest, BVV, Pro VvE Beheer).", linkLabel: "", tag: "Via VvE" },
+      jaarrekening: { naam: "VvE annual accounts + budget", desc: "Last two financial years plus the current budget.", where: "From your VvE manager or board.", linkLabel: "", tag: "Via VvE" },
+      mjop: { naam: "MJOP (long term maintenance plan)", desc: "Maximum 10 years old. Mandatory for VvE's with more than 8 units.", where: "Via your VvE manager. No MJOP? Note it in step 4. Missing MJOP is not a blocker, but is a point to address.", linkLabel: "", tag: "Via VvE" },
+      reservefonds: { naam: "Reserve fund balance proof", desc: "Bank statement or annual accounts showing the reserve fund.", where: "From your VvE manager. Statutory minimum since 2018: 0.5% of rebuild value or MJOP based.", linkLabel: "", tag: "Via VvE" },
+      opstal: { naam: "VvE building insurance policy", desc: "Policy with coverage and rebuild value of the building.", where: "From your VvE manager. Common with Centraal Beheer, Klaverblad, NN.", linkLabel: "", tag: "Via VvE" },
+      erfpacht: { naam: "Leasehold documents (Amsterdam)", desc: "Leasehold deed, canon assessment, buyout confirmation or transition offer.", where: "Log in with DigiD to the Amsterdam leasehold dossier. All your leasehold documents are stored there.", linkLabel: "Open Amsterdam Leasehold", tag: "Municipal" },
+      asbest: { naam: "Asbestos inventory", desc: "Only relevant for buildings before 1994 or with known asbestos.", where: "No report? Not mandatory for sale, but useful. Have an inventory done by an SC 540 certified firm (€350 to €500).", linkLabel: "", tag: "Private" }
+    },
+    questions: {
+      "qs-gebreken": [
+        { id: "qs-gebreken_lekkages",  type: "yn", label: "Have there ever been leaks (roof, pipes, bathroom, balcony, frames)?" },
+        { id: "qs-gebreken_vocht",     type: "yn", label: "Damp, mould or rising damp issues?" },
+        { id: "qs-gebreken_houtworm",  type: "yn", label: "Woodworm, longhorn beetle, fungus or pests?" },
+        { id: "qs-gebreken_scheuren",  type: "yn", label: "Subsidence or cracks in walls, ceilings or floors?" },
+        { id: "qs-gebreken_geluid",    type: "yn", label: "Noise nuisance (neighbours, hospitality, trams, Schiphol)?" },
+        { id: "qs-gebreken_claims",    type: "yn", label: "Any insurance claims?" },
+        { id: "qs-gebreken_verborgen", type: "yn", label: "Hidden defects not visible to a buyer?" }
+      ],
+      "qs-vve": [
+        { id: "qs-vve_buren",       type: "yn_followup_no", label: "Good relationship with immediate neighbours?", followupKey: "followup_no" },
+        { id: "qs-vve_conflicten",  type: "open",           label: "Conflicts or grievances within the VvE?" },
+        { id: "qs-vve_uitgaven",    type: "yn",             label: "Planned major expenses (roof, foundation, lift, facade) in next 5 years?" },
+        { id: "qs-vve_achterstand", type: "yn_amount_yes",  label: "Outstanding payments owed to the VvE?" },
+        { id: "qs-vve_fundering",   type: "yn",             label: "Foundation repair planned or carried out?" }
+      ],
+      "qs-verbouw": [
+        { id: "qs-verbouw_door",        type: "radio",            label: "Renovations carried out by:", optionsKey: "radio_owner_options" },
+        { id: "qs-verbouw_vergunning",  type: "yn_followup_no",   label: "Building permit applied for and obtained for those renovations?", followupKey: "followup_no_permit" },
+        { id: "qs-verbouw_constructief",type: "multiselect",      label: "Any structural changes?", optionsKey: "multi_constr" },
+        { id: "qs-verbouw_aanbouw",     type: "multiselect",      label: "Any extensions or additions present?", optionsKey: "multi_aanbouw" }
+      ]
+    }
+  }
+};
+
+/* ===== state ===== */
+// Default is NL. Override via ?lang=en or legacy /selling path.
+const params = new URLSearchParams(location.search);
+let lang =
+  params.get("lang") === "en"
+    ? "en"
+    : params.get("lang") === "nl"
+    ? "nl"
+    : location.pathname.includes("/selling")
+    ? "en"
+    : "nl";
+let currentStep = 1;
+const uploaded = {};
+const skippedDocs = new Set();          // doc keys the user marked "not applicable"
+let extractionResult = null;             // { prefilled, summary, skipQuestions, enrichment }
+let enrichmentResult = null;             // { validatedAddress, bouwjaar, energielabel, ... }
+let leadId = null;                       // returned by /api/verkoop/intake; ties leads -> dossiers
+const MAX_FILE_BYTES = 32 * 1024 * 1024; // Claude API limit per PDF
+const STATE_KEY = "ah_verkoop_draft_v1"; // sessionStorage
+
+function t() { return I18N[lang]; }
+
+/* ===== rendering helpers ===== */
+function applyStaticI18n() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    // submit button bewaart succes-tekst over taalwissel heen
+    if (el.id === "submitBtn" && el.dataset.done === "1") {
+      el.textContent = "✓ " + t().submit_done;
+      return;
+    }
+    const key = el.getAttribute("data-i18n");
+    const v = t()[key];
+    if (typeof v === "string") el.textContent = v;
+  });
+  document.querySelectorAll("[data-placeholder]").forEach(el => {
+    const key = el.getAttribute("data-placeholder");
+    const v = t()[key];
+    if (typeof v === "string") el.setAttribute("placeholder", v);
+  });
+  document.querySelectorAll(".lang button").forEach(b => {
+    b.classList.toggle("active", b.getAttribute("data-lang") === lang);
+  });
+}
+
+function clearGroups() {
+  Object.keys(DOC_GROUPS).forEach(g => {
+    const el = document.getElementById(g);
+    if (el) el.innerHTML = "";
+  });
+  Q_GROUPS.forEach(g => {
+    const el = document.getElementById(g);
+    if (el) el.innerHTML = "";
+  });
+}
+
+function renderDocCard(group, doc) {
+  const tr = t().docs[doc.key];
+  const wrap = document.createElement("div");
+  wrap.className = "doc";
+  wrap.dataset.key = doc.key;
+  if (skippedDocs.has(doc.key)) wrap.classList.add("is-skipped");
+
+  // tag label by level
+  const tagText = t()["tag_" + doc.level] || tr.tag;
+  const head = document.createElement("div");
+  head.className = "doc-head";
+  head.innerHTML = `
+    <div>
+      <p class="doc-name"></p>
+      <p class="doc-desc"></p>
+    </div>
+    <span class="doc-tag ${doc.level}"></span>
+  `;
+  head.querySelector(".doc-name").textContent = tr.naam;
+  head.querySelector(".doc-desc").textContent = tr.desc;
+  head.querySelector(".doc-tag").textContent = tagText;
+  wrap.appendChild(head);
+
+  if (tr.where) {
+    const det = document.createElement("details");
+    det.className = "where";
+    const sum = document.createElement("summary");
+    sum.textContent = t().where_label;
+    det.appendChild(sum);
+    const body = document.createElement("div");
+    body.className = "where-body";
+    const p = document.createElement("p");
+    p.textContent = tr.where;
+    body.appendChild(p);
+    if (doc.link) {
+      const a = document.createElement("a");
+      a.href = doc.link;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = (tr.linkLabel || t().open) + " ↗";
+      body.appendChild(a);
+    }
+    det.appendChild(body);
+    wrap.appendChild(det);
+  }
+
+  // skip toggle voor optionele documenten (bv. "ik heb geen hypotheek")
+  if (doc.skippable && tr.skipLabel) {
+    const skipRow = document.createElement("div");
+    skipRow.className = "doc-skip";
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.id = "skip_" + doc.key;
+    cb.checked = skippedDocs.has(doc.key);
+    cb.addEventListener("change", () => {
+      if (cb.checked) {
+        skippedDocs.add(doc.key);
+        delete uploaded[doc.key];
+      } else {
+        skippedDocs.delete(doc.key);
+      }
+      wrap.classList.toggle("is-skipped", cb.checked);
+      rerenderFileList(doc.key);
+    });
+    const lab = document.createElement("label");
+    lab.htmlFor = "skip_" + doc.key;
+    lab.textContent = tr.skipLabel;
+    skipRow.appendChild(cb);
+    skipRow.appendChild(lab);
+    wrap.appendChild(skipRow);
+  }
+
+  const drop = document.createElement("label");
+  drop.className = "drop";
+  const input = document.createElement("input");
+  input.type = "file";
+  input.multiple = true;
+  input.accept = ".pdf,.jpg,.jpeg,.png,.heic,.doc,.docx,.xls,.xlsx";
+  input.dataset.doc = doc.key;
+  drop.appendChild(input);
+  const icon = document.createElement("span");
+  icon.className = "drop-icon";
+  icon.textContent = "+";
+  drop.appendChild(icon);
+  const p1 = document.createElement("p");
+  const strong = document.createElement("strong");
+  strong.textContent = t().drop_strong;
+  p1.appendChild(strong);
+  drop.appendChild(p1);
+  const p2 = document.createElement("p");
+  p2.className = "drop-sub";
+  p2.textContent = t().drop_sub;
+  drop.appendChild(p2);
+  wrap.appendChild(drop);
+
+  const list = document.createElement("div");
+  list.className = "filelist";
+  list.dataset.for = doc.key;
+  wrap.appendChild(list);
+
+  document.getElementById(group).appendChild(wrap);
+
+  input.addEventListener("change", e => handleFiles(doc.key, e.target.files));
+  ["dragenter", "dragover"].forEach(ev =>
+    drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("drag"); })
+  );
+  ["dragleave", "drop"].forEach(ev =>
+    drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("drag"); })
+  );
+  drop.addEventListener("drop", e => {
+    if (e.dataTransfer && e.dataTransfer.files) handleFiles(doc.key, e.dataTransfer.files);
+  });
+}
+
+function renderQuestions(groupId) {
+  const wrap = document.getElementById(groupId);
+  const skip = (extractionResult && extractionResult.skipQuestions) || [];
+  const prefill = (extractionResult && extractionResult.prefilled) || {};
+  t().questions[groupId].forEach(q => {
+    if (skip.includes(q.id)) return;
+    const row = renderQuestion(q, prefill[q.id]);
+    wrap.appendChild(row);
+  });
+}
+
+function renderQuestion(q, pre) {
+  const row = document.createElement("div");
+  row.className = "q-row";
+  if (pre !== undefined && pre !== null && pre !== "") row.classList.add("q-prefilled");
+
+  const head = document.createElement("div");
+  head.className = "q-head";
+  const labelEl = document.createElement("span");
+  labelEl.className = "q-label";
+  labelEl.textContent = q.label;
+  head.appendChild(labelEl);
+
+  if (q.type === "yn" || q.type === "yn_followup_no" || q.type === "yn_amount_yes") {
+    head.appendChild(buildYnButtons(q.id, pre));
+  }
+  row.appendChild(head);
+
+  if (q.type === "yn_followup_no") {
+    const followup = document.createElement("div");
+    followup.className = "q-followup";
+    followup.style.display = pre === "nee" ? "block" : "none";
+    const lbl = document.createElement("label");
+    lbl.htmlFor = q.id + "_fu";
+    lbl.textContent = t()[q.followupKey] || t().followup_no;
+    followup.appendChild(lbl);
+    const ta = document.createElement("textarea");
+    ta.id = q.id + "_fu";
+    ta.placeholder = t().open_placeholder;
+    followup.appendChild(ta);
+    row.appendChild(followup);
+    row.querySelector(`input[name="${q.id}"][value="nee"]`).addEventListener("change", e => {
+      followup.style.display = e.target.checked ? "block" : "none";
+    });
+    row.querySelector(`input[name="${q.id}"][value="ja"]`).addEventListener("change", () => {
+      followup.style.display = "none";
+    });
+  }
+
+  if (q.type === "yn_amount_yes") {
+    const amount = document.createElement("div");
+    amount.className = "q-amount";
+    amount.style.display = pre === "ja" ? "block" : "none";
+    const lbl = document.createElement("label");
+    lbl.htmlFor = q.id + "_amt";
+    lbl.textContent = t().yn_amount_hint;
+    amount.appendChild(lbl);
+    const inp = document.createElement("input");
+    inp.id = q.id + "_amt";
+    inp.type = "text";
+    inp.inputMode = "decimal";
+    inp.placeholder = "€";
+    amount.appendChild(inp);
+    row.appendChild(amount);
+    row.querySelector(`input[name="${q.id}"][value="ja"]`).addEventListener("change", e => {
+      amount.style.display = e.target.checked ? "block" : "none";
+    });
+    row.querySelector(`input[name="${q.id}"][value="nee"]`).addEventListener("change", () => {
+      amount.style.display = "none";
+    });
+  }
+
+  if (q.type === "open") {
+    const open = document.createElement("div");
+    open.className = "q-open";
+    const ta = document.createElement("textarea");
+    ta.id = q.id;
+    ta.name = q.id;
+    ta.placeholder = t().open_placeholder;
+    if (typeof pre === "string") ta.value = pre;
+    open.appendChild(ta);
+    row.appendChild(open);
+  }
+
+  if (q.type === "radio") {
+    const opts = (t()[q.optionsKey] || []);
+    const radio = document.createElement("div");
+    radio.className = "q-radio";
+    opts.forEach((opt, i) => {
+      const id = `${q.id}_${i}`;
+      const inp = document.createElement("input");
+      inp.type = "radio";
+      inp.name = q.id;
+      inp.id = id;
+      inp.value = opt;
+      if (pre === opt) inp.checked = true;
+      const lbl = document.createElement("label");
+      lbl.htmlFor = id;
+      lbl.textContent = opt;
+      radio.appendChild(inp);
+      radio.appendChild(lbl);
+    });
+    row.appendChild(radio);
+  }
+
+  if (q.type === "multiselect") {
+    const opts = (t()[q.optionsKey] || []);
+    const multi = document.createElement("div");
+    multi.className = "q-multi";
+    const preArr = Array.isArray(pre) ? pre : [];
+    opts.forEach((opt, i) => {
+      const id = `${q.id}_${i}`;
+      const inp = document.createElement("input");
+      inp.type = "checkbox";
+      inp.name = q.id;
+      inp.id = id;
+      inp.value = opt;
+      if (preArr.includes(opt)) inp.checked = true;
+      const lbl = document.createElement("label");
+      lbl.htmlFor = id;
+      lbl.textContent = opt;
+      multi.appendChild(inp);
+      multi.appendChild(lbl);
+    });
+    row.appendChild(multi);
+  }
+
+  return row;
+}
+
+function buildYnButtons(id, pre) {
+  const span = document.createElement("span");
+  span.className = "yn-opts";
+  span.innerHTML = `
+    <input type="radio" name="${id}" id="${id}_ja" value="ja" />
+    <label for="${id}_ja">${t().yn_yes}</label>
+    <input type="radio" name="${id}" id="${id}_nee" value="nee" />
+    <label for="${id}_nee">${t().yn_no}</label>
+  `;
+  if (pre === "ja" || pre === true) span.querySelector(`#${id}_ja`).checked = true;
+  if (pre === "nee" || pre === false) span.querySelector(`#${id}_nee`).checked = true;
+  return span;
+}
+
+function rerenderAll() {
+  clearGroups();
+  applyStaticI18n();
+  Object.keys(DOC_GROUPS).forEach(g => DOC_GROUPS[g].forEach(d => renderDocCard(g, d)));
+  Q_GROUPS.forEach(renderQuestions);
+  Object.keys(uploaded).forEach(rerenderFileList);
+  renderEnrichmentBanner();
+  renderPrefilledBanner();
+  renderPriceEstimate();
+  renderConsentLabel();
+  const sb = document.getElementById("submitBtn");
+  // bewaar succes-state ook na taalwissel
+  if (sb && !sb.disabled && !sb.dataset.done) sb.textContent = t().submit_btn;
+}
+
+function renderPriceEstimate() {
+  const box = document.getElementById("priceEstimateBox");
+  if (!box) return;
+  const est = extractionResult && extractionResult.priceEstimate;
+  if (!est) {
+    box.style.display = "none";
+    return;
+  }
+  box.style.display = "block";
+  const fmt = n => "€ " + n.toLocaleString(lang === "nl" ? "nl-NL" : "en-US");
+  document.getElementById("peLow").textContent  = fmt(est.low);
+  document.getElementById("peMid").textContent  = fmt(est.mid);
+  document.getElementById("peHigh").textContent = fmt(est.high);
+  document.getElementById("peBasis").textContent = est.basis || "";
+  // wire buttons (idempotent)
+  document.getElementById("peUseBtn").onclick = () => {
+    document.getElementById("vraagprijs").value = est.mid.toLocaleString(lang === "nl" ? "nl-NL" : "en-US");
+    box.style.display = "none";
+    document.getElementById("vraagprijs").focus();
+  };
+  document.getElementById("peOtherBtn").onclick = () => {
+    box.style.display = "none";
+    document.getElementById("vraagprijs").focus();
+  };
+}
+
+function renderPrefilledBanner() {
+  const banner = document.getElementById("prefilledBanner");
+  const list = document.getElementById("prefilledList");
+  if (!extractionResult || !extractionResult.summary || extractionResult.summary.length === 0) {
+    banner.style.display = "none";
+    return;
+  }
+  banner.style.display = "block";
+  list.innerHTML = "";
+  extractionResult.summary.forEach(line => {
+    const li = document.createElement("li");
+    li.textContent = line;
+    list.appendChild(li);
+  });
+}
+
+/**
+ * Render the public register enrichment banner so the seller sees what
+ * was actually fetched (vs. what we promised). Pulls the data fresh
+ * from `enrichmentResult` and localizes in the current language.
+ * If nothing was found we show a single "Geen data gevonden" line so
+ * the seller knows we tried. Failure shouldn't be invisible.
+ */
+function renderEnrichmentBanner() {
+  const banner = document.getElementById("enrichmentBanner");
+  const list = document.getElementById("enrichmentList");
+  if (!banner || !list) return;
+  const isNL = lang === "nl";
+  const lines = [];
+  const e = enrichmentResult || {};
+  const va = e.validatedAddress;
+  if (va) {
+    lines.push(isNL
+      ? `Adres bevestigd: ${va.straat} ${va.huisnummer}, ${va.postcode} ${va.woonplaats}`
+      : `Address confirmed: ${va.straat} ${va.huisnummer}, ${va.postcode} ${va.woonplaats}`);
+    if (va.buurt) {
+      lines.push(isNL
+        ? `Buurt: ${va.buurt}${va.wijk ? `, wijk ${va.wijk}` : ""}`
+        : `Neighbourhood: ${va.buurt}${va.wijk ? `, district ${va.wijk}` : ""}`);
+    }
+  }
+  if (e.bouwjaar) lines.push(isNL ? `Bouwjaar: ${e.bouwjaar}` : `Year built: ${e.bouwjaar}`);
+  if (e.oppervlakte) lines.push(isNL
+    ? `Oppervlakte (BAG): ${e.oppervlakte} m²`
+    : `Floor area (BAG): ${e.oppervlakte} m²`);
+  if (e.energielabel && e.energielabel.klasse) lines.push(isNL
+    ? `Definitief energielabel: ${e.energielabel.klasse}`
+    : `Definitive energy label: ${e.energielabel.klasse}`);
+  if (e.monument) lines.push(isNL
+    ? `Status: ${e.monument.type === "rijksmonument" ? "Rijksmonument" : "Gemeentelijk monument"}${e.monument.nummer ? " " + e.monument.nummer : ""}`
+    : `Status: ${e.monument.type === "rijksmonument" ? "National monument" : "Municipal monument"}${e.monument.nummer ? " " + e.monument.nummer : ""}`);
+
+  // Hide the banner entirely until intake has run (otherwise the very
+  // first render of step 4 in DEMO mode would already show "geen data").
+  if (!enrichmentResult) {
+    banner.style.display = "none";
+    return;
+  }
+  banner.style.display = "block";
+  list.innerHTML = "";
+  if (lines.length === 0) {
+    const li = document.createElement("li");
+    li.textContent = t().enrichment_none;
+    list.appendChild(li);
+    return;
+  }
+  lines.forEach(line => {
+    const li = document.createElement("li");
+    li.textContent = line;
+    list.appendChild(li);
+  });
+}
+
+// Block B incremental save:
+//   In live mode (non-DEMO), each file is uploaded to /api/verkoop/upload the
+//   moment the seller picks it. The local `uploaded[docKey]` array stores UI
+//   items that mix transient File objects (uploading/failed) with server-known
+//   records (uploaded). Each item has a `status` so the row can show progress
+//   and let the user retry / replace / remove.
+//
+//   In DEMO mode (file:// or ?demo=1) we keep the original behavior — local
+//   File objects only — so the existing demo walkthrough still works offline.
+function handleFiles(docKey, fileList) {
+  if (!uploaded[docKey]) uploaded[docKey] = [];
+  const tooBig = [];
+  const accepted = [];
+  for (const f of fileList) {
+    if (f.size > MAX_FILE_BYTES) { tooBig.push(f.name); continue; }
+    accepted.push(f);
+  }
+  if (tooBig.length) {
+    alert(t().err_file_too_big + "\n" + tooBig.join("\n"));
+  }
+  for (const f of accepted) {
+    if (DEMO) {
+      uploaded[docKey].push({ file: f, name: f.name, size: f.size, status: "uploaded" });
+    } else {
+      const item = { file: f, name: f.name, size: f.size, status: "uploading" };
+      uploaded[docKey].push(item);
+      rerenderFileList(docKey);
+      uploadOne(docKey, item);
+    }
+  }
+  rerenderFileList(docKey);
+  saveDraft();
+}
+
+async function uploadOne(docKey, item) {
+  try {
+    const fd = new FormData();
+    fd.append("doc_key", docKey);
+    fd.append("file", item.file);
+    const res = await fetch(UPLOAD_URL, { method: "POST", body: fd, credentials: "same-origin" });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      item.status = "failed";
+      item.error = body.error || `http_${res.status}`;
+      rerenderFileList(docKey);
+      return;
+    }
+    const data = await res.json();
+    item.status = "uploaded";
+    item.file = null;
+    item.serverId = data.id;
+    item.version = data.version;
+    item.preview_url = data.preview_url;
+    item.name = data.filename;
+    item.size = data.size_bytes;
+    rerenderFileList(docKey);
+    // Per-doc AI pre-extract runs server-side inside /api/verkoop/upload
+    // via waitUntil — no client trigger needed. Browser keepalive was
+    // unreliable: ~67% of files ended with ai_extract_status=null because
+    // the request never reached the server.
+  } catch (err) {
+    item.status = "failed";
+    item.error = (err && err.message) || "network";
+    rerenderFileList(docKey);
+  }
+}
+
+async function deleteOne(docKey) {
+  try {
+    const res = await fetch(`${UPLOAD_URL}?doc_key=${encodeURIComponent(docKey)}`, {
+      method: "DELETE",
+      credentials: "same-origin",
+    });
+    return res.ok;
+  } catch { return false; }
+}
+
+function rerenderFileList(docKey) {
+  const list = document.querySelector(`.filelist[data-for="${docKey}"]`);
+  if (!list) return;
+  list.innerHTML = "";
+  (uploaded[docKey] || []).forEach((f, idx) => {
+    const item = document.createElement("div");
+    item.className = "file-item";
+    if (f.status) item.classList.add(`status-${f.status}`);
+    item.innerHTML = `
+      <span class="name"></span>
+      <span class="size"></span>
+      <span class="status-tag"></span>
+      <button type="button" title="Remove">×</button>
+    `;
+    item.querySelector(".name").textContent = f.name;
+    item.querySelector(".size").textContent = formatSize(f.size);
+    const tag = item.querySelector(".status-tag");
+    if (f.status === "uploading") tag.textContent = (lang === "en" ? "uploading…" : "uploaden…");
+    else if (f.status === "failed") tag.textContent = (lang === "en" ? "failed — retry" : "mislukt — opnieuw");
+    else if (f.status === "uploaded" && f.version > 1) tag.textContent = `v${f.version}`;
+    else tag.textContent = "";
+
+    if (f.preview_url) {
+      const link = document.createElement("a");
+      link.href = f.preview_url;
+      link.target = "_blank";
+      link.rel = "noreferrer";
+      link.className = "file-link";
+      link.textContent = (lang === "en" ? "open" : "open");
+      item.insertBefore(link, item.querySelector("button"));
+    }
+
+    item.querySelector("button").addEventListener("click", async () => {
+      const wasServer = !!f.serverId;
+      uploaded[docKey].splice(idx, 1);
+      rerenderFileList(docKey);
+      // If this was the last current file for the doc_key on the server,
+      // soft-delete it. Idempotent server-side.
+      if (!DEMO && wasServer && !(uploaded[docKey] || []).some(x => x.serverId)) {
+        await deleteOne(docKey);
+      }
+      saveDraft();
+    });
+    list.appendChild(item);
+  });
+}
+
+function formatSize(n) {
+  if (n < 1024) return n + " B";
+  if (n < 1024 * 1024) return (n / 1024).toFixed(0) + " KB";
+  return (n / 1024 / 1024).toFixed(1) + " MB";
+}
+
+/* ===== step navigation ===== */
+function showStep(n) {
+  currentStep = n;
+  document.querySelectorAll(".step-section").forEach(s => {
+    s.classList.toggle("show", parseInt(s.dataset.step, 10) === n);
+  });
+  document.querySelectorAll(".progress-bar .step").forEach(el => {
+    const sn = parseInt(el.dataset.stepnum, 10);
+    el.classList.remove("active", "done", "is-locked");
+    if (sn < n) el.classList.add("done");
+    else if (sn === n) el.classList.add("active");
+    else el.classList.add("is-locked");
+  });
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  // focus eerste invoer in nieuwe stap (alleen op desktop, op mobile verstoort dit
+  // de viewport door keyboard pop-up)
+  if (window.innerWidth > 720) {
+    setTimeout(() => {
+      const sec = document.querySelector(`.step-section[data-step="${n}"]`);
+      const f = sec && sec.querySelector("input:not([type='hidden']):not([type='file']):not([disabled]), textarea, select");
+      if (f) f.focus({ preventScroll: true });
+    }, 250);
+  }
+  saveDraft();
+}
+
+// klikbare stap-indicators (alleen terug naar gedaane stappen)
+document.querySelectorAll(".progress-bar .step").forEach(el => {
+  el.addEventListener("click", () => {
+    const target = parseInt(el.dataset.stepnum, 10);
+    if (target < currentStep) showStep(target);
+  });
+});
+
+function validateStep1() {
+  const required = ["straat", "postcode", "naam", "email"];
+  let firstBad = null;
+  for (const id of required) {
+    const el = document.getElementById(id);
+    if (!el.value.trim()) { firstBad = el; break; }
+  }
+  if (firstBad) {
+    alert(t().err_step1);
+    firstBad.focus();
+    firstBad.scrollIntoView({ block: "center", behavior: "smooth" });
+    return false;
+  }
+  // email format
+  const email = document.getElementById("email").value.trim();
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+  if (!emailOk) {
+    alert(t().err_email);
+    document.getElementById("email").focus();
+    return false;
+  }
+  // postcode format (NL: 1234 AB)
+  const pc = document.getElementById("postcode").value.trim();
+  const pcMatch = pc.replace(/\s+/g, " ").match(/^(\d{4})\s?([a-zA-Z]{2})\b/);
+  if (!pcMatch) {
+    alert(t().err_postcode);
+    document.getElementById("postcode").focus();
+    return false;
+  }
+  // auto-format postcode to "1234 AB ..."
+  document.getElementById("postcode").value =
+    pcMatch[1] + " " + pcMatch[2].toUpperCase() +
+    pc.slice(pcMatch[0].length);
+  return true;
+}
+
+// auto-format postcode bij blur ook al voor je 'volgende' klikt
+function wirePostcodeFormat() {
+  const el = document.getElementById("postcode");
+  if (!el || el.dataset.wired) return;
+  el.dataset.wired = "1";
+  el.addEventListener("blur", () => {
+    const pc = el.value.trim();
+    const m = pc.replace(/\s+/g, " ").match(/^(\d{4})\s?([a-zA-Z]{2})(.*)$/);
+    if (m) el.value = m[1] + " " + m[2].toUpperCase() + (m[3] || "");
+  });
+}
+
+document.querySelectorAll("[data-next]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const target = parseInt(btn.getAttribute("data-next"), 10);
+    if (currentStep === 1 && !validateStep1()) return;
+    // Step 1 -> 2 fires the intake call so the backend can capture the
+    // lead and run BAG / energielabel / monument lookups in parallel
+    // with the user filling out step 2. We don't block navigation on
+    // the intake response. If the lookup is slow we just show step 2
+    // immediately. Result lands in `enrichmentResult` for use later.
+    if (currentStep === 1 && target === 2) runIntake();
+    if (target === 3) {
+      runExtraction();
+      return;
+    }
+    showStep(target);
+  });
+});
+
+/* ===== intake (step 1). Lead capture + public register enrichment ===== */
+async function runIntake() {
+  if (DEMO) {
+    // Mock enrichment so step 4's "Wat we voor je ophalen" banner has
+    // something to show without a backend.
+    enrichmentResult = {
+      validatedAddress: {
+        straat: document.getElementById("straat").value,
+        postcode: document.getElementById("postcode").value,
+        woonplaats: "Amsterdam",
+      },
+      bouwjaar: 1908,
+      energielabel: { klasse: "C", geldigTot: "2034-01-01" },
+    };
+    return;
+  }
+  const fd = new FormData();
+  fd.append("lang", lang);
+  ["straat","postcode","naam","email","tel","moment"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) fd.append(id, el.value);
+  });
+  try {
+    const res = await fetch(POST_URL, { method: "POST", body: fd });
+    if (!res.ok) return;
+    const data = await res.json();
+    enrichmentResult = data?.enrichment ?? null;
+    if (data?.leadId) leadId = data.leadId;
+    // Step 4 already rendered (rerenderAll runs on init); re-paint just
+    // the enrichment banner so the data appears as soon as it lands.
+    renderEnrichmentBanner();
+  } catch (err) {
+    // Non-fatal. The wizard works without enrichment, just less pre-fill.
+    console.warn("intake endpoint not reachable", err);
+  }
+}
+document.querySelectorAll("[data-prev]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    showStep(parseInt(btn.getAttribute("data-prev"), 10));
+  });
+});
+
+/* ===== extraction step ===== */
+function setLoaderList(items) {
+  const list = document.getElementById("loaderList");
+  list.innerHTML = "";
+  items.forEach(({ label, done }) => {
+    const row = document.createElement("div");
+    row.className = "item" + (done ? " done" : "");
+    row.innerHTML = `<span class="ico">${done ? "✓" : "•"}</span><span></span>`;
+    row.querySelector("span:last-child").textContent = label;
+    list.appendChild(row);
+  });
+}
+
+async function runExtraction() {
+  showStep(3);
+
+  const labels = [
+    t().loader_step_upload,
+    t().loader_step_extract,
+    t().loader_step_match,
+    t().loader_step_done,
+  ];
+  setLoaderList(labels.map(l => ({ label: l, done: false })));
+
+  // ---- collect uploads ----
+  const fd = new FormData();
+  fd.append("lang", lang);
+  fd.append("straat", document.getElementById("straat").value);
+  fd.append("postcode", document.getElementById("postcode").value);
+  fd.append("naam", document.getElementById("naam").value);
+  fd.append("email", document.getElementById("email").value);
+  fd.append("tel", document.getElementById("tel").value);
+  // Forward the enrichment we already fetched at step 1 so the backend
+  // can echo it back inside extractionResult.enrichment. The submit
+  // route reads it from there for both DB persistence and email body.
+  if (enrichmentResult) fd.append("enrichment", JSON.stringify(enrichmentResult));
+  Object.keys(uploaded).forEach(key => {
+    uploaded[key].forEach(item => {
+      // In Block B incremental save, items are wrappers { file, name, size, status, serverId? }.
+      // Server-stored items have no local File (already in Supabase Storage) — skip those.
+      if (item && item.file instanceof File) {
+        fd.append(`file_${key}`, item.file, item.name || item.file.name);
+      }
+    });
+  });
+
+  // animated progression
+  const steps = [
+    { idx: 0, ms: 600 },
+    { idx: 1, ms: 900 },
+    { idx: 2, ms: 700 },
+    { idx: 3, ms: 400 },
+  ];
+  for (const s of steps) {
+    await new Promise(r => setTimeout(r, s.ms));
+    const items = labels.map((l, i) => ({ label: l, done: i <= s.idx }));
+    setLoaderList(items);
+    if (s.idx === 1) {
+      if (DEMO) {
+        extractionResult = mockExtraction();
+      } else {
+        // With Block B incremental save, files live in Supabase Storage —
+        // not in the wizard's local state. If ANY upload has `serverId`,
+        // there are no File objects to FormData-append; the staff
+        // dashboard handles real AI analysis via the Block C endpoint.
+        // We skip the legacy /extract call in that case so the seller
+        // isn't stuck waiting on a no-op request.
+        const hasLocalFiles = Object.values(uploaded).some(arr =>
+          arr.some(it => it && it.file instanceof File)
+        );
+        if (hasLocalFiles) {
+          try {
+            const res = await fetch(EXTRACT_URL, { method: "POST", body: fd });
+            if (res.ok) extractionResult = await res.json();
+          } catch (err) {
+            console.warn("extract endpoint not available, continuing without prefill", err);
+            extractionResult = null;
+          }
+        }
+        // If extraction was skipped or failed, we still want enrichment to
+        // flow through to submit. Synthesise a minimal extractionResult.
+        if (!extractionResult && enrichmentResult) {
+          extractionResult = {
+            summary: [],
+            skipQuestions: [],
+            prefilled: {},
+            enrichment: enrichmentResult,
+          };
+        }
+      }
+    }
+  }
+
+  // re-render questions filtered by skip list, then go to step 4
+  rerenderAll();
+  showStep(4);
+
+  // Kick off the AI follow-up generation. The whole of step 4's question
+  // surface is driven by /api/verkoop/analyse — there is no longer a fixed
+  // pool of property questions. Runs async so the seller can start filling
+  // out price/handover while the AI thinks (~30-40s on first run).
+  if (!DEMO) runAnalyse();
+}
+
+let analyseInFlight = false;
+async function runAnalyse() {
+  if (analyseInFlight) return;
+  analyseInFlight = true;
+  const loading = document.getElementById("aiQuestionsLoading");
+  const empty   = document.getElementById("aiQuestionsEmpty");
+  const section = document.getElementById("aiQuestionsSection");
+  if (loading) loading.style.display = "block";
+  if (empty)   empty.style.display   = "none";
+  if (section) section.style.display = "none";
+  try {
+    const res = await fetch("/api/verkoop/analyse", { method: "POST" });
+    if (!res.ok) {
+      console.warn("[analyse] failed", res.status);
+      if (loading) loading.style.display = "none";
+      if (empty)   empty.style.display   = "block";
+      return;
+    }
+    const data = await res.json();
+    const qs = Array.isArray(data.seller_questions) ? data.seller_questions : [];
+    if (loading) loading.style.display = "none";
+    if (qs.length === 0) {
+      if (empty) empty.style.display = "block";
+      return;
+    }
+    // renderAiQuestions un-hides aiQuestionsSection itself.
+    renderAiQuestions(qs, {});
+  } catch (err) {
+    console.warn("[analyse] network error", err);
+    if (loading) loading.style.display = "none";
+    if (empty)   empty.style.display   = "block";
+  } finally {
+    analyseInFlight = false;
+  }
+}
+
+/* ===== consent label rendering (markdown-style link) ===== */
+function renderConsentLabel() {
+  const el = document.getElementById("consentLabel");
+  if (!el) return;
+  const text = t().consent_label || "";
+  // markdown [label](url) -> <a>
+  el.innerHTML = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g,
+    '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+}
+
+/* ===== draft auto-save (sessionStorage) ===== */
+let saveTimer = null;
+function saveDraft() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(actuallySaveDraft, 400);
+  // Block B/F — also mirror step-1 fields to the server-side dossier so
+  // returning sellers see their address + contact data, not just files.
+  // Debounced separately on a longer timer to keep request volume low.
+  clearTimeout(serverSaveTimer);
+  serverSaveTimer = setTimeout(actuallySaveServer, 1200);
+}
+let serverSaveTimer = null;
+async function actuallySaveServer() {
+  if (DEMO) return;
+  const v = id => {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : "";
+  };
+  const taal = lang;
+  const payload = {
+    taal,
+    straat: v("straat"),
+    postcode: v("postcode"),
+    woonplaats: v("woonplaats"),
+    naam: v("naam"),
+    email: v("email"),
+    telefoon: v("telefoon"),
+    vraagprijs: v("vraagprijs"),
+    oplev_datum: v("oplev_datum"),
+    motivatie: v("motivatie"),
+    gebreken_toel: v("gebreken_toel"),
+    vve_sfeer: v("vve_sfeer"),
+    verbouw_toel: v("verbouw_toel"),
+  };
+  // Drop empties so we don't overwrite server fields the user hasn't touched yet
+  Object.keys(payload).forEach(k => { if (!payload[k]) delete payload[k]; });
+  if (Object.keys(payload).length <= 1) return; // only taal — nothing useful yet
+  try {
+    await fetch(DOSSIER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify(payload),
+    });
+  } catch { /* offline / no cookie — silently skip */ }
+}
+function actuallySaveDraft() {
+  try {
+    const fields = {};
+    document.querySelectorAll("input[type='text'], input[type='email'], input[type='tel'], textarea, select")
+      .forEach(el => { if (el.id) fields[el.id] = el.value; });
+    const radios = {};
+    document.querySelectorAll("input[type='radio']:checked").forEach(el => {
+      if (el.name) radios[el.name] = el.value;
+    });
+    const checks = {};
+    document.querySelectorAll("input[type='checkbox']:checked").forEach(el => {
+      if (el.name) (checks[el.name] = checks[el.name] || []).push(el.value);
+    });
+    const state = {
+      v: 1,
+      lang,
+      currentStep,
+      fields,
+      radios,
+      checks,
+      skippedDocs: Array.from(skippedDocs),
+      extractionResult,
+      enrichmentResult,
+      leadId,
+      uploadedNames: Object.fromEntries(
+        Object.entries(uploaded).map(([k, files]) => [k, files.map(f => ({ name: f.name, size: f.size }))])
+      ),
+    };
+    sessionStorage.setItem(STATE_KEY, JSON.stringify(state));
+    flashSavedPill();
+  } catch (e) { /* sessionStorage may be unavailable */ }
+}
+function restoreDraft() {
+  try {
+    const raw = sessionStorage.getItem(STATE_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (s.v !== 1) return;
+    if (s.lang) lang = s.lang;
+    if (Array.isArray(s.skippedDocs)) s.skippedDocs.forEach(k => skippedDocs.add(k));
+    if (s.extractionResult) extractionResult = s.extractionResult;
+    if (s.enrichmentResult) enrichmentResult = s.enrichmentResult;
+    if (s.leadId) leadId = s.leadId;
+    rerenderAll();
+    // restore field values
+    Object.entries(s.fields || {}).forEach(([id, v]) => {
+      const el = document.getElementById(id);
+      if (el) el.value = v;
+    });
+    Object.entries(s.radios || {}).forEach(([name, val]) => {
+      const inp = document.querySelector(`input[type="radio"][name="${CSS.escape(name)}"][value="${CSS.escape(String(val))}"]`);
+      if (inp) inp.checked = true;
+    });
+    Object.entries(s.checks || {}).forEach(([name, vals]) => {
+      vals.forEach(v => {
+        const inp = document.querySelector(`input[type="checkbox"][name="${CSS.escape(name)}"][value="${CSS.escape(String(v))}"]`);
+        if (inp) inp.checked = true;
+      });
+    });
+    // restore step
+    if (s.currentStep) showStep(s.currentStep);
+  } catch (e) { /* ignore corrupt state */ }
+}
+function flashSavedPill() {
+  const pill = document.getElementById("savedPill");
+  if (!pill) return;
+  pill.textContent = t().saved_indicator || "Saved";
+  pill.classList.add("show");
+  clearTimeout(flashSavedPill._t);
+  flashSavedPill._t = setTimeout(() => pill.classList.remove("show"), 1400);
+}
+
+// debounced save on every input/change
+document.addEventListener("input", saveDraft);
+document.addEventListener("change", saveDraft);
+
+/* ===== submit ===== */
+/* ===== Toast helper =====
+   showToast({type:"error"|"success"|"warn", title, body, ttl}).
+   Replaces alert() for non-blocking feedback. Stacks top-right. */
+function showToast(opts) {
+  const host = document.getElementById("toastHost");
+  if (!host) return;
+  const el = document.createElement("div");
+  el.className = "toast toast-" + (opts.type || "info");
+  el.innerHTML = `
+    <div class="toast-title"></div>
+    <div class="toast-body"></div>
+  `;
+  el.querySelector(".toast-title").textContent = opts.title || "";
+  el.querySelector(".toast-body").textContent = opts.body || "";
+  if (!opts.body) el.querySelector(".toast-body").style.display = "none";
+  host.appendChild(el);
+  setTimeout(() => {
+    el.style.transition = "opacity .25s, transform .25s";
+    el.style.opacity = "0";
+    el.style.transform = "translateX(20px)";
+    setTimeout(() => el.remove(), 280);
+  }, opts.ttl || 4500);
+}
+
+/* ===== Form validation =====
+   Runs on Submit click. Returns true if everything's OK, false if missing
+   fields. On failure: highlights each invalid field, scrolls to first,
+   populates the validation banner with a plain-language list. */
+function validateBeforeSubmit() {
+  const required = [
+    { id: "straat",   labelKey: "field_label_straat",   check: v => v.length >= 3 },
+    { id: "postcode", labelKey: "field_label_postcode", check: v => /^\d{4}\s?[A-Za-z]{2}$/.test(v), errKey: "validation_field_postcode" },
+    { id: "naam",     labelKey: "field_label_naam",     check: v => v.length >= 2 },
+    { id: "email",    labelKey: "field_label_email",    check: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), errKey: "validation_field_email" },
+  ];
+
+  // Clear prior error decoration
+  document.querySelectorAll(".invalid").forEach(el => el.classList.remove("invalid"));
+  document.querySelectorAll(".field-error").forEach(el => el.remove());
+
+  const missing = [];
+  let firstInvalid = null;
+
+  for (const f of required) {
+    const el = document.getElementById(f.id);
+    if (!el) continue;
+    const v = (el.value || "").trim();
+    if (!v || !f.check(v)) {
+      el.classList.add("invalid");
+      const errKey = !v ? "validation_field_required" : (f.errKey || "validation_field_required");
+      const msg = document.createElement("div");
+      msg.className = "field-error";
+      msg.textContent = t()[errKey];
+      el.parentElement.appendChild(msg);
+      missing.push({ label: t()[f.labelKey], reason: t()[errKey] });
+      if (!firstInvalid) firstInvalid = el;
+    }
+  }
+
+  // Consent checkbox
+  const consent = document.getElementById("consent");
+  if (!consent.checked) {
+    missing.push({ label: t().field_label_consent, reason: t().validation_field_consent });
+    if (!firstInvalid) firstInvalid = consent;
+  }
+
+  const banner = document.getElementById("validationBanner");
+  if (missing.length === 0) {
+    if (banner) banner.style.display = "none";
+    return true;
+  }
+
+  // Populate banner
+  if (banner) {
+    document.getElementById("validationTitle").textContent = t().validation_title;
+    document.getElementById("validationSub").textContent = t().validation_sub;
+    const list = document.getElementById("validationList");
+    list.innerHTML = "";
+    missing.forEach(m => {
+      const li = document.createElement("li");
+      li.innerHTML = `<strong></strong> — <span></span>`;
+      li.querySelector("strong").textContent = m.label;
+      li.querySelector("span").textContent = m.reason;
+      list.appendChild(li);
+    });
+    banner.style.display = "block";
+  }
+
+  showToast({
+    type: "error",
+    title: t().validation_title,
+    body: missing.length === 1
+      ? missing[0].label
+      : `${missing.length} ${lang === "nl" ? "velden" : "fields"}`,
+  });
+
+  if (firstInvalid) {
+    firstInvalid.focus({ preventScroll: true });
+    firstInvalid.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  return false;
+}
+
+/* Live-clear the .invalid + error message as the user fixes each field. */
+document.addEventListener("input", e => {
+  if (e.target.classList && e.target.classList.contains("invalid")) {
+    e.target.classList.remove("invalid");
+    const msg = e.target.parentElement?.querySelector(".field-error");
+    if (msg) msg.remove();
+  }
+});
+document.getElementById("consent")?.addEventListener("change", () => {
+  // If the only missing thing was consent, hide the banner after it's ticked.
+  if (document.getElementById("consent").checked) {
+    const banner = document.getElementById("validationBanner");
+    if (banner && document.querySelectorAll(".invalid").length === 0) {
+      banner.style.display = "none";
+    }
+  }
+});
+
+document.getElementById("submitBtn").addEventListener("click", async () => {
+  if (!validateBeforeSubmit()) return;
+
+  const fd = new FormData();
+  fd.append("lang", lang);
+  if (extractionResult) fd.append("extraction", JSON.stringify(extractionResult));
+  if (leadId) fd.append("lead_id", leadId);
+  ["straat","postcode","naam","email","tel","moment",
+   "vraagprijs","oplev","motivatie","lek-toel","vve-sfeer","verbouw-toel"
+  ].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) fd.append(id, el.value);
+  });
+  Q_GROUPS.forEach(g => {
+    t().questions[g].forEach(q => {
+      if (q.type === "open") {
+        const ta = document.getElementById(q.id);
+        if (ta && ta.value) fd.append(q.id, ta.value);
+      } else if (q.type === "multiselect") {
+        document.querySelectorAll(`input[name="${q.id}"]:checked`).forEach(cb => {
+          fd.append(q.id, cb.value);
+        });
+      } else {
+        const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+        if (sel) fd.append(q.id, sel.value);
+        // followup answers
+        const fu = document.getElementById(q.id + "_fu");
+        if (fu && fu.value) fd.append(q.id + "_fu", fu.value);
+        const amt = document.getElementById(q.id + "_amt");
+        if (amt && amt.value) fd.append(q.id + "_amt", amt.value);
+      }
+    });
+  });
+  Object.keys(uploaded).forEach(key => {
+    uploaded[key].forEach(item => {
+      if (item && item.file instanceof File) {
+        fd.append(`file_${key}`, item.file, item.name || item.file.name);
+      }
+    });
+  });
+
+  fd.append("consent", "1");
+
+  const btn = document.getElementById("submitBtn");
+  btn.disabled = true;
+  btn.textContent = t().submitting;
+  if (DEMO) {
+    await new Promise(r => setTimeout(r, 800));
+    btn.textContent = "✓ " + t().submit_done;
+    btn.style.background = "#15803D";
+    btn.dataset.done = "1";
+    sessionStorage.removeItem(STATE_KEY);
+    return;
+  }
+  try {
+    const res = await fetch(SUBMIT_URL, { method: "POST", body: fd });
+    if (!res.ok) throw new Error("Server error");
+    btn.textContent = "✓ " + t().submit_done;
+    btn.style.background = "#15803D";
+    btn.dataset.done = "1";
+    sessionStorage.removeItem(STATE_KEY);
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = t().submit_btn;
+    alert(t().submit_error);
+    console.error(err);
+  }
+});
+
+/* ===== language toggle =====
+   /verkoop is the Dutch URL, /selling is the English URL.
+   Toggling languages updates the URL via pushState (no full reload) and
+   re-renders all i18n content in place. This keeps the page state (uploads,
+   filled fields, scroll position) and is way faster than a real navigation. */
+document.querySelectorAll(".lang button").forEach(b => {
+  b.addEventListener("click", () => {
+    const target = b.getAttribute("data-lang");
+    if (target === lang) return;
+    lang = target;
+    if (location.protocol !== "file:") {
+      // Single route /sell — toggle language via ?lang= query so we don't
+      // navigate away from the page (and lose form state).
+      const qp = new URLSearchParams(location.search);
+      qp.set("lang", target);
+      try { history.pushState({}, "", location.pathname + "?" + qp.toString() + location.hash); } catch { /* ignore */ }
+    }
+    rerenderAll();
+  });
+});
+
+/* Browser back/forward should also resync language to URL. */
+window.addEventListener("popstate", () => {
+  const qp = new URLSearchParams(location.search);
+  const newLang = qp.get("lang") === "en" ? "en" : "nl";
+  if (newLang !== lang) {
+    lang = newLang;
+    rerenderAll();
+  }
+});
+
+/* ===== demo-mode banner ===== */
+if (DEMO) {
+  const bar = document.createElement("div");
+  bar.style.cssText = "background:#FFF1E6;color:#E66C1A;text-align:center;padding:8px 12px;font-size:13px;font-weight:600;border-bottom:1px solid #FFD9B8;";
+  bar.textContent = (navigator.language || "nl").toLowerCase().startsWith("en")
+    ? "DEMO MODE. extraction and submit are mocked. No backend calls are made."
+    : "DEMO-MODUS. extractie en verzenden zijn nep. Er worden geen backend-calls gedaan.";
+  document.body.insertBefore(bar, document.body.firstChild);
+}
+
+/* ===== init ===== */
+rerenderAll();
+wirePostcodeFormat();
+restoreDraft();
+if (currentStep === 1) showStep(1);
+
+/* Block F — server-side resume hydration.
+   In live mode, try to pull the seller's prior dossier and file list from
+   Supabase via /api/verkoop/dossier. The session cookie is set by /login-selling.
+   - Pre-fills step-1 form inputs (skips fields the user just typed)
+   - Replaces uploaded[] with server's current file list (each marked as 'uploaded')
+   - Silent no-op if there's no dossier yet or if we're in DEMO mode */
+async function hydrateFromServer() {
+  if (DEMO) return;
+  try {
+    const res = await fetch(DOSSIER_URL, { credentials: "same-origin" });
+    if (!res.ok) return;
+    const data = await res.json();
+
+    // Even with no dossier row yet, the session phone is known — surface
+    // it in the locked chip so step 1 isn't empty for first-time sellers.
+    if (!data.dossier) {
+      const lockedEl = document.getElementById("phoneLockedValue");
+      if (lockedEl && data.seller_phone) lockedEl.textContent = data.seller_phone;
+      return;
+    }
+
+    const d = data.dossier;
+    const setIfEmpty = (id, val) => {
+      if (val === null || val === undefined || val === "") return;
+      const el = document.getElementById(id);
+      if (el && !el.value) el.value = String(val);
+    };
+    setIfEmpty("naam", d.naam);
+    setIfEmpty("email", d.email);
+
+    // Display the authenticated sign-in phone (always available from the
+    // session, even before the dossier row exists). Pre-fill the alt-phone
+    // input only if the seller had typed one previously.
+    const signinPhone = data.seller_phone || d.phone_e164 || "";
+    const locked = document.getElementById("phoneLockedValue");
+    if (locked && signinPhone) locked.textContent = signinPhone;
+    const altInput = document.getElementById("tel");
+    const altWrap = document.getElementById("phoneAltWrap");
+    if (altInput && d.telefoon && d.telefoon !== signinPhone) {
+      altInput.value = d.telefoon;
+      if (altWrap) altWrap.style.display = "block";
+    }
+
+    setIfEmpty("straat", d.straat);
+    setIfEmpty("postcode", d.postcode);
+    setIfEmpty("woonplaats", d.woonplaats);
+    setIfEmpty("vraagprijs", d.vraagprijs);
+    setIfEmpty("oplev_datum", d.oplev_datum);
+    setIfEmpty("motivatie", d.motivatie);
+    setIfEmpty("gebreken_toel", d.gebreken_toel);
+    setIfEmpty("vve_sfeer", d.vve_sfeer);
+    setIfEmpty("verbouw_toel", d.verbouw_toel);
+
+    // Replace uploaded[] with server's view of "current" files.
+    if (Array.isArray(data.files) && data.files.length) {
+      Object.keys(uploaded).forEach(k => delete uploaded[k]);
+      for (const f of data.files) {
+        if (!uploaded[f.doc_key]) uploaded[f.doc_key] = [];
+        uploaded[f.doc_key].push({
+          name: f.filename,
+          size: f.size_bytes,
+          status: "uploaded",
+          serverId: f.id,
+          version: f.version,
+          preview_url: f.preview_url,
+        });
+      }
+      Object.keys(uploaded).forEach(rerenderFileList);
+    }
+
+    // Block D — AI-generated follow-up questions, rendered in step 4.
+    if (Array.isArray(data.seller_questions) && data.seller_questions.length) {
+      renderAiQuestions(data.seller_questions, data.seller_answers || {});
+    }
+  } catch (e) { /* offline / no cookie / endpoint down — fall through silently */ }
+}
+
+/* Block D — render AI-generated yes/no questions in step 4.
+   Each question becomes a yes/no radio pair; "yes" reveals an optional
+   notes textarea. Answers POST to /api/verkoop/followup-answers on change
+   (debounced) so refreshing the page never loses data. */
+let aiAnswers = {};
+let aiSaveTimer = null;
+function renderAiQuestions(questions, priorAnswers) {
+  aiAnswers = { ...priorAnswers };
+  const section = document.getElementById("aiQuestionsSection");
+  const host = document.getElementById("qs-ai");
+  if (!section || !host) return;
+  host.innerHTML = "";
+  const isNL = lang === "nl";
+
+  for (const q of questions) {
+    const row = document.createElement("div");
+    row.className = "q-row";
+    const prior = priorAnswers[q.id];
+    const priorYn = prior && typeof prior === "object" ? prior.yn : prior;
+    const priorNote = prior && typeof prior === "object" ? (prior.note || "") : "";
+
+    const idEsc = escHtml(q.id);
+    row.innerHTML = `
+      <div class="q-head">
+        <div class="q-label">${escHtml(q.question)}</div>
+        <div class="yn-opts">
+          <input type="radio" id="ai-${idEsc}-ja" name="ai-${idEsc}" value="ja" ${priorYn === "ja" ? "checked" : ""} />
+          <label for="ai-${idEsc}-ja">${isNL ? "Ja" : "Yes"}</label>
+          <input type="radio" id="ai-${idEsc}-nee" name="ai-${idEsc}" value="nee" ${priorYn === "nee" ? "checked" : ""} />
+          <label for="ai-${idEsc}-nee">${isNL ? "Nee" : "No"}</label>
+        </div>
+      </div>
+      <div class="q-followup" data-for="${idEsc}" style="display:${priorYn === "ja" && q.if_yes ? "block" : "none"};">
+        ${q.if_yes ? `<div style="font-size:12px;color:var(--grey-soft);margin-bottom:4px;">${escHtml(q.if_yes)}</div>` : ""}
+        <textarea class="ai-note" data-for="${idEsc}" rows="2" placeholder="${isNL ? "Toelichting (optioneel)" : "Notes (optional)"}">${escHtml(priorNote)}</textarea>
+      </div>
+    `;
+    row.querySelectorAll(`input[name="ai-${q.id}"]`).forEach(r => {
+      r.addEventListener("change", e => {
+        const yn = e.target.value;
+        aiAnswers[q.id] = { yn, note: aiAnswers[q.id]?.note || "" };
+        const fu = row.querySelector(`.q-followup[data-for="${q.id}"]`);
+        if (fu) fu.style.display = (yn === "ja" && q.if_yes) ? "block" : "none";
+        scheduleAiSave();
+      });
+    });
+    const note = row.querySelector(`textarea.ai-note[data-for="${q.id}"]`);
+    if (note) note.addEventListener("input", () => {
+      aiAnswers[q.id] = { yn: aiAnswers[q.id]?.yn || null, note: note.value };
+      scheduleAiSave();
+    });
+    host.appendChild(row);
+  }
+  section.style.display = "block";
+}
+
+function escHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;",
+  }[c]));
+}
+
+function scheduleAiSave() {
+  if (DEMO) return;
+  clearTimeout(aiSaveTimer);
+  aiSaveTimer = setTimeout(async () => {
+    try {
+      await fetch("/api/verkoop/followup-answers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ answers: aiAnswers }),
+      });
+    } catch { /* offline — answers stay in local state */ }
+  }, 700);
+}
+
+hydrateFromServer();
+
+/* Step 1 — toggle the alternative phone input. The primary phone is
+   the seller's sign-in number (already authenticated via OTP) so we
+   don't ask for it again. */
+document.getElementById("phoneAltToggle")?.addEventListener("click", () => {
+  const wrap = document.getElementById("phoneAltWrap");
+  const btn = document.getElementById("phoneAltToggle");
+  if (!wrap || !btn) return;
+  const open = wrap.style.display !== "none";
+  if (open) {
+    wrap.style.display = "none";
+    btn.classList.remove("is-open");
+    const input = document.getElementById("tel");
+    if (input) input.value = "";
+    saveDraft();
+  } else {
+    wrap.style.display = "block";
+    btn.classList.add("is-open");
+    setTimeout(() => document.getElementById("tel")?.focus(), 50);
+  }
+});
+</script>
+
+</body>
+</html>
