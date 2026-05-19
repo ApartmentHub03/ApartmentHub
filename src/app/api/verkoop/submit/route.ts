@@ -111,6 +111,17 @@ export async function POST(req: Request) {
           enrichment: extraction?.enrichment ?? null,
           consent: true,
           consent_at: new Date().toISOString(),
+          // BW 3:15a digital signature — typed name is legally binding,
+          // canvas drawing is optional (stored as a base64 PNG data URL).
+          // `signed_ip` comes from the request header so the audit trail
+          // captures where the acceptance came from.
+          signature_name: fields.signature_name || null,
+          signature_image: fields.signature_image || null,
+          signed_at: fields.signed_at || new Date().toISOString(),
+          signed_ip:
+            req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+            req.headers.get("x-real-ip") ||
+            null,
         })
         .select("id")
         .single();

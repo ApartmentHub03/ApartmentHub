@@ -264,6 +264,18 @@
   .consent label { cursor: pointer; user-select: none; }
   .consent a { color: var(--orange); text-decoration: underline; }
 
+  /* Signature block — lives inside the dark submit-card, so colours
+     invert (light field, dark canvas border). Mirrors the OTD preview
+     David shared in apartmenthub-verkoop-2026-05-18-v3. */
+  .sig-block { background: #fff; color: var(--ink); padding: 16px; border-radius: 10px; margin: 0 0 14px; }
+  .sig-block .sig-hint { font-size: 12px; color: var(--grey-soft); margin-top: 4px; line-height: 1.45; }
+  .sig-block .sig-name-input { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font: inherit; font-size: 14px; }
+  .sig-block .sig-name-input:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0,155,138,0.18); }
+  .sig-canvas-wrap { background: #fff; border: 1.5px dashed var(--line); border-radius: 10px; padding: 12px; margin: 10px 0 0; }
+  .sig-canvas-wrap canvas { display: block; width: 100%; height: 130px; border-radius: 6px; cursor: crosshair; background: linear-gradient(transparent calc(100% - 1px), #E5E7EB 0); touch-action: none; }
+  .sig-actions { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; color: var(--grey-soft); }
+  .sig-actions a { cursor: pointer; color: var(--teal-dark); text-decoration: underline; }
+
   .saved-pill {
     position: fixed; bottom: 16px; right: 16px;
     background: var(--ink); color: #DCFCE7;
@@ -874,6 +886,26 @@
       <label for="consent" id="consentLabel"></label>
     </div>
 
+    <!-- Signature step (BW art. 3:15a digital signature). Typed name is
+         legally sufficient; the canvas is optional. Both ride along to
+         /api/verkoop/submit and land on verkoop_dossiers. -->
+    <div class="sig-block">
+      <label class="lbl" for="sig_naam" data-i18n="sig_name_label" style="font-weight:600; display:block; margin-bottom:6px;"></label>
+      <input class="sig-name-input" id="sig_naam" type="text" autocomplete="off" data-placeholder="sig_name_placeholder" />
+      <div class="sig-hint" data-i18n="sig_legal_hint"></div>
+
+      <div style="margin-top:14px;">
+        <span class="lbl" data-i18n="sig_draw_label" style="font-weight:600; display:block; margin-bottom:6px;"></span>
+        <div class="sig-canvas-wrap">
+          <canvas id="sigcanvas" width="800" height="130"></canvas>
+          <div class="sig-actions">
+            <span data-i18n="sig_draw_hint"></span>
+            <a id="clearsig" data-i18n="sig_clear"></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Validation banner — populated by validateBeforeSubmit() on submit click -->
     <div id="validationBanner" class="validation-banner" style="display:none;">
       <div class="vb-title">⚠ <span id="validationTitle"></span></div>
@@ -1094,6 +1126,14 @@ const I18N = {
     submit_error: "Er ging iets mis bij het verzenden. Probeer het opnieuw of bel ons direct.",
     btn_prev_to_docs: "Terug naar documenten",
 
+    sig_name_label: "Type hier uw volledige naam ter ondertekening *",
+    sig_name_placeholder: "exact zoals op uw paspoort",
+    sig_legal_hint: "Door uw naam in te typen en de overeenkomst te bevestigen, plaatst u een rechtsgeldige elektronische handtekening (BW 3:15a, e-IDAS verordening).",
+    sig_draw_label: "Of teken hier (optioneel, met muis of vinger)",
+    sig_draw_hint: "Teken met muis of touchscreen",
+    sig_clear: "Wissen",
+    sig_name_required: "Type je volledige naam om te ondertekenen.",
+
     where_label: "Waar vind ik dit?",
     drop_strong: "Klik hier of sleep bestanden",
     drop_sub: "PDF, JPG, PNG, HEIC, Word of Excel",
@@ -1274,6 +1314,14 @@ const I18N = {
     submit_done: "Sent. We'll call you within 1 business day.",
     submit_error: "Something went wrong while sending. Please try again or call us directly.",
     btn_prev_to_docs: "Back to documents",
+
+    sig_name_label: "Type your full name to sign *",
+    sig_name_placeholder: "exactly as on your passport",
+    sig_legal_hint: "By typing your name and confirming, you place a legally valid electronic signature (Dutch Civil Code 3:15a, e-IDAS regulation).",
+    sig_draw_label: "Or draw your signature (optional, mouse or finger)",
+    sig_draw_hint: "Draw with mouse or touchscreen",
+    sig_clear: "Clear",
+    sig_name_required: "Type your full name to sign.",
 
     where_label: "Where do I find this?",
     drop_strong: "Click here or drag files",
@@ -2401,6 +2449,14 @@ function validateBeforeSubmit() {
     if (!firstInvalid) firstInvalid = consent;
   }
 
+  // Typed signature name — legally binding (BW 3:15a), so we require it.
+  const sigNaam = document.getElementById("sig_naam");
+  if (sigNaam && sigNaam.value.trim().length < 2) {
+    sigNaam.classList.add("invalid");
+    missing.push({ label: t().sig_name_label, reason: t().sig_name_required });
+    if (!firstInvalid) firstInvalid = sigNaam;
+  }
+
   const banner = document.getElementById("validationBanner");
   if (missing.length === 0) {
     if (banner) banner.style.display = "none";
@@ -2498,6 +2554,18 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
   });
 
   fd.append("consent", "1");
+
+  // Signature payload. Typed name is the legally-binding signature (BW 3:15a).
+  // The canvas image is optional and stored as a base64 data URL so the
+  // submit handler can persist it on verkoop_dossiers without any extra
+  // upload step. sigImage stays empty if the user never drew anything.
+  const sigNaam = document.getElementById("sig_naam");
+  if (sigNaam && sigNaam.value.trim()) fd.append("signature_name", sigNaam.value.trim());
+  if (typeof getSignatureImage === "function") {
+    const img = getSignatureImage();
+    if (img) fd.append("signature_image", img);
+  }
+  fd.append("signed_at", new Date().toISOString());
 
   const btn = document.getElementById("submitBtn");
   btn.disabled = true;
@@ -2727,6 +2795,62 @@ function scheduleAiSave() {
 }
 
 hydrateFromServer();
+
+/* ===== Signature canvas (BW 3:15a digital signature) =====
+   Lets the seller optionally draw their signature with mouse or finger.
+   The result is exported as a base64 PNG data URL on submit. The typed
+   name in #sig_naam is the legally-binding part — the drawing is decoration. */
+(function initSignatureCanvas() {
+  const canvas = document.getElementById("sigcanvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  let drawing = false;
+  let hasInk = false;
+
+  function pos(e) {
+    const r = canvas.getBoundingClientRect();
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+    const y = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
+    return [x * canvas.width / r.width, y * canvas.height / r.height];
+  }
+  function start(e) {
+    drawing = true; hasInk = true;
+    ctx.beginPath();
+    const [x, y] = pos(e);
+    ctx.moveTo(x, y);
+    e.preventDefault();
+  }
+  function move(e) {
+    if (!drawing) return;
+    const [x, y] = pos(e);
+    ctx.lineTo(x, y);
+    ctx.strokeStyle = "#1A202C";
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.stroke();
+    e.preventDefault();
+  }
+  function end() { drawing = false; }
+
+  canvas.addEventListener("mousedown", start);
+  canvas.addEventListener("mousemove", move);
+  canvas.addEventListener("mouseup", end);
+  canvas.addEventListener("mouseleave", end);
+  canvas.addEventListener("touchstart", start, { passive: false });
+  canvas.addEventListener("touchmove", move, { passive: false });
+  canvas.addEventListener("touchend", end);
+
+  document.getElementById("clearsig")?.addEventListener("click", () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    hasInk = false;
+  });
+
+  // Expose for the submit handler. Returns null when nothing was drawn so
+  // we don't waste a few KB persisting a blank PNG.
+  window.getSignatureImage = function () {
+    return hasInk ? canvas.toDataURL("image/png") : null;
+  };
+})();
 
 /* Step 1 — toggle the alternative phone input. The primary phone is
    the seller's sign-in number (already authenticated via OTP) so we
