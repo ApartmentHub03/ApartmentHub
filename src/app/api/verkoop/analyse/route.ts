@@ -20,7 +20,11 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+// Vercel function timeout. Phase 1 (per-doc extracts) can fan out to multiple
+// 15-30s Anthropic vision calls, and the Sonnet synthesis adds another
+// 25-30s on top — 60s wasn't enough and the gateway was returning 504s.
+// 300s is the Pro plan ceiling.
+export const maxDuration = 300;
 
 // Haiku 4.5 by default — the synthesis input is already pre-digested
 // per-doc extracts (text only, no PDFs), and the output is a small JSON

@@ -2323,9 +2323,12 @@ async function runAnalyse() {
   if (errBox)  errBox.style.display  = "none";
   if (section) section.style.display = "none";
 
-  function showError(key) {
+  function showError(key, diag) {
     if (loading) loading.style.display = "none";
-    if (errText) errText.textContent = (t() && t()[key]) || (t() && t().qg_ai_err_generic) || "AI analysis failed.";
+    if (errText) {
+      const base = (t() && t()[key]) || (t() && t().qg_ai_err_generic) || "AI analysis failed.";
+      errText.textContent = diag ? `${base} (${diag})` : base;
+    }
     if (errBox)  errBox.style.display = "block";
   }
 
@@ -2335,7 +2338,12 @@ async function runAnalyse() {
       const body = await res.json().catch(() => ({}));
       const key = ANALYSE_ERR_KEY[body?.error] || "qg_ai_err_generic";
       console.warn("[analyse] failed", res.status, body);
-      showError(key);
+      // Surface the server-side code (and short detail if present) inside the
+      // red banner. The friendly message keeps its place; the code rides
+      // along in parens so devs can diagnose without opening DevTools.
+      const codeBits = [body?.error || `http_${res.status}`];
+      if (body?.detail) codeBits.push(String(body.detail).slice(0, 120));
+      showError(key, codeBits.join(": "));
       return;
     }
     const data = await res.json();
@@ -2351,7 +2359,8 @@ async function runAnalyse() {
     renderAiQuestions(qs, {});
   } catch (err) {
     console.warn("[analyse] network error", err);
-    showError("qg_ai_err_generic");
+    const msg = err && err.message ? String(err.message).slice(0, 120) : "network";
+    showError("qg_ai_err_generic", `network: ${msg}`);
   } finally {
     analyseInFlight = false;
   }
