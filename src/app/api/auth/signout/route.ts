@@ -21,7 +21,10 @@ async function clear() {
     name: COOKIE_NAME,
     value: "",
     httpOnly: true,
-    secure: true,
+    // Match the flags used when the cookie was set; otherwise browsers
+    // can refuse to clear it (Chrome treats secure mismatch as a different
+    // cookie). NODE_ENV === "production" matches attachSessionCookie().
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
     expires: new Date(0),
