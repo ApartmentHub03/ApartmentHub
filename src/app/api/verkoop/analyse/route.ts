@@ -62,9 +62,42 @@ Rules:
 - If an extract is marked unreadable or is missing, list the document under gaps.
 - Seller questions must be answerable by the seller alone. Don't ask about public-register data the agent fetches (BAG, WOZ, Kadaster, EP-online).
 - Seller questions in ${sellerLangName} ONLY. Never mix languages.
-- Be honest about what you can't determine. Empty arrays are fine.
-- Limits: 15 summary, 8 flags, 8 gaps, 5 next_actions, 15 seller_questions.`;
+- IMPORTANT: seller_questions must NEVER be empty. Even a perfect dossier
+  has open seller-only items (lived-in defects, neighbour issues, recent
+  changes not yet in any document). Always return at least 6 questions.
+- When extracts are sparse, mismatched, or the seller uploaded documents
+  that don't look like the requested housing files (e.g. random PDFs,
+  receipts, screenshots), ASK the foundational baseline questions a Dutch
+  apartment-sale dossier always needs: known defects/leaks, VvE arrears,
+  any structural renovations, permit history for renovations, monthly
+  VvE contribution, foundation/erfpacht status. The seller's blank state
+  is a signal to ask MORE, not less.
+- Limits: 15 summary, 8 flags, 8 gaps, 5 next_actions, 15 seller_questions
+  (minimum 6).`;
 }
+
+// Deterministic safety net: if the AI returns no (or too few) seller
+// questions despite a sparse / mismatched upload, we still owe the seller
+// a usable step 4. These are the same foundational items the system
+// prompt asks for, in both supported portal languages.
+const BASELINE_QUESTIONS: Record<"nl" | "en", Array<{ id: string; question: string; if_yes: string | null }>> = {
+  nl: [
+    { id: "qs_ai_baseline_defects", question: "Zijn er bekende gebreken, lekkages of vochtproblemen in de woning of de algemene ruimtes?", if_yes: "Beschrijf kort wat er aan de hand is en sinds wanneer." },
+    { id: "qs_ai_baseline_vve_arrears", question: "Heeft de VvE op dit moment betalingsachterstanden of openstaande facturen?", if_yes: "Welk bedrag staat open en waarvoor?" },
+    { id: "qs_ai_baseline_renovations", question: "Zijn er de afgelopen 10 jaar grote of structurele verbouwingen uitgevoerd (muren verwijderd, badkamer/keuken/dak vervangen)?", if_yes: "Welke werkzaamheden en in welk jaar?" },
+    { id: "qs_ai_baseline_permits", question: "Zijn voor die verbouwingen vergunningen aangevraagd waar dat nodig was?", if_yes: "Heb je een kopie van de vergunning?" },
+    { id: "qs_ai_baseline_vve_fee", question: "Weet je de huidige maandelijkse VvE-bijdrage?", if_yes: "Wat is het bedrag per maand?" },
+    { id: "qs_ai_baseline_foundation_leasehold", question: "Is er informatie bekend over de fundering of de erfpacht (canon, einddatum, recent funderingsonderzoek)?", if_yes: "Wat weet je hierover?" },
+  ],
+  en: [
+    { id: "qs_ai_baseline_defects", question: "Are there any known defects, leaks, or damp issues in the apartment or common areas?", if_yes: "Briefly describe what is going on and since when." },
+    { id: "qs_ai_baseline_vve_arrears", question: "Is the VvE currently behind on any payments or carrying unpaid invoices?", if_yes: "What amount is outstanding and what for?" },
+    { id: "qs_ai_baseline_renovations", question: "Have there been any major or structural renovations in the last 10 years (walls removed, bathroom/kitchen/roof replaced)?", if_yes: "Which works and in what year?" },
+    { id: "qs_ai_baseline_permits", question: "Were permits applied for where required for those renovations?", if_yes: "Do you have a copy of the permit?" },
+    { id: "qs_ai_baseline_vve_fee", question: "Do you know the current monthly VvE contribution?", if_yes: "What is the amount per month?" },
+    { id: "qs_ai_baseline_foundation_leasehold", question: "Is there information about the foundation or leasehold (erfpacht canon, end date, recent foundation survey)?", if_yes: "What do you know about it?" },
+  ],
+};
 
 type FileRow = {
   id: string;
@@ -241,6 +274,24 @@ ${extractBlocks.join("\n\n")}`;
     return NextResponse.json({ error: "ai_failed", detail: msg }, { status: 502 });
   }
 
+  const aiQuestions: SellerQ[] = Array.isArray(parsed.seller_questions)
+    ? parsed.seller_questions
+        .slice(0, 15)
+        .filter((q) => q && typeof q.id === "string" && typeof q.question === "string")
+        .map((q) => ({
+          id: q.id.replace(/[^A-Za-z0-9_]+/g, "_").slice(0, 60),
+          question: String(q.question).slice(0, 240),
+          if_yes: q.if_yes ? String(q.if_yes).slice(0, 240) : null,
+        }))
+    : [];
+
+  // Safety net: if the model returned nothing usable, fall back to the
+  // baseline foundational set in the seller's language. Without this the
+  // portal would show "documents cover all our questions" — which is
+  // almost never true for a fresh upload of mismatched docs.
+  const sellerQuestions = aiQuestions.length === 0 ? BASELINE_QUESTIONS[sellerLang] : aiQuestions;
+  const usedBaseline = aiQuestions.length === 0;
+
   const safe = {
     summary: Array.isArray(parsed.summary) ? parsed.summary.slice(0, 15) : [],
     flags: Array.isArray(parsed.flags) ? parsed.flags.slice(0, 8) : [],
@@ -248,16 +299,7 @@ ${extractBlocks.join("\n\n")}`;
     next_actions: Array.isArray(parsed.next_actions)
       ? parsed.next_actions.slice(0, 5)
       : [],
-    seller_questions: Array.isArray(parsed.seller_questions)
-      ? parsed.seller_questions
-          .slice(0, 15)
-          .filter((q) => q && typeof q.id === "string" && typeof q.question === "string")
-          .map((q) => ({
-            id: q.id.replace(/[^A-Za-z0-9_]+/g, "_").slice(0, 60),
-            question: String(q.question).slice(0, 240),
-            if_yes: q.if_yes ? String(q.if_yes).slice(0, 240) : null,
-          }))
-      : [],
+    seller_questions: sellerQuestions,
   };
 
   const contextMd =
@@ -313,6 +355,7 @@ ${extractBlocks.join("\n\n")}`;
       extracts_backfilled: needsExtraction.length,
       summary_count: safe.summary.length,
       seller_questions_count: safe.seller_questions.length,
+      used_baseline_questions: usedBaseline,
     },
   });
 
