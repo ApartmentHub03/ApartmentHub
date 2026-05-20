@@ -257,9 +257,11 @@ ${extractBlocks.join("\n\n")}`;
   try {
     const msg = await client.messages.create({
       model: MODEL,
-      // Tight cap — output is at most 15 short JSON questions + a summary,
-      // not prose. Cutting from 4000 trims wall-clock time on Haiku.
-      max_tokens: 2000,
+      // 6000 gives Haiku room for the full schema (15 summary + 8 flags +
+      // 8 gaps + 5 next_actions + up to 15 seller_questions with if_yes
+      // follow-ups in NL/EN). The previous 2000 cap was truncating mid-JSON
+      // and producing "Unexpected end of JSON input" on JSON.parse.
+      max_tokens: 6000,
       system: buildSystemPrompt(sellerLang),
       messages: [{ role: "user", content: propertyContext }],
     });
@@ -267,8 +269,33 @@ ${extractBlocks.join("\n\n")}`;
       (b): b is Extract<typeof b, { type: "text" }> => b.type === "text"
     );
     if (!textBlock) throw new Error("no_text_response");
-    const raw = textBlock.text.trim().replace(/^```(?:json)?\s*|\s*```$/g, "");
-    parsed = JSON.parse(raw);
+    if (msg.stop_reason === "max_tokens") {
+      // Surfacing this specifically so the failure mode is obvious in logs —
+      // a truncated JSON body would otherwise look like a generic parse error.
+      console.warn("[analyse] hit max_tokens cap", {
+        model: MODEL,
+        usage: msg.usage,
+      });
+    }
+    // Strip ``` fences if present, then carve out the JSON object even when
+    // Haiku adds a stray preamble like "Here is the analysis:" — fall back to
+    // the substring between the first "{" and the last "}".
+    let raw = textBlock.text.trim().replace(/^```(?:json)?\s*|\s*```$/g, "");
+    const firstBrace = raw.indexOf("{");
+    const lastBrace = raw.lastIndexOf("}");
+    if (firstBrace > 0 && lastBrace > firstBrace) {
+      raw = raw.slice(firstBrace, lastBrace + 1);
+    }
+    try {
+      parsed = JSON.parse(raw);
+    } catch (parseErr) {
+      console.error("[analyse] JSON parse failed", {
+        stop_reason: msg.stop_reason,
+        rawHead: raw.slice(0, 300),
+        rawTail: raw.slice(-300),
+      });
+      throw parseErr;
+    }
   } catch (err) {
     console.error("[analyse] Claude synthesis failed", err);
     const msg = err instanceof Error ? err.message : String(err);
