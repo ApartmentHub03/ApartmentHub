@@ -864,6 +864,11 @@
       <p class="sub" data-i18n="qg_ai_empty"></p>
     </section>
 
+    <section id="aiQuestionsError" style="display:none; padding:14px 16px; background:#FEE4E2; border:1px solid #FDA29B; border-radius:8px; color:#B42318;">
+      <p class="sub" id="aiQuestionsErrorText" style="margin:0 0 8px;"></p>
+      <button type="button" id="aiQuestionsRetry" class="btn ghost" style="padding:6px 14px; font-size:13px;" data-i18n="qg_ai_retry"></button>
+    </section>
+
     <section id="aiQuestionsSection" style="display:none; margin-top:6px;">
       <h3 class="qg-title" data-ai-title>✨ <span data-i18n="qg_ai"></span></h3>
       <p class="sub" data-ai-sub data-i18n="qg_ai_sub"></p>
@@ -1154,6 +1159,11 @@ const I18N = {
     qg_ai_sub: "Onze AI heeft een paar extra vragen op basis van jouw documenten. Korte antwoorden zijn prima — ze worden meteen opgeslagen.",
     qg_ai_loading: "AI analyseert je documenten — momentje…",
     qg_ai_empty: "De documenten dekken al onze vragen. Geen aanvullende vragen nodig.",
+    qg_ai_err_generic: "De AI-analyse is mislukt. Probeer het opnieuw.",
+    qg_ai_err_no_files: "Geen leesbare documenten gevonden. Upload PDF's of foto's (geen Word/Excel) en probeer opnieuw.",
+    qg_ai_err_no_dossier: "Geen dossier gevonden. Vul eerst stap 1 in en upload documenten.",
+    qg_ai_err_auth: "Sessie verlopen. Log opnieuw in en probeer opnieuw.",
+    qg_ai_retry: "Opnieuw proberen",
     ai_followup_label: "Toelichting (optioneel)",
     qg_verkoop: "Verkoop",
 
@@ -1361,6 +1371,11 @@ const I18N = {
     qg_ai_sub: "Our AI has a few extra questions based on your documents. Short answers are fine — they're saved as you type.",
     qg_ai_loading: "AI is analysing your documents — one moment…",
     qg_ai_empty: "The documents cover all our questions. No follow-ups needed.",
+    qg_ai_err_generic: "AI analysis failed. Please try again.",
+    qg_ai_err_no_files: "No readable documents found. Upload PDFs or photos (not Word/Excel) and try again.",
+    qg_ai_err_no_dossier: "No dossier found. Fill in step 1 and upload documents first.",
+    qg_ai_err_auth: "Your session expired. Please sign in again and retry.",
+    qg_ai_retry: "Try again",
     ai_followup_label: "Notes (optional)",
     qg_verkoop: "Sale",
 
@@ -2284,28 +2299,51 @@ async function runExtraction() {
   if (!DEMO) runAnalyse();
 }
 
+// Map server-side error codes from /api/verkoop/analyse to i18n keys so
+// the seller sees something actionable. Anything we don't recognise
+// falls back to the generic message.
+const ANALYSE_ERR_KEY = {
+  unauthorized:        "qg_ai_err_auth",
+  no_dossier:          "qg_ai_err_no_dossier",
+  no_files:            "qg_ai_err_no_dossier",
+  no_analysable_files: "qg_ai_err_no_files",
+};
+
 let analyseInFlight = false;
 async function runAnalyse() {
   if (analyseInFlight) return;
   analyseInFlight = true;
   const loading = document.getElementById("aiQuestionsLoading");
   const empty   = document.getElementById("aiQuestionsEmpty");
+  const errBox  = document.getElementById("aiQuestionsError");
+  const errText = document.getElementById("aiQuestionsErrorText");
   const section = document.getElementById("aiQuestionsSection");
   if (loading) loading.style.display = "block";
   if (empty)   empty.style.display   = "none";
+  if (errBox)  errBox.style.display  = "none";
   if (section) section.style.display = "none";
+
+  function showError(key) {
+    if (loading) loading.style.display = "none";
+    if (errText) errText.textContent = (t() && t()[key]) || (t() && t().qg_ai_err_generic) || "AI analysis failed.";
+    if (errBox)  errBox.style.display = "block";
+  }
+
   try {
     const res = await fetch("/api/verkoop/analyse", { method: "POST" });
     if (!res.ok) {
-      console.warn("[analyse] failed", res.status);
-      if (loading) loading.style.display = "none";
-      if (empty)   empty.style.display   = "block";
+      const body = await res.json().catch(() => ({}));
+      const key = ANALYSE_ERR_KEY[body?.error] || "qg_ai_err_generic";
+      console.warn("[analyse] failed", res.status, body);
+      showError(key);
       return;
     }
     const data = await res.json();
     const qs = Array.isArray(data.seller_questions) ? data.seller_questions : [];
     if (loading) loading.style.display = "none";
     if (qs.length === 0) {
+      // Only show the "all covered" message when the AI actually returned
+      // an empty list — not when the call errored out.
       if (empty) empty.style.display = "block";
       return;
     }
@@ -2313,12 +2351,16 @@ async function runAnalyse() {
     renderAiQuestions(qs, {});
   } catch (err) {
     console.warn("[analyse] network error", err);
-    if (loading) loading.style.display = "none";
-    if (empty)   empty.style.display   = "block";
+    showError("qg_ai_err_generic");
   } finally {
     analyseInFlight = false;
   }
 }
+
+// "Try again" button — re-fires runAnalyse when the previous attempt errored.
+document.getElementById("aiQuestionsRetry")?.addEventListener("click", () => {
+  runAnalyse();
+});
 
 /* ===== consent label rendering (markdown-style link) ===== */
 function renderConsentLabel() {
