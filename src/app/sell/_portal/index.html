@@ -743,9 +743,43 @@
     <span data-i18n="banner_public_body"></span>
   </div>
 
+  <!-- ===== OTD signing — appended inside step 1 =====
+       The seller signs the Opdracht tot Dienstverlening before they can
+       move to step 2. Submit posts to /api/verkoop/otd/sign which fills
+       the PDF template and stores it at <dossier>/_signed/otd.pdf. -->
+  <div class="card" id="otdSigningCard">
+    <h2 data-i18n="otd_title"></h2>
+    <p class="sub" data-i18n="otd_sub"></p>
+    <label style="display:flex; gap:10px; align-items:flex-start; padding:12px; background:var(--soft); border:1px solid #C7EBE4; border-radius:10px; margin-bottom:14px; cursor:pointer; font-size:14px;">
+      <input type="checkbox" id="otdAccept" style="margin-top:3px; width:18px; height:18px; flex-shrink:0; accent-color: var(--teal);" />
+      <span><b data-i18n="otd_accept_strong"></b> <span data-i18n="otd_accept_rest"></span></span>
+    </label>
+    <div class="field">
+      <label class="lbl" for="otdName"><span data-i18n="otd_name_lbl"></span><span class="req">*</span></label>
+      <input id="otdName" type="text" data-placeholder="otd_name_ph" />
+    </div>
+    <div class="field">
+      <label class="lbl" data-i18n="otd_sig_lbl"></label>
+      <div style="border:1px dashed #CBD5E0; border-radius:10px; background:#FAFBFC; padding:6px;">
+        <canvas id="otdSig" style="display:block; width:100%; height:140px; background:#fff; border-radius:6px; touch-action:none; cursor:crosshair;"></canvas>
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 4px 0;">
+          <span style="font-size:12px; color:var(--grey-soft);" data-i18n="otd_sig_hint"></span>
+          <button type="button" id="otdSigClear" class="btn ghost" style="font-size:12px; padding:4px 10px;" data-i18n="otd_sig_clear"></button>
+        </div>
+      </div>
+    </div>
+    <div id="otdErr" style="display:none; margin-top:10px; padding:10px 12px; background:#FEE4E2; border:1px solid #FDA29B; border-radius:8px; color:#B42318; font-size:13px;"></div>
+    <button class="btn" type="button" id="otdSubmit" style="margin-top:14px;" data-i18n="otd_submit"></button>
+  </div>
+
+  <div class="card" id="otdSignedNotice" style="display:none; border-color:#C7EBE4; background:#E8F5F3;">
+    <h2 style="color:var(--teal-dark);"><span data-i18n="otd_signed_title"></span></h2>
+    <p class="sub" id="otdSignedSub" data-i18n="otd_signed_sub"></p>
+  </div>
+
   <div class="nav-row">
     <span class="small" data-i18n="step1_hint"></span>
-    <button class="btn" type="button" data-next="2" data-i18n="btn_next"></button>
+    <button class="btn" type="button" data-next="2" data-i18n="btn_next" id="step1NextBtn"></button>
   </div>
 </section>
 
@@ -1063,6 +1097,24 @@ const I18N = {
     btn_next: "Volgende",
     btn_prev: "Vorige",
 
+    otd_title: "Opdracht tot Dienstverlening",
+    otd_sub: "Voor we starten teken je de opdracht digitaal. Je tikt je naam in en bevestigt — wij sturen je direct een ondertekend PDF-exemplaar per e-mail.",
+    otd_accept_strong: "Ik heb de opdracht volledig gelezen en aanvaard alle 27 artikelen.",
+    otd_accept_rest: "Ik bevestig dat de door mij ingevulde gegevens juist en volledig zijn en dat ik bekend ben met mijn wettelijke mededelingsplicht (artikel 4), die in een vervolgstap nader wordt ingevuld.",
+    otd_name_lbl: "Type uw volledige naam ter ondertekening",
+    otd_name_ph: "exact zoals op uw paspoort",
+    otd_sig_lbl: "Of teken hier (optioneel, met muis of vinger)",
+    otd_sig_hint: "teken met muis of touchscreen",
+    otd_sig_clear: "Wissen",
+    otd_submit: "Ondertekenen",
+    otd_signed_title: "✓ Opdracht ondertekend",
+    otd_signed_sub: "Bedankt. Je opdracht tot dienstverlening is digitaal aanvaard.",
+    otd_err_accept: "Vink de aanvaardingsverklaring aan om te kunnen ondertekenen.",
+    otd_err_name: "Typ je volledige naam exact zoals op je paspoort.",
+    otd_err_step1: "Vul eerst je adres, naam en e-mailadres in.",
+    otd_err_network: "Ondertekening mislukt. Probeer opnieuw.",
+    otd_locked_hint: "Onderteken eerst de opdracht hierboven.",
+
     step2_title: "2. Documenten",
     step2_sub: "De openbare stukken halen wij voor je op (zie hieronder). Jij uploadt alleen de papieren die je VvE beheerder of jij persoonlijk hebt. Heb je niet alles? Geen probleem, upload wat je hebt.",
     btn_extract: "Documenten laten uitlezen",
@@ -1251,6 +1303,24 @@ const I18N = {
     step1_hint: "Done? Continue to your documents.",
     btn_next: "Next",
     btn_prev: "Back",
+
+    otd_title: "Service Engagement Agreement",
+    otd_sub: "Before we start, you sign the engagement digitally. Type your name and confirm — we'll email you a signed PDF copy right away.",
+    otd_accept_strong: "I have read the engagement in full and accept all 27 articles.",
+    otd_accept_rest: "I confirm that the information I provided is accurate and complete and that I am aware of my statutory disclosure duty (article 4), which will be completed in a follow-up step.",
+    otd_name_lbl: "Type your full name to sign",
+    otd_name_ph: "exactly as on your passport",
+    otd_sig_lbl: "Or sign here (optional, mouse or finger)",
+    otd_sig_hint: "sign with mouse or touchscreen",
+    otd_sig_clear: "Clear",
+    otd_submit: "Sign",
+    otd_signed_title: "✓ Engagement signed",
+    otd_signed_sub: "Thanks. Your service engagement agreement has been accepted digitally.",
+    otd_err_accept: "Tick the acceptance statement to sign.",
+    otd_err_name: "Type your full name exactly as on your passport.",
+    otd_err_step1: "Please fill in your address, name and email first.",
+    otd_err_network: "Signing failed. Please try again.",
+    otd_locked_hint: "Sign the engagement above first.",
 
     step2_title: "2. Documents",
     step2_sub: "We fetch the public documents for you (see below). You only upload what your VvE manager or you personally hold. Don't have everything? No problem, upload what you have.",
@@ -2850,6 +2920,184 @@ hydrateFromServer();
   window.getSignatureImage = function () {
     return hasInk ? canvas.toDataURL("image/png") : null;
   };
+})();
+
+/* ===== OTD signing (inline in step 1) ===================================
+   Lets the seller sign the Opdracht tot Dienstverlening before they move
+   to step 2. Submit posts to /api/verkoop/otd/sign — that fills the PDF
+   template, stores it under <dossier>/_signed/otd.pdf, and writes the
+   acceptance metadata onto verkoop_dossiers (otd_signed_at etc.).
+
+   - Hides itself and shows a "✓ signed" notice when the dossier already
+     has otd_signed_at (detected by polling /api/verkoop/dossier).
+   - Hijacks the step-1 "Volgende" button so the seller can't skip past
+     signing. */
+(function () {
+  const card = document.getElementById("otdSigningCard");
+  if (!card) return;
+  const notice = document.getElementById("otdSignedNotice");
+  const acceptEl = document.getElementById("otdAccept");
+  const nameEl = document.getElementById("otdName");
+  const submitBtn = document.getElementById("otdSubmit");
+  const errEl = document.getElementById("otdErr");
+  const canvas = document.getElementById("otdSig");
+  const clearBtn = document.getElementById("otdSigClear");
+  const nextBtn = document.getElementById("step1NextBtn");
+
+  let signed = false;
+
+  function setSignedUI(sub) {
+    signed = true;
+    card.style.display = "none";
+    if (notice) notice.style.display = "";
+    if (sub && notice) {
+      const subEl = notice.querySelector("#otdSignedSub");
+      if (subEl) subEl.textContent = sub;
+    }
+  }
+
+  function showErr(key) {
+    if (!errEl) return;
+    const msg = (I18N[lang] && I18N[lang][key]) || key;
+    errEl.textContent = msg;
+    errEl.style.display = "block";
+  }
+  function clearErr() { if (errEl) errEl.style.display = "none"; }
+
+  // ---- Hi-DPI signature canvas ----
+  if (canvas) {
+    const ratio = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.scale(ratio, ratio);
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "#1A202C";
+    }
+    let drawing = false;
+    let last = null;
+    const pt = (e) => {
+      const r = canvas.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
+    canvas.addEventListener("pointerdown", (e) => {
+      drawing = true;
+      last = pt(e);
+      canvas.setPointerCapture(e.pointerId);
+    });
+    canvas.addEventListener("pointermove", (e) => {
+      if (!drawing || !ctx) return;
+      const p = pt(e);
+      ctx.beginPath();
+      ctx.moveTo(last.x, last.y);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      last = p;
+    });
+    const endDraw = () => { drawing = false; last = null; };
+    canvas.addEventListener("pointerup", endDraw);
+    canvas.addEventListener("pointercancel", endDraw);
+    clearBtn?.addEventListener("click", () => {
+      ctx?.clearRect(0, 0, canvas.width, canvas.height);
+    });
+  }
+
+  function sigDataUrl() {
+    if (!canvas) return "";
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "";
+    try {
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      for (let i = 3; i < data.length; i += 16) {
+        if (data[i] !== 0) return canvas.toDataURL("image/png");
+      }
+    } catch { /* tainted canvas — skip */ }
+    return "";
+  }
+
+  // ---- Submit ----
+  async function submit() {
+    clearErr();
+    if (!acceptEl?.checked) { showErr("otd_err_accept"); return; }
+    const fullName = (nameEl?.value || "").trim();
+    if (fullName.length < 3) { showErr("otd_err_name"); return; }
+
+    // Pull step-1 fields for the contract.
+    const naam = (document.getElementById("naam")?.value || "").trim();
+    const email = (document.getElementById("email")?.value || "").trim();
+    const straat = (document.getElementById("straat")?.value || "").trim();
+    const postcode = (document.getElementById("postcode")?.value || "").trim();
+    const altTel = (document.getElementById("tel")?.value || "").trim();
+    const lockedTel = (document.getElementById("phoneLockedValue")?.textContent || "").trim();
+    if (!straat || !naam || !email) { showErr("otd_err_step1"); return; }
+
+    const parts = naam.split(/\s+/);
+    const voornaam = parts.slice(0, parts.length > 1 ? -1 : 1).join(" ");
+    const achternaam = parts.length > 1 ? parts.slice(-1)[0] : "";
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "…";
+    try {
+      const res = await fetch("/api/verkoop/otd/sign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          vk_voornaam: voornaam,
+          vk_achternaam: achternaam,
+          vk_straat: straat,
+          vk_postcode_plaats: postcode,
+          vk_email: email,
+          vk_telefoon: altTel || lockedTel,
+          obj_adres: straat,
+          obj_postcode_plaats: postcode,
+          signed_name: fullName,
+          accepted: true,
+          signature_png: sigDataUrl(),
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        errEl.textContent = body.detail || body.error || ((I18N[lang] && I18N[lang].otd_err_network) || "Signing failed.");
+        errEl.style.display = "block";
+        return;
+      }
+      setSignedUI();
+    } catch (e) {
+      showErr("otd_err_network");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = (I18N[lang] && I18N[lang].otd_submit) || "Sign";
+    }
+  }
+  submitBtn?.addEventListener("click", submit);
+
+  // ---- Gate the step-1 "Next" button until signed ----
+  if (nextBtn) {
+    nextBtn.addEventListener("click", (e) => {
+      if (signed) return;
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      showErr("otd_locked_hint");
+      card.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, true);
+  }
+
+  // ---- Already-signed detection ----
+  // hydrateFromServer runs async; we kick off our own fetch so the card
+  // disappears as soon as we know the dossier has otd_signed_at.
+  (async function detectSigned() {
+    if (typeof DEMO !== "undefined" && DEMO) return;
+    try {
+      const res = await fetch("/api/verkoop/dossier", { credentials: "same-origin" });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data?.dossier?.otd_signed_at) setSignedUI();
+    } catch { /* offline — leave card visible */ }
+  })();
 })();
 
 /* Step 1 — toggle the alternative phone input. The primary phone is
