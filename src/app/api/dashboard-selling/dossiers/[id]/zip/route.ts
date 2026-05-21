@@ -28,7 +28,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   const { data: d, error: dossierErr } = await sb
     .from("verkoop_dossiers")
     .select(
-      "id, naam, email, telefoon, phone_e164, taal, straat, postcode, woonplaats, vraagprijs, oplev_datum, motivatie, status, created_at, ai_summary, ai_prefilled, ai_followup_questions, ai_followup_answers, antwoorden"
+      "id, naam, email, telefoon, phone_e164, taal, straat, postcode, woonplaats, vraagprijs, oplev_datum, motivatie, status, created_at, ai_summary, ai_prefilled, ai_followup_questions, ai_followup_answers, antwoorden, signature_name, signature_image, signed_at, signed_ip, otd_signed_name, otd_signature_png, otd_signed_at, otd_signed_ip"
     )
     .eq("id", dossierId)
     .maybeSingle();
@@ -125,7 +125,59 @@ export async function GET(req: NextRequest, { params }: Params) {
     }
   }
 
-  // 3. manifest.json
+  // 3. signature PNGs — decoded from the data URLs stored on the dossier.
+  // submit signature is BW 3:15a; OTD signature is the upfront service
+  // engagement. Either may be absent (typed name alone is still binding).
+  type SigCols = {
+    signature_image?: string | null;
+    otd_signature_png?: string | null;
+    signature_name?: string | null;
+    signed_at?: string | null;
+    otd_signed_name?: string | null;
+    otd_signed_at?: string | null;
+  };
+  const sc = d as SigCols;
+  function dataUrlToBuffer(s: string | null | undefined): Buffer | null {
+    if (!s) return null;
+    // Accept either "data:image/png;base64,XXXX" or bare base64.
+    const match = s.match(/^data:image\/[a-zA-Z0-9.+-]+;base64,(.+)$/);
+    const b64 = match ? match[1] : s.trim();
+    try {
+      return Buffer.from(b64, "base64");
+    } catch {
+      return null;
+    }
+  }
+  const submitSig = dataUrlToBuffer(sc.signature_image);
+  if (submitSig && submitSig.length > 0) {
+    zip.file("signature.png", submitSig);
+  }
+  const otdSig = dataUrlToBuffer(sc.otd_signature_png);
+  if (otdSig && otdSig.length > 0) {
+    zip.file("otd_signature.png", otdSig);
+  }
+
+  // signature.txt — typed names + timestamps. Sits alongside the PNGs so
+  // the audit trail is readable even when no canvas drawing exists.
+  if (sc.signature_name || sc.otd_signed_name || sc.signed_at || sc.otd_signed_at) {
+    const lines: string[] = ["# Signatures", ""];
+    if (sc.otd_signed_name || sc.otd_signed_at) {
+      lines.push("## Service engagement (OTD)");
+      if (sc.otd_signed_name) lines.push(`- Typed name: ${sc.otd_signed_name}`);
+      if (sc.otd_signed_at) lines.push(`- Signed at:  ${new Date(sc.otd_signed_at).toISOString()}`);
+      lines.push(`- PNG attached: ${otdSig ? "otd_signature.png" : "(none)"}`);
+      lines.push("");
+    }
+    if (sc.signature_name || sc.signed_at) {
+      lines.push("## Final submit (BW 3:15a)");
+      if (sc.signature_name) lines.push(`- Typed name: ${sc.signature_name}`);
+      if (sc.signed_at) lines.push(`- Signed at:  ${new Date(sc.signed_at).toISOString()}`);
+      lines.push(`- PNG attached: ${submitSig ? "signature.png" : "(none)"}`);
+    }
+    zip.file("signature.txt", lines.join("\n"));
+  }
+
+  // 4. manifest.json
   zip.file(
     "manifest.json",
     JSON.stringify(
