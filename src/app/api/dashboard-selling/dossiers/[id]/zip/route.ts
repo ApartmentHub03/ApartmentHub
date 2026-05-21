@@ -25,15 +25,26 @@ export async function GET(req: NextRequest, { params }: Params) {
   }
 
   const sb = supabaseAdmin();
+  // select("*") instead of an explicit column list — the signature/otd
+  // columns are present on the consolidated project but may be missing on
+  // legacy deployments still pointed at the older verkoop project. An
+  // unknown column makes Supabase 400 the whole query and we'd never reach
+  // the dossier row. The downstream code already null-checks each field.
   const { data: d, error: dossierErr } = await sb
     .from("verkoop_dossiers")
-    .select(
-      "id, naam, email, telefoon, phone_e164, taal, straat, postcode, woonplaats, vraagprijs, oplev_datum, motivatie, status, created_at, ai_summary, ai_prefilled, ai_followup_questions, ai_followup_answers, antwoorden, signature_name, signature_image, signed_at, signed_ip, otd_signed_name, otd_signature_png, otd_signed_at, otd_signed_ip"
-    )
+    .select("*")
     .eq("id", dossierId)
     .maybeSingle();
   if (dossierErr || !d) {
-    return NextResponse.json({ error: "not_found" }, { status: 404 });
+    // Pass the Supabase error detail through (truncated) so prod failures
+    // distinguish "row missing" from "column missing" or "permission denied".
+    return NextResponse.json(
+      {
+        error: "not_found",
+        detail: dossierErr?.message?.slice(0, 200) ?? null,
+      },
+      { status: 404 }
+    );
   }
 
   const { data: files } = await sb
