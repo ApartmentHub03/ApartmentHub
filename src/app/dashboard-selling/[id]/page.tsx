@@ -5,6 +5,7 @@ import { getStaffUser } from "@/app/lib/auth";
 import { supabaseAdmin } from "@/app/lib/supabase-admin";
 import { signedUrl } from "@/app/lib/storage";
 import { AnalyseSection } from "./analyse";
+import { ContactActions } from "./contact";
 import { EditableDossier } from "./edit";
 import { Logo } from "@/app/lib/components/Logo";
 
@@ -97,6 +98,92 @@ function relativeTime(iso: string | null): string {
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   if (diff < 86400 * 30) return `${Math.floor(diff / 86400)}d ago`;
   return new Date(iso).toLocaleDateString();
+}
+
+type SigBlock = {
+  name: string | null;
+  image: string | null;
+  at: string | null;
+  ip: string | null;
+};
+
+function SignatureSection({ submit, otd }: { submit: SigBlock; otd: SigBlock }) {
+  const hasSubmit = submit.name || submit.image || submit.at;
+  const hasOtd = otd.name || otd.image || otd.at;
+  if (!hasSubmit && !hasOtd) return null;
+
+  function block(title: string, sig: SigBlock) {
+    const imgSrc = sig.image
+      ? sig.image.startsWith("data:")
+        ? sig.image
+        : `data:image/png;base64,${sig.image}`
+      : null;
+    return (
+      <div
+        style={{
+          padding: 14,
+          borderRadius: 10,
+          border: "1px solid #E2E8F0",
+          background: "#F7FAFC",
+          marginBottom: 10,
+        }}
+      >
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#4A5568", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 }}>
+          {title}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 14, alignItems: "center" }}>
+          <div style={{ minWidth: 0, fontSize: 13, color: "#1A202C", lineHeight: 1.5 }}>
+            {sig.name ? (
+              <div>
+                <span style={{ color: "#718096" }}>Typed name:</span>{" "}
+                <strong style={{ fontFamily: "'Inter', sans-serif" }}>{sig.name}</strong>
+              </div>
+            ) : null}
+            {sig.at ? (
+              <div>
+                <span style={{ color: "#718096" }}>Signed at:</span>{" "}
+                {new Date(sig.at).toLocaleString()}
+              </div>
+            ) : null}
+            {sig.ip ? (
+              <div>
+                <span style={{ color: "#718096" }}>IP:</span> <code style={{ fontSize: 12 }}>{sig.ip}</code>
+              </div>
+            ) : null}
+            {!sig.image ? (
+              <div style={{ marginTop: 6, fontStyle: "italic", color: "#718096" }}>
+                No drawn signature (typed name is legally binding under BW 3:15a).
+              </div>
+            ) : null}
+          </div>
+          {imgSrc ? (
+            // Static PNG export from a canvas; next/image isn't a fit here.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={imgSrc}
+              alt={`${title} signature`}
+              style={{
+                maxHeight: 90,
+                maxWidth: 220,
+                background: "#fff",
+                border: "1px solid #E2E8F0",
+                borderRadius: 6,
+                padding: 4,
+              }}
+            />
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.section}>
+      <h2>Signatures</h2>
+      {hasOtd ? block("Service engagement (OTD)", otd) : null}
+      {hasSubmit ? block("Final submit (BW 3:15a)", submit) : null}
+    </div>
+  );
 }
 
 export default async function DossierPage({ params }: Params) {
@@ -226,18 +313,12 @@ export default async function DossierPage({ params }: Params) {
               </svg>
               Download all (ZIP)
             </a>
-            {d.email && (
-              <a
-                className={styles.btnSecondary}
-                href={`mailto:${d.email}?subject=${encodeURIComponent("Re: je verkoopdossier bij ApartmentHub")}`}
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                  <polyline points="22,6 12,13 2,6" />
-                </svg>
-                Email seller
-              </a>
-            )}
+            <ContactActions
+              sellerName={d.naam ?? ""}
+              sellerEmail={d.email ?? null}
+              sellerPhone={d.telefoon ?? d.phone_e164 ?? null}
+            />
+
           </div>
         ) : (
           <div
@@ -290,6 +371,21 @@ export default async function DossierPage({ params }: Params) {
                     }
                   : null
               }
+            />
+
+            <SignatureSection
+              submit={{
+                name: (d as { signature_name?: string | null }).signature_name ?? null,
+                image: (d as { signature_image?: string | null }).signature_image ?? null,
+                at: (d as { signed_at?: string | null }).signed_at ?? null,
+                ip: (d as { signed_ip?: string | null }).signed_ip ?? null,
+              }}
+              otd={{
+                name: (d as { otd_signed_name?: string | null }).otd_signed_name ?? null,
+                image: (d as { otd_signature_png?: string | null }).otd_signature_png ?? null,
+                at: (d as { otd_signed_at?: string | null }).otd_signed_at ?? null,
+                ip: (d as { otd_signed_ip?: string | null }).otd_signed_ip ?? null,
+              }}
             />
 
             {sellerQuestions.length > 0 && (
