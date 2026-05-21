@@ -23,8 +23,6 @@ const resend = resendKey ? new Resend(resendKey) : null;
 const MAIL_FROM = process.env.VERKOOP_MAIL_FROM ?? process.env.MAIL_FROM;
 const MAIL_TO_AGENT = process.env.VERKOOP_MAIL_TO_AGENT ?? process.env.MAIL_TO_AGENT;
 
-// supabaseAdmin() reads VERKOOP_SUPABASE_URL/SERVICE_ROLE first so we hit the
-// verkoop project (where verkoop_dossiers lives), not the rental project.
 let supabase: ReturnType<typeof supabaseAdmin> | null = null;
 try {
   supabase = supabaseAdmin();
