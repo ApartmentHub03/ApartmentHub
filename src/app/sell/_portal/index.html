@@ -442,6 +442,61 @@
   .btn.orange { background: var(--orange); }
   .btn.orange:hover { background: var(--orange-dark); }
 
+  /* OTD Sign button — clearer affordance (lift + shadow on hover) and a
+     pulse animation we toggle via JS when the seller tries to skip past
+     signing. The pulse is short so it draws the eye without trapping focus. */
+  #otdSubmit {
+    transition: transform .15s ease, box-shadow .15s ease, background .12s;
+  }
+  #otdSubmit:hover {
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 6px 16px rgba(0, 155, 138, 0.28);
+  }
+  #otdSubmit:active {
+    transform: translateY(0) scale(0.99);
+  }
+  #otdSubmit.nudge {
+    animation: signNudge 0.65s ease-in-out 2;
+    box-shadow: 0 0 0 0 rgba(255, 125, 40, 0.55);
+  }
+  @keyframes signNudge {
+    0%   { transform: scale(1);    box-shadow: 0 0 0 0   rgba(255, 125, 40, 0.55); }
+    40%  { transform: scale(1.08); box-shadow: 0 0 0 12px rgba(255, 125, 40, 0); }
+    100% { transform: scale(1);    box-shadow: 0 0 0 0   rgba(255, 125, 40, 0); }
+  }
+
+  /* PDF preview shown above the OTD Sign button. We size it so the first
+     page is readable without dominating the card; the "Open in new tab"
+     fallback covers browsers that don't render embedded PDFs (iOS Safari). */
+  .otd-pdf-wrap {
+    margin: 6px 0 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .otd-pdf-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; padding: 10px 14px;
+    background: var(--soft); color: var(--teal-dark);
+    font-size: 13px; font-weight: 600;
+    border-bottom: 1px solid var(--line);
+  }
+  .otd-pdf-head a {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; background: #fff;
+    border: 1px solid var(--line); border-radius: 999px;
+    font-size: 12px; font-weight: 600; color: var(--teal-dark);
+    text-decoration: none;
+  }
+  .otd-pdf-head a:hover { background: var(--bg); }
+  .otd-pdf-wrap iframe {
+    display: block; width: 100%; height: 420px; border: 0; background: #F4F6F8;
+  }
+  @media (max-width: 600px) {
+    .otd-pdf-wrap iframe { height: 320px; }
+  }
+
   .nav-row {
     display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
     margin-top: 24px; justify-content: space-between;
@@ -769,6 +824,17 @@
       </div>
     </div>
     <div id="otdErr" style="display:none; margin-top:10px; padding:10px 12px; background:#FEE4E2; border:1px solid #FDA29B; border-radius:8px; color:#B42318; font-size:13px;"></div>
+
+    <!-- OTD template preview — gives the seller a chance to read the
+         document before signing. Public file lives at /otd-template.pdf. -->
+    <div class="otd-pdf-wrap" aria-label="OTD template preview">
+      <div class="otd-pdf-head">
+        <span data-i18n="otd_pdf_title"></span>
+        <a href="/otd-template.pdf" target="_blank" rel="noopener noreferrer" data-i18n="otd_pdf_open"></a>
+      </div>
+      <iframe src="/otd-template.pdf#view=FitH" title="OTD template" loading="lazy"></iframe>
+    </div>
+
     <button class="btn" type="button" id="otdSubmit" style="margin-top:14px;" data-i18n="otd_submit"></button>
   </div>
 
@@ -1119,6 +1185,8 @@ const I18N = {
     otd_err_step1: "Vul eerst je adres, naam en e-mailadres in.",
     otd_err_network: "Ondertekening mislukt. Probeer opnieuw.",
     otd_locked_hint: "Onderteken eerst de opdracht hierboven.",
+    otd_pdf_title: "Voorbeeld opdracht tot dienstverlening",
+    otd_pdf_open: "Open in nieuw tabblad ↗",
 
     step2_title: "2. Documenten",
     step2_sub: "De openbare stukken halen wij voor je op (zie hieronder). Jij uploadt alleen de papieren die je VvE beheerder of jij persoonlijk hebt. Heb je niet alles? Geen probleem, upload wat je hebt.",
@@ -1331,6 +1399,8 @@ const I18N = {
     otd_err_step1: "Please fill in your address, name and email first.",
     otd_err_network: "Signing failed. Please try again.",
     otd_locked_hint: "Sign the engagement above first.",
+    otd_pdf_title: "Service engagement template preview",
+    otd_pdf_open: "Open in new tab ↗",
 
     step2_title: "2. Documents",
     step2_sub: "We fetch the public documents for you (see below). You only upload what your VvE manager or you personally hold. Don't have everything? No problem, upload what you have.",
@@ -1385,7 +1455,7 @@ const I18N = {
     ph_vve: "Active board, recent roof project went smoothly.",
     lbl_verbouw_toel: "Which renovations, when, by which contractor?",
     ph_verbouw: "e.g. Kitchen redone 2021 by De Houtkamp, bathroom 2019.",
-    lbl_price: "Asking price (€)",
+    lbl_price: "Expected asking price (€)",
     ph_price: "e.g. 525,000",
     lbl_handover: "Preferred handover date",
     ph_handover: "e.g. mid July, or 'flexible'",
@@ -3127,6 +3197,11 @@ hydrateFromServer();
   submitBtn?.addEventListener("click", submit);
 
   // ---- Gate the step-1 "Next" button until signed ----
+  // The signing card is easy to miss — sellers scroll past, click Next,
+  // and assume they're done. We block the transition, scroll the card
+  // back into view, AND pulse the Sign button so it's the obvious next
+  // thing to click. Re-add the `nudge` class each time so the animation
+  // re-fires even on repeated Next clicks.
   if (nextBtn) {
     nextBtn.addEventListener("click", (e) => {
       if (signed) return;
@@ -3134,6 +3209,13 @@ hydrateFromServer();
       e.preventDefault();
       showErr("otd_locked_hint");
       card.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (submitBtn) {
+        submitBtn.classList.remove("nudge");
+        // Force reflow so the keyframes restart on re-add.
+        void submitBtn.offsetWidth;
+        submitBtn.classList.add("nudge");
+        setTimeout(() => submitBtn.classList.remove("nudge"), 1500);
+      }
     }, true);
   }
 
