@@ -21,6 +21,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" type="image/png" href="/favicon.png" />
 <title>Verkoop je appartement / Sell your apartment. ApartmentHub</title>
 <meta name="description" content="Begin je verkoop in 15 minuten. Upload je stukken, wij doen de rest." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -334,6 +335,34 @@
   .doc-tag.required    { background: #FEE4E2; color: #B42318; }
   .doc-tag.important   { background: var(--soft); color: var(--teal-dark); }
   .doc-tag.conditional { background: #F2F4F7; color: var(--grey); }
+  /* Legal-status tags: law (red), common practice (teal), optional (grey) */
+  .doc-tag.law      { background: #FEE4E2; color: #B42318; }
+  .doc-tag.common   { background: var(--soft); color: var(--teal-dark); }
+  .doc-tag.optional { background: #F2F4F7; color: var(--grey); }
+
+  /* Ask-VvE secondary button, sits next to the upload field */
+  .doc-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 18px 16px; }
+  .ask-vve-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #fff; border: 1px solid var(--teal);
+    color: var(--teal-dark); padding: 8px 14px; border-radius: 8px;
+    font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    text-decoration: none; transition: background .12s, border-color .12s;
+  }
+  .ask-vve-btn::before { content: "✉"; font-size: 14px; }
+  .ask-vve-btn:hover { background: var(--soft); text-decoration: none; }
+
+  /* Yes/No gate for documents like the mortgage upload */
+  .doc-gate {
+    border-top: 1px dashed var(--line);
+    padding: 12px 18px; background: var(--bg);
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    font-size: 13px; color: var(--grey);
+  }
+  .doc-gate .gate-q { font-weight: 600; color: var(--ink); }
+  .doc.is-gated-off .drop,
+  .doc.is-gated-off .filelist,
+  .doc.is-gated-off .doc-actions { display: none; }
 
   .group-title.group-required    { color: #B42318; }
   .group-title.group-important   { color: var(--teal-dark); }
@@ -465,37 +494,68 @@
     100% { transform: scale(1);    box-shadow: 0 0 0 0   rgba(255, 125, 40, 0); }
   }
 
-  /* PDF preview shown above the OTD Sign button. We size it so the first
-     page is readable without dominating the card; the "Open in new tab"
-     fallback covers browsers that don't render embedded PDFs (iOS Safari). */
-  .otd-pdf-wrap {
-    margin: 6px 0 14px;
+  /* Read-only contract shown above the OTD Sign button. The header carries
+     a white version of the logo on a teal band; the body is a scrollable
+     transcription of the engagement (not a fillable PDF). The seller must
+     scroll to the end before the Sign button unlocks. */
+  .otd-contract {
+    margin: 6px 0 8px;
     border: 1px solid var(--line);
     border-radius: 10px;
     overflow: hidden;
     background: #fff;
   }
-  .otd-pdf-head {
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 10px; padding: 10px 14px;
-    background: var(--soft); color: var(--teal-dark);
-    font-size: 13px; font-weight: 600;
-    border-bottom: 1px solid var(--line);
+  .otd-contract-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px;
+    background: var(--teal); color: #fff;
   }
-  .otd-pdf-head a {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 4px 10px; background: #fff;
-    border: 1px solid var(--line); border-radius: 999px;
-    font-size: 12px; font-weight: 600; color: var(--teal-dark);
-    text-decoration: none;
+  .otd-contract-head .otd-logo {
+    height: 30px; width: 30px; flex-shrink: 0;
+    /* Force the teal logo to render white on the teal band. */
+    filter: brightness(0) invert(1);
   }
-  .otd-pdf-head a:hover { background: var(--bg); }
-  .otd-pdf-wrap iframe {
-    display: block; width: 100%; height: 420px; border: 0; background: #F4F6F8;
+  .otd-contract-head .otd-h-title { font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+  .otd-contract-head .otd-h-sub { font-size: 12px; opacity: 0.92; }
+  .otd-contract-body {
+    max-height: 440px; overflow-y: auto;
+    padding: 18px 22px;
+    font-size: 13px; color: var(--ink); line-height: 1.55;
+    -webkit-overflow-scrolling: touch;
   }
-  @media (max-width: 600px) {
-    .otd-pdf-wrap iframe { height: 320px; }
+  .otd-contract-body:focus { outline: none; }
+  @media (max-width: 600px) { .otd-contract-body { max-height: 340px; } }
+  .otd-contract-body h4 { margin: 18px 0 4px; font-size: 13.5px; color: var(--teal-dark); }
+  .otd-contract-body h4:first-child { margin-top: 0; }
+  .otd-contract-body p { margin: 0 0 8px; }
+  .otd-contract-body ul { margin: 0 0 8px; padding-left: 20px; }
+  .otd-contract-body li { margin: 2px 0; }
+  .otd-contract-body .otd-lead { color: var(--grey); }
+  .otd-party {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px;
+    margin: 4px 0 10px; padding: 10px 12px;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
   }
+  @media (max-width: 480px) { .otd-party { grid-template-columns: 1fr; } }
+  .otd-party .pf { font-size: 12px; }
+  .otd-party .pf b { display: block; color: var(--grey-soft); font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .otd-sign-block { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 480px) { .otd-sign-block { grid-template-columns: 1fr; } }
+  .otd-sign-col .otd-sign-role { font-size: 11px; color: var(--grey-soft); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; margin-bottom: 6px; }
+  .otd-sig-david { font-family: 'Brush Script MT', 'Segoe Script', 'Snell Roundhand', cursive; font-size: 28px; color: var(--ink); line-height: 1; }
+  .otd-sign-col .otd-sign-name { font-size: 12px; color: var(--grey); margin-top: 4px; }
+  .otd-sign-col .otd-sign-pending { font-size: 13px; color: var(--grey-soft); font-style: italic; }
+  .otd-scroll-hint { font-size: 12px; color: var(--orange-dark); text-align: center; margin: 0 0 14px; font-weight: 500; }
+  .otd-contract.read .otd-scroll-hint,
+  .otd-contract.read + .otd-scroll-hint { display: none; }
+
+  .otd-accept-row {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 12px; background: var(--soft);
+    border: 1px solid #C7EBE4; border-radius: 10px;
+    margin-bottom: 14px; cursor: pointer; font-size: 14px;
+  }
+  .otd-accept-row input { margin-top: 3px; width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--teal); }
 
   .nav-row {
     display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
@@ -522,7 +582,7 @@
     background: var(--soft);
   }
   .q-row.q-prefilled .q-label::after {
-    content: "AI";
+    content: "✓";
     margin-left: 8px;
     font-size: 10px;
     background: var(--teal);
@@ -791,6 +851,23 @@
         </select>
       </div>
     </div>
+
+    <!-- VvE manager — drives the per-document "Where do I find this?" links
+         and pre-fills the Ask-VvE email recipient in step 2. -->
+    <div class="row-2">
+      <div class="field">
+        <label class="lbl" for="vveBeheerder" data-i18n="lbl_vve_manager"></label>
+        <select id="vveBeheerder"></select>
+      </div>
+      <div class="field">
+        <label class="lbl" for="vveEmail"><span data-i18n="lbl_vve_email"></span></label>
+        <input id="vveEmail" type="email" autocomplete="off" data-placeholder="ph_vve_email" />
+      </div>
+    </div>
+    <div class="field" id="vveOtherWrap" style="display:none;">
+      <label class="lbl" for="vveBeheerderOther" data-i18n="lbl_vve_manager_other"></label>
+      <input id="vveBeheerderOther" type="text" data-placeholder="ph_vve_manager_other" />
+    </div>
   </div>
 
   <div class="banner">
@@ -805,8 +882,26 @@
   <div class="card" id="otdSigningCard">
     <h2 data-i18n="otd_title"></h2>
     <p class="sub" data-i18n="otd_sub"></p>
-    <label style="display:flex; gap:10px; align-items:flex-start; padding:12px; background:var(--soft); border:1px solid #C7EBE4; border-radius:10px; margin-bottom:14px; cursor:pointer; font-size:14px;">
-      <input type="checkbox" id="otdAccept" style="margin-top:3px; width:18px; height:18px; flex-shrink:0; accent-color: var(--teal);" />
+
+    <!-- Read-only contract. The full text is rendered as HTML (not a fillable
+         PDF) by buildOtdContractHtml(); the makelaar (David) is already
+         signed at the bottom. The seller must scroll to the end before the
+         Sign button below unlocks. -->
+    <div class="otd-contract" id="otdContract">
+      <div class="otd-contract-head">
+        <img class="otd-logo" alt="" />
+        <div>
+          <div class="otd-h-title" data-i18n="otd_title"></div>
+          <div class="otd-h-sub" data-i18n="otd_h_sub"></div>
+        </div>
+      </div>
+      <div class="otd-contract-body" id="otdContractBody" tabindex="0"></div>
+    </div>
+    <div class="otd-scroll-hint" id="otdScrollHint" data-i18n="otd_scroll_hint"></div>
+
+    <!-- Signature area — below the contract text -->
+    <label class="otd-accept-row">
+      <input type="checkbox" id="otdAccept" />
       <span><b data-i18n="otd_accept_strong"></b> <span data-i18n="otd_accept_rest"></span></span>
     </label>
     <div class="field">
@@ -825,17 +920,7 @@
     </div>
     <div id="otdErr" style="display:none; margin-top:10px; padding:10px 12px; background:#FEE4E2; border:1px solid #FDA29B; border-radius:8px; color:#B42318; font-size:13px;"></div>
 
-    <!-- OTD template preview — gives the seller a chance to read the
-         document before signing. Public file lives at /otd-template.pdf. -->
-    <div class="otd-pdf-wrap" aria-label="OTD template preview">
-      <div class="otd-pdf-head">
-        <span data-i18n="otd_pdf_title"></span>
-        <a href="/otd-template.pdf" target="_blank" rel="noopener noreferrer" data-i18n="otd_pdf_open"></a>
-      </div>
-      <iframe src="/otd-template.pdf#view=FitH" title="OTD template" loading="lazy"></iframe>
-    </div>
-
-    <button class="btn" type="button" id="otdSubmit" style="margin-top:14px;" data-i18n="otd_submit"></button>
+    <button class="btn" type="button" id="otdSubmit" style="margin-top:14px;" disabled data-i18n="otd_submit"></button>
   </div>
 
   <div class="card" id="otdSignedNotice" style="display:none; border-color:#C7EBE4; background:#E8F5F3;">
@@ -916,17 +1001,23 @@
       <span data-i18n="banner_disclosure_body"></span>
     </div>
 
-    <!-- Step 4 — 100% AI-generated. The static qs-gebreken / qs-vve /
-         qs-verbouw pools were removed so the seller only sees follow-up
-         questions derived from the actual uploaded documents. The
-         loading state below is shown while /api/verkoop/analyse runs
-         (typically 30-40s on a freshly-uploaded dossier). -->
+    <h3 class="qg-title" data-i18n="qg_additional"></h3>
+    <p class="sub" data-i18n="qg_additional_sub"></p>
+
+    <!-- Curated disclosure questions — always shown. Answers feed the
+         seller's statutory disclosure (BW 7:17). Rendered by
+         renderDisclosureQuestions(); the submit button stays disabled
+         until every one is answered. -->
+    <div id="qs-disclosure"></div>
+
+    <!-- Document-based follow-up questions, generated from the uploads
+         (loading state shown while /api/verkoop/analyse runs). -->
     <section id="aiQuestionsLoading" style="display:none; padding:18px 0;">
       <div class="loader" aria-hidden></div>
       <p class="sub" data-i18n="qg_ai_loading"></p>
     </section>
 
-    <section id="aiQuestionsEmpty" style="display:none; padding:18px 0;">
+    <section id="aiQuestionsEmpty" style="display:none; padding:6px 0;">
       <p class="sub" data-i18n="qg_ai_empty"></p>
     </section>
 
@@ -936,8 +1027,6 @@
     </section>
 
     <section id="aiQuestionsSection" style="display:none; margin-top:6px;">
-      <h3 class="qg-title" data-ai-title>✨ <span data-i18n="qg_ai"></span></h3>
-      <p class="sub" data-ai-sub data-i18n="qg_ai_sub"></p>
       <div id="qs-ai"></div>
     </section>
 
@@ -1023,6 +1112,7 @@
         <button class="btn ghost" type="button" data-prev="2" data-i18n="btn_prev_to_docs"></button>
       </div>
       <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+        <span class="small" id="signGateHint" data-i18n="sign_gate_hint" style="display:none; color: var(--orange);"></span>
         <span class="small" data-i18n="submit_note"></span>
         <button class="btn" id="submitBtn" type="button" data-i18n="submit_btn"></button>
       </div>
@@ -1110,20 +1200,26 @@ const DOC_GROUPS = {
   // halen wij zelf op uit openbare registers (Kadaster, KvK, Omgevingsloket,
   // Stadsarchief, KCAF) en BAG + EP online. De klant ziet boven aan stap 2 een
   // banner met wat wij regelen.
+  // legal: "law" | "common" | "optional"  -> drives the tag shown per doc
+  // vve:   document held by the VvE manager -> "Where do I find this?" link
+  //        follows the chosen manager, and an "Ask VvE" mailto button appears
+  // gated: upload is hidden behind a yes/no question (e.g. mortgage)
   "docs-important": [
-    { key: "mjop",          level: "important",   skippable: false, link: "" },
-    { key: "notulen",       level: "important",   skippable: false, link: "" },
-    { key: "jaarrekening",  level: "important",   skippable: false, link: "" },
-    { key: "reservefonds",  level: "important",   skippable: false, link: "" },
-    { key: "opstal",        level: "important",   skippable: false, link: "" }
+    { key: "mjop",          level: "important",   legal: "common", vve: true,  askVve: true,  skippable: false, link: "" },
+    { key: "notulen",       level: "important",   legal: "common", vve: true,  askVve: true,  skippable: false, link: "" },
+    { key: "jaarrekening",  level: "important",   legal: "common", vve: true,  askVve: true,  skippable: false, link: "" },
+    { key: "reservefonds",  level: "important",   legal: "law",    vve: true,  askVve: true,  skippable: false, link: "" },
+    { key: "opstal",        level: "important",   legal: "common", vve: true,  askVve: true,  skippable: false, link: "" },
+    { key: "huishoudelijk", level: "important",   legal: "common", vve: true,  askVve: true,  skippable: false, link: "" }
   ],
   "docs-conditional": [
-    { key: "hypotheek",     level: "conditional", skippable: true,  link: "" },
-    { key: "erfpacht",      level: "conditional", skippable: true,  link: "https://www.amsterdam.nl/wonen-bouwen-verbouwen/erfpacht/" },
-    { key: "garanties",     level: "conditional", skippable: true,  link: "" },
-    { key: "cv-onderhoud",  level: "conditional", skippable: true,  link: "" },
-    { key: "zonnepanelen",  level: "conditional", skippable: true,  link: "" },
-    { key: "asbest",        level: "conditional", skippable: true,  link: "" }
+    { key: "hypotheek",     level: "conditional", legal: "optional", gated: true, gateKey: "hyp_gate_q", skippable: false, link: "" },
+    { key: "erfpacht",      level: "conditional", legal: "common",   skippable: true,  link: "https://mijn.amsterdam.nl/" },
+    { key: "garanties",     level: "conditional", legal: "optional", skippable: true,  link: "" },
+    { key: "cv-onderhoud",  level: "conditional", legal: "optional", skippable: true,  link: "" },
+    { key: "zonnepanelen",  level: "conditional", legal: "optional", skippable: true,  link: "" },
+    { key: "bouwkundig",    level: "conditional", legal: "optional", skippable: true,  link: "" },
+    { key: "asbest",        level: "conditional", legal: "optional", skippable: true,  link: "" }
   ]
 };
 // Static question pool removed — step 4 is now driven entirely by the
@@ -1162,6 +1258,18 @@ const I18N = {
     opt_morning: "Ochtend (09 tot 12)",
     opt_afternoon: "Middag (12 tot 17)",
     opt_evening: "Avond (17 tot 20)",
+    lbl_vve_manager: "Wie beheert jullie VvE?",
+    lbl_vve_manager_other: "Naam VvE-beheerder",
+    ph_vve_manager_other: "Naam van je beheerder",
+    lbl_vve_email: "E-mail VvE-beheerder (optioneel)",
+    ph_vve_email: "bijv. beheer@vve.nl",
+    opt_vve_choose: "Kies of typ…",
+    opt_vve_self: "Zelf beheerd",
+    opt_vve_unknown: "Weet ik niet",
+    opt_vve_other: "Anders (vul in)",
+    ask_vve_btn: "Vraag dit op bij de VvE",
+    vve_link_search: "Zoek het portaal van {x}",
+    hyp_gate_q: "Heb je een hypotheek op deze woning?",
     banner_public_title: "Wat we voor je proberen op te halen",
     banner_public_body: "Een groot deel regelen we zelf: leveringsakte en splitsingsakte bij Kadaster, KvK uittreksel van je VvE, vergunningen via Omgevingsloket, bouwtekeningen via Stadsarchief, funderingsstatus via KCAF, en bouwjaar/oppervlakte/energielabel via BAG en EP online. Jij hoeft alleen de stukken te uploaden die alleen jij of je VvE beheerder hebt.",
     step1_hint: "Klaar? Ga door naar de documenten.",
@@ -1169,7 +1277,7 @@ const I18N = {
     btn_prev: "Vorige",
 
     otd_title: "Opdracht tot Dienstverlening",
-    otd_sub: "Voor we starten teken je de opdracht digitaal. Je tikt je naam in en bevestigt — wij sturen je direct een ondertekend PDF-exemplaar per e-mail.",
+    otd_sub: "Voor we starten teken je de opdracht digitaal. Je tikt je naam in en bevestigt. Wij sturen je direct een ondertekend PDF-exemplaar per e-mail.",
     otd_accept_strong: "Ik heb de opdracht volledig gelezen en aanvaard alle 27 artikelen.",
     otd_accept_rest: "Ik bevestig dat de door mij ingevulde gegevens juist en volledig zijn en dat ik bekend ben met mijn wettelijke mededelingsplicht (artikel 4), die in een vervolgstap nader wordt ingevuld.",
     otd_name_lbl: "Type uw volledige naam ter ondertekening",
@@ -1187,6 +1295,8 @@ const I18N = {
     otd_locked_hint: "Onderteken eerst de opdracht hierboven.",
     otd_pdf_title: "Voorbeeld opdracht tot dienstverlening",
     otd_pdf_open: "Open in nieuw tabblad ↗",
+    otd_h_sub: "Verkoopbemiddeling",
+    otd_scroll_hint: "Scroll om de hele opdracht te lezen voordat je ondertekent.",
 
     step2_title: "2. Documenten",
     step2_sub: "De openbare stukken halen wij voor je op (zie hieronder). Jij uploadt alleen de papieren die je VvE beheerder of jij persoonlijk hebt. Heb je niet alles? Geen probleem, upload wat je hebt.",
@@ -1205,14 +1315,14 @@ const I18N = {
     grp_conditional: "Indien van toepassing",
 
     loader_title: "We lezen je documenten uit",
-    loader_sub: "Onze AI haalt zoveel mogelijk informatie uit je geüploade stukken. Dat scheelt jou typewerk. Een paar seconden geduld.",
+    loader_sub: "We halen zoveel mogelijk informatie uit je geüploade stukken. Dat scheelt jou typewerk. Een paar seconden geduld.",
     loader_step_upload: "Documenten geüpload",
     loader_step_extract: "Tekst en velden extraheren",
     loader_step_match: "Antwoorden matchen aan vragen",
     loader_step_done: "Klaar voor de laatste vragen",
 
     step4_title: "3. Alleen de openstaande vragen",
-    step4_sub: "Wat onze AI niet uit je documenten kon halen. Je doet dit deel in een paar minuten.",
+    step4_sub: "Wat we niet uit je documenten konden halen. Je doet dit deel in een paar minuten.",
     enrichment_title: "Wat we uit openbare registers hebben opgehaald:",
     enrichment_none: "Geen openbare registerdata gevonden voor dit adres.",
     prefilled_title: "Wat we al voor je hebben ingevuld:",
@@ -1223,10 +1333,24 @@ const I18N = {
     qg_gebreken: "Gebreken & lekkages",
     qg_vve: "VvE & buren",
     qg_verbouw: "Verbouwingen",
-    qg_ai: "Aanvullende AI-vragen",
-    qg_ai_sub: "Onze AI heeft een paar extra vragen op basis van jouw documenten. Korte antwoorden zijn prima — ze worden meteen opgeslagen.",
-    qg_ai_loading: "AI analyseert je documenten — momentje…",
+    qg_ai: "Aanvullende vragen",
+    qg_ai_sub: "Een paar extra vragen op basis van jouw documenten. Korte antwoorden zijn prima en worden meteen opgeslagen.",
+    qg_additional: "Aanvullende vragen",
+    qg_additional_sub: "Een paar korte vragen om je dossier compleet te maken. Korte antwoorden zijn prima en worden meteen opgeslagen.",
+    qg_ai_loading: "We analyseren je documenten. Momentje…",
     qg_ai_empty: "De documenten dekken al onze vragen. Geen aanvullende vragen nodig.",
+    dq_geluid_label: "Is er geluidsoverlast? Zo ja, welke bron en hoe erg?",
+    dq_claims_label: "Zijn er verzekeringsclaims geweest?",
+    dq_claims_followup: "Welke claim, wanneer en welk bedrag?",
+    dq_verborgen_label: "Zijn er verborgen gebreken die niet zichtbaar zijn voor een koper? Beschrijf ze.",
+    dq_uitgaven_label: "Zijn er grote uitgaven gepland in de komende 5 jaar (dak, fundering, lift, gevel)? Zo ja, welke?",
+    dq_uitgaven_mjop_label: "Zijn er naast wat in het MJOP staat nog aanvullende grote uitgaven gepland? (optioneel)",
+    dq_fundering_label: "Funderingsherstel?",
+    dq_fundering_planned: "Gepland",
+    dq_fundering_done: "Uitgevoerd",
+    dq_fundering_none: "Geen",
+    dq_fundering_followup: "Licht toe (wat en wanneer).",
+    sign_gate_hint: "Beantwoord eerst alle aanvullende vragen hierboven.",
     qg_ai_err_generic: "De AI-analyse is mislukt. Probeer het opnieuw.",
     qg_ai_err_no_files: "Geen leesbare documenten gevonden. Upload PDF's of foto's (geen Word/Excel) en probeer opnieuw.",
     qg_ai_err_no_dossier: "Geen dossier gevonden. Vul eerst stap 1 in en upload documenten.",
@@ -1298,6 +1422,9 @@ const I18N = {
     tag_required: "Verplicht",
     tag_important: "Belangrijk",
     tag_conditional: "Indien van toepassing",
+    tag_law: "Wettelijk verplicht",
+    tag_common: "Gangbaar",
+    tag_optional: "Optioneel",
     open_placeholder: "Beantwoord in eigen woorden",
     followup_no: "Wat speelt er?",
     followup_no_permit: "Waarom niet?",
@@ -1318,10 +1445,12 @@ const I18N = {
       zonnepanelen: { naam: "Zonnepanelen: bon, garantie & monitoring", desc: "Aankoopbon, garantie, omvormer, salderingsafspraak.", where: "Bij je installateur of in je emailbox bij aankoop. Saldering staat bij je energieleverancier (regeling stopt 1-1-2027).", linkLabel: "", tag: "Privé" },
       notulen: { naam: "Notulen ALV. Laatste 3 jaar.", desc: "Vergaderverslagen van de algemene ledenvergadering.", where: "Vraag je VvE beheerder of bestuur. Bij grote VvE's staan ze in het beheerportaal (Twinq, Bouwinvest, BVV, Pro VvE Beheer).", linkLabel: "", tag: "Via VvE" },
       jaarrekening: { naam: "Jaarrekening + begroting VvE", desc: "Laatste twee boekjaren plus lopende begroting.", where: "Via je VvE beheerder of bestuur.", linkLabel: "", tag: "Via VvE" },
-      mjop: { naam: "MJOP. Meerjarenonderhoudsplan.", desc: "Maximaal 10 jaar oud. Verplicht voor VvE's met meer dan 8 woningen.", where: "Via je VvE beheerder. Geen MJOP? Geef dat aan in stap 4. Een ontbrekend MJOP is geen blokkade voor verkoop, wel een aandachtspunt.", linkLabel: "", tag: "Via VvE" },
-      reservefonds: { naam: "Bewijs saldo reservefonds", desc: "Banksaldo of jaarrekening waar het reservefonds uit blijkt.", where: "Via VvE beheerder. Wettelijk minimum sinds 2018: 0,5% van de herbouwwaarde of MJOP gebaseerd.", linkLabel: "", tag: "Via VvE" },
+      mjop: { naam: "MJOP. Meerjarenonderhoudsplan.", desc: "Van de afgelopen 5 jaar. Niet wettelijk verplicht als los document, maar de bank van de koper vraagt er bijna altijd om. Zonder MJOP moet de VvE jaarlijks 0,5% van de herbouwwaarde reserveren. (BW 5:126)", where: "Via je VvE beheerder. Geen MJOP? Geef dat aan in stap 4. Een ontbrekend MJOP is geen blokkade voor verkoop, wel een aandachtspunt.", linkLabel: "", tag: "Via VvE" },
+      reservefonds: { naam: "Bewijs saldo reservefonds", desc: "Wettelijk verplicht (BW 5:126). Vaak al opgenomen in je jaarrekening — dan is een aparte upload niet nodig.", where: "Via je VvE beheerder, of terug te vinden in de jaarrekening.", linkLabel: "", tag: "Via VvE" },
       opstal: { naam: "Opstalverzekeringspolis VvE", desc: "Polis met dekking en herbouwwaarde van het gebouw.", where: "Via je VvE beheerder. Veelvoorkomend bij Centraal Beheer, Klaverblad, NN.", linkLabel: "", tag: "Via VvE" },
-      erfpacht: { naam: "Erfpachtstukken (Amsterdam)", desc: "Erfpachtakte, canon aanslag, afkoopbevestiging of overstapaanbieding.", where: "Log in met DigiD op het erfpachtdossier van gemeente Amsterdam. Daar staan al je erfpachtstukken bij elkaar.", linkLabel: "Open Erfpacht Amsterdam", tag: "Gemeente" },
+      huishoudelijk: { naam: "Huishoudelijk reglement VvE", desc: "De regels van de VvE over gebruik van het gebouw en de gemeenschappelijke ruimtes.", where: "Via je VvE beheerder of bestuur. Vaak ook te vinden in het beheerportaal.", linkLabel: "", tag: "Via VvE" },
+      erfpacht: { naam: "Erfpachtstukken (Amsterdam)", desc: "Erfpachtakte, canon aanslag, afkoopbevestiging of overstapaanbieding.", where: "Log in met DigiD op mijn.amsterdam.nl. Daar staan al je erfpachtstukken bij elkaar.", linkLabel: "Open mijn.amsterdam.nl", tag: "Gemeente" },
+      bouwkundig: { naam: "Bouwkundig inspectierapport", desc: "Recent bouwkundig keuringsrapport van de woning, indien beschikbaar.", where: "Heb je een bouwkundige keuring laten doen? Upload het rapport. Geen rapport? Sla deze over.", linkLabel: "", tag: "Privé", skipLabel: "Ik heb geen bouwkundig rapport" },
       asbest: { naam: "Asbestinventarisatie", desc: "Alleen relevant bij bouwjaar < 1994 of bij bekend asbest.", where: "Geen rapport? Niet verplicht voor verkoop, wel handig. Inventarisatie laten uitvoeren door SC 540 gecertificeerd bureau (€350 tot €500).", linkLabel: "", tag: "Privé" }
     },
     questions: {
@@ -1376,6 +1505,18 @@ const I18N = {
     opt_morning: "Morning (09 to 12)",
     opt_afternoon: "Afternoon (12 to 17)",
     opt_evening: "Evening (17 to 20)",
+    lbl_vve_manager: "Who manages your VvE?",
+    lbl_vve_manager_other: "VvE manager name",
+    ph_vve_manager_other: "Your manager's name",
+    lbl_vve_email: "VvE manager email (optional)",
+    ph_vve_email: "e.g. manager@vve.nl",
+    opt_vve_choose: "Choose or type…",
+    opt_vve_self: "Self-managed",
+    opt_vve_unknown: "Don't know",
+    opt_vve_other: "Other (fill in)",
+    ask_vve_btn: "Ask VvE for this document",
+    vve_link_search: "Find the {x} portal",
+    hyp_gate_q: "Do you have a mortgage on this property?",
     banner_public_title: "What we try to fetch for you",
     banner_public_body: "We handle most public records for you: title deed and apartment split deed (via Kadaster), VvE's Chamber of Commerce excerpt (via KvK), building permits (via Omgevingsloket), construction drawings (via Amsterdam City Archive), foundation status (via KCAF), and year built / floor area / energy label (via BAG + EP online). You only upload what only you or your VvE manager has.",
     step1_hint: "Done? Continue to your documents.",
@@ -1383,7 +1524,7 @@ const I18N = {
     btn_prev: "Back",
 
     otd_title: "Service Engagement Agreement",
-    otd_sub: "Before we start, you sign the engagement digitally. Type your name and confirm — we'll email you a signed PDF copy right away.",
+    otd_sub: "Before we start, you sign the engagement digitally. Type your name and confirm, and we'll email you a signed PDF copy right away.",
     otd_accept_strong: "I have read the engagement in full and accept all 27 articles.",
     otd_accept_rest: "I confirm that the information I provided is accurate and complete and that I am aware of my statutory disclosure duty (article 4), which will be completed in a follow-up step.",
     otd_name_lbl: "Type your full name to sign",
@@ -1401,6 +1542,8 @@ const I18N = {
     otd_locked_hint: "Sign the engagement above first.",
     otd_pdf_title: "Service engagement template preview",
     otd_pdf_open: "Open in new tab ↗",
+    otd_h_sub: "Sale brokerage",
+    otd_scroll_hint: "Scroll to read the full engagement before you sign.",
 
     step2_title: "2. Documents",
     step2_sub: "We fetch the public documents for you (see below). You only upload what your VvE manager or you personally hold. Don't have everything? No problem, upload what you have.",
@@ -1419,14 +1562,14 @@ const I18N = {
     grp_conditional: "If applicable",
 
     loader_title: "Reading your documents",
-    loader_sub: "Our AI extracts as much as possible from your files. That saves you typing. A few seconds, please.",
+    loader_sub: "We extract as much as possible from your files. That saves you typing. A few seconds, please.",
     loader_step_upload: "Documents uploaded",
     loader_step_extract: "Extracting text and fields",
     loader_step_match: "Matching answers to questions",
     loader_step_done: "Ready for the final questions",
 
     step4_title: "3. Just the open questions",
-    step4_sub: "What our AI couldn't extract from your documents. A few minutes to answer.",
+    step4_sub: "What we couldn't extract from your documents. A few minutes to answer.",
     enrichment_title: "What we pulled from public registers:",
     enrichment_none: "No public register data found for this address.",
     prefilled_title: "What we already filled in for you:",
@@ -1437,10 +1580,24 @@ const I18N = {
     qg_gebreken: "Defects & leaks",
     qg_vve: "VvE & neighbours",
     qg_verbouw: "Renovations",
-    qg_ai: "Extra AI questions",
-    qg_ai_sub: "Our AI has a few extra questions based on your documents. Short answers are fine — they're saved as you type.",
-    qg_ai_loading: "AI is analysing your documents — one moment…",
+    qg_ai: "Additional questions",
+    qg_ai_sub: "A few extra questions based on your documents. Short answers are fine and saved as you type.",
+    qg_additional: "Additional questions",
+    qg_additional_sub: "A few short questions to complete your dossier. Short answers are fine and saved as you type.",
+    qg_ai_loading: "Analysing your documents. One moment…",
     qg_ai_empty: "The documents cover all our questions. No follow-ups needed.",
+    dq_geluid_label: "Is there any noise nuisance? If so, which source and how bad?",
+    dq_claims_label: "Have there been any insurance claims?",
+    dq_claims_followup: "Which claim, when, and what amount?",
+    dq_verborgen_label: "Are there hidden defects not visible to a buyer? Please describe them.",
+    dq_uitgaven_label: "Are major expenses planned in the next 5 years (roof, foundation, lift, facade)? If so, which?",
+    dq_uitgaven_mjop_label: "Besides what's in the MJOP, are any additional major expenses planned? (optional)",
+    dq_fundering_label: "Foundation repair?",
+    dq_fundering_planned: "Planned",
+    dq_fundering_done: "Completed",
+    dq_fundering_none: "None",
+    dq_fundering_followup: "Please explain (what and when).",
+    sign_gate_hint: "Please answer all the additional questions above first.",
     qg_ai_err_generic: "AI analysis failed. Please try again.",
     qg_ai_err_no_files: "No readable documents found. Upload PDFs or photos (not Word/Excel) and try again.",
     qg_ai_err_no_dossier: "No dossier found. Fill in step 1 and upload documents first.",
@@ -1512,6 +1669,9 @@ const I18N = {
     tag_required: "Required",
     tag_important: "Important",
     tag_conditional: "If applicable",
+    tag_law: "Required by law",
+    tag_common: "Common practice",
+    tag_optional: "Optional",
     open_placeholder: "Answer in your own words",
     followup_no: "What's going on?",
     followup_no_permit: "Why not?",
@@ -1532,10 +1692,12 @@ const I18N = {
       zonnepanelen: { naam: "Solar panels: invoice, warranty & monitoring", desc: "Purchase invoice, warranty, inverter info, net metering arrangement.", where: "From your installer or your email at purchase. Net metering is with your supplier (scheme ends 1 Jan 2027).", linkLabel: "", tag: "Private" },
       notulen: { naam: "Minutes of general meetings (last 3 years)", desc: "Reports from the VvE's general meetings.", where: "Ask your VvE manager or board. Larger VvE's keep them in management portals (Twinq, Bouwinvest, BVV, Pro VvE Beheer).", linkLabel: "", tag: "Via VvE" },
       jaarrekening: { naam: "VvE annual accounts + budget", desc: "Last two financial years plus the current budget.", where: "From your VvE manager or board.", linkLabel: "", tag: "Via VvE" },
-      mjop: { naam: "MJOP (long term maintenance plan)", desc: "Maximum 10 years old. Mandatory for VvE's with more than 8 units.", where: "Via your VvE manager. No MJOP? Note it in step 4. Missing MJOP is not a blocker, but is a point to address.", linkLabel: "", tag: "Via VvE" },
-      reservefonds: { naam: "Reserve fund balance proof", desc: "Bank statement or annual accounts showing the reserve fund.", where: "From your VvE manager. Statutory minimum since 2018: 0.5% of rebuild value or MJOP based.", linkLabel: "", tag: "Via VvE" },
+      mjop: { naam: "MJOP (long term maintenance plan)", desc: "From the past 5 years. Not legally required as a standalone document, but buyers' banks almost always ask for it. Without an MJOP, the VvE must reserve 0.5% of rebuild value annually instead. (BW 5:126)", where: "Via your VvE manager. No MJOP? Note it in step 4. Missing MJOP is not a blocker, but is a point to address.", linkLabel: "", tag: "Via VvE" },
+      reservefonds: { naam: "Reserve fund balance proof", desc: "Required by law (BW 5:126). Often already included in your annual accounts — no separate upload needed in that case.", where: "From your VvE manager, or found in the annual accounts.", linkLabel: "", tag: "Via VvE" },
       opstal: { naam: "VvE building insurance policy", desc: "Policy with coverage and rebuild value of the building.", where: "From your VvE manager. Common with Centraal Beheer, Klaverblad, NN.", linkLabel: "", tag: "Via VvE" },
-      erfpacht: { naam: "Leasehold documents (Amsterdam)", desc: "Leasehold deed, canon assessment, buyout confirmation or transition offer.", where: "Log in with DigiD to the Amsterdam leasehold dossier. All your leasehold documents are stored there.", linkLabel: "Open Amsterdam Leasehold", tag: "Municipal" },
+      huishoudelijk: { naam: "VvE house rules (huishoudelijk reglement)", desc: "The VvE's rules on use of the building and shared spaces.", where: "From your VvE manager or board. Often in the management portal too.", linkLabel: "", tag: "Via VvE" },
+      erfpacht: { naam: "Leasehold documents (Amsterdam)", desc: "Leasehold deed, canon assessment, buyout confirmation or transition offer.", where: "Log in with DigiD at mijn.amsterdam.nl. All your leasehold documents are stored there.", linkLabel: "Open mijn.amsterdam.nl", tag: "Municipal" },
+      bouwkundig: { naam: "Building inspection report", desc: "Recent structural inspection report of the home, if available.", where: "Had a building survey done? Upload the report. No report? Skip this one.", linkLabel: "", tag: "Private", skipLabel: "I don't have a building inspection report" },
       asbest: { naam: "Asbestos inventory", desc: "Only relevant for buildings before 1994 or with known asbestos.", where: "No report? Not mandatory for sale, but useful. Have an inventory done by an SC 540 certified firm (€350 to €500).", linkLabel: "", tag: "Private" }
     },
     questions: {
@@ -1579,6 +1741,18 @@ let lang =
 let currentStep = 1;
 const uploaded = {};
 const skippedDocs = new Set();          // doc keys the user marked "not applicable"
+const gateState = {};                   // doc key -> true/false for yes/no gated uploads (e.g. mortgage)
+// Curated disclosure answers (step 4). Declared up here so the sign gate,
+// which runs during the very first rerenderAll(), can read them safely.
+const disclosureState = {
+  geluid: "",
+  claims: { yn: null, note: "" },
+  verborgen: "",
+  uitgaven: "",
+  fundering: { val: null, note: "" },
+};
+let aiAnswers = {};                      // answers to the document-based follow-up questions
+let aiQuestionIds = [];                  // ids of the follow-up questions currently shown
 let extractionResult = null;             // { prefilled, summary, skipQuestions, enrichment }
 let enrichmentResult = null;             // { validatedAddress, bouwjaar, energielabel, ... }
 let leadId = null;                       // returned by /api/verkoop/intake; ties leads -> dossiers
@@ -1586,6 +1760,103 @@ const MAX_FILE_BYTES = 32 * 1024 * 1024; // Claude API limit per PDF
 const STATE_KEY = "ah_verkoop_draft_v1"; // sessionStorage
 
 function t() { return I18N[lang]; }
+
+/* ===== VvE manager + seller-name helpers ===== */
+const VVE_MANAGERS = [
+  "Twinq", "Munnik", "MVGM", "VvE Beheer Nederland", "Bouwinvest", "BVV",
+  "Pro VvE Beheer", "Newomij", "VvE Diensten", "De Vrije VvE", "BMO", "TWG",
+  "Spazio", "VVE Centraal", "Eigenhulp",
+];
+
+// (Re)build the VvE manager <select>, preserving the current selection. The
+// brand names are language-neutral; only the three meta-options are localized.
+function populateVveManagers() {
+  const sel = document.getElementById("vveBeheerder");
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = "";
+  sel.appendChild(new Option(t().opt_vve_choose, ""));
+  VVE_MANAGERS.forEach(name => sel.appendChild(new Option(name, name)));
+  sel.appendChild(new Option(t().opt_vve_self, "__self"));
+  sel.appendChild(new Option(t().opt_vve_unknown, "__unknown"));
+  sel.appendChild(new Option(t().opt_vve_other, "__other"));
+  if (cur) sel.value = cur;
+}
+
+// The display name of the chosen manager, or "" for self/unknown/blank.
+function selectedVveManagerName() {
+  const sel = document.getElementById("vveBeheerder");
+  if (!sel) return "";
+  const v = sel.value;
+  if (!v || v === "__self" || v === "__unknown") return "";
+  if (v === "__other") return (document.getElementById("vveBeheerderOther")?.value || "").trim();
+  return v;
+}
+
+// A "where do I find this?" link for VvE docs: a search for the manager's
+// owner portal. Honest (always resolves) and specific to the chosen manager.
+function vveManagerLink() {
+  const name = selectedVveManagerName();
+  if (!name) return null;
+  return {
+    url: "https://www.google.com/search?q=" + encodeURIComponent(name + " VvE eigenaren portaal inloggen"),
+    label: (t().vve_link_search || "{x}").replace("{x}", name),
+  };
+}
+
+// First/last name for OTD signing + the Ask-VvE template. Prefers the
+// first/last captured at login (sessionStorage), falling back to splitting
+// the intake "naam" field.
+function sellerNameParts() {
+  let first = "", last = "";
+  try {
+    const n = JSON.parse(sessionStorage.getItem("ah_sell_name") || "null");
+    if (n) { first = (n.first || "").trim(); last = (n.last || "").trim(); }
+  } catch { /* sessionStorage unavailable */ }
+  if (!first && !last) {
+    const naam = (document.getElementById("naam")?.value || "").trim();
+    if (naam) {
+      const parts = naam.split(/\s+/);
+      last = parts.length > 1 ? parts.slice(-1)[0] : "";
+      first = parts.length > 1 ? parts.slice(0, -1).join(" ") : parts[0];
+    }
+  }
+  return { first, last, full: `${first} ${last}`.trim() };
+}
+
+// Build a mailto: link to request a single document from the VvE manager.
+// Recipient = the optional manager email from step 1 (blank if not given,
+// the owner fills it in). Everything is editable in the mail client.
+function buildAskVveMailto(docKey) {
+  const tr = t().docs[docKey];
+  const docName = tr ? tr.naam : docKey;
+  const address = (document.getElementById("straat")?.value || "").trim()
+    || (lang === "nl" ? "mijn appartement" : "my apartment");
+  const manager = selectedVveManagerName() || (lang === "nl" ? "beheerder" : "VvE manager");
+  const to = (document.getElementById("vveEmail")?.value || "").trim();
+  const { first, last } = sellerNameParts();
+  const phone = (document.getElementById("phoneLockedValue")?.textContent || "").trim()
+    || (document.getElementById("tel")?.value || "").trim();
+  let subject, body;
+  if (lang === "nl") {
+    subject = `Verkoop ${address} graag ${docName} aanleveren`;
+    body =
+      `Beste ${manager},\n\n` +
+      `Ik ga mijn appartement aan de ${address} verkopen. Voor het verkoopdossier heeft mijn makelaar het volgende document nodig:\n\n` +
+      `• ${docName}\n\n` +
+      `Kun je dit op korte termijn naar mij sturen? Alvast bedankt.\n\n` +
+      `Met vriendelijke groet,\n${first} ${last}\n${phone}`;
+  } else {
+    subject = `Sale of ${address} please send ${docName}`;
+    body =
+      `Hello ${manager},\n\n` +
+      `I'm selling my apartment at ${address} and my real estate agent needs the following document for the sale dossier:\n\n` +
+      `• ${docName}\n\n` +
+      `Could you send it to me at your earliest convenience? Thanks in advance.\n\n` +
+      `Kind regards,\n${first} ${last}\n${phone}`;
+  }
+  return `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
 
 /* ===== rendering helpers ===== */
 function applyStaticI18n() {
@@ -1628,8 +1899,9 @@ function renderDocCard(group, doc) {
   wrap.dataset.key = doc.key;
   if (skippedDocs.has(doc.key)) wrap.classList.add("is-skipped");
 
-  // tag label by level
-  const tagText = t()["tag_" + doc.level] || tr.tag;
+  // tag label by legal status (law / common practice / optional)
+  const legal = doc.legal || "optional";
+  const tagText = t()["tag_" + legal] || tr.tag;
   const head = document.createElement("div");
   head.className = "doc-head";
   head.innerHTML = `
@@ -1637,13 +1909,21 @@ function renderDocCard(group, doc) {
       <p class="doc-name"></p>
       <p class="doc-desc"></p>
     </div>
-    <span class="doc-tag ${doc.level}"></span>
+    <span class="doc-tag ${legal}"></span>
   `;
   head.querySelector(".doc-name").textContent = tr.naam;
   head.querySelector(".doc-desc").textContent = tr.desc;
   head.querySelector(".doc-tag").textContent = tagText;
   wrap.appendChild(head);
 
+  // "Where do I find this?" — for VvE-held documents the link follows the
+  // VvE manager chosen in step 1; otherwise use the doc's own link (if any).
+  let linkHref = doc.link;
+  let linkLabel = tr.linkLabel;
+  if (doc.vve) {
+    const mlink = vveManagerLink();
+    if (mlink) { linkHref = mlink.url; linkLabel = mlink.label; }
+  }
   if (tr.where) {
     const det = document.createElement("details");
     det.className = "where";
@@ -1655,16 +1935,50 @@ function renderDocCard(group, doc) {
     const p = document.createElement("p");
     p.textContent = tr.where;
     body.appendChild(p);
-    if (doc.link) {
+    if (linkHref) {
       const a = document.createElement("a");
-      a.href = doc.link;
+      a.href = linkHref;
       a.target = "_blank";
       a.rel = "noopener noreferrer";
-      a.textContent = (tr.linkLabel || t().open) + " ↗";
+      a.textContent = (linkLabel || t().open) + " ↗";
       body.appendChild(a);
     }
     det.appendChild(body);
     wrap.appendChild(det);
+  }
+
+  // Yes/No gate — e.g. hide the mortgage upload until the seller confirms
+  // they have a mortgage. Default state is "off" (hidden) until "Yes".
+  if (doc.gated) {
+    const gate = document.createElement("div");
+    gate.className = "doc-gate";
+    const q = document.createElement("span");
+    q.className = "gate-q";
+    q.textContent = t()[doc.gateKey] || "";
+    const opts = document.createElement("span");
+    opts.className = "yn-opts";
+    opts.innerHTML = `
+      <input type="radio" name="gate_${doc.key}" id="gate_${doc.key}_ja" value="ja" ${gateState[doc.key] === true ? "checked" : ""} />
+      <label for="gate_${doc.key}_ja">${t().yn_yes}</label>
+      <input type="radio" name="gate_${doc.key}" id="gate_${doc.key}_nee" value="nee" ${gateState[doc.key] === false ? "checked" : ""} />
+      <label for="gate_${doc.key}_nee">${t().yn_no}</label>
+    `;
+    gate.appendChild(q);
+    gate.appendChild(opts);
+    wrap.appendChild(gate);
+    if (gateState[doc.key] !== true) wrap.classList.add("is-gated-off");
+    opts.querySelector(`#gate_${doc.key}_ja`).addEventListener("change", () => {
+      gateState[doc.key] = true;
+      wrap.classList.remove("is-gated-off");
+      saveDraft();
+    });
+    opts.querySelector(`#gate_${doc.key}_nee`).addEventListener("change", () => {
+      gateState[doc.key] = false;
+      wrap.classList.add("is-gated-off");
+      delete uploaded[doc.key];
+      rerenderFileList(doc.key);
+      saveDraft();
+    });
   }
 
   // skip toggle voor optionele documenten (bv. "ik heb geen hypotheek")
@@ -1720,6 +2034,22 @@ function renderDocCard(group, doc) {
   list.className = "filelist";
   list.dataset.for = doc.key;
   wrap.appendChild(list);
+
+  // "Ask VvE for this document" — opens a prefilled mailto so the seller
+  // can request the document from their VvE manager in one click.
+  if (doc.askVve) {
+    const actions = document.createElement("div");
+    actions.className = "doc-actions";
+    const askBtn = document.createElement("button");
+    askBtn.type = "button";
+    askBtn.className = "ask-vve-btn";
+    askBtn.textContent = t().ask_vve_btn;
+    askBtn.addEventListener("click", () => {
+      window.location.href = buildAskVveMailto(doc.key);
+    });
+    actions.appendChild(askBtn);
+    wrap.appendChild(actions);
+  }
 
   document.getElementById(group).appendChild(wrap);
 
@@ -1882,6 +2212,7 @@ function buildYnButtons(id, pre) {
 function rerenderAll() {
   clearGroups();
   applyStaticI18n();
+  populateVveManagers();
   Object.keys(DOC_GROUPS).forEach(g => DOC_GROUPS[g].forEach(d => renderDocCard(g, d)));
   Q_GROUPS.forEach(renderQuestions);
   Object.keys(uploaded).forEach(rerenderFileList);
@@ -1889,9 +2220,26 @@ function rerenderAll() {
   renderPrefilledBanner();
   renderPriceEstimate();
   renderConsentLabel();
+  renderDisclosureQuestions();
+  syncSignGate();
+  // Re-render the read-only OTD contract in the active language (the OTD
+  // module defines this once it has initialised; guarded for first paint).
+  if (typeof window.refreshOtdContract === "function") window.refreshOtdContract();
   const sb = document.getElementById("submitBtn");
   // bewaar succes-state ook na taalwissel
   if (sb && !sb.disabled && !sb.dataset.done) sb.textContent = t().submit_btn;
+}
+
+// Re-render just the document cards so VvE "Where do I find this?" links and
+// the Ask-VvE template pick up a newly-chosen VvE manager. Uploaded file
+// lists and gate/skip state are restored from in-memory state.
+function renderDocs() {
+  Object.keys(DOC_GROUPS).forEach(g => {
+    const el = document.getElementById(g);
+    if (el) el.innerHTML = "";
+  });
+  Object.keys(DOC_GROUPS).forEach(g => DOC_GROUPS[g].forEach(d => renderDocCard(g, d)));
+  Object.keys(uploaded).forEach(rerenderFileList);
 }
 
 function renderPriceEstimate() {
@@ -2136,6 +2484,13 @@ function showStep(n) {
     else if (sn === n) el.classList.add("active");
     else el.classList.add("is-locked");
   });
+  // Entering step 4: re-render the disclosure questions so the MJOP-aware
+  // label is current, and refresh the sign gate so the seller must answer
+  // the additional questions before the submit/sign button unlocks.
+  if (n === 4) {
+    renderDisclosureQuestions();
+    syncSignGate();
+  }
   window.scrollTo({ top: 0, behavior: "smooth" });
   // focus eerste invoer in nieuwe stap (alleen op desktop, op mobile verstoort dit
   // de viewport door keyboard pop-up)
@@ -2518,6 +2873,8 @@ function actuallySaveDraft() {
       radios,
       checks,
       skippedDocs: Array.from(skippedDocs),
+      gateState,
+      disclosureState,
       extractionResult,
       enrichmentResult,
       leadId,
@@ -2537,6 +2894,16 @@ function restoreDraft() {
     if (s.v !== 1) return;
     if (s.lang) lang = s.lang;
     if (Array.isArray(s.skippedDocs)) s.skippedDocs.forEach(k => skippedDocs.add(k));
+    if (s.gateState && typeof s.gateState === "object") Object.assign(gateState, s.gateState);
+    if (s.disclosureState && typeof s.disclosureState === "object") {
+      Object.assign(disclosureState, {
+        geluid: s.disclosureState.geluid || "",
+        verborgen: s.disclosureState.verborgen || "",
+        uitgaven: s.disclosureState.uitgaven || "",
+        claims: { yn: s.disclosureState.claims?.yn ?? null, note: s.disclosureState.claims?.note || "" },
+        fundering: { val: s.disclosureState.fundering?.val ?? null, note: s.disclosureState.fundering?.note || "" },
+      });
+    }
     if (s.extractionResult) extractionResult = s.extractionResult;
     if (s.enrichmentResult) enrichmentResult = s.enrichmentResult;
     if (s.leadId) leadId = s.leadId;
@@ -2546,6 +2913,13 @@ function restoreDraft() {
       const el = document.getElementById(id);
       if (el) el.value = v;
     });
+    // Re-sync VvE-manager-dependent UI now that the select value is restored.
+    const vveOther = document.getElementById("vveOtherWrap");
+    if (vveOther) {
+      vveOther.style.display =
+        document.getElementById("vveBeheerder")?.value === "__other" ? "block" : "none";
+    }
+    renderDocs();
     Object.entries(s.radios || {}).forEach(([name, val]) => {
       const inp = document.querySelector(`input[type="radio"][name="${CSS.escape(name)}"][value="${CSS.escape(String(val))}"]`);
       if (inp) inp.checked = true;
@@ -2704,6 +3078,15 @@ document.getElementById("consent")?.addEventListener("change", () => {
 });
 
 document.getElementById("submitBtn").addEventListener("click", async () => {
+  // The button is gated disabled until every additional question is answered,
+  // so a click here means they're all in — but guard anyway in case the
+  // handler fires programmatically.
+  if (!isAllAdditionalAnswered()) {
+    const sec = document.getElementById("qs-disclosure");
+    if (sec) sec.scrollIntoView({ behavior: "smooth", block: "center" });
+    syncSignGate();
+    return;
+  }
   if (!validateBeforeSubmit()) return;
 
   const fd = new FormData();
@@ -2736,6 +3119,10 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
       }
     });
   });
+  // Curated disclosure answers + document-based follow-up answers.
+  fd.append("disclosure_answers", JSON.stringify(disclosureState));
+  if (aiQuestionIds.length) fd.append("followup_answers", JSON.stringify(aiAnswers));
+
   Object.keys(uploaded).forEach(key => {
     uploaded[key].forEach(item => {
       if (item && item.file instanceof File) {
@@ -2829,6 +3216,13 @@ if (DEMO) {
 rerenderAll();
 wirePostcodeFormat();
 restoreDraft();
+// Prefill the intake name from the first/last name captured at login.
+(function prefillNameFromLogin() {
+  const naamEl = document.getElementById("naam");
+  if (!naamEl || naamEl.value.trim()) return;
+  const { full } = sellerNameParts();
+  if (full) naamEl.value = full;
+})();
 if (currentStep === 1) showStep(1);
 
 /* Block F — server-side resume hydration.
@@ -2912,10 +3306,10 @@ async function hydrateFromServer() {
    Each question becomes a yes/no radio pair; "yes" reveals an optional
    notes textarea. Answers POST to /api/verkoop/followup-answers on change
    (debounced) so refreshing the page never loses data. */
-let aiAnswers = {};
 let aiSaveTimer = null;
 function renderAiQuestions(questions, priorAnswers) {
   aiAnswers = { ...priorAnswers };
+  aiQuestionIds = questions.map(q => q.id);
   const section = document.getElementById("aiQuestionsSection");
   const host = document.getElementById("qs-ai");
   if (!section || !host) return;
@@ -2952,6 +3346,7 @@ function renderAiQuestions(questions, priorAnswers) {
         const fu = row.querySelector(`.q-followup[data-for="${q.id}"]`);
         if (fu) fu.style.display = (yn === "ja" && q.if_yes) ? "block" : "none";
         scheduleAiSave();
+        syncSignGate();
       });
     });
     const note = row.querySelector(`textarea.ai-note[data-for="${q.id}"]`);
@@ -2962,6 +3357,7 @@ function renderAiQuestions(questions, priorAnswers) {
     host.appendChild(row);
   }
   section.style.display = "block";
+  syncSignGate();
 }
 
 function escHtml(s) {
@@ -2983,6 +3379,122 @@ function scheduleAiSave() {
       });
     } catch { /* offline — answers stay in local state */ }
   }, 700);
+}
+
+/* ===== Curated disclosure questions (step 4) =====
+   A small fixed set of statutory-disclosure questions, always shown above
+   the document-based follow-ups. Each question type is chosen so a Yes/No
+   never leaves the agent without usable info:
+     - noise / hidden defects  -> open text (needs a description)
+     - insurance claims        -> yes/no + follow-up on "yes"
+     - planned major expenses  -> only asked when no MJOP was uploaded;
+                                  optional "anything beyond the MJOP?" otherwise
+     - foundation repair       -> Planned / Completed / None + follow-up unless None
+   The submit/sign button stays disabled until every required answer is in. */
+function mjopUploaded() {
+  return (uploaded["mjop"] || []).length > 0;
+}
+
+function renderDisclosureQuestions() {
+  const host = document.getElementById("qs-disclosure");
+  if (!host) return;
+  const ds = disclosureState;
+  const ph = escHtml(t().open_placeholder);
+  const mjop = mjopUploaded();
+
+  host.innerHTML = `
+    <div class="q-row">
+      <div class="q-head"><span class="q-label">${escHtml(t().dq_geluid_label)}</span></div>
+      <div class="q-open"><textarea id="dq_geluid" placeholder="${ph}">${escHtml(ds.geluid)}</textarea></div>
+    </div>
+
+    <div class="q-row">
+      <div class="q-head">
+        <span class="q-label">${escHtml(t().dq_claims_label)}</span>
+        <span class="yn-opts">
+          <input type="radio" name="dq_claims" id="dq_claims_ja" value="ja" ${ds.claims.yn === "ja" ? "checked" : ""} />
+          <label for="dq_claims_ja">${t().yn_yes}</label>
+          <input type="radio" name="dq_claims" id="dq_claims_nee" value="nee" ${ds.claims.yn === "nee" ? "checked" : ""} />
+          <label for="dq_claims_nee">${t().yn_no}</label>
+        </span>
+      </div>
+      <div class="q-followup" id="dq_claims_fuwrap" style="display:${ds.claims.yn === "ja" ? "block" : "none"};">
+        <label for="dq_claims_fu">${escHtml(t().dq_claims_followup)}</label>
+        <textarea id="dq_claims_fu" placeholder="${ph}">${escHtml(ds.claims.note)}</textarea>
+      </div>
+    </div>
+
+    <div class="q-row">
+      <div class="q-head"><span class="q-label">${escHtml(t().dq_verborgen_label)}</span></div>
+      <div class="q-open"><textarea id="dq_verborgen" placeholder="${ph}">${escHtml(ds.verborgen)}</textarea></div>
+    </div>
+
+    <div class="q-row">
+      <div class="q-head"><span class="q-label">${escHtml(mjop ? t().dq_uitgaven_mjop_label : t().dq_uitgaven_label)}</span></div>
+      <div class="q-open"><textarea id="dq_uitgaven" placeholder="${ph}">${escHtml(ds.uitgaven)}</textarea></div>
+    </div>
+
+    <div class="q-row">
+      <div class="q-head"><span class="q-label">${escHtml(t().dq_fundering_label)}</span></div>
+      <div class="q-radio">
+        <input type="radio" name="dq_fundering" id="dq_fundering_planned" value="planned" ${ds.fundering.val === "planned" ? "checked" : ""} />
+        <label for="dq_fundering_planned">${t().dq_fundering_planned}</label>
+        <input type="radio" name="dq_fundering" id="dq_fundering_done" value="done" ${ds.fundering.val === "done" ? "checked" : ""} />
+        <label for="dq_fundering_done">${t().dq_fundering_done}</label>
+        <input type="radio" name="dq_fundering" id="dq_fundering_none" value="none" ${ds.fundering.val === "none" ? "checked" : ""} />
+        <label for="dq_fundering_none">${t().dq_fundering_none}</label>
+      </div>
+      <div class="q-followup" id="dq_fundering_fuwrap" style="display:${ds.fundering.val && ds.fundering.val !== "none" ? "block" : "none"};">
+        <label for="dq_fundering_fu">${escHtml(t().dq_fundering_followup)}</label>
+        <textarea id="dq_fundering_fu" placeholder="${ph}">${escHtml(ds.fundering.note)}</textarea>
+      </div>
+    </div>
+  `;
+
+  const g = id => document.getElementById(id);
+  g("dq_geluid").addEventListener("input", e => { ds.geluid = e.target.value; saveDraft(); syncSignGate(); });
+  g("dq_verborgen").addEventListener("input", e => { ds.verborgen = e.target.value; saveDraft(); syncSignGate(); });
+  g("dq_uitgaven").addEventListener("input", e => { ds.uitgaven = e.target.value; saveDraft(); syncSignGate(); });
+  host.querySelectorAll('input[name="dq_claims"]').forEach(r => r.addEventListener("change", e => {
+    ds.claims.yn = e.target.value;
+    g("dq_claims_fuwrap").style.display = e.target.value === "ja" ? "block" : "none";
+    saveDraft(); syncSignGate();
+  }));
+  g("dq_claims_fu").addEventListener("input", e => { ds.claims.note = e.target.value; saveDraft(); syncSignGate(); });
+  host.querySelectorAll('input[name="dq_fundering"]').forEach(r => r.addEventListener("change", e => {
+    ds.fundering.val = e.target.value;
+    g("dq_fundering_fuwrap").style.display = e.target.value !== "none" ? "block" : "none";
+    saveDraft(); syncSignGate();
+  }));
+  g("dq_fundering_fu").addEventListener("input", e => { ds.fundering.note = e.target.value; saveDraft(); syncSignGate(); });
+}
+
+// True only when every required additional question has an answer.
+function isAllAdditionalAnswered() {
+  const ds = disclosureState;
+  if (!ds.geluid.trim()) return false;
+  if (ds.claims.yn === null) return false;
+  if (ds.claims.yn === "ja" && !ds.claims.note.trim()) return false;
+  if (!ds.verborgen.trim()) return false;
+  if (!mjopUploaded() && !ds.uitgaven.trim()) return false; // optional once MJOP is uploaded
+  if (ds.fundering.val === null) return false;
+  if (ds.fundering.val !== "none" && !ds.fundering.note.trim()) return false;
+  for (const id of aiQuestionIds) {
+    const a = aiAnswers[id];
+    const yn = a && typeof a === "object" ? a.yn : a;
+    if (yn !== "ja" && yn !== "nee") return false;
+  }
+  return true;
+}
+
+// Enable the submit/sign button only once all additional questions are answered.
+function syncSignGate() {
+  const btn = document.getElementById("submitBtn");
+  if (!btn || btn.dataset.done === "1") return;
+  const ok = isAllAdditionalAnswered();
+  btn.disabled = !ok;
+  const hint = document.getElementById("signGateHint");
+  if (hint) hint.style.display = ok ? "none" : "block";
 }
 
 hydrateFromServer();
@@ -3043,6 +3555,264 @@ hydrateFromServer();
   };
 })();
 
+/* ===== OTD contract (read-only HTML) ====================================
+   The Opdracht tot Dienstverlening is rendered as read-only HTML text — not
+   a fillable PDF — so the seller can read the whole document above the
+   signature area and we can gate the Sign button on scroll-through. The
+   text is the authoritative Dutch engagement (governed by Dutch law); on the
+   English portal we prepend a short note that the Dutch version is binding.
+   The makelaar (David van Wachem) is already signed at the bottom; the
+   seller adds their signature in the field below the contract. */
+function buildOtdContractHtml() {
+  const isNL = lang === "nl";
+  const { first, last } = sellerNameParts();
+  const sv = id => (document.getElementById(id)?.value || "").trim();
+  const tbc = isNL ? "wordt aangevuld" : "to be completed";
+  const pf = (label, value) =>
+    `<div class="pf"><b>${escHtml(label)}</b>${escHtml(value || tbc)}</div>`;
+  const phone = (document.getElementById("phoneLockedValue")?.textContent || "").trim()
+    || sv("tel");
+
+  const enNote = isNL ? "" : `
+    <p class="otd-lead"><b>This engagement is in Dutch and is the legally binding version, governed by Dutch law.</b>
+    Please read it in full below before signing. Ask us for an English summary if anything is unclear.</p>`;
+
+  return `
+    ${enNote}
+    <p class="otd-lead">Deze overeenkomst (hierna: de "Opdracht") regelt de bemiddeling bij verkoop van de hieronder vermelde onroerende zaak door Apartmenthub (de "makelaar") in opdracht van de hieronder vermelde verkoper (de "opdrachtgever"). De Opdracht is opgesteld in lijn met de Algemene Consumentenvoorwaarden Makelaardij 2018, Boek 7 titel 7 BW (opdracht en bemiddeling) en de Wet ter voorkoming van witwassen en financieren van terrorisme (Wwft).</p>
+
+    <h4>1. Definities</h4>
+    <p>In deze Opdracht hebben de hierna volgende begrippen, telkens beginnend met een hoofdletter, de daarbij vermelde betekenis, ongeacht of zij in enkelvoud of meervoud worden gebruikt:</p>
+    <ul>
+      <li><b>Apartmenthub:</b> de makelaar, statutair gevestigd te Amsterdam, ingeschreven in het Handelsregister onder KvK 74255142.</li>
+      <li><b>Verkoper:</b> de in artikel 3 genoemde opdrachtgever; bij meerdere personen geldt elke verkoper hoofdelijk.</li>
+      <li><b>Mede-eigenaar:</b> iedere natuurlijke of rechtspersoon die naast Verkoper rechthebbende is op het Object.</li>
+      <li><b>Object:</b> de in artikel 5 omschreven onroerende zaak (woning, appartementsrecht of erfpachtrecht).</li>
+      <li><b>Koopsom:</b> de tussen Verkoper en koper overeengekomen prijs voor het Object, inclusief eventuele roerende zaken.</li>
+      <li><b>Koopovereenkomst:</b> de door Verkoper en koper te ondertekenen schriftelijke overeenkomst tot koop en verkoop.</li>
+      <li><b>Bedenktijd:</b> de wettelijke herroepingstermijn van veertien (14) kalenderdagen op grond van BW 6:230o.</li>
+      <li><b>Schriftelijk:</b> per brief, per email, of via een ondertekenbare digitale portal; email wordt gelijkgesteld aan schriftelijk in de zin van BW art. 3:37 lid 3.</li>
+      <li><b>Werkdag:</b> een dag, niet zijnde zaterdag, zondag of een algemeen erkende feestdag in Nederland.</li>
+      <li><b>NEN 2580:</b> de Nederlandse norm voor het meten van de oppervlakte en inhoud van vastgoed.</li>
+      <li><b>Wwft:</b> de Wet ter voorkoming van witwassen en financieren van terrorisme.</li>
+      <li><b>AVG:</b> de Algemene Verordening Gegevensbescherming (Verordening EU 2016/679).</li>
+      <li><b>Bijkomende kosten:</b> kosten van derden zoals beschreven in artikel 17, zoals fotograaf, meetbureau en stylist.</li>
+      <li><b>Aanvaardingscode:</b> de unieke alfanumerieke code die door de portal wordt gegenereerd als bewijs van digitale ondertekening.</li>
+    </ul>
+
+    <h4>2. Opdrachtnemer (de makelaar)</h4>
+    <div class="otd-party">
+      ${pf("Naam", "Apartmenthub")}
+      ${pf("KvK-nummer", "74255142")}
+      ${pf("Vestigingsadres", "Van Baerlestraat 62-2")}
+      ${pf("Postcode + plaats", "1017 PB Amsterdam")}
+      ${pf("Telefoon", "+31 6 83221189")}
+      ${pf("E-mailadres", "david@apartmenthub.nl")}
+      ${pf("BTW-identificatienummer", "NL002403230B63")}
+      ${pf("Vertegenwoordigd door", "David van Wachem")}
+    </div>
+
+    <h4>3. Opdrachtgever (de verkoper)</h4>
+    <div class="otd-party">
+      ${pf("Voorna(a)m(en)", first)}
+      ${pf("Achternaam", last)}
+      ${pf("Straat + huisnummer", sv("straat"))}
+      ${pf("Postcode + plaats", sv("postcode"))}
+      ${pf("Telefoonnummer", phone)}
+      ${pf("E-mailadres", sv("email"))}
+    </div>
+    <p style="font-size:12px;color:var(--grey-soft);">Geboortedatum, geboorteplaats, nationaliteit, burgerlijke staat en BSN (Wwft) worden in een vervolgstap aangevuld.</p>
+
+    <h4>4. Mede-eigenaar (indien van toepassing)</h4>
+    <p>Bij gemeenschap van goederen of meerdere eigenaren moet ook de mede-eigenaar deze opdracht ondertekenen. Indien van toepassing worden de gegevens van de mede-eigenaar in een vervolgstap aangevuld.</p>
+
+    <h4>5. Het object (de te verkopen onroerende zaak)</h4>
+    <div class="otd-party">
+      ${pf("Adres", sv("straat"))}
+      ${pf("Postcode + plaats", sv("postcode"))}
+    </div>
+    <p>De vermelde oppervlakte wordt bij aanvang van de Opdracht door een door Apartmenthub ingeschakeld meetbureau gevalideerd conform NEN 2580. Het aldus vastgestelde rapport prevaleert boven de hierboven door Verkoper opgegeven oppervlakte en wordt opgenomen in de verkooppresentatie. Bij appartementsrechten geldt aanvullend dat de splitsingsakte, de splitsingstekening en het splitsingsreglement bepalend zijn voor de aanduiding, de begrenzing en het stemrecht in de VvE.</p>
+
+    <h4>6. Mededelingsplicht verkoper (BW art. 7:17)</h4>
+    <p>Verkoper meldt alle bekende gebreken die voor de koper van belang zijn (zichtbaar of verborgen). De gedetailleerde uitvraag (lekkages, vocht, houtaantasting, scheuren, fundering, asbest, bodemverontreiniging, aanschrijvingen, geluidsoverlast, verzekeringsclaims, lopende garanties en overige verborgen gebreken) wordt in een vervolgstap van de verkoopportal digitaal ingevuld en ondertekend als Bijlage A bij deze Opdracht. Bijlage A maakt integraal deel uit van deze Opdracht. Niet melding van bekende gebreken kan leiden tot schadeclaim van de koper na verkoop op grond van BW art. 7:17, vermindering van de Koopsom, dan wel gedeeltelijke ontbinding van de Koopovereenkomst.</p>
+
+    <h4>7. Vraagprijs, oplevering en bijzondere voorwaarden</h4>
+    <p>De vraagprijs, gewenste opleverdatum en bijzondere voorwaarden worden in overleg met Apartmenthub vastgesteld en in een vervolgstap vastgelegd. De vraagprijs is een uitnodiging tot het doen van een bod en bindt Verkoper niet om bij die prijs te verkopen. Wijziging van de vraagprijs, van de biedmethode of van eventuele voorbehouden gebeurt uitsluitend in overleg en Schriftelijk.</p>
+
+    <h4>8. Werkzaamheden van Apartmenthub</h4>
+    <p>Apartmenthub verricht voor de afgesproken courtage de volgende werkzaamheden, in onderlinge samenhang en gedurende de volledige looptijd van de Opdracht:</p>
+    <ul>
+      <li>Intakegesprek met advies over vaststelling vraagprijs, doelgroep en verkoopstrategie</li>
+      <li>Ophalen kadastrale recherche, eigendomsakte en uittreksel beperkingenregister</li>
+      <li>Opvragen van splitsingsakte, splitsingstekening, splitsingsreglement, recente ALV notulen, jaarrekening en MJOP bij de VvE</li>
+      <li>Inwinnen openbare informatie bij Omgevingsloket, Stadsarchief, bestemmingsplan en BAG</li>
+      <li>Coordinatie van inmeting conform NEN 2580 door een onafhankelijk meetbureau</li>
+      <li>Beoordelen van de marktwaarde en vergelijkbare transacties (referentieselectie)</li>
+      <li>Professionele fotografie, plattegrond, video en verkooptekst voor de brochure</li>
+      <li>Publicatie op Funda, eigen kanalen en sociale media; aanmelding NVM database woningzoekenden</li>
+      <li>Organiseren, plannen en begeleiden van bezichtigingen, inclusief feedback verzameling</li>
+      <li>Screening van kandidaat kopers (Wwft light: identiteit, financierbaarheid, opmerkelijke patronen)</li>
+      <li>Voeren van onderhandelingen namens Verkoper, met advies over biedstrategie en tegenbod</li>
+      <li>Beheer en publicatie van het transparante biedlogboek (Pararius model) indien gekozen</li>
+      <li>Advies over voorbehoud financiering, bouwkundige keuring, opleverdatum en eventuele waarborgsom</li>
+      <li>Opstellen of beoordelen van de Koopovereenkomst conform het overeengekomen model</li>
+      <li>Eindcontrole van NEN conformiteit, oppervlakte vermelding en bijlagen voor ondertekening</li>
+      <li>Instructie naar en keuze ondersteuning voor de notaris, en begeleiding tot aan de notariele overdracht</li>
+      <li>Doorlopende terugkoppeling van reacties, bezichtigingen en biedingen aan Verkoper</li>
+    </ul>
+
+    <h4>9. Exclusiviteit (eenmakelaars-opdracht)</h4>
+    <p>De Opdracht wordt verleend op basis van exclusiviteit. Gedurende de looptijd schakelt Verkoper geen andere makelaar, bemiddelaar of verkoopplatform in voor de verkoop van het Object, en verricht Verkoper geen concurrerende verkoopactiviteiten die de uitvoering van deze Opdracht kunnen belemmeren of doorkruisen. Wanneer Verkoper deze exclusiviteit schendt, blijft de volledige courtage verschuldigd ook indien de Koopovereenkomst via een derde partij tot stand komt.</p>
+
+    <h4>10. Duur en opzegging van de opdracht</h4>
+    <p>De Opdracht wordt aangegaan voor een periode van DRIE (3) maanden, ingaande op de dag van ondertekening. De Opdracht wordt na afloop telkens stilzwijgend verlengd met opnieuw drie maanden, tenzij een van beide partijen uiterlijk een (1) maand voor het einde van de lopende periode Schriftelijk opzegt per email aan david@apartmenthub.nl. Tussentijdse opzegging is voor beide partijen mogelijk met inachtneming van een opzegtermijn van een (1) maand. Bij overlijden van Verkoper eindigt de Opdracht, tenzij erfgenamen aangeven de Opdracht te willen handhaven.</p>
+
+    <h4>11. Beeindiging door Apartmenthub</h4>
+    <p>Apartmenthub kan de Opdracht eenzijdig teruggeven indien daartoe gewichtige redenen bestaan, waaronder maar niet beperkt tot: een belangenconflict, ernstige verstoring van de samenwerking, het niet of niet tijdig nakomen door Verkoper van diens verplichtingen (artikel 21), gegronde vermoedens dat Verkoper onjuiste of onvolledige informatie heeft verstrekt, of het niet kunnen voldoen aan verplichtingen onder de Wwft (artikel 19). Apartmenthub bevestigt de teruggave Schriftelijk en gemotiveerd.</p>
+
+    <h4>12. Wanneer is de opdracht vervuld</h4>
+    <p>De Opdracht is vervuld zodra de Koopovereenkomst door beide partijen is ondertekend, alle opschortende voorwaarden zijn vervuld en de wettelijke Bedenktijd is verstreken. Komt na beeindiging van de Opdracht binnen DRIE (3) maanden een Koopovereenkomst tot stand met een door Apartmenthub aangedragen kandidaat koper, dan is eveneens de volledige courtage verschuldigd ("beschermingsperiode").</p>
+
+    <h4>13. Toedeling bij scheiding, overlijden of schenking</h4>
+    <p>Indien tijdens de looptijd het Object geheel of gedeeltelijk wordt toebedeeld aan een van de eigenaren, de echtgenoot, partner of een derde, eindigt de Opdracht. De courtage wordt in dat geval berekend over de waarde van het toegedeelde aandeel. Partijen kunnen Schriftelijk andere afspraken maken over de berekening; bij gebreke van overeenstemming wordt de waarde vastgesteld door een door Apartmenthub aan te wijzen onafhankelijke taxateur.</p>
+
+    <h4>14. Niet-uitvoering van een gesloten koopovereenkomst</h4>
+    <p>Indien een door beide partijen ondertekende Koopovereenkomst, na verstrijken van opschortende voorwaarden en de wettelijke Bedenktijd, niet wordt uitgevoerd doordat een partijen niet meewerkt aan de levering, blijft de volledige courtage verschuldigd. Een door koper verbeurde waarborgsom of contractuele boete komt na voldoening van de courtage en eventuele kosten van de notaris toe aan Verkoper.</p>
+
+    <h4>15. Courtage (no cure, no pay)</h4>
+    <p>De courtage bedraagt EEN PROCENT (1%) van de gerealiseerde Koopsom, exclusief 21 procent BTW. Komt geen Koopovereenkomst tot stand, dan is geen courtage verschuldigd ("no cure, no pay"). De courtage wordt rechtstreeks bij de notariele overdracht ingehouden op de Koopsom en aan Apartmenthub voldaan.</p>
+    <p>Bij meerdere opdrachtgevers (Mede eigenaren) is ieder hoofdelijk aansprakelijk voor de volledige courtage en alle bijkomende verplichtingen uit deze Opdracht. Bij executieverkoop, openbare veiling of onderhandse verkoop in het kader van een executoriaal traject is de courtage verschuldigd indien Apartmenthub de koper heeft aangedragen of de transactie heeft begeleid.</p>
+
+    <h4>16. Bijkomende kosten (vooraf betaald, verrekend bij verkoop)</h4>
+    <p>Voor de aanvang van de verkoop schakelt Apartmenthub externe partijen in voor in elk geval: het inmeten van het Object conform NEN 2580 (oppervlakte rapport door een meetbureau) en professionele fotografie. Afhankelijk dat het Object kunnen daarnaast plattegrond, drone opnames, video of stylingadvies worden ingezet. Deze aanloopkosten worden direct na opdracht door Apartmenthub aan Verkoper gefactureerd op basis van werkelijke kosten, en zijn binnen veertien (14) dagen na factuurdatum door Verkoper te voldoen, ongeacht of het Object uiteindelijk verkocht wordt.</p>
+    <p>Bij succesvolle verkoop worden de door Verkoper voldane aanloopkosten verrekend met de bij notariele overdracht verschuldigde courtage. Daarnaast kunnen voorgeschoten kosten voor openbare stukken (Kadaster aktes circa EUR 19,85 per akte, KvK uittreksel VvE circa EUR 2,50) op werkelijke basis worden doorbelast.</p>
+
+    <h4>17. Intrekkingskosten</h4>
+    <p>Verkoper kan de Opdracht te allen tijde Schriftelijk intrekken. Apartmenthub brengt GEEN intrekkingskosten in rekening. Reeds gemaakte aanloopkosten (artikel 16) blijven wel verschuldigd en worden niet gerestitueerd. Intrekking laat onverlet de werking van artikel 12 (beschermingsperiode), artikel 13 (toedeling) en artikel 14 (niet uitvoering).</p>
+
+    <h4>18. Betaling, rente en incasso</h4>
+    <p>Voor zover betaling niet via de notaris bij overdracht plaatsvindt, stuurt Apartmenthub een gespecificeerde factuur met een betalingstermijn van veertien (14) dagen. Bij niet tijdige betaling stuurt Apartmenthub een betalingsherinnering met een hersteltermijn van veertien dagen. Wordt vervolgens niet betaald, dan is Verkoper in verzuim en is de wettelijke rente verschuldigd vanaf de oorspronkelijke vervaldag. Vanaf dat moment zijn ook buitengerechtelijke incassokosten verschuldigd conform het Besluit vergoeding voor buitengerechtelijke incassokosten (BIK).</p>
+
+    <h4>19. Wwft identificatie en sanctiewetten</h4>
+    <p>Apartmenthub is op grond van de Wet ter voorkoming van witwassen en financieren van terrorisme (Wwft) en de Sanctiewet 1977 verplicht om voor en tijdens de uitvoering van deze Opdracht een client onderzoek uit te voeren. Dit onderzoek omvat ten minste de volgende stappen, die Verkoper verplicht is te ondersteunen:</p>
+    <ul>
+      <li>Identificatie en verificatie van Verkoper en, indien van toepassing, van de uiteindelijk belanghebbende (UBO) van een rechtspersoon.</li>
+      <li>Vaststelling van de aard en het doel van de transactie en van de herkomst van de middelen waarmee het Object destijds is verworven.</li>
+      <li>Toetsing aan de EU sanctielijsten en de Nationale Sanctielijst Terrorisme van het Ministerie van Buitenlandse Zaken.</li>
+      <li>Toetsing of Verkoper, een Mede eigenaar of de uiteindelijk belanghebbende een politiek prominent persoon (PEP) is in de zin van art. 1 Wwft.</li>
+      <li>Doorlopende monitoring tijdens de looptijd: ongebruikelijke wijzigingen, contante stortingen of constructies kunnen leiden tot een melding.</li>
+    </ul>
+    <p>Indien Verkoper niet meewerkt aan dit onderzoek, of indien een sanctiehit, PEP score of materiele afwijking in de herkomst van middelen niet bevredigend kan worden weggenomen, is Apartmenthub gerechtigd de Opdracht per direct te weigeren of te beeindigen, zonder gehouden te zijn tot enige schadevergoeding. Apartmenthub is bij een redelijk vermoeden van witwassen of sanctieovertreding wettelijk verplicht een melding te doen bij FIU Nederland (artikel 16 Wwft), zonder Verkoper hiervan op de hoogte te stellen ("tipping off" verbod, artikel 23 Wwft).</p>
+
+    <h4>20. Verplichtingen van de verkoper</h4>
+    <p>Verkoper verstrekt Apartmenthub alle benodigde en juiste informatie en documenten, verleent medewerking aan identificatie in het kader van de Wwft (artikel 19), en stelt Apartmenthub in staat aan haar wettelijke verplichtingen te voldoen. Verkoper heeft een wettelijke mededelingsplicht (BW art. 7:17): alle bekende gebreken die voor de koper van belang zijn moeten worden gemeld (zie artikel 6).</p>
+    <p>Tijdens de looptijd onthoudt Verkoper zich van activiteiten die Apartmenthub kunnen belemmeren bij het uitvoeren van de Opdracht. Verkoper voert niet zelf onderhandelingen met kandidaat kopers en sluit geen Koopovereenkomst buiten Apartmenthub om (zie artikel 9 over exclusiviteit). Door of via Verkoper aangedragen kandidaat kopers worden direct doorgeleid naar Apartmenthub.</p>
+    <p>Wijzigingen in vraagprijs, verkoopstrategie of biedmethode worden uitsluitend doorgevoerd na Schriftelijke instemming tussen Verkoper en Apartmenthub. Verkoper meldt onverwijld aan Apartmenthub: (a) gebreken die na ondertekening van de Opdracht bekend worden, (b) ontvangen aanschrijvingen, (c) voorgenomen verbouwingen of wijzigingen aan het Object, (d) wijzigingen in de eigendomssituatie of beslagleggingen, en (e) ontbinding of poging tot ontbinding van een reeds gesloten Koopovereenkomst door koper.</p>
+
+    <h4>21. Verplichtingen van Apartmenthub</h4>
+    <p>Apartmenthub voert de Opdracht zorgvuldig, deskundig en in het belang van Verkoper uit. Apartmenthub heeft een inspanningsverplichting (geen resultaatverplichting) in de zin van BW art. 7:401. Apartmenthub treedt op als bemiddelaar en bezit geen volmacht om namens Verkoper bindende rechtshandelingen te verrichten, tenzij Verkoper hiervoor Schriftelijk volmacht heeft verleend. Apartmenthub houdt Verkoper regelmatig op de hoogte van vorderingen en koppelt iedere bezichtiging en ieder bod binnen twee Werkdagen terug.</p>
+    <p>Apartmenthub treedt nooit tegelijkertijd op voor koper en verkoper van hetzelfde Object en accepteert geen tweezijdige courtage. Indien tijdens de Opdracht een belangenconflict ontstaat, wordt Verkoper hierover direct geinformeerd. Apartmenthub voldoet aan de wettelijke eisen ten aanzien van haar bedrijfsvoering, deskundigheidsbevordering en klachtafhandeling, en houdt een geldige beroepsaansprakelijkheidsverzekering aan (zie artikel 23).</p>
+
+    <h4>22. Verklaringen en garanties van verkoper</h4>
+    <p>Verkoper verklaart en garandeert Apartmenthub uitdrukkelijk dat, op het moment van ondertekening van deze Opdracht en gedurende de looptijd:</p>
+    <ul>
+      <li>(a) Verkoper handelingsbekwaam en beschikkingsbevoegd is om het Object te verkopen en te leveren;</li>
+      <li>(b) Verkoper de enige eigenaar is, dan wel beschikt over de Schriftelijke instemming van iedere Mede eigenaar;</li>
+      <li>(c) het Object niet onderworpen is aan beslag, retentierecht of pandrecht buiten de aan Apartmenthub gemelde hypotheek;</li>
+      <li>(d) er geen aanhangige, dreigende of in het verleden ingestelde procedure bestaat die de verkoop kan raken;</li>
+      <li>(e) er geen voorkeursrechten, optierechten, koop of huurrechten van derden op het Object rusten die niet zijn gemeld;</li>
+      <li>(f) alle VvE bijdragen, reserveringen voor groot onderhoud en eventuele suppleties tijdig en volledig zijn voldaan;</li>
+      <li>(g) de erfpacht canon en eventuele indexering tijdig en volledig zijn voldaan, en de erfpachtvoorwaarden zijn nageleefd;</li>
+      <li>(h) alle aan Apartmenthub verstrekte informatie, gegevens en documenten volledig, juist en niet misleidend zijn;</li>
+      <li>(i) Verkoper Apartmenthub onverwijld zal informeren over iedere wijziging die afbreuk doet aan een van de bovenstaande verklaringen.</li>
+    </ul>
+    <p>Schending van een of meer van deze verklaringen kan leiden tot beeindiging van de Opdracht door Apartmenthub (artikel 11), tot aansprakelijkheid van Verkoper voor de daaruit voortvloeiende schade en tot vrijwaring jegens koper conform artikel 26.</p>
+
+    <h4>23. Beroepsaansprakelijkheidsverzekering</h4>
+    <p>Apartmenthub heeft een doorlopende beroepsaansprakelijkheidsverzekering afgesloten met een dekking van ten minste EUR 2.500.000 per aanspraak en EUR 5.000.000 per verzekeringsjaar, onder voorwaarden gebruikelijk in de makelaardij. Een uittreksel van de polis is op verzoek beschikbaar voor Verkoper.</p>
+
+    <h4>24. Aansprakelijkheid</h4>
+    <p>De aansprakelijkheid van Apartmenthub voor schade voortvloeiend uit of in verband met de uitvoering van deze Opdracht is beperkt tot het bedrag dat in het betreffende geval door de beroepsaansprakelijkheidsverzekeraar van Apartmenthub wordt uitgekeerd, vermeerderd met het eigen risico. Indien de verzekeraar om welke reden dan ook niet tot uitkering overgaat, is de aansprakelijkheid van Apartmenthub beperkt tot maximaal het bedrag van de in dat geval verschuldigde betaalde courtage exclusief BTW.</p>
+    <p>Apartmenthub is niet aansprakelijk voor: (a) schade veroorzaakt door onjuiste of onvolledige informatie van Verkoper of derden; (b) handelen of nalaten van koper, notaris, taxateur, hypotheekverstrekker, meetbureau, fotograaf of andere derde partijen; (c) gevolgschade, gederfde winst, overstroming of immateriele schade; (d) schade als gevolg van vertraging in DNS, internet of externe portaal diensten (Funda, Kadaster, Omgevingsloket, Pararius). Vorderingen tot schadevergoeding vervallen door verloop van een (1) jaar na het moment waarop Verkoper bekend werd of redelijkerwijs bekend kon zijn met de schade.</p>
+
+    <h4>25. Overmacht (force majeure)</h4>
+    <p>Onder overmacht wordt mede verstaan, naast hetgeen daaromtrent in de wet en jurisprudentie wordt begrepen: storingen of uitval van IT systemen, hosting, email of telefonie; het tekortschieten of niet leveren door derden zoals Funda, Kadaster, KvK, Omgevingsloket, notarissen, fotografen of meetbureaus; oorlog, oorlogsgevaar, mobilisatie of terrorisme; pandemie, epidemie of vergelijkbare volksgezondheidsmaatregel; overheidsmaatregelen waaronder lockdowns of contactbeperkingen; staking, bezetting of werkonderbreking; brand, overstroming, aardbeving of extreem weer; en fundamentele verstoring van de woningmarkt waardoor uitvoering redelijkerwijs niet kan worden gevergd.</p>
+    <p>Gedurende overmacht worden de wederzijdse verplichtingen uit deze Opdracht opgeschort, zonder dat een van partijen tot enige schadevergoeding gehouden is. Apartmenthub spant zich in om Verkoper zo spoedig mogelijk te informeren over aard, omvang en verwachte duur. Indien de overmachtssituatie langer duurt dan negentig (90) kalenderdagen, is ieder van partijen gerechtigd de Opdracht Schriftelijk te beeindigen, zonder dat over en weer aanspraak bestaat op schadevergoeding.</p>
+
+    <h4>26. Vrijwaring en beeldmateriaal</h4>
+    <p>Verkoper vrijwaart Apartmenthub voor aanspraken van koper of derden ter zake van open en verborgen gebreken aan het Object waarvan Verkoper kennis had of behoorde te hebben, alsmede voor aanspraken voortvloeiend uit onjuiste of onvolledige informatie verstrekt door Verkoper of een door Verkoper ingeschakelde derde. Verkoper verleent Apartmenthub het niet exclusieve, royaltyvrije recht om fotos, plattegronden, videos en verkoopteksten die in het kader van deze Opdracht zijn gemaakt, ook na beeindiging van de Opdracht te gebruiken voor referentie, portfolio en marketingdoeleinden van Apartmenthub, mits zonder vermelding van persoonsgegevens van Verkoper of koper.</p>
+
+    <h4>27. Geheimhouding</h4>
+    <p>Partijen behandelen alle informatie die zij over en weer uitwisselen in het kader van deze Opdracht strikt vertrouwelijk. Onder vertrouwelijke informatie valt in elk geval: financiele gegevens, persoonsgegevens, biedingen en hun hoogte, de identiteit van bieders, onderhandelingsstrategie, taxatierapporten en interne communicatie. Vertrouwelijke informatie wordt uitsluitend gebruikt voor het doel waarvoor zij is verstrekt en wordt niet gedeeld met derden, behoudens: (a) een wettelijke plicht tot openbaarmaking, (b) een gerechtelijk bevel, (c) een Wwft melding aan FIU Nederland, en (d) verstrekking aan adviseurs of sub opdrachtnemers die zelf aan een vergelijkbare geheimhouding zijn gebonden. De geheimhoudingsplicht blijft van kracht gedurende vijf (5) jaar na de beeindiging van de Opdracht.</p>
+
+    <h4>28. Privacy en gegevensverwerking (AVG)</h4>
+    <p>Apartmenthub verwerkt persoonsgegevens van Verkoper en kopers uitsluitend ten behoeve van de uitvoering van deze Opdracht. Vastgelegd worden onder meer: naam, contactgegevens, BSN (alleen voor Wwft identificatie), objectgegevens (foto, oppervlakte, vraagprijs, kadastraal), reden verkoop en transactiegegevens. Gegevens worden alleen gedeeld met noodzakelijke partijen (Funda, notaris, kandidaat kopers, door Apartmenthub ingeschakelde derden zoals fotografen en plattegrondtekenaars) en met partijen aan wie Apartmenthub op grond van wettelijke verplichtingen of een gerechtelijk bevel gegevens moet verstrekken.</p>
+    <p>Bewaartermijn: zeven (7) jaar fiscaal, daarna vernietiging. Verkoper heeft recht op inzage, rectificatie, verwijdering, beperking van verwerking, dataportabiliteit en bezwaar; verzoeken via david@apartmenthub.nl. Klachten kunnen ook worden ingediend bij de Autoriteit Persoonsgegevens (www.autoriteitpersoonsgegevens.nl). Apartmenthub mag ten behoeve van de uitvoering een verwerkersovereenkomst sluiten met derden die persoonsgegevens namens Apartmenthub verwerken.</p>
+
+    <h4>29. Wettelijke bedenktijd</h4>
+    <p>Indien deze Opdracht tot stand komt buiten de bedrijfsruimte van Apartmenthub of op afstand (per email, telefoon of digitale ondertekening), heeft Verkoper als consument een wettelijke Bedenktijd van VEERTIEN (14) kalenderdagen, ingaande op de dag na ondertekening, waarin de Opdracht zonder opgave van redenen kan worden herroepen. Herroeping geschiedt Schriftelijk per email aan david@apartmenthub.nl, dan wel via het hieronder opgenomen Modelformulier voor herroeping. Tijdige verzending van de herroeping binnen de termijn volstaat om het herroepingsrecht uit te oefenen (BW art. 6:230o).</p>
+    <p>Indien Verkoper Apartmenthub uitdrukkelijk verzoekt om binnen de Bedenktijd reeds met de uitvoering te starten, en de Opdracht vervolgens binnen de Bedenktijd herroept, is Verkoper aan Apartmenthub een evenredig deel verschuldigd van de tot het moment van herroeping reeds verrichte werkzaamheden en gemaakte Bijkomende kosten. Dit verzoek wordt in de verkoopportal expliciet vastgelegd. Bij herroeping na een reeds gesloten Koopovereenkomst zijn de gevolgen van artikel 14 onverkort van toepassing.</p>
+
+    <h4>30. Modelformulier voor herroeping (Bijlage I Boek 6 BW)</h4>
+    <p>Dit formulier alleen invullen en terugzenden als Verkoper de Opdracht wenst te herroepen. Verzenden per email aan david@apartmenthub.nl, of per post aan Apartmenthub, Van Baerlestraat 62-2, 1017 PB Amsterdam.</p>
+    <p>Aan: Apartmenthub, Van Baerlestraat 62-2, 1017 PB Amsterdam, email david@apartmenthub.nl. Ik/Wij deel/delen u hierbij mede dat ik/wij onze overeenkomst betreffende de verkoopbemiddeling van de onroerende zaak gelegen aan [adres], met kenmerk [aanvaardingscode], herroep/herroepen. Besteld op [datum] / ontvangen op [datum]. Naam consument(en). Adres consument(en). Handtekening van consument(en) (alleen wanneer dit formulier op papier wordt ingediend). Datum.</p>
+
+    <h4>31. Klachten</h4>
+    <p>Klachten worden in twee fasen behandeld. Fase 1: Verkoper meldt de klacht eerst Schriftelijk bij Apartmenthub via david@apartmenthub.nl, met een duidelijke omschrijving en onderbouwing. Apartmenthub bevestigt ontvangst binnen twee (2) Werkdagen en spant zich in om binnen twee (2) weken een passende oplossing voor te stellen. Fase 2: leidt de oplossing niet tot overeenstemming, dan kan Verkoper het geschil binnen twaalf (12) maanden na de eerste melding voorleggen aan de Geschillencommissie Makelaardij conform artikel 32. Het indienen van een klacht ontslaat Verkoper niet van zijn betalingsverplichtingen voor het onbetwiste deel van de factuur.</p>
+
+    <h4>32. Geschillen en toepasselijk recht</h4>
+    <p>Op deze Opdracht is uitsluitend Nederlands recht van toepassing. Leidt een klacht (artikel 31) niet tot een oplossing, dan kan Verkoper het geschil binnen 12 maanden na indiening van de klacht voorleggen aan de Geschillencommissie Makelaardij (Bordewijklaan 46, Den Haag, www.degeschillencommissie.nl). Voor geschillen over schadeaansprakelijkheid is de Geschillencommissie bevoegd tot schades van EUR 10.000. Verkoper kan ook kiezen voor de bevoegde rechter te Amsterdam. Apartmenthub kiest bij eigen vordering altijd voor de bevoegde rechter te Amsterdam.</p>
+
+    <h4>33. Overdracht van rechten en verplichtingen</h4>
+    <p>Geen van partijen is gerechtigd haar rechten of verplichtingen uit deze Opdracht geheel of gedeeltelijk over te dragen aan een derde, dan wel een derde in haar plaats te doen treden door contractsovername in de zin van BW art. 6:159, zonder voorafgaande Schriftelijke toestemming van de andere partij. Toestemming wordt niet op onredelijke gronden onthouden. Apartmenthub is bevoegd ten behoeve van de uitvoering van deze Opdracht sub opdrachtnemers in te schakelen overeenkomstig artikel 16, zonder dat daarvoor voorafgaande toestemming van Verkoper vereist is.</p>
+
+    <h4>34. Notificaties en kennisgevingen</h4>
+    <p>Alle formele kennisgevingen tussen partijen geschieden Schriftelijk per email. Apartmenthub is bereikbaar op verkoop@apartmenthub.nl (zaakgerelateerd) en david@apartmenthub.nl (formele kennisgevingen, opzegging, klachten). Verkoper is bereikbaar op het emailadres dat in artikel 3 is opgegeven. Email wordt gelijkgesteld aan schriftelijk in de zin van BW art. 3:37 lid 3 jo. art. 6:227b. Een kennisgeving geldt als ontvangen 24 uur na verzending, tenzij de verzender binnen die termijn een non delivery of bounce bericht heeft ontvangen, in welk geval de kennisgeving onverwijld op andere wijze (post of telefoon) wordt herhaald.</p>
+
+    <h4>35. Nawerking na beeindiging</h4>
+    <p>Beeindiging van deze Opdracht laat onverlet de werking van de bepalingen die naar hun aard bedoeld zijn ook na beeindiging te blijven gelden. Uitdrukkelijk blijven van kracht na beeindiging: artikel 12 (beschermingsperiode en courtage), artikel 14 (niet uitvoering), artikel 15 (courtage), artikel 16 (Bijkomende kosten), artikel 24 (aansprakelijkheid), artikel 26 (vrijwaring en beeldmateriaal), artikel 27 (geheimhouding), artikel 28 (AVG), artikel 32 (geschillen) en artikel 33 (overdracht van rechten).</p>
+
+    <h4>36. Gehele overeenkomst en overige bepalingen</h4>
+    <p>Deze Opdracht, samen met Bijlage A (Mededelingsplicht), Bijlage B (Lijst van zaken) en Bijlage C (Modelformulier herroeping), vormt de volledige overeenkomst tussen partijen en treedt in de plaats van alle eerdere mondelinge of schriftelijke communicatie, aanbiedingen, offertes en afspraken over hetzelfde onderwerp. Wijzigingen of aanvullingen zijn alleen geldig indien Schriftelijk overeengekomen en door beide partijen ondertekend. Indien een bepaling nietig of vernietigbaar blijkt, blijven de overige bepalingen onverkort van kracht; partijen vervangen de bepaling door een geldige bepaling die het doel en de strekking van de oorspronkelijke bepaling zoveel mogelijk benadert.</p>
+
+    <h4>37. Bijlagen</h4>
+    <p>De volgende bijlagen maken onlosmakelijk deel uit van deze Opdracht. De inhoudelijke teksten worden door separate scripts en/of de verkoopportal gegenereerd en door Verkoper afzonderlijk geparafeerd:</p>
+    <ul>
+      <li>Bijlage A Mededelingsplicht verkoper (wordt later digitaal aangevuld door Verkoper)</li>
+      <li>Bijlage B Lijst van zaken (wordt later digitaal aangevuld door Verkoper)</li>
+      <li>Bijlage C Modelformulier herroeping bedenktijd (zie ook artikel 30)</li>
+    </ul>
+
+    <h4>38. Door verkoper te overleggen documenten</h4>
+    <p>Verkoper levert bij of na ondertekening de volgende stukken aan (voor zover beschikbaar):</p>
+    <ul>
+      <li>Kopie geldig identiteitsbewijs Verkoper (en Mede eigenaar)</li>
+      <li>Eigendomsakte / leveringsakte (Apartmenthub haalt deze anders op via Kadaster)</li>
+      <li>Bij appartementsrecht: splitsingsakte + tekening, recente notulen ALV, jaarrekening + begroting VvE, MJOP, opstalverzekeringspolis, KvK uittreksel VvE</li>
+      <li>Hypotheekgegevens (pro forma aflosnota), alleen indien hypotheek aanwezig</li>
+      <li>Erfpachtstukken, alleen bij erfpacht (Amsterdam: via mijn.amsterdam.nl)</li>
+      <li>Energielabel, indien aanwezig (anders vraagt Apartmenthub aan via EP online)</li>
+      <li>Lijst van zaken (Apartmenthub levert template)</li>
+      <li>Eventuele garantiebewijzen, asbestinventarisatie, funderingsonderzoek, bouwtekeningen</li>
+    </ul>
+
+    <h4>39. Digitale ondertekening</h4>
+    <p>Deze Opdracht wordt digitaal aanvaard via de verkoopportal van Apartmenthub op apartmenthub.nl/verkoop. Door Verkoper te bevestigen via de aanvaard knop op de portal verklaart Verkoper deze Opdracht inclusief alle artikelen en bijlagen te hebben gelezen, begrepen en zonder voorbehoud aanvaard. De digitale aanvaarding heeft dezelfde rechtsgeldigheid als een handgeschreven handtekening (BW art. 3:15a). Na aanvaarding ontvangt Verkoper deze Opdracht per email, voorzien van naam, datum, tijdstip en een unieke Aanvaardingscode als bewijs van ondertekening. Een afschrift wordt bewaard door Apartmenthub conform de bewaartermijn uit artikel 28.</p>
+
+    <div class="otd-sign-block">
+      <div class="otd-sign-col">
+        <div class="otd-sign-role">${isNL ? "De makelaar (Apartmenthub)" : "The agent (Apartmenthub)"}</div>
+        <div class="otd-sig-david">David van Wachem</div>
+        <div class="otd-sign-name">David van Wachem — Apartmenthub</div>
+      </div>
+      <div class="otd-sign-col">
+        <div class="otd-sign-role">${isNL ? "De verkoper" : "The seller"}</div>
+        <div class="otd-sign-pending">${isNL ? "U ondertekent hieronder ↓" : "You sign below ↓"}</div>
+      </div>
+    </div>
+  `;
+}
+
 /* ===== OTD signing (inline in step 1) ===================================
    Lets the seller sign the Opdracht tot Dienstverlening before they move
    to step 2. Submit posts to /api/verkoop/otd/sign — that fills the PDF
@@ -3066,6 +3836,56 @@ hydrateFromServer();
   const nextBtn = document.getElementById("step1NextBtn");
 
   let signed = false;
+
+  // ---- Read-only contract: render, white logo, scroll-to-read gate ----
+  const otdContract = document.getElementById("otdContract");
+  const contractBody = document.getElementById("otdContractBody");
+  const scrollHint = document.getElementById("otdScrollHint");
+  let scrolledRead = false;
+
+  function checkScroll() {
+    if (!contractBody) return;
+    // A contract that doesn't overflow counts as already read.
+    if (contractBody.scrollHeight - contractBody.clientHeight <= 8) { markRead(); return; }
+    if (contractBody.scrollTop + contractBody.clientHeight >= contractBody.scrollHeight - 28) markRead();
+  }
+  function setScrollGate() {
+    // The scroll-through gate controls the Sign button; submit() still
+    // validates the acceptance box + typed name on click.
+    if (submitBtn && !signed) submitBtn.disabled = !scrolledRead;
+  }
+  function markRead() {
+    if (scrolledRead) return;
+    scrolledRead = true;
+    otdContract?.classList.add("read");
+    if (scrollHint) scrollHint.style.display = "none";
+    setScrollGate();
+  }
+  function renderContract() {
+    if (!contractBody) return;
+    const top = contractBody.scrollTop;
+    contractBody.innerHTML = buildOtdContractHtml();
+    contractBody.scrollTop = top;
+    checkScroll();
+  }
+  // Expose so the language toggle can re-render the contract in place.
+  window.refreshOtdContract = renderContract;
+
+  // White logo in the contract header (reuse the topbar logo, inverted via CSS).
+  const logoImg = otdContract?.querySelector(".otd-logo");
+  const topLogo = document.querySelector(".topbar img");
+  if (logoImg && topLogo) logoImg.src = topLogo.src;
+
+  contractBody?.addEventListener("scroll", checkScroll);
+  renderContract();
+  setScrollGate();
+  setTimeout(checkScroll, 250); // re-check once layout settles
+
+  // Keep the contract's party details current as the seller fills step 1.
+  // Use "change" (fires on blur) so we rebuild once per field, not per keystroke.
+  ["straat", "postcode", "naam", "email", "tel"].forEach(id => {
+    document.getElementById(id)?.addEventListener("change", renderContract);
+  });
 
   function setSignedUI(sub) {
     signed = true;
@@ -3155,9 +3975,7 @@ hydrateFromServer();
     const lockedTel = (document.getElementById("phoneLockedValue")?.textContent || "").trim();
     if (!straat || !naam || !email) { showErr("otd_err_step1"); return; }
 
-    const parts = naam.split(/\s+/);
-    const voornaam = parts.slice(0, parts.length > 1 ? -1 : 1).join(" ");
-    const achternaam = parts.length > 1 ? parts.slice(-1)[0] : "";
+    const { first: voornaam, last: achternaam } = sellerNameParts();
 
     submitBtn.disabled = true;
     submitBtn.textContent = "…";
@@ -3236,6 +4054,21 @@ hydrateFromServer();
 /* Step 1 — toggle the alternative phone input. The primary phone is
    the seller's sign-in number (already authenticated via OTP) so we
    don't ask for it again. */
+/* Step 1 — VvE manager dropdown. Toggling "Other" reveals a free-text name
+   field; any change re-renders the doc cards so the per-document
+   "Where do I find this?" links and Ask-VvE template follow the choice. */
+document.getElementById("vveBeheerder")?.addEventListener("change", () => {
+  const sel = document.getElementById("vveBeheerder");
+  const otherWrap = document.getElementById("vveOtherWrap");
+  if (otherWrap) otherWrap.style.display = sel.value === "__other" ? "block" : "none";
+  if (sel.value === "__other") setTimeout(() => document.getElementById("vveBeheerderOther")?.focus(), 50);
+  renderDocs();
+  saveDraft();
+});
+document.getElementById("vveBeheerderOther")?.addEventListener("input", () => {
+  renderDocs();
+});
+
 document.getElementById("phoneAltToggle")?.addEventListener("click", () => {
   const wrap = document.getElementById("phoneAltWrap");
   const btn = document.getElementById("phoneAltToggle");

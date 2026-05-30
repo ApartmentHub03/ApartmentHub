@@ -95,6 +95,10 @@ const COPY: Record<Lang, Record<string, string>> = {
     titleCode: "Voer de code in",
     leadCode: "We hebben een code gestuurd naar",
     labelPhone: "Mobiel nummer",
+    labelFirstName: "Voornaam",
+    labelLastName: "Achternaam",
+    placeholderFirstName: "Voornaam",
+    placeholderLastName: "Achternaam",
     labelCode: "6-cijferige code",
     placeholderPhone: "06 1234 5678",
     placeholderCode: "••••••",
@@ -104,8 +108,8 @@ const COPY: Record<Lang, Record<string, string>> = {
     ctaVerifying: "Controleren…",
     resend: "Code opnieuw sturen",
     changeNumber: "Ander nummer gebruiken",
-    stepPhone: "Stap 1 — nummer",
-    stepCode: "Stap 2 — code",
+    stepPhone: "Stap 1: nummer",
+    stepCode: "Stap 2: code",
     errInvalid: "Vul een geldig Nederlands mobiel nummer in (bv. 06 12 34 56 78).",
     errRate: "Te veel pogingen. Wacht even en probeer opnieuw.",
     errSend: "Versturen via WhatsApp is mislukt. Probeer opnieuw of controleer je nummer.",
@@ -126,6 +130,10 @@ const COPY: Record<Lang, Record<string, string>> = {
     titleCode: "Enter the code",
     leadCode: "We just sent a code to",
     labelPhone: "Mobile number",
+    labelFirstName: "First name",
+    labelLastName: "Last name",
+    placeholderFirstName: "First name",
+    placeholderLastName: "Last name",
     labelCode: "6-digit code",
     placeholderPhone: "+31 6 1234 5678",
     placeholderCode: "••••••",
@@ -135,8 +143,8 @@ const COPY: Record<Lang, Record<string, string>> = {
     ctaVerifying: "Checking…",
     resend: "Resend code",
     changeNumber: "Use a different number",
-    stepPhone: "Step 1 — number",
-    stepCode: "Step 2 — code",
+    stepPhone: "Step 1: number",
+    stepCode: "Step 2: code",
     errInvalid: "Enter a valid mobile number (e.g. +31 6 1234 5678).",
     errRate: "Too many attempts. Wait a moment and try again.",
     errSend: "WhatsApp delivery failed. Try again or check the number.",
@@ -201,6 +209,8 @@ const ckey = (c: Country) => `${c.flag}:${c.code}`;
 export default function SellLoginPage() {
   const [lang, setLang] = useState<Lang>("nl");
   const [step, setStep] = useState<Step>("phone");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
   const [countryKey, setCountryKey] = useState<string>(ckey(COUNTRIES[0]));
   const [code, setCode] = useState("");
@@ -290,6 +300,35 @@ export default function SellLoginPage() {
         window.location.href = "/dashboard-selling";
         return;
       }
+      // Carry the seller's name into the portal. The portal reads
+      // ah_sell_name from sessionStorage to prefill the intake "naam" field,
+      // the OTD signing, and the Ask-VvE email template (first/last split).
+      // We also persist it server-side so a returning seller on another
+      // device sees it. Non-fatal if the upsert fails — the sessionStorage
+      // copy still drives the portal in this tab.
+      const first = firstName.trim();
+      const last = lastName.trim();
+      const full = `${first} ${last}`.trim();
+      try {
+        sessionStorage.setItem(
+          "ah_sell_name",
+          JSON.stringify({ first, last })
+        );
+      } catch {
+        /* sessionStorage unavailable — server copy below still applies */
+      }
+      if (full) {
+        try {
+          await fetch("/api/verkoop/dossier", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({ naam: full, taal: lang }),
+          });
+        } catch {
+          /* offline — portal will resync on first save */
+        }
+      }
       const params = new URLSearchParams(window.location.search);
       const nextParam = params.get("next");
       const baseTarget =
@@ -350,6 +389,41 @@ export default function SellLoginPage() {
               <h1 className={styles.title}>{t.titlePhone}</h1>
               <p className={styles.lead}>{t.leadPhone}</p>
 
+              <div className={styles.nameRow}>
+                <div>
+                  <label className={styles.label} htmlFor="firstName">
+                    {t.labelFirstName}
+                  </label>
+                  <input
+                    id="firstName"
+                    className={styles.input}
+                    type="text"
+                    autoComplete="given-name"
+                    placeholder={t.placeholderFirstName}
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    disabled={busy}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className={styles.label} htmlFor="lastName">
+                    {t.labelLastName}
+                  </label>
+                  <input
+                    id="lastName"
+                    className={styles.input}
+                    type="text"
+                    autoComplete="family-name"
+                    placeholder={t.placeholderLastName}
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    disabled={busy}
+                    required
+                  />
+                </div>
+              </div>
+
               <label className={styles.label} htmlFor="phone">
                 {t.labelPhone}
               </label>
@@ -390,7 +464,12 @@ export default function SellLoginPage() {
               <button
                 type="submit"
                 className={styles.cta}
-                disabled={busy || localDigits.length < 7}
+                disabled={
+                  busy ||
+                  localDigits.length < 7 ||
+                  !firstName.trim() ||
+                  !lastName.trim()
+                }
               >
                 {busy ? t.ctaSending : t.ctaSend}
               </button>
