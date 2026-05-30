@@ -118,6 +118,17 @@
   align-items: stretch;
 }
 
+/* First name + last name, side by side above the phone field. */
+.nameRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+@media (max-width: 420px) {
+  .nameRow { grid-template-columns: 1fr; gap: 10px; }
+}
+
 /* Country dial-code picker — native <select> styled to look like a chip.
    The native control gives a free mobile picker UI on iOS/Android. */
 .countrySelectWrap {
