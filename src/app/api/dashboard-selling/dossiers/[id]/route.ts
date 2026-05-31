@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabase-admin";
 import { getStaffUser } from "@/app/lib/auth";
+import { BUCKET } from "@/app/lib/storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -86,4 +87,76 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   });
 
   return NextResponse.json({ ok: true, dossier: data });
+}
+
+// DELETE /api/dashboard-selling/dossiers/[id]
+// Permanently removes a dossier. Admin-only — this is destructive and cannot
+// be undone. verkoop_files and verkoop_audit rows cascade on the FK; the
+// stored objects in the bucket are cleaned up here first (cascade doesn't
+// reach Storage).
+export async function DELETE(_req: NextRequest, { params }: Params) {
+  const { id: dossierId } = await params;
+  const staff = await getStaffUser();
+  if (!staff) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (staff.role !== "admin") {
+    return NextResponse.json({ error: "forbidden_role" }, { status: 403 });
+  }
+
+  const sb = supabaseAdmin();
+  const { data: dossier, error: findErr } = await sb
+    .from("verkoop_dossiers")
+    .select("id, naam")
+    .eq("id", dossierId)
+    .maybeSingle();
+  if (findErr || !dossier) {
+    return NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
+
+  // Collect the stored object paths to remove. Prefer the explicit blob_url
+  // values on verkoop_files (skipping legacy http(s) Vercel Blob URLs that
+  // don't live in this bucket), and walk the dossier folder to catch the
+  // signed OTD pdf and anything else under <dossierId>/.
+  const paths = new Set<string>();
+  const { data: files } = await sb
+    .from("verkoop_files")
+    .select("blob_url")
+    .eq("dossier_id", dossierId);
+  for (const f of files ?? []) {
+    if (f.blob_url && !/^https?:\/\//i.test(f.blob_url)) paths.add(f.blob_url);
+  }
+  // Two-level walk of the dossier folder (root + one level of subfolders).
+  try {
+    const { data: top } = await sb.storage.from(BUCKET).list(dossierId, { limit: 1000 });
+    for (const entry of top ?? []) {
+      if (entry.id === null) {
+        // Subfolder (e.g. a doc_key folder or _signed) — list its contents.
+        const sub = `${dossierId}/${entry.name}`;
+        const { data: inner } = await sb.storage.from(BUCKET).list(sub, { limit: 1000 });
+        for (const f of inner ?? []) {
+          if (f.id !== null) paths.add(`${sub}/${f.name}`);
+        }
+      } else {
+        paths.add(`${dossierId}/${entry.name}`);
+      }
+    }
+  } catch (err) {
+    // Storage listing is best-effort; proceed with whatever we collected.
+    console.error("[dossier/delete] storage walk failed", err);
+  }
+  if (paths.size > 0) {
+    const { error: rmErr } = await sb.storage.from(BUCKET).remove([...paths]);
+    if (rmErr) console.error("[dossier/delete] storage remove failed", rmErr);
+  }
+
+  // Delete the dossier row last. verkoop_files + verkoop_audit cascade.
+  const { error: delErr } = await sb.from("verkoop_dossiers").delete().eq("id", dossierId);
+  if (delErr) {
+    return NextResponse.json({ error: "db_error", detail: delErr.message }, { status: 500 });
+  }
+
+  console.log(
+    `[dossier/delete] ${dossierId} (${dossier.naam ?? "?"}) removed by ${staff.phone_e164}; ${paths.size} objects deleted`
+  );
+
+  return NextResponse.json({ ok: true, deleted: dossierId, objects_removed: paths.size });
 }

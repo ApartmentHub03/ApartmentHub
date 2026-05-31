@@ -38,7 +38,13 @@ function relativeTime(iso: string | null): string {
   return new Date(iso).toLocaleDateString();
 }
 
-export function DashboardClient({ initialDossiers }: { initialDossiers: Dossier[] }) {
+export function DashboardClient({
+  initialDossiers,
+  canDownload = true,
+}: {
+  initialDossiers: Dossier[];
+  canDownload?: boolean;
+}) {
   const [filter, setFilter] = useState<string>("all");
   const [q, setQ] = useState("");
 
@@ -154,7 +160,36 @@ export function DashboardClient({ initialDossiers }: { initialDossiers: Dossier[
                   <span title={new Date(d.last_activity_at ?? d.created_at).toLocaleString()}>
                     Active {relativeTime(d.last_activity_at ?? d.created_at)}
                   </span>
-                  <span style={{ marginLeft: "auto", fontWeight: 600, color: "var(--grey)" }}>
+                  {canDownload && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    className={styles.cardDownload}
+                    title="Download signed contract (PDF)"
+                    onClick={(e) => {
+                      // The card itself navigates; keep this click local and
+                      // let the attachment endpoint trigger the download.
+                      e.stopPropagation();
+                      window.location.href = `/api/dashboard-selling/dossiers/${d.id}/contract`;
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        window.location.href = `/api/dashboard-selling/dossiers/${d.id}/contract`;
+                      }
+                    }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                    </svg>
+                    Contract
+                  </span>
+                  )}
+                  <span style={{ marginLeft: canDownload ? undefined : "auto", fontWeight: 600, color: "var(--grey)" }}>
                     {(d.taal ?? "nl").toUpperCase()}
                   </span>
                 </div>

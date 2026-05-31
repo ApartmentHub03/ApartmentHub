@@ -250,6 +250,28 @@
   font-weight: 600;
   color: var(--grey);
 }
+.dossierCard .cardFooter .cardDownload {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-weight: 600;
+  color: var(--teal-dark);
+  background: #fff;
+  cursor: pointer;
+  transition: background .12s, border-color .12s, color .12s;
+}
+.dossierCard .cardFooter .cardDownload:hover {
+  border-color: rgba(0, 155, 138, 0.45);
+  background: rgba(0, 155, 138, 0.08);
+}
+.dossierCard .cardFooter .cardDownload:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 1px;
+}
 
 /* Filter chips with counts */
 .toolbar2 {
@@ -1197,3 +1219,87 @@ select.formInput {
 }
 .footer a { color: var(--teal-dark); text-decoration: none; }
 .footer a:hover { text-decoration: underline; }
+
+/* ===== Delete dossier (danger button + confirmation modal) =============== */
+/* btnDanger turns a secondary button red and pushes it to the far right of
+   the action bar so it sits apart from the non-destructive actions. */
+.btnDanger {
+  margin-left: auto;
+  color: #B42318;
+  border-color: #FDA29B;
+}
+.btnDanger:hover {
+  background: #FEE4E2;
+  border-color: #F97066;
+}
+/* btnDangerSolid recolors the primary (confirm) button red inside the modal. */
+.btnDangerSolid {
+  background: #D92D20;
+}
+.btnDangerSolid:hover { background: #B42318; }
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(16, 24, 40, 0.55);
+  backdrop-filter: blur(2px);
+  animation: modalFade 0.12s ease-out;
+}
+.modalCard {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 26px 24px 22px;
+  box-shadow: 0 20px 50px rgba(16, 24, 40, 0.28);
+  text-align: center;
+  animation: modalPop 0.14s ease-out;
+}
+.modalIcon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #FEE4E2;
+  color: #D92D20;
+}
+.modalTitle {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.modalBody {
+  margin: 0 0 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--grey);
+}
+.modalError {
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #B42318;
+}
+.modalActions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+@keyframes modalFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modalPop {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
