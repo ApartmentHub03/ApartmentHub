@@ -111,7 +111,7 @@ export default async function DashboardPage() {
       </header>
 
       <main className={styles.main}>
-        <DashboardClient initialDossiers={dossiers} />
+        <DashboardClient initialDossiers={dossiers} canDownload={staff.role !== "viewer"} />
       </main>
     </div>
   );
