@@ -64,7 +64,7 @@ export const workStatusLabels = {
 export const documentTypeLabels = {
     nl: {
         id_bewijs: { name: 'ID-bewijs', description: 'Paspoort of ID-kaart' },
-        inschrijfbewijs: { name: 'Inschrijfbewijs', description: 'Bewijs van inschrijving onderwijsinstelling' },
+        inschrijfbewijs: { name: 'Bewijs van studie inschrijving', description: 'Bewijs van inschrijving bij onderwijsinstelling' },
         studiefinanciering: { name: 'Studiefinanciering', description: 'Bewijs van studiefinanciering of DUO' },
         arbeidscontract: { name: 'Arbeidscontract of Werkgeversverklaring', description: 'Huidig arbeidscontract of werkgeversverklaring' },
         loonstroken: { name: 'Loonstroken', description: 'Laatste 1-3 maanden' },
@@ -83,7 +83,7 @@ export const documentTypeLabels = {
     },
     en: {
         id_bewijs: { name: 'ID Document', description: 'Passport or ID card' },
-        inschrijfbewijs: { name: 'Proof of Enrollment', description: 'Proof of enrollment at educational institution' },
+        inschrijfbewijs: { name: 'Proof of Study Enrollment', description: 'Proof of enrollment at educational institution' },
         studiefinanciering: { name: 'Student Finance', description: 'Proof of student financing or DUO' },
         arbeidscontract: { name: 'Employment Contract or Employer Statement', description: 'Current employment contract or employer statement' },
         loonstroken: { name: 'Salary Slips', description: 'Last 1-3 months' },
