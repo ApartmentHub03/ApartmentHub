@@ -8,6 +8,7 @@ import { LogOut, CheckCircle, Plus, AlertCircle } from 'lucide-react';
 import { translations } from '../data/translations';
 import { useAuth } from '../contexts/AuthContext';
 import { loadAanvraagDataFromSalesforce, deletePersonFromSupabase } from '../services/aanvraagDataService';
+import { saveAanvraagDraft, loadAanvraagDraft, mergePersonenWithDraft } from '../services/aanvraagDraft';
 import { uploadDocument, deleteDocument } from '../services/documentStorageService';
 import { getRequiredDocuments } from '../utils/documentRequirements';
 import { sendTenantDataEvent, sendDocumentUploadEvent, sendMultipleDocumentsEvent } from '../services/webhookService';
@@ -372,11 +373,19 @@ const Aanvraag = () => {
                     });
                 }
                 setBidAmounts(prev => ({ ...initialBids, ...prev }));
-                setStartDate(result.data.startDate || '');
-                setMotivation(result.data.motivation || '');
-                setMonthsAdvance(result.data.monthsAdvance || 0);
 
-                const personen = result.data.personen?.length > 0
+                // Local draft (main tenant only — they own the personen list).
+                // Salesforce stays authoritative; the draft only restores what
+                // SF doesn't return (people without documents yet, empty fields,
+                // the tenant<->guarantor link) so nothing the user entered is
+                // lost on refresh.
+                const draft = isMainTenant ? loadAanvraagDraft(phoneNumber) : null;
+
+                setStartDate(result.data.startDate || draft?.startDate || '');
+                setMotivation(result.data.motivation || draft?.motivation || '');
+                setMonthsAdvance(result.data.monthsAdvance || draft?.monthsAdvance || 0);
+
+                let personen = result.data.personen?.length > 0
                     ? result.data.personen.map(p => {
                         // Autofill main tenant's phone from auth if empty
                         if (p.rol === 'Hoofdhuurder' && !p.telefoon && phoneNumber) {
@@ -393,6 +402,14 @@ const Aanvraag = () => {
                         documenten: [],
                         docsCompleet: false
                     }];
+
+                if (draft?.personen?.length) {
+                    personen = mergePersonenWithDraft(personen, draft.personen);
+                }
+                // Fill any per-apartment bids SF / the account row didn't have.
+                if (draft?.bidAmounts && Object.keys(draft.bidAmounts).length > 0) {
+                    setBidAmounts(prev => ({ ...draft.bidAmounts, ...prev }));
+                }
 
                 setData({ panden, pand: firstPand, personen, dossierCompleet: false });
             } else {
@@ -546,6 +563,23 @@ const Aanvraag = () => {
             }
         };
     }, [bidAmounts, startDate, motivation, monthsAdvance, data, loading, autoSave]);
+
+    // Persist an in-progress draft to localStorage on every change (immediate,
+    // not debounced — a localStorage write is cheap). This is what makes the
+    // application survive a page refresh and keeps a freshly-added guarantor
+    // (who may have no documents yet) from being dropped when the form
+    // rehydrates from Salesforce. Main tenant only — they own the personen list,
+    // so a co-tenant's stale draft can never resurrect a removed person.
+    useEffect(() => {
+        if (loading || !data || !phoneNumber || !isMainTenant) return;
+        saveAanvraagDraft(phoneNumber, {
+            personen: data.personen,
+            startDate,
+            motivation,
+            monthsAdvance,
+            bidAmounts,
+        });
+    }, [data, startDate, motivation, monthsAdvance, bidAmounts, loading, phoneNumber, isMainTenant]);
 
     const calculateProgress = () => {
         if (!data) return 0;

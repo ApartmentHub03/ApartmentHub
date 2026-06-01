@@ -30,7 +30,7 @@ const InlineDocumentUpload = ({
         if (file) handleUpload(file);
     };
 
-    const handleUpload = (file) => {
+    const handleUpload = async (file) => {
         const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
         if (!allowedTypes.includes(file.type)) {
             alert('Invalid file type');
@@ -42,10 +42,40 @@ const InlineDocumentUpload = ({
             return;
         }
 
+        // Await the parent upload so the "uploading…" state stays visible for the
+        // whole duration of the actual upload — otherwise (esp. on phones / slow
+        // connections) the user taps Upload and sees nothing change for seconds.
         setUploading(true);
-        onUpload(file);
-        setUploading(false);
+        try {
+            await onUpload(file);
+        } catch (err) {
+            console.error('[InlineDocumentUpload] Upload failed:', err);
+        } finally {
+            setUploading(false);
+        }
     };
+
+    // While the file is uploading, show a clear in-progress card so the user
+    // knows the tap registered and the document is on its way.
+    if (uploading) {
+        return (
+            <div className={styles.uploadCard}>
+                <div className={styles.contentWrapper}>
+                    <div className={styles.topRow}>
+                        <div className={styles.iconWrapper}>
+                            <RefreshCw className={`${styles.icon} ${styles.spinning}`} />
+                        </div>
+                        <div className={styles.textContainer}>
+                            <p className={styles.title}>{documentType}</p>
+                            <p className={styles.description}>
+                                {currentLang === 'en' ? 'Uploading…' : 'Bezig met uploaden…'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (status === 'ontvangen') {
         return (

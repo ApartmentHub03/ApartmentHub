@@ -7,6 +7,7 @@ import { CheckCircle, AlertCircle, LogOut, Upload } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../integrations/supabase/client';
 import { uploadDocument } from '../services/documentStorageService';
+import { saveDocumentMetadata } from '../services/userDataService';
 import { getRequiredDocuments } from '../utils/documentRequirements';
 import { documentTypeLabels, workStatusLabels } from '../config/documentRequirements';
 import { sendGuarantorInvite } from '../services/zokoService';
@@ -108,7 +109,21 @@ const InviteForm = () => {
                 }
             }
 
-            setInviteContext({ dossierId, role, persoonId: actualPersoonId });
+            // The main tenant's phone is the parent folder for co-tenant /
+            // guarantor documents in storage (see buildStoragePath), so invitee
+            // uploads land in the same place as when the main tenant uploads on
+            // their behalf. Fetch it once here.
+            let mainTenantPhone = null;
+            if (supabase && dossierId) {
+                const { data: dossierRow } = await supabase
+                    .from('dossiers')
+                    .select('phone_number')
+                    .eq('id', dossierId)
+                    .single();
+                mainTenantPhone = dossierRow?.phone_number || null;
+            }
+
+            setInviteContext({ dossierId, role, persoonId: actualPersoonId, mainTenantPhone });
 
             // Load existing person data if we have a persoonId
             if (actualPersoonId && supabase) {
@@ -133,7 +148,7 @@ const InviteForm = () => {
                 const { data: docs } = await supabase
                     .from('documenten')
                     .select('*')
-                    .eq('persoon_id', persoonId);
+                    .eq('persoon_id', actualPersoonId);
 
                 if (docs) {
                     setDocumenten(docs.map(d => ({
@@ -166,26 +181,56 @@ const InviteForm = () => {
     const handleDocumentUpload = async (type, file) => {
         if (!inviteContext?.persoonId || !file) return;
 
+        // uploadDocument signature is (docType, file, phoneNumber, fileIndex,
+        // personRole, mainTenantPhone). The invitee uploads their own files, so
+        // their phone is the storage phone and their invite role drives the
+        // co-tenant/guarantor subfolder under the main tenant.
         const result = await uploadDocument(
-            inviteContext.persoonId,
-            inviteContext.dossierId,
             type,
             file,
-            phoneNumber
+            phoneNumber,
+            null,
+            inviteContext.role,
+            inviteContext.mainTenantPhone || null
         );
 
-        if (result.ok) {
-            setDocumenten(prev => {
-                const filtered = prev.filter(d => d.type !== type);
-                return [...filtered, {
-                    id: result.document?.id,
-                    type,
-                    name: file.name,
-                    fileName: file.name,
-                    status: 'ontvangen'
-                }];
-            });
+        if (!result.ok) {
+            console.error('[InviteForm] Upload failed:', result.error);
+            setError(currentLang === 'en'
+                ? 'Upload failed. Please try again.'
+                : 'Uploaden mislukt. Probeer het opnieuw.');
+            return;
         }
+        setError('');
+
+        // Persist metadata so the document survives a reload (loadData reads
+        // the documenten table). Single-file slot: replace any prior row of
+        // this type first so we don't accumulate duplicates.
+        if (supabase) {
+            await supabase
+                .from('documenten')
+                .delete()
+                .eq('persoon_id', inviteContext.persoonId)
+                .eq('type', type);
+        }
+        const meta = await saveDocumentMetadata(
+            inviteContext.persoonId,
+            type,
+            file.name,
+            result.document.filePath
+        );
+
+        setDocumenten(prev => {
+            const filtered = prev.filter(d => d.type !== type);
+            return [...filtered, {
+                id: meta.documentId || result.document?.id,
+                type,
+                name: file.name,
+                fileName: file.name,
+                filePath: result.document.filePath,
+                status: 'ontvangen'
+            }];
+        });
     };
 
     const handleMultiFileUpload = async (type, items) => {
@@ -204,30 +249,49 @@ const InviteForm = () => {
             return;
         }
 
-        // Upload new files in parallel; pass fileIndex so each gets a unique storage path.
+        // Upload new files in parallel; pass fileIndex so each gets a unique
+        // storage path. Correct signature: (docType, file, phoneNumber,
+        // fileIndex, personRole, mainTenantPhone).
         const baseIndex = existingDocs.length;
         const uploadPromises = newFiles.map((file, i) =>
             uploadDocument(
-                inviteContext.persoonId,
-                inviteContext.dossierId,
                 type,
                 file,
                 phoneNumber,
-                null,
-                baseIndex + i
+                baseIndex + i,
+                inviteContext.role,
+                inviteContext.mainTenantPhone || null
             ).then(result => ({ result, file }))
         );
 
         const results = await Promise.all(uploadPromises);
-        const newDocs = results
-            .filter(({ result }) => result.ok)
-            .map(({ result, file }) => ({
-                id: result.document?.id,
+        const okResults = results.filter(({ result }) => result.ok);
+        if (okResults.length < results.length) {
+            setError(currentLang === 'en'
+                ? 'Some files failed to upload. Please try again.'
+                : 'Sommige bestanden konden niet worden geüpload. Probeer het opnieuw.');
+        } else {
+            setError('');
+        }
+
+        // Persist metadata for each uploaded file so they survive a reload.
+        const newDocs = [];
+        for (const { result, file } of okResults) {
+            const meta = await saveDocumentMetadata(
+                inviteContext.persoonId,
+                type,
+                file.name,
+                result.document.filePath
+            );
+            newDocs.push({
+                id: meta.documentId || result.document?.id,
                 type,
                 name: file.name,
                 fileName: file.name,
+                filePath: result.document.filePath,
                 status: 'ontvangen'
-            }));
+            });
+        }
 
         // Append new docs to state, preserving existing ones of the same type.
         setDocumenten(prev => {
