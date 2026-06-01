@@ -252,3 +252,11 @@
     white-space: nowrap;
     border-width: 0;
 }
+/* Spinner for the in-progress upload state (self-contained; no Tailwind dep). */
+.spinning {
+    animation: inlineUploadSpin 0.8s linear infinite;
+}
+@keyframes inlineUploadSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}

@@ -86,8 +86,10 @@ const GuarantorCard = ({
         setWorkStatus(status);
     };
 
+    // Return the promise so InlineDocumentUpload can await it and show an
+    // "uploading…" state for the full duration of the actual upload.
     const handleLocalUpload = (type, file) => {
-        onDocumentUpload(persoon.persoonId, type, file);
+        return onDocumentUpload(persoon.persoonId, type, file);
     };
 
     return (
