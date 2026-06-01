@@ -549,6 +549,43 @@
   .otd-contract.read .otd-scroll-hint,
   .otd-contract.read + .otd-scroll-hint { display: none; }
 
+  /* Brief attention flash on the contract when the seller clicks Sign before
+     reading it through and gets sent back to scroll. */
+  .otd-contract.flash { animation: otdContractFlash 0.9s ease; }
+  @keyframes otdContractFlash {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 125, 40, 0); }
+    30%      { box-shadow: 0 0 0 4px rgba(255, 125, 40, 0.38); }
+  }
+
+  /* "Scroll to read first" modal — shown when Sign is clicked before the
+     contract has been scrolled through. Palette matches the site (teal/orange). */
+  .otd-modal-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    background: rgba(15, 23, 42, 0.55);
+    animation: otdModalFade .15s ease;
+  }
+  .otd-modal-overlay[hidden] { display: none; }
+  .otd-modal {
+    background: #fff; border-radius: 14px;
+    max-width: 380px; width: 100%;
+    padding: 26px 24px 22px; text-align: center;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.3);
+    animation: otdModalPop .18s ease;
+  }
+  .otd-modal-icon {
+    width: 52px; height: 52px; margin: 0 auto 14px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    background: var(--soft-orange, #FFF1E6); color: var(--orange-dark);
+  }
+  .otd-modal h3 { margin: 0 0 8px; font-size: 17px; color: var(--ink); letter-spacing: -0.01em; }
+  .otd-modal p { margin: 0 0 18px; font-size: 14px; color: var(--grey); line-height: 1.5; }
+  .otd-modal .btn { width: 100%; }
+  @keyframes otdModalFade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes otdModalPop { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
+
   .otd-accept-row {
     display: flex; gap: 10px; align-items: flex-start;
     padding: 12px; background: var(--soft);
@@ -920,7 +957,20 @@
     </div>
     <div id="otdErr" style="display:none; margin-top:10px; padding:10px 12px; background:#FEE4E2; border:1px solid #FDA29B; border-radius:8px; color:#B42318; font-size:13px;"></div>
 
-    <button class="btn" type="button" id="otdSubmit" style="margin-top:14px;" disabled data-i18n="otd_submit"></button>
+    <button class="btn" type="button" id="otdSubmit" style="margin-top:14px;" data-i18n="otd_submit"></button>
+  </div>
+
+  <!-- Shown when the seller clicks Sign before scrolling through the full
+       engagement. Sends them back to read it rather than silently blocking. -->
+  <div class="otd-modal-overlay" id="otdReadModal" hidden>
+    <div class="otd-modal" role="dialog" aria-modal="true" aria-labelledby="otdReadModalTitle" aria-describedby="otdReadModalBody">
+      <div class="otd-modal-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+      </div>
+      <h3 id="otdReadModalTitle" data-i18n="otd_read_modal_title"></h3>
+      <p id="otdReadModalBody" data-i18n="otd_read_modal_body"></p>
+      <button type="button" class="btn" id="otdReadModalOk" data-i18n="otd_read_modal_ok"></button>
+    </div>
   </div>
 
   <div class="card" id="otdSignedNotice" style="display:none; border-color:#C7EBE4; background:#E8F5F3;">
@@ -1297,6 +1347,9 @@ const I18N = {
     otd_pdf_open: "Open in nieuw tabblad ↗",
     otd_h_sub: "Verkoopbemiddeling",
     otd_scroll_hint: "Scroll om de hele opdracht te lezen voordat je ondertekent.",
+    otd_read_modal_title: "Lees eerst de opdracht",
+    otd_read_modal_body: "Scroll door de volledige opdracht tot het einde voordat je ondertekent.",
+    otd_read_modal_ok: "Opdracht lezen",
 
     step2_title: "2. Documenten",
     step2_sub: "De openbare stukken halen wij voor je op (zie hieronder). Jij uploadt alleen de papieren die je VvE beheerder of jij persoonlijk hebt. Heb je niet alles? Geen probleem, upload wat je hebt.",
@@ -1544,6 +1597,9 @@ const I18N = {
     otd_pdf_open: "Open in new tab ↗",
     otd_h_sub: "Sale brokerage",
     otd_scroll_hint: "Scroll to read the full engagement before you sign.",
+    otd_read_modal_title: "Please read the engagement first",
+    otd_read_modal_body: "Scroll through the full engagement to the end before you sign.",
+    otd_read_modal_ok: "Read the engagement",
 
     step2_title: "2. Documents",
     step2_sub: "We fetch the public documents for you (see below). You only upload what your VvE manager or you personally hold. Don't have everything? No problem, upload what you have.",
@@ -3850,9 +3906,10 @@ function buildOtdContractHtml() {
     if (contractBody.scrollTop + contractBody.clientHeight >= contractBody.scrollHeight - 28) markRead();
   }
   function setScrollGate() {
-    // The scroll-through gate controls the Sign button; submit() still
-    // validates the acceptance box + typed name on click.
-    if (submitBtn && !signed) submitBtn.disabled = !scrolledRead;
+    // The Sign button stays clickable so it reads as the primary action;
+    // submit() shows the "scroll to read" modal if the seller clicks before
+    // reaching the end, then validates the acceptance box + typed name.
+    // (Kept as a hook in case we want a visual "ready" affordance later.)
   }
   function markRead() {
     if (scrolledRead) return;
@@ -3959,9 +4016,50 @@ function buildOtdContractHtml() {
     return "";
   }
 
+  // ---- "Scroll to read first" modal ----
+  // The Sign button is always clickable (so it reads as the primary action).
+  // If the seller hasn't scrolled the contract to the end, clicking Sign opens
+  // this modal and sends them back to the contract instead of submitting.
+  const readModal = document.getElementById("otdReadModal");
+  const readModalOk = document.getElementById("otdReadModalOk");
+
+  function flashContract() {
+    if (!otdContract) return;
+    otdContract.classList.remove("flash");
+    void otdContract.offsetWidth; // force reflow so the keyframes restart
+    otdContract.classList.add("flash");
+    setTimeout(() => otdContract.classList.remove("flash"), 1000);
+  }
+  function sendToContract() {
+    otdContract?.scrollIntoView({ behavior: "smooth", block: "center" });
+    contractBody?.focus({ preventScroll: true });
+    flashContract();
+  }
+  function onReadModalKey(e) {
+    if (e.key === "Escape" || e.key === "Enter") { e.preventDefault(); closeReadModal(); }
+  }
+  function closeReadModal() {
+    if (!readModal || readModal.hidden) return;
+    readModal.hidden = true;
+    document.removeEventListener("keydown", onReadModalKey);
+    sendToContract();
+  }
+  function promptScrollFirst() {
+    if (scrollHint) scrollHint.style.display = ""; // re-show the hint
+    if (!readModal) { sendToContract(); return; } // fallback if markup missing
+    readModal.hidden = false;
+    document.addEventListener("keydown", onReadModalKey);
+    readModalOk?.focus();
+  }
+  readModalOk?.addEventListener("click", closeReadModal);
+  readModal?.addEventListener("click", (e) => { if (e.target === readModal) closeReadModal(); });
+
   // ---- Submit ----
   async function submit() {
     clearErr();
+    // Gate 1: the contract must be scrolled through. Show the prompt instead
+    // of silently doing nothing, then guide the seller back to the text.
+    if (!scrolledRead) { promptScrollFirst(); return; }
     if (!acceptEl?.checked) { showErr("otd_err_accept"); return; }
     const fullName = (nameEl?.value || "").trim();
     if (fullName.length < 3) { showErr("otd_err_name"); return; }

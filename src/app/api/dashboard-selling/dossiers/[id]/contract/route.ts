@@ -22,9 +22,17 @@ const PAGE_W = 595.28;
 const PAGE_H = 841.89;
 const MARGIN = 54;
 const CONTENT_W = PAGE_W - MARGIN * 2;
-const INK = rgb(0.1, 0.12, 0.16);
-const GREY = rgb(0.42, 0.46, 0.52);
-const RULE = rgb(0.85, 0.87, 0.9);
+// Vertical space reserved on every page for the branded header / footer bands.
+const HEADER_H = 40;
+const FOOTER_H = 22;
+// Palette mirrors the Apartmenthub website (src/index.css /
+// dashboard-selling.module.css) so the contract looks on-brand.
+const INK = rgb(0.102, 0.125, 0.173); // #1A202C  text-dark
+const GREY = rgb(0.29, 0.333, 0.408); // #4A5568  text-gray
+const TEAL = rgb(0, 0.608, 0.541); // #009B8A  primary-green
+const TEAL_DARK = rgb(0, 0.478, 0.427); // #007A6D  primary-green-dark
+const ORANGE = rgb(1, 0.49, 0.157); // #FF7D28  primary-orange
+const SOFT_TEAL = rgb(0.91, 0.961, 0.953); // #E8F5F3  soft teal fill
 
 function safeSegment(s: string | null | undefined): string {
   return (s ?? "").replace(/[^A-Za-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
@@ -110,14 +118,15 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const fontB = await pdf.embedFont(StandardFonts.HelveticaBold);
 
   let page: PDFPage = pdf.addPage([PAGE_W, PAGE_H]);
-  let y = PAGE_H - MARGIN;
+  // Content flows below the header band and stops above the footer band.
+  let y = PAGE_H - MARGIN - HEADER_H;
 
   function newPage() {
     page = pdf.addPage([PAGE_W, PAGE_H]);
-    y = PAGE_H - MARGIN;
+    y = PAGE_H - MARGIN - HEADER_H;
   }
   function ensure(space: number) {
-    if (y - space < MARGIN + 24) newPage();
+    if (y - space < MARGIN + FOOTER_H) newPage();
   }
 
   // Wrap a list of styled runs into lines that fit `maxW`, then draw them.
@@ -173,7 +182,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   }
 
   // Title header
-  page.drawText("Opdracht tot Dienstverlening", { x: MARGIN, y, size: 19, font: fontB, color: INK });
+  page.drawText("Opdracht tot Dienstverlening", { x: MARGIN, y, size: 19, font: fontB, color: TEAL });
   y -= 24;
   page.drawText(sanitize("Verkoopbemiddeling - Apartmenthub"), {
     x: MARGIN,
@@ -183,11 +192,18 @@ export async function GET(_req: NextRequest, { params }: Params) {
     color: GREY,
   });
   y -= 18;
+  // Brand divider: a short orange accent segment leading into the full teal rule.
   page.drawLine({
     start: { x: MARGIN, y },
+    end: { x: MARGIN + 56, y },
+    thickness: 2.5,
+    color: ORANGE,
+  });
+  page.drawLine({
+    start: { x: MARGIN + 56, y },
     end: { x: PAGE_W - MARGIN, y },
     thickness: 1,
-    color: RULE,
+    color: TEAL,
   });
   y -= 22;
 
@@ -197,7 +213,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       case "h": {
         y -= 8; // gap before heading
         ensure(20);
-        drawRuns([{ text: b.text, bold: true }], { size: 12, leading: 17 });
+        drawRuns([{ text: b.text, bold: true }], { size: 12, leading: 17, color: TEAL_DARK });
         y -= 2;
         break;
       }
@@ -240,10 +256,10 @@ export async function GET(_req: NextRequest, { params }: Params) {
     start: { x: MARGIN, y },
     end: { x: PAGE_W - MARGIN, y },
     thickness: 1,
-    color: RULE,
+    color: TEAL,
   });
   y -= 22;
-  drawRuns([{ text: "Ondertekening", bold: true }], { size: 13, leading: 18 });
+  drawRuns([{ text: "Ondertekening", bold: true }], { size: 13, leading: 18, color: TEAL_DARK });
   y -= 8;
 
   const colW = (CONTENT_W - 24) / 2;
@@ -263,18 +279,18 @@ export async function GET(_req: NextRequest, { params }: Params) {
     metaLines: string[]
   ) {
     let cy = boxTop;
-    page.drawText(sanitize(role), { x, y: cy, size: 8.5, font: fontB, color: GREY });
+    page.drawText(sanitize(role), { x, y: cy, size: 8.5, font: fontB, color: TEAL_DARK });
     cy -= labelGap;
-    // signature box
+    // signature box — soft-teal fill with a teal border, matching the site.
     const boxY = cy - boxH;
     page.drawRectangle({
       x,
       y: boxY,
       width: colW,
       height: boxH,
-      borderColor: RULE,
+      borderColor: TEAL,
       borderWidth: 1,
-      color: rgb(0.98, 0.99, 1),
+      color: SOFT_TEAL,
     });
     if (image) {
       try {
@@ -338,12 +354,48 @@ export async function GET(_req: NextRequest, { params }: Params) {
     sellerMeta
   );
 
-  // Page footers (drawn after all pages exist so totals are known).
+  // Branded header + footer bands (drawn after all pages exist so the page
+  // total is known). Repeated on every page for an on-brand, on-letterhead feel.
   const pages = pdf.getPages();
   const total = pages.length;
   pages.forEach((pg, i) => {
-    const label = `Apartmenthub - Opdracht tot Dienstverlening    |    Pagina ${i + 1} / ${total}`;
-    pg.drawText(sanitize(label), { x: MARGIN, y: 28, size: 7.5, font, color: GREY });
+    // --- header band -------------------------------------------------------
+    const hTop = PAGE_H - MARGIN; // top of the brand mark
+    // Brand mark: teal square with a small orange accent square inset.
+    pg.drawRectangle({ x: MARGIN, y: hTop - 11, width: 11, height: 11, color: TEAL });
+    pg.drawRectangle({ x: MARGIN + 5.5, y: hTop - 5.5, width: 5.5, height: 5.5, color: ORANGE });
+    pg.drawText("Apartmenthub", { x: MARGIN + 19, y: hTop - 9.5, size: 12, font: fontB, color: TEAL });
+    // Right-aligned context label.
+    const hTag = sanitize("Verkoopbemiddeling - OTD");
+    const hTagW = font.widthOfTextAtSize(hTag, 9);
+    pg.drawText(hTag, { x: PAGE_W - MARGIN - hTagW, y: hTop - 8.5, size: 9, font, color: GREY });
+    // Rule under the header.
+    pg.drawLine({
+      start: { x: MARGIN, y: hTop - 20 },
+      end: { x: PAGE_W - MARGIN, y: hTop - 20 },
+      thickness: 0.75,
+      color: TEAL,
+    });
+
+    // --- footer band -------------------------------------------------------
+    // Rule above the footer line, with a short orange accent lead-in.
+    pg.drawLine({
+      start: { x: MARGIN, y: MARGIN - 10 },
+      end: { x: MARGIN + 40, y: MARGIN - 10 },
+      thickness: 1.5,
+      color: ORANGE,
+    });
+    pg.drawLine({
+      start: { x: MARGIN + 40, y: MARGIN - 10 },
+      end: { x: PAGE_W - MARGIN, y: MARGIN - 10 },
+      thickness: 0.75,
+      color: TEAL,
+    });
+    const label = sanitize("Apartmenthub - Opdracht tot Dienstverlening");
+    pg.drawText(label, { x: MARGIN, y: 28, size: 7.5, font, color: GREY });
+    const pageLabel = `Pagina ${i + 1} / ${total}`;
+    const plW = font.widthOfTextAtSize(pageLabel, 7.5);
+    pg.drawText(pageLabel, { x: PAGE_W - MARGIN - plW, y: 28, size: 7.5, font, color: GREY });
   });
 
   const pdfBytes = await pdf.save();
