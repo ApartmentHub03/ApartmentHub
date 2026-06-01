@@ -7,7 +7,7 @@ import { setLanguage } from '../features/ui/uiSlice';
 import { LogOut, CheckCircle, Plus, AlertCircle } from 'lucide-react';
 import { translations } from '../data/translations';
 import { useAuth } from '../contexts/AuthContext';
-import { loadAanvraagDataFromSalesforce, deletePersonFromSupabase } from '../services/aanvraagDataService';
+import { loadAanvraagDataFromSalesforce, deletePersonFromSupabase, loadLinkedPersonenFromSupabase } from '../services/aanvraagDataService';
 import { saveAanvraagDraft, loadAanvraagDraft, mergePersonenWithDraft } from '../services/aanvraagDraft';
 import { uploadDocument, deleteDocument } from '../services/documentStorageService';
 import { getRequiredDocuments } from '../utils/documentRequirements';
@@ -94,6 +94,7 @@ const Aanvraag = () => {
     const [selectedTenantForGuarantor, setSelectedTenantForGuarantor] = useState(null);
     const [inviteLink, setInviteLink] = useState(null);
     const [mainTenantApartments, setMainTenantApartments] = useState([]); // apartments available to co-tenant
+    const [mainTenantName, setMainTenantName] = useState(''); // main tenant's name, shown to co-tenant/guarantor
     const [showApartmentPicker, setShowApartmentPicker] = useState(false);
     const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
     const [showShareModal, setShowShareModal] = useState(false);
@@ -243,10 +244,13 @@ const Aanvraag = () => {
                     if (myAcc?.linked_account_id) {
                         const { data: linkedAcc } = await sb
                             .from('accounts')
-                            .select('id, apartment_selected')
+                            .select('id, apartment_selected, tenant_name')
                             .eq('id', myAcc.linked_account_id)
                             .single();
                         mainAccountData = linkedAcc;
+                        // Surface the main tenant's name so the co-tenant/guarantor
+                        // sees who they're applying with/for.
+                        if (linkedAcc?.tenant_name) setMainTenantName(linkedAcc.tenant_name);
                     }
 
                     if (mainAccountData?.apartment_selected?.length > 0) {
@@ -405,6 +409,23 @@ const Aanvraag = () => {
 
                 if (draft?.personen?.length) {
                     personen = mergePersonenWithDraft(personen, draft.personen);
+                }
+
+                // Enrich with invited co-tenants/guarantors who filled the invite
+                // form: their details + documents live in Supabase
+                // (personen/documenten), which the Salesforce-based load never
+                // sees. mergePersonenWithDraft fills the empty fields + merges the
+                // documents into the matching person the main tenant added (and
+                // appends any the main tenant doesn't have locally).
+                if (isMainTenant && dossierId) {
+                    try {
+                        const linked = await loadLinkedPersonenFromSupabase(dossierId);
+                        if (linked.length > 0) {
+                            personen = mergePersonenWithDraft(personen, linked);
+                        }
+                    } catch (e) {
+                        console.warn('[Aanvraag] Could not load invited people from Supabase', e);
+                    }
                 }
                 // Fill any per-apartment bids SF / the account row didn't have.
                 if (draft?.bidAmounts && Object.keys(draft.bidAmounts).length > 0) {
@@ -1586,6 +1607,17 @@ const Aanvraag = () => {
                             <div className={styles.coTenantWarningBanner}>
                                 <AlertCircle size={18} />
                                 <span>
+                                    {mainTenantName && (
+                                        <strong style={{ display: 'block', marginBottom: '0.25rem' }}>
+                                            {userRole === 'guarantor'
+                                                ? (currentLang === 'en'
+                                                    ? `You are the guarantor for ${mainTenantName}.`
+                                                    : `U bent de garantsteller voor ${mainTenantName}.`)
+                                                : (currentLang === 'en'
+                                                    ? `Application together with ${mainTenantName}.`
+                                                    : `Aanvraag samen met ${mainTenantName}.`)}
+                                        </strong>
+                                    )}
                                     {userRole === 'guarantor'
                                         ? (currentLang === 'en'
                                             ? 'You are logged in as a guarantor. You can only edit your own details. The apartment and bid are managed by the main tenant and co-tenant.'

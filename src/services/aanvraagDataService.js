@@ -192,6 +192,99 @@ export const loadAanvraagDataFromSalesforce = async (phoneNumber) => {
     }
 };
 
+const ROLE_BY_PERSON_TYPE = {
+    co_tenant: 'Medehuurder',
+    guarantor: 'Garantsteller',
+};
+
+// Group documenten-table rows (bestandsnaam / bestandspad / status) into the
+// form's documenten shape — single-file slots nest under `file`, multi-file
+// slots (e.g. payslips) carry a `files` array.
+function groupDocumentenRows(rows) {
+    const byType = {};
+    for (const d of rows || []) {
+        if (!byType[d.type]) byType[d.type] = [];
+        byType[d.type].push({
+            id: d.id,
+            type: d.type,
+            name: d.bestandsnaam,
+            fileName: d.bestandsnaam,
+            filePath: d.bestandspad,
+            status: d.status === 'pending' ? 'ontvangen' : (d.status || 'ontvangen'),
+        });
+    }
+    const multiFileTypes = Object.values(documentsByWorkStatus)
+        .flat()
+        .filter(doc => doc.multiFile === true)
+        .map(doc => doc.type);
+
+    return Object.entries(byType).map(([type, files]) => {
+        if (multiFileTypes.includes(type) || files.length > 1) {
+            return { type, files, status: 'ontvangen' };
+        }
+        return { type, file: files[0], status: files[0]?.status || 'ontvangen' };
+    });
+}
+
+/**
+ * Load invited co-tenants / guarantors (and their uploaded documents) for a
+ * dossier straight from Supabase. The invite form writes the invitee's details
+ * to `personen` and their files to `documenten`, but the main tenant's form
+ * rebuilds its personen list from Salesforce — which never sees this data. The
+ * main tenant load merges the result of this in so an invitee's self-entered
+ * details + documents show up alongside the name/phone the main tenant added.
+ *
+ * @param {string} dossierId
+ * @returns {Promise<Array>} person objects in the form's personen shape
+ */
+export const loadLinkedPersonenFromSupabase = async (dossierId) => {
+    if (!supabase || !dossierId) return [];
+    try {
+        const { data: people, error } = await supabase
+            .from('personen')
+            .select('id, voornaam, achternaam, email, telefoon, rol, type, werk_status, bruto_maandinkomen, huidige_adres, postcode, woonplaats, linked_to_persoon_id')
+            .eq('dossier_id', dossierId)
+            .in('type', ['co_tenant', 'guarantor']);
+        if (error || !people?.length) return [];
+
+        const ids = people.map(p => p.id);
+        const { data: docs } = await supabase
+            .from('documenten')
+            .select('id, persoon_id, type, bestandsnaam, bestandspad, status')
+            .in('persoon_id', ids);
+
+        const docsByPerson = {};
+        for (const d of docs || []) {
+            (docsByPerson[d.persoon_id] = docsByPerson[d.persoon_id] || []).push(d);
+        }
+
+        return people.map(p => {
+            const naam = `${p.voornaam || ''} ${p.achternaam || ''}`.trim();
+            const inkomenRaw = p.bruto_maandinkomen;
+            return {
+                // Stable id derived from the personen row, used only if this
+                // person is appended (i.e. the main tenant didn't already have
+                // them locally). Matched people keep their existing persoonId.
+                persoonId: `sb_${p.id}`,
+                naam,
+                email: p.email || '',
+                telefoon: p.telefoon || '',
+                rol: ROLE_BY_PERSON_TYPE[p.type] || p.rol || 'Garantsteller',
+                werkstatus: p.werk_status || '',
+                inkomen: inkomenRaw == null || inkomenRaw === '' ? '' : String(inkomenRaw),
+                adres: p.huidige_adres || '',
+                postcode: p.postcode || '',
+                woonplaats: p.woonplaats || '',
+                documenten: groupDocumentenRows(docsByPerson[p.id]),
+                docsCompleet: (docsByPerson[p.id]?.length || 0) > 0,
+            };
+        });
+    } catch (e) {
+        console.warn('[aanvraagDataService] loadLinkedPersonenFromSupabase failed:', e?.message || e);
+        return [];
+    }
+};
+
 /**
  * Collect every storage path attached to a person across both single-file
  * and multi-file documenten entries. Used by the remove flows below to

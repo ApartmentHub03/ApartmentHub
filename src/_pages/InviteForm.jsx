@@ -114,6 +114,7 @@ const InviteForm = () => {
             // uploads land in the same place as when the main tenant uploads on
             // their behalf. Fetch it once here.
             let mainTenantPhone = null;
+            let mainTenantName = '';
             if (supabase && dossierId) {
                 const { data: dossierRow } = await supabase
                     .from('dossiers')
@@ -121,9 +122,22 @@ const InviteForm = () => {
                     .eq('id', dossierId)
                     .single();
                 mainTenantPhone = dossierRow?.phone_number || null;
+
+                // Look up the main tenant's name (accounts.tenant_name, keyed by
+                // their phone) so the invitee sees who they're applying with/for.
+                if (mainTenantPhone) {
+                    const norm = mainTenantPhone.replace(/[\s\-()]/g, '');
+                    const { data: mainAcc } = await supabase
+                        .from('accounts')
+                        .select('tenant_name')
+                        .or(`whatsapp_number.eq.${norm},whatsapp_number.eq.${mainTenantPhone}`)
+                        .limit(1)
+                        .maybeSingle();
+                    mainTenantName = mainAcc?.tenant_name || '';
+                }
             }
 
-            setInviteContext({ dossierId, role, persoonId: actualPersoonId, mainTenantPhone });
+            setInviteContext({ dossierId, role, persoonId: actualPersoonId, mainTenantPhone, mainTenantName });
 
             // Load existing person data if we have a persoonId
             if (actualPersoonId && supabase) {
@@ -763,6 +777,17 @@ const InviteForm = () => {
                             ? 'Fill in your details and upload the required documents.'
                             : 'Vul je gegevens in en upload de vereiste documenten.'}
                     </p>
+                    {inviteContext?.mainTenantName && (
+                        <p style={{ fontSize: '0.813rem', color: '#374151', margin: '0.5rem 0 0', fontWeight: 600 }}>
+                            {inviteContext.role === 'Garantsteller'
+                                ? (currentLang === 'en'
+                                    ? `You are the guarantor for ${inviteContext.mainTenantName}.`
+                                    : `Je bent de garantsteller voor ${inviteContext.mainTenantName}.`)
+                                : (currentLang === 'en'
+                                    ? `Application together with ${inviteContext.mainTenantName}.`
+                                    : `Aanvraag samen met ${inviteContext.mainTenantName}.`)}
+                        </p>
+                    )}
                     {saving && (
                         <p style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.5rem' }}>
                             {currentLang === 'en' ? 'Saving...' : 'Opslaan...'}
