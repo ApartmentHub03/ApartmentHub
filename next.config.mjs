@@ -51,6 +51,16 @@ const nextConfig = {
             },
         ];
     },
+    async rewrites() {
+        return [
+            { source: '/nl/meta-leadform', destination: '/meta-ads/meta-leadform.html' },
+            { source: '/en/meta-leadform', destination: '/meta-ads/meta-leadform.html' },
+            { source: '/meta-leadform', destination: '/meta-ads/meta-leadform.html' },
+            { source: '/nl/thank-you', destination: '/meta-ads/thank-you.html' },
+            { source: '/en/thank-you', destination: '/meta-ads/thank-you.html' },
+            { source: '/thank-you', destination: '/meta-ads/thank-you.html' },
+        ];
+    },
     // Headers for robots.txt, sitemap.xml etc.
     async headers() {
         return [
