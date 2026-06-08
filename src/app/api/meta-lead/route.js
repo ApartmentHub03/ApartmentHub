@@ -9,6 +9,13 @@ function normalizePhone(phone) {
     return String(phone).replace(/\D/g, '');
 }
 
+function formatPhoneE164(phone) {
+    if (!phone) return '';
+    const digits = String(phone).replace(/\D/g, '');
+    if (!digits) return '';
+    return '+' + digits;
+}
+
 function sha256(str) {
     const encoder = new TextEncoder();
     const data = encoder.encode(str.toLowerCase().trim());
@@ -118,6 +125,7 @@ export async function POST(request) {
     }
 
     const normalizedPhone = normalizePhone(phone);
+    const e164Phone = formatPhoneE164(phone);
     if (normalizedPhone.length < 10) {
         return NextResponse.json({ success: false, message: 'Invalid phone number' }, { status: 400 });
     }
@@ -190,8 +198,8 @@ export async function POST(request) {
         try {
             let customerId = null;
 
-            // Step 1: Try to find existing contact by phone
-            customerId = await findZokoCustomerId(zokoApiKey, normalizedPhone);
+            // Step 1: Try to find existing contact by phone (E.164 format for Zoko)
+            customerId = await findZokoCustomerId(zokoApiKey, e164Phone);
 
             // For existing contacts: update tags and properties first
             if (customerId) {
@@ -217,17 +225,18 @@ export async function POST(request) {
             if (templateId) {
                 const msgResult = await sendZokoTemplateMessage(
                     zokoApiKey,
-                    normalizedPhone,
+                    e164Phone,
                     templateId,
                     templateType,
                     language === 'en' ? 'en' : 'nl',
-                    [fullName, sourceUrl || ''],
+                    [fullName || ''],
                 );
                 results.zoko = msgResult;
 
-                // For new contacts: message creates them, now add tags
+                // For new contacts: message creates them, wait briefly then add tags
                 if (msgResult.success && !customerId) {
-                    const newCustomerId = msgResult.data?.customerId || await findZokoCustomerId(zokoApiKey, normalizedPhone);
+                    await new Promise(r => setTimeout(r, 2000));
+                    const newCustomerId = await findZokoCustomerId(zokoApiKey, e164Phone);
                     if (newCustomerId) {
                         if (tags && tags.length > 0) {
                             await addZokoTags(zokoApiKey, newCustomerId, tags);
@@ -261,6 +270,11 @@ export async function POST(request) {
             const userData = {};
             userData.ph = await sha256(normalizedPhone);
             if (email) userData.em = await sha256(email);
+            if (fullName) {
+                const parts = fullName.trim().split(/\s+/);
+                if (parts[0]) userData.fn = await sha256(parts[0]);
+                if (parts.length > 1) userData.ln = await sha256(parts.slice(1).join(' '));
+            }
             if (tracking?.fbp) userData.fbp = tracking.fbp;
             if (tracking?.fbc) userData.fbc = tracking.fbc;
 
