@@ -220,6 +220,10 @@ export const saveDocumentMetadata = async (persoonId, docType, fileName, filePat
                 type: docType,
                 bestandsnaam: fileName,
                 bestandspad: filePath,
+                // The column defaults to 'ontbreekt'; mark it received so the
+                // document shows as uploaded when the form reloads from the
+                // documenten table.
+                status: 'ontvangen',
                 uploaded_at: new Date().toISOString()
             })
             .select('id')

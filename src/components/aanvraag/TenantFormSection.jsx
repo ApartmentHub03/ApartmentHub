@@ -119,12 +119,14 @@ const TenantFormSection = ({
         setWorkStatus(status);
     };
 
+    // Return the promise so the upload widgets can await it and show an
+    // "uploading…" state for the full duration of the actual upload.
     const handleLocalUpload = (type, file) => {
-        onDocumentUpload(persoon.persoonId, type, file);
+        return onDocumentUpload(persoon.persoonId, type, file);
     };
 
     const handleMultiFileUpload = (type, files) => {
-        onDocumentUpload(persoon.persoonId, type, files);
+        return onDocumentUpload(persoon.persoonId, type, files);
     };
 
     const handleMultiFileRemove = (type, indexToRemove) => {
