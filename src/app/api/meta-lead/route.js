@@ -15,7 +15,7 @@ function formatPhoneE164(phone) {
     if (!digits) return '';
     return '+' + digits;
 }
-
+ 
 function sha256(str) {
     const encoder = new TextEncoder();
     const data = encoder.encode(str.toLowerCase().trim());
