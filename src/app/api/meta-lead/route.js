@@ -198,8 +198,8 @@ export async function POST(request) {
         try {
             let customerId = null;
 
-            // Step 1: Try to find existing contact by phone (E.164 format for Zoko)
-            customerId = await findZokoCustomerId(zokoApiKey, e164Phone);
+            // Step 1: Try to find existing contact by phone (digits only for Zoko)
+            customerId = await findZokoCustomerId(zokoApiKey, normalizedPhone);
 
             // For existing contacts: update tags and properties first
             if (customerId) {
@@ -217,18 +217,16 @@ export async function POST(request) {
             }
 
             // Step 2: Send template message (also auto-creates contact for new numbers)
-            const templateId = language === 'en'
-                ? process.env.ZOKO_META_WELCOME_TEMPLATE_EN
-                : process.env.ZOKO_META_WELCOME_TEMPLATE_NL;
+            const templateId = process.env.ZOKO_META_WELCOME_TEMPLATE_EN || process.env.ZOKO_META_WELCOME_TEMPLATE_NL;
             const templateType = process.env.ZOKO_META_WELCOME_TEMPLATE_TYPE || 'buttonTemplate';
 
             if (templateId) {
                 const msgResult = await sendZokoTemplateMessage(
                     zokoApiKey,
-                    e164Phone,
+                    normalizedPhone,
                     templateId,
                     templateType,
-                    language === 'en' ? 'en' : 'nl',
+                    'en',
                     [fullName || ''],
                 );
                 results.zoko = msgResult;
@@ -236,7 +234,7 @@ export async function POST(request) {
                 // For new contacts: message creates them, wait briefly then add tags
                 if (msgResult.success && !customerId) {
                     await new Promise(r => setTimeout(r, 2000));
-                    const newCustomerId = await findZokoCustomerId(zokoApiKey, e164Phone);
+                    const newCustomerId = await findZokoCustomerId(zokoApiKey, normalizedPhone);
                     if (newCustomerId) {
                         if (tags && tags.length > 0) {
                             await addZokoTags(zokoApiKey, newCustomerId, tags);
