@@ -1,8 +1,8 @@
 import AppartementenSelectie from '@/pages/AppartementenSelectie';
 
 export const metadata = {
-    title: 'Beschikbare Appartementen in Amsterdam | ApartmentHub',
-    description: 'Bekijk alle beschikbare huurappartementen in Amsterdam. Filter op prijs, locatie en meer.',
+    title: 'Huurappartementen in Amsterdam | ApartmentHub',
+    description: 'Ontdek huurappartementen in Amsterdam: geverifieerde aanbiedingen, transparante prijzen en direct online solliciteren. Start vandaag bij ApartmentHub.',
     alternates: {
         canonical: 'https://apartmenthub.nl/nl/appartementen',
         languages: {

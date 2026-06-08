@@ -1,8 +1,9 @@
 import FAQ from '@/pages/FAQ';
+import FAQSchema from '@/components/seo/FAQSchema';
 
 export const metadata = {
-    title: 'Frequently Asked Questions | ApartmentHub',
-    description: 'Find answers to common questions about renting in Amsterdam with ApartmentHub.',
+    title: 'Amsterdam Apartment Rental FAQ: Documents, Costs & Process | ApartmentHub',
+    description: 'Answers to the most-asked questions about renting an apartment in Amsterdam: required documents, deposit and income rules, viewing process, expat support, and what ApartmentHub does for you.',
     alternates: {
         canonical: 'https://apartmenthub.nl/en/faq',
         languages: {
@@ -13,5 +14,10 @@ export const metadata = {
 };
 
 export default function Page() {
-    return <FAQ />;
+    return (
+        <>
+            <FAQSchema lang="en" />
+            <FAQ />
+        </>
+    );
 }

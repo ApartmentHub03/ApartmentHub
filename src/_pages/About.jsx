@@ -47,7 +47,7 @@ const About = () => {
                             <div className={styles.imageWrapper}>
                                 <img
                                     src="/images/about-mission.jpg"
-                                    alt="Amsterdam cityscape overview"
+                                    alt="Amsterdam canal cityscape - ApartmentHub rental mission in the Netherlands"
                                     className={styles.image}
                                 />
                             </div>
@@ -90,7 +90,7 @@ const About = () => {
                             <div className={styles.imageWrapper}>
                                 <img
                                     src="/images/about2.jpg"
-                                    alt="ApartmentHub team at work"
+                                    alt="ApartmentHub team helping tenants find apartments for rent in Amsterdam"
                                     className={styles.image}
                                 />
                             </div>
@@ -105,6 +105,60 @@ const About = () => {
                                     {t.teamText2}
                                 </p>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section className={styles.statsSection}>
+                <div className={styles.heroContainer}>
+                    <div className={styles.heroContent}>
+                        <h2 className={styles.statsTitle}>{t.servicesTitle}</h2>
+                        <p className={styles.statsSubtitle}>{t.servicesSubtitle}</p>
+                    </div>
+                    <div className={styles.valuesGrid}>
+                        <div className={styles.valueCard}>
+                            <h3 className={styles.valueTitle}>{t.service1Title}</h3>
+                            <p className={styles.statLabel}>{t.service1Desc}</p>
+                        </div>
+                        <div className={styles.valueCard}>
+                            <h3 className={styles.valueTitle}>{t.service2Title}</h3>
+                            <p className={styles.statLabel}>{t.service2Desc}</p>
+                        </div>
+                        <div className={styles.valueCard}>
+                            <h3 className={styles.valueTitle}>{t.service3Title}</h3>
+                            <p className={styles.statLabel}>{t.service3Desc}</p>
+                        </div>
+                        <div className={styles.valueCard}>
+                            <h3 className={styles.valueTitle}>{t.service4Title}</h3>
+                            <p className={styles.statLabel}>{t.service4Desc}</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section className={styles.teamSection}>
+                <div className={styles.heroContainer}>
+                    <div className={styles.heroContent}>
+                        <h2 className={styles.statsTitle}>{t.apartmentTypesTitle}</h2>
+                        <p className={styles.statsSubtitle}>{t.apartmentTypesSubtitle}</p>
+                    </div>
+                    <div className={styles.valuesGrid}>
+                        <div className={styles.valueCard}>
+                            <h3 className={styles.valueTitle}>{t.type1Title}</h3>
+                            <p className={styles.statLabel}>{t.type1Desc}</p>
+                        </div>
+                        <div className={styles.valueCard}>
+                            <h3 className={styles.valueTitle}>{t.type2Title}</h3>
+                            <p className={styles.statLabel}>{t.type2Desc}</p>
+                        </div>
+                        <div className={styles.valueCard}>
+                            <h3 className={styles.valueTitle}>{t.type3Title}</h3>
+                            <p className={styles.statLabel}>{t.type3Desc}</p>
+                        </div>
+                        <div className={styles.valueCard}>
+                            <h3 className={styles.valueTitle}>{t.type4Title}</h3>
+                            <p className={styles.statLabel}>{t.type4Desc}</p>
                         </div>
                     </div>
                 </div>

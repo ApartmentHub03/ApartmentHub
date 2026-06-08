@@ -12,6 +12,7 @@ import RentalGuideDownload from '../components/rent-in/RentalGuideDownload';
 import StatsSection from '../components/rent-in/StatsSection';
 import HowItWorksSection from '../components/rent-in/HowItWorksSection';
 import WhatsAppMockupSection from '../components/rent-in/WhatsAppMockupSection';
+import RentApartmentAmsterdamFAQ from '../components/rent-in/RentApartmentAmsterdamFAQ';
 
 const WhatsAppIcon = ({ className }) => (
     <svg className={className} fill="currentColor" viewBox="0 0 24 24">
@@ -76,6 +77,9 @@ const RentIn = () => {
 
             {/* How It Works Section */}
             <HowItWorksSection translations={t} />
+
+            {/* Keyword-targeted FAQ for Amsterdam apartments for rent */}
+            <RentApartmentAmsterdamFAQ />
 
             {/* WhatsApp Mockup Section */}
             <WhatsAppMockupSection

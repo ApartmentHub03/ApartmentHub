@@ -10,6 +10,7 @@ const Footer = () => {
     const currentLang = useSelector((state) => state.ui.language);
     const t = translations.footer[currentLang] || translations.footer.en;
     const langPrefix = currentLang === 'nl' ? '/nl' : '/en';
+    const apartmentsPath = currentLang === 'nl' ? '/nl/appartementen' : '/en/apartments';
 
     return (
         <footer className={styles.footer}>
@@ -35,7 +36,10 @@ const Footer = () => {
                         <ul className={styles.linkList}>
                             <li><Link href={`${langPrefix}/rent-out`} className={styles.link}>{t.linkRentOut}</Link></li>
                             <li><Link href={`${langPrefix}/rent-in`} className={styles.link}>{t.linkRentIn}</Link></li>
+                            <li><Link href={apartmentsPath} className={styles.link}>{t.linkApartments}</Link></li>
+                            <li><Link href={`${langPrefix}/neighborhoods`} className={styles.link}>{t.linkNeighborhoods}</Link></li>
                             <li><Link href={`${langPrefix}/about-us`} className={styles.link}>{t.linkAbout}</Link></li>
+                            <li><Link href={`${langPrefix}/contact`} className={styles.link}>{t.linkContact}</Link></li>
                             <li><Link href={`${langPrefix}/faq`} className={styles.link}>{t.linkFaq}</Link></li>
                             <li><Link href={`${langPrefix}/terms-and-conditions`} className={styles.link}>{t.linkTerms}</Link></li>
                             <li><Link href={`${langPrefix}/privacy-policy`} className={styles.link}>{t.linkPrivacy}</Link></li>

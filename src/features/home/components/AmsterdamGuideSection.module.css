@@ -1,0 +1,222 @@
+.section {
+    padding: 4rem 0;
+    margin: 0 1rem;
+    background-color: #fafafa;
+    border-radius: 2rem;
+}
+
+@media (min-width: 640px) {
+    .section {
+        margin: 0 1.5rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .section {
+        margin: 0 2rem;
+    }
+}
+
+.container {
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.header {
+    max-width: 52rem;
+    margin: 0 auto 3rem auto;
+    text-align: center;
+}
+
+.eyebrow {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-primary-green, #0f5132);
+    margin-bottom: 0.75rem;
+}
+
+.title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+}
+
+@media (min-width: 768px) {
+    .title {
+        font-size: 2.25rem;
+    }
+}
+
+.intro {
+    font-size: 1rem;
+    color: #4b5563;
+    line-height: 1.6;
+}
+
+.grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: 1fr;
+    margin-bottom: 3rem;
+}
+
+@media (min-width: 768px) {
+    .grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.card {
+    background-color: white;
+    border-radius: 1.25rem;
+    padding: 1.5rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.cardTitle {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.cardTag {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--color-primary-green, #0f5132);
+}
+
+.cardText {
+    font-size: 0.9375rem;
+    color: #4b5563;
+    line-height: 1.55;
+}
+
+.cardPrice {
+    margin-top: auto;
+    font-size: 0.875rem;
+    color: #111827;
+    font-weight: 600;
+    padding-top: 0.5rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.tipsWrapper {
+    background-color: white;
+    border-radius: 1.5rem;
+    padding: 2rem 1.5rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+}
+
+@media (min-width: 768px) {
+    .tipsWrapper {
+        padding: 2.5rem;
+    }
+}
+
+.tipsTitle {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 0.5rem;
+}
+
+@media (min-width: 768px) {
+    .tipsTitle {
+        font-size: 1.75rem;
+    }
+}
+
+.tipsSubtitle {
+    font-size: 0.9375rem;
+    color: #6b7280;
+    margin-bottom: 1.5rem;
+}
+
+.tipsList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+    .tipsList {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.tipItem {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+}
+
+.tipNumber {
+    flex-shrink: 0;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    background-color: var(--color-primary-green, #0f5132);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8125rem;
+    font-weight: 700;
+}
+
+.tipBody {
+    flex: 1;
+}
+
+.tipHeading {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 0.25rem;
+}
+
+.tipText {
+    font-size: 0.9375rem;
+    color: #4b5563;
+    line-height: 1.55;
+    margin: 0;
+}
+
+.cta {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 1.75rem;
+    background-color: var(--color-primary-green, #0f5132);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+.cta:hover {
+    background-color: var(--color-primary-orange, #f97316);
+    transform: scale(1.03);
+}

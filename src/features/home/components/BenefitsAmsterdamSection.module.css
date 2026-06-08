@@ -1,0 +1,139 @@
+.section {
+    padding: 4rem 1rem;
+    background-color: #ffffff;
+}
+
+@media (min-width: 640px) {
+    .section {
+        padding: 4rem 1.5rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .section {
+        padding: 5rem 2rem;
+    }
+}
+
+.container {
+    max-width: 72rem;
+    margin: 0 auto;
+}
+
+.header {
+    max-width: 52rem;
+    margin: 0 auto 2.5rem auto;
+    text-align: center;
+}
+
+.eyebrow {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-primary-green, #0f5132);
+    margin-bottom: 0.75rem;
+}
+
+.title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+}
+
+@media (min-width: 768px) {
+    .title {
+        font-size: 2.25rem;
+    }
+}
+
+.intro {
+    font-size: 1rem;
+    color: #4b5563;
+    line-height: 1.65;
+    margin: 0;
+}
+
+.grid {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: 1fr;
+    margin-bottom: 2.5rem;
+}
+
+@media (min-width: 640px) {
+    .grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.card {
+    background-color: #fafafa;
+    border: 1px solid #f1f1f1;
+    border-radius: 1.25rem;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.cardIcon {
+    width: 2rem;
+    height: 2rem;
+    color: var(--color-primary-green, #0f5132);
+    margin-bottom: 0.5rem;
+}
+
+.cardTitle {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+}
+
+.cardText {
+    font-size: 0.9375rem;
+    color: #4b5563;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.outro {
+    max-width: 52rem;
+    margin: 0 auto 1.5rem auto;
+    font-size: 1rem;
+    color: #4b5563;
+    line-height: 1.7;
+    text-align: center;
+}
+
+.ctaWrapper {
+    text-align: center;
+}
+
+.cta {
+    display: inline-flex;
+    align-items: center;
+    background-color: var(--color-primary-green, #0f5132);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+.cta:hover {
+    background-color: var(--color-primary-orange, #f97316);
+    transform: scale(1.03);
+}

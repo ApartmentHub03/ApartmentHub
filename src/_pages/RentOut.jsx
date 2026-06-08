@@ -126,7 +126,7 @@ const RentOut = () => {
                             <div className={styles.imageWrapper}>
                                 <img
                                     src={HERO_IMAGE}
-                                    alt="Verhuren met ApartmentHub"
+                                    alt="Rent out your Amsterdam apartment with ApartmentHub - rental valuation and property management"
                                     className={styles.sectionImage}
                                     loading="lazy"
                                 />
@@ -193,7 +193,7 @@ const RentOut = () => {
                         </div>
                         <div className={styles.stepImageCol}>
                             <div className={styles.stepImageWrapper}>
-                                <img src={DETECTIVE_IMAGE} alt="Property Analysis" className={styles.stepImage} />
+                                <img src={DETECTIVE_IMAGE} alt="Amsterdam rental property valuation and market analysis by ApartmentHub" className={styles.stepImage} />
                                 <div className={styles.floatBadgeTopRight}>
                                     <div className={styles.floatBadgeText}>+15%</div>
                                     <div className={styles.floatBadgeSub}>more value</div>
@@ -206,7 +206,7 @@ const RentOut = () => {
                     <div className={styles.stepRowReverse}>
                         <div className={styles.stepImageCol}>
                             <div className={styles.stepImageWrapper}>
-                                <img src={MARKETING_IMAGE} alt="Marketing Magic" className={styles.stepImage} />
+                                <img src={MARKETING_IMAGE} alt="Apartment marketing and tenant outreach for Amsterdam rental properties" className={styles.stepImage} />
                                 <div className={styles.floatBadgeBottomLeft}>
                                     <div className={styles.floatBadgeText}>72h</div>
                                     <div className={styles.floatBadgeSub}>to 1st viewing</div>
@@ -263,7 +263,7 @@ const RentOut = () => {
                         </div>
                         <div className={styles.stepImageCol}>
                             <div className={styles.stepImageWrapper}>
-                                <img src={MATCH_IMAGE} alt="Perfect Match" className={styles.stepImage} />
+                                <img src={MATCH_IMAGE} alt="Tenant matching and screening for Amsterdam apartment rentals" className={styles.stepImage} />
                                 <div className={styles.floatBadgeTopRightGreen}>
                                     <div className={styles.floatBadgeText}>98%</div>
                                     <div className={styles.floatBadgeSub}>happy matches</div>
@@ -623,7 +623,7 @@ const RentOut = () => {
                                 <div className={styles.formBlurCircle}></div>
                                 <div className={styles.formHeader}>
                                     <div className={styles.formLogoWrapper}>
-                                        <img src={LOGO_IMAGE} alt="ApartmentHub Logo" className={styles.formLogoImage} />
+                                        <img src={LOGO_IMAGE} alt="ApartmentHub - Amsterdam apartment rental platform" className={styles.formLogoImage} />
                                     </div>
                                     <h3 className={styles.formTitle}>{t.formTitle}</h3>
                                     <p className={styles.formSubtitle}>{t.formSubtitle}</p>
