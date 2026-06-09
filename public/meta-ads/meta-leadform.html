@@ -116,6 +116,14 @@
   .choice.selected .tick{border-color:var(--teal);background:var(--teal)}
   .choice.selected .tick svg{opacity:1}
 
+  .next-btn{width:100%;margin-top:18px;border:0;border-radius:11px;cursor:pointer;background:var(--teal);color:#fff;
+    font:inherit;font-size:16px;font-weight:700;padding:14px 18px;transition:background .14s, transform .04s;
+    display:flex;align-items:center;justify-content:center;gap:8px}
+  .next-btn:hover{background:var(--teal-dark)}
+  .next-btn:active{transform:translateY(1px)}
+  .next-btn[disabled]{opacity:.5;cursor:not-allowed}
+  .next-btn .arrow{font-size:18px;line-height:1}
+
   /* Contactvelden */
   .field{margin-bottom:14px}
   .lbl{display:block;font-size:13.5px;font-weight:600;color:var(--ink);margin-bottom:6px}
@@ -218,19 +226,20 @@
           <!-- STAP 1 - Slaapkamers -->
           <div class="step active" data-step="1">
             <h2 data-i="q_bedrooms">Hoeveel slaapkamers zoek je?</h2>
-            <p class="q-sub" data-i="qs_bedrooms">Tik op je voorkeur.</p>
+            <p class="q-sub" data-i="qs_bedrooms">Kies alles wat van toepassing is · 3 korte vragen, ± 30 sec.</p>
             <div class="choice-grid">
               <button type="button" class="choice" data-name="bedrooms" data-value="1"><span data-i="bed_1">1 slaapkamer</span><span class="tick"><svg width="12" height="9" viewBox="0 0 12 9"><path d="M1 4.5l3.5 3.5L11 1" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
               <button type="button" class="choice" data-name="bedrooms" data-value="2"><span data-i="bed_2">2 slaapkamers</span><span class="tick"><svg width="12" height="9" viewBox="0 0 12 9"><path d="M1 4.5l3.5 3.5L11 1" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
               <button type="button" class="choice" data-name="bedrooms" data-value="3"><span data-i="bed_3">3 slaapkamers</span><span class="tick"><svg width="12" height="9" viewBox="0 0 12 9"><path d="M1 4.5l3.5 3.5L11 1" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
               <button type="button" class="choice" data-name="bedrooms" data-value="4+"><span data-i="bed_4">4+ slaapkamers</span><span class="tick"><svg width="12" height="9" viewBox="0 0 12 9"><path d="M1 4.5l3.5 3.5L11 1" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
             </div>
+            <button type="button" class="next-btn" data-next="2" disabled><span data-i="next_btn">Volgende</span><span class="arrow">→</span></button>
           </div>
 
           <!-- STAP 2 - Budget -->
           <div class="step" data-step="2">
             <h2 data-i="q_budget">Wat is je budget per maand?</h2>
-            <p class="q-sub" data-i="qs_budget">Tik op een prijsklasse.</p>
+            <p class="q-sub" data-i="qs_budget">Kies alles wat je interesseert.</p>
             <div class="choice-grid">
               <button type="button" class="choice" data-name="budget" data-value="2000-2500"><span>€2.000 - €2.500</span><span class="tick"><svg width="12" height="9" viewBox="0 0 12 9"><path d="M1 4.5l3.5 3.5L11 1" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
               <button type="button" class="choice" data-name="budget" data-value="2500-3000"><span>€2.500 - €3.000</span><span class="tick"><svg width="12" height="9" viewBox="0 0 12 9"><path d="M1 4.5l3.5 3.5L11 1" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
@@ -238,6 +247,7 @@
               <button type="button" class="choice" data-name="budget" data-value="3500-4000"><span>€3.500 - €4.000</span><span class="tick"><svg width="12" height="9" viewBox="0 0 12 9"><path d="M1 4.5l3.5 3.5L11 1" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
               <button type="button" class="choice" data-name="budget" data-value="4000-4500"><span>€4.000 - €4.500</span><span class="tick"><svg width="12" height="9" viewBox="0 0 12 9"><path d="M1 4.5l3.5 3.5L11 1" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
             </div>
+            <button type="button" class="next-btn" data-next="3" disabled><span data-i="next_btn">Volgende</span><span class="arrow">→</span></button>
           </div>
 
           <!-- STAP 3 - Contactgegevens -->
@@ -355,9 +365,10 @@ const STRINGS = {
     usp3:'Direct contact via WhatsApp',
     ratingsub:'Beoordeeld door honderden huurders',
     back:'Terug', step_count:'Stap {n} van {t}',
-    q_bedrooms:'Hoeveel slaapkamers zoek je?', qs_bedrooms:'Tik op je voorkeur · 3 korte vragen, ± 30 sec.',
+    q_bedrooms:'Hoeveel slaapkamers zoek je?', qs_bedrooms:'Kies alles wat van toepassing is · 3 korte vragen, ± 30 sec.',
     bed_1:'1 slaapkamer', bed_2:'2 slaapkamers', bed_3:'3 slaapkamers', bed_4:'4+ slaapkamers',
-    q_budget:'Wat is je budget per maand?', qs_budget:'Tik op een prijsklasse.',
+    q_budget:'Wat is je budget per maand?', qs_budget:'Kies alles wat je interesseert.',
+    next_btn:'Volgende',
     q_contact:'Waar mogen we de woningen naartoe sturen?', qs_contact:'Laatste stap. Daarna sturen we je passend aanbod.',
     reassure:'We sturen je pas het aanbod via WhatsApp, geen spam. Je kunt je altijd afmelden via WhatsApp met 1 druk op de knop.',
     video_title:'Zo werkt ApartmentHub',
@@ -382,9 +393,10 @@ const STRINGS = {
     usp3:'Direct contact via WhatsApp',
     ratingsub:'Rated by hundreds of tenants',
     back:'Back', step_count:'Step {n} of {t}',
-    q_bedrooms:'How many bedrooms are you looking for?', qs_bedrooms:'Tap your preference · 3 quick questions, ± 30 sec.',
+    q_bedrooms:'How many bedrooms are you looking for?', qs_bedrooms:'Select all that apply · 3 quick questions, ± 30 sec.',
     bed_1:'1 bedroom', bed_2:'2 bedrooms', bed_3:'3 bedrooms', bed_4:'4+ bedrooms',
-    q_budget:'What’s your monthly budget?', qs_budget:'Tap a price range.',
+    q_budget:'What’s your monthly budget?', qs_budget:'Select all that interest you.',
+    next_btn:'Next',
     q_contact:'Where can we send the properties?', qs_contact:'Last step. Then we’ll send matching homes.',
     reassure:'We only send you listings via WhatsApp, no spam. You can unsubscribe anytime via WhatsApp with one tap.',
     video_title:'How ApartmentHub works',
@@ -420,6 +432,10 @@ function applyLang(lang){
   });
   document.getElementById('consentLabel').innerHTML=s.consent.replace('{terms}',CONFIG.termsUrl[lang]);
   document.querySelectorAll('.lang a').forEach(b=>b.classList.toggle('active',b.dataset.lang===lang));
+  nextBtns.forEach(btn=>{
+    const label=btn.querySelector('[data-i="next_btn"]');
+    if(label) label.textContent=s.next_btn||'Next';
+  });
   updateProgress();
 }
 /* De NL/EN-schakelaar zijn echte links naar de twee aparte taalpagina's */
@@ -433,11 +449,12 @@ document.getElementById('yr').textContent='2026';
 /* ===== Wizard ===== */
 const TOTAL=3;
 let step=1;
-const state={bedrooms:'',budget:''};
+const state={bedrooms:[],budget:[]};
 const steps=[...document.querySelectorAll('.step')];
 const backBtn=document.getElementById('backBtn');
 const stepCount=document.getElementById('stepCount');
 const progEls=[...document.querySelectorAll('#progress .seg')];
+const nextBtns=[...document.querySelectorAll('.next-btn')];
 
 function updateProgress(){
   stepCount.textContent=STRINGS[LANG].step_count.replace('{n}',step).replace('{t}',TOTAL);
@@ -446,47 +463,61 @@ function updateProgress(){
     el.classList.toggle('active', i===step-1);
   });
 }
+function updateNextBtns(){
+  nextBtns.forEach(btn=>{
+    const nextStep=+btn.dataset.next;
+    if(nextStep===2) btn.disabled=state.bedrooms.length===0;
+    if(nextStep===3) btn.disabled=state.budget.length===0;
+  });
+}
 function goStep(n){
   step=Math.max(1,Math.min(TOTAL,n));
   steps.forEach(s=>s.classList.toggle('active', +s.dataset.step===step));
   backBtn.classList.toggle('show', step>1);
   updateProgress();
-  // micro-conversie: vuur één keer als iemand de flow start (stap 1 voltooid)
   if(step>1 && !window.__ahStarted){ window.__ahStarted=true; if(window.fbq) fbq('trackCustom','StartLeadForm',{language:LANG}); }
-  // focus eerste contactveld op laatste stap
   if(step===3){ setTimeout(()=>document.getElementById('fullName').focus(),60); }
   try{ document.querySelector('.card').scrollIntoView({behavior:'smooth',block:'nearest'}); }catch(e){}
 }
 backBtn.addEventListener('click',()=>goStep(step-1));
+nextBtns.forEach(btn=>btn.addEventListener('click',()=>goStep(+btn.dataset.next)));
 
-/* ===== Autosave/resume — geen verloren leads als iemand wegklikt en terugkomt ===== */
-const LS_KEY='ah_leadform_v1';
+/* ===== Autosave/resume ===== */
+const LS_KEY='ah_leadform_v2';
 function saveState(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({
   bedrooms:state.bedrooms, budget:state.budget,
   fullName:form.fullName.value, phone:form.phone.value, email:form.email.value, ts:Date.now()
 })); }catch(e){} }
 function clearState(){ try{ localStorage.removeItem(LS_KEY); }catch(e){} }
-function markChoice(name,val){ document.querySelectorAll('.choice[data-name="'+name+'"]').forEach(b=>b.classList.toggle('selected', b.dataset.value===val)); }
+function syncChoices(name){
+  document.querySelectorAll('.choice[data-name="'+name+'"]').forEach(b=>{
+    b.classList.toggle('selected', state[name].includes(b.dataset.value));
+  });
+}
 function restoreState(){ try{
   const raw=localStorage.getItem(LS_KEY); if(!raw) return;
   const d=JSON.parse(raw);
-  if(d.ts && Date.now()-d.ts > 7*24*3600*1000){ clearState(); return; } // verloopt na 7 dagen
-  if(d.bedrooms){ state.bedrooms=d.bedrooms; markChoice('bedrooms',d.bedrooms); }
-  if(d.budget){ state.budget=d.budget; markChoice('budget',d.budget); }
+  if(d.ts && Date.now()-d.ts > 7*24*3600*1000){ clearState(); return; }
+  if(d.bedrooms && Array.isArray(d.bedrooms)){ state.bedrooms=d.bedrooms; syncChoices('bedrooms'); }
+  else if(d.bedrooms && typeof d.bedrooms==='string'){ state.bedrooms=d.bedrooms?[d.bedrooms]:[]; syncChoices('bedrooms'); }
+  if(d.budget && Array.isArray(d.budget)){ state.budget=d.budget; syncChoices('budget'); }
+  else if(d.budget && typeof d.budget==='string'){ state.budget=d.budget?[d.budget]:[]; syncChoices('budget'); }
   if(d.fullName) form.fullName.value=d.fullName;
   if(d.phone) form.phone.value=d.phone;
   if(d.email) form.email.value=d.email;
+  updateNextBtns();
 }catch(e){} }
 
-/* Tap-keuzes: selecteren + automatisch door naar volgende stap */
+/* Multi-select toggle */
 document.querySelectorAll('.choice').forEach(btn=>{
   btn.addEventListener('click',()=>{
     const name=btn.dataset.name;
-    document.querySelectorAll('.choice[data-name="'+name+'"]').forEach(b=>b.classList.remove('selected'));
-    btn.classList.add('selected');
-    state[name]=btn.dataset.value;
+    const val=btn.dataset.value;
+    const idx=state[name].indexOf(val);
+    if(idx>=0){ state[name].splice(idx,1); btn.classList.remove('selected'); }
+    else{ state[name].push(val); btn.classList.add('selected'); }
     saveState();
-    setTimeout(()=>goStep(step+1),240);
+    updateNextBtns();
   });
 });
 
@@ -532,8 +563,8 @@ const formError=document.getElementById('formError');
 form.addEventListener('submit',async(e)=>{
   e.preventDefault();
   formError.style.display='none';
-  if(!state.bedrooms){ goStep(1); return; }
-  if(!state.budget){ goStep(2); return; }
+  if(state.bedrooms.length===0){ goStep(1); return; }
+  if(state.budget.length===0){ goStep(2); return; }
   if(!validateContact()){
     const f=form.querySelector('.field.show-err'); if(f) f.scrollIntoView({behavior:'smooth',block:'center'});
     return;
@@ -543,16 +574,18 @@ form.addEventListener('submit',async(e)=>{
     fullName:form.fullName.value.trim(),
     phone:form.phone.value.replace(/[\s().-]/g,''),
     email:form.email.value.trim().toLowerCase(),
-    bedrooms:state.bedrooms,
-    budget:state.budget,
+    bedrooms:state.bedrooms.join(','),
+    budget:state.budget.join(','),
     language:LANG, consent:true,
     source:'meta_ads', sourceUrl:location.href,
     submittedAt:new Date().toISOString(),
     eventId:eventId,
     tracking:getTracking(),
-    tags:['source_meta_ads','language_'+LANG,
-          'bedrooms_'+(state.bedrooms==='4+'?'4_plus':state.bedrooms),
-          'budget_'+state.budget.replace('-','_')]
+    tags:[
+          'Meta Ads',
+          ...state.bedrooms.map(v=>v==='4+'?'4+ Bedrooms':v==='1'?'1 Bedroom':v+' Bedrooms'),
+          ...state.budget.map(v=>'\u20AC'+v.replace('-','-\u20AC'))
+    ]
   };
   btn.classList.add('loading'); btn.disabled=true;
   try{
@@ -569,10 +602,11 @@ form.addEventListener('submit',async(e)=>{
 });
 
 /* init */
-restoreState();                                       // verdergaan waar bezoeker gebleven was
-if(!form.phone.value){ form.phone.value='+31 '; }     // landcode voorinvullen (minder frictie)
+restoreState();
+updateNextBtns();
+if(!form.phone.value){ form.phone.value='+31 '; }
 applyLang(LANG);
-goStep(state.bedrooms ? (state.budget ? 3 : 2) : 1);  // hervat op de juiste stap
+goStep(state.bedrooms.length>0?(state.budget.length>0?3:2):1);
 </script>
 </body>
 </html>

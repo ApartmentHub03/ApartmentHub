@@ -199,6 +199,7 @@ const COUNTRIES: Country[] = [
   { code: "36", flag: "🇭🇺", name: "Hungary",        example: "20 123 4567" },
   { code: "40", flag: "🇷🇴", name: "Romania",        example: "712 345 678" },
   { code: "972",flag: "🇮🇱", name: "Israel",         example: "50 123 4567" },
+  { code: "63", flag: "🇵🇭", name: "Philippines",    example: "917 123 4567" },
   { code: "27", flag: "🇿🇦", name: "South Africa",   example: "71 123 4567" },
   { code: "61", flag: "🇦🇺", name: "Australia",      example: "412 345 678" },
   { code: "64", flag: "🇳🇿", name: "New Zealand",    example: "21 123 4567" },

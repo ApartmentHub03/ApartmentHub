@@ -9,13 +9,6 @@ function normalizePhone(phone) {
     return String(phone).replace(/\D/g, '');
 }
 
-function formatPhoneE164(phone) {
-    if (!phone) return '';
-    const digits = String(phone).replace(/\D/g, '');
-    if (!digits) return '';
-    return '+' + digits;
-}
- 
 function sha256(str) {
     const encoder = new TextEncoder();
     const data = encoder.encode(str.toLowerCase().trim());
@@ -57,27 +50,17 @@ async function findZokoCustomerId(apiKey, phone) {
 async function addZokoTags(apiKey, customerId, tags) {
     if (!customerId || !tags || tags.length === 0) return;
     try {
-        await fetch(`${ZOKO_API_BASE}/customer/${customerId}/tags`, {
-            method: 'POST',
+        const res = await fetch(`${ZOKO_API_BASE}/customer/${customerId}/tags`, {
+            method: 'PUT',
             headers: zokoHeaders(apiKey),
             body: JSON.stringify({ tags }),
         });
+        if (!res.ok) {
+            const errText = await res.text().catch(() => '');
+            console.error('[meta-lead] Zoko add tags error:', res.status, errText);
+        }
     } catch (err) {
         console.error('[meta-lead] Zoko add tags error:', err);
-    }
-}
-
-async function setZokoProperties(apiKey, customerId, properties) {
-    if (!customerId) return;
-    const entries = Object.entries(properties).map(([key, value]) => ({ key, value }));
-    try {
-        await fetch(`${ZOKO_API_BASE}/customer/${customerId}/properties`, {
-            method: 'POST',
-            headers: zokoHeaders(apiKey),
-            body: JSON.stringify(entries),
-        });
-    } catch (err) {
-        console.error('[meta-lead] Zoko set properties error:', err);
     }
 }
 
@@ -125,7 +108,6 @@ export async function POST(request) {
     }
 
     const normalizedPhone = normalizePhone(phone);
-    const e164Phone = formatPhoneE164(phone);
     if (normalizedPhone.length < 10) {
         return NextResponse.json({ success: false, message: 'Invalid phone number' }, { status: 400 });
     }
@@ -201,19 +183,11 @@ export async function POST(request) {
             // Step 1: Try to find existing contact by phone (digits only for Zoko)
             customerId = await findZokoCustomerId(zokoApiKey, normalizedPhone);
 
-            // For existing contacts: update tags and properties first
+            // For existing contacts: update tags (properties API requires dashboard setup)
             if (customerId) {
                 if (tags && tags.length > 0) {
                     await addZokoTags(zokoApiKey, customerId, tags);
                 }
-                await setZokoProperties(zokoApiKey, customerId, {
-                    name: fullName || '',
-                    email: email || '',
-                    bedrooms: bedrooms || '',
-                    budget: budget || '',
-                    language: language || 'nl',
-                    source: source || 'meta_ads',
-                });
             }
 
             // Step 2: Send template message (also auto-creates contact for new numbers)
@@ -231,22 +205,13 @@ export async function POST(request) {
                 );
                 results.zoko = msgResult;
 
-                // For new contacts: message creates them, wait briefly then add tags
                 if (msgResult.success && !customerId) {
-                    await new Promise(r => setTimeout(r, 2000));
-                    const newCustomerId = await findZokoCustomerId(zokoApiKey, normalizedPhone);
+                    const newCustomerId = msgResult.data?.customerId
+                        || await findZokoCustomerId(zokoApiKey, normalizedPhone);
                     if (newCustomerId) {
                         if (tags && tags.length > 0) {
                             await addZokoTags(zokoApiKey, newCustomerId, tags);
                         }
-                        await setZokoProperties(zokoApiKey, newCustomerId, {
-                            name: fullName || '',
-                            email: email || '',
-                            bedrooms: bedrooms || '',
-                            budget: budget || '',
-                            language: language || 'nl',
-                            source: source || 'meta_ads',
-                        });
                     }
                 }
             } else {
