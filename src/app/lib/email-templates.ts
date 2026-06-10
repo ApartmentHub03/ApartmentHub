@@ -203,3 +203,97 @@ export function agentNotificationEmail(args: {
     `),
   };
 }
+
+/* ====================================================================
+ * Document-request email — sent to VvE, notary, lawyer, partner,
+ * buyer, or seller with a magic-link upload URL.
+ * ==================================================================== */
+const ROLE_INTRO: Record<string, { nl: string; en: string }> = {
+  vve:     { nl: "Dhr./Mevr. {seller} verkoopt het appartement op {adres}. Namens ApartmentHub vragen wij u vriendelijk om de volgende documenten aan te leveren:", en: "Mr./Ms. {seller} is selling the apartment at {adres}. On behalf of ApartmentHub, we kindly ask you to provide the following documents:" },
+  notary:  { nl: "Ter voorbereiding van de levering op {adres} hebben wij nodig:", en: "In preparation for the transfer at {adres} we need:" },
+  lawyer:  { nl: "Voor het verkoopdossier van {adres} hebben wij nodig:", en: "For the sale file of {adres} we need:" },
+  partner: { nl: "Voor de verkoop van {adres} hebben wij nodig:", en: "For the sale of {adres} we need:" },
+  buyer:   { nl: "Voor het koopdossier van {adres} hebben wij nodig:", en: "For the purchase file of {adres} we need:" },
+  seller:  { nl: "Voor je verkoopdossier ontbreken nog:", en: "For your sale file we still need:" },
+};
+
+export function documentRequestEmail(args: {
+  lang: "nl" | "en";
+  role: "vve" | "notary" | "lawyer" | "partner" | "buyer" | "seller";
+  recipient_name: string;
+  object_adres: string;
+  required_documents: string[];
+  upload_url: string;
+  valid_days: number;
+  custom_message?: string;
+  seller_name?: string;
+}): { subject: string; html: string; text: string } {
+  const adres = escapeHtml(args.object_adres);
+  const name = escapeHtml(args.recipient_name);
+  const rawIntro = (ROLE_INTRO[args.role] ?? ROLE_INTRO.seller)[args.lang];
+  let intro = rawIntro.replace("{adres}", `<strong>${adres}</strong>`);
+  if (args.seller_name) {
+    intro = intro.replace("{seller}", escapeHtml(args.seller_name));
+  } else {
+    // Remove the prefix if no seller_name for non-vve roles
+    intro = intro.replace("{seller} ", "").replace("{seller}", "");
+  }
+  const docList = args.required_documents.map(d => `<li>${escapeHtml(d)}</li>`).join("");
+  const customBlock = args.custom_message
+    ? `<p style="background:${SOFT};padding:12px;border-radius:8px;margin:18px 0;">${escapeHtml(args.custom_message)}</p>`
+    : "";
+  const ctaText = args.lang === "nl" ? "Documenten uploaden" : "Upload documents";
+  const validText = args.lang === "nl"
+    ? `Upload via de beveiligde link (geldig ${args.valid_days} dagen):`
+    : `Upload via this secure link (valid ${args.valid_days} days):`;
+
+  const contactLine = args.lang === "nl"
+    ? `Vragen? david@apartmenthub.nl \u00b7 +31 6 83221189`
+    : `Questions? david@apartmenthub.nl \u00b7 +31 6 83221189`;
+
+  const replyToLine = args.seller_name
+    ? (args.lang === "nl"
+        ? `Vragen? U kunt rechtstreeks antwoorden aan ${escapeHtml(args.seller_name)}.`
+        : `Questions? You can reply directly to ${escapeHtml(args.seller_name)}.`)
+    : (args.lang === "nl"
+        ? `Vragen? david@apartmenthub.nl`
+        : `Questions? david@apartmenthub.nl`);
+
+  const portalLine = args.lang === "nl"
+    ? `Dit verzoek is gestart via het ApartmentHub verkoopportaal.`
+    : `This request was initiated via the ApartmentHub seller portal.`;
+
+  // Option B card design
+  const cardHtml = `
+    <div style="background:${SOFT};border:1px solid rgba(0,155,138,0.2);border-radius:12px;padding:24px;text-align:center;margin:24px 0;">
+      <p style="margin:0 0 18px;color:${INK};font-size:14px;">
+        ${args.lang === "nl" ? "Upload uw documenten veilig via onze beveiligde portal." : "Upload your documents safely via our secure portal."}
+      </p>
+      <a href="${escapeHtml(args.upload_url)}" style="display:inline-block;background:${TEAL};color:#fff;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px;">${ctaText} \u2192</a>
+      <p style="margin:12px 0 0;font-size:12px;color:${GREY};">
+        ${args.lang === "nl" ? "Link verloopt over" : "Link expires in"} ${args.valid_days} ${args.lang === "nl" ? "dagen" : "days"}
+      </p>
+    </div>
+  `;
+
+  const body = `
+    <h2 style="margin:0 0 8px;color:${TEAL};font-size:20px;">${args.lang === "nl" ? "Documenten gevraagd" : "Documents requested"}</h2>
+    <p style="margin:0 0 8px;">${args.lang === "nl" ? `Beste ${name},` : `Hi ${name},`}</p>
+    <p style="margin:0 0 14px;">${intro}</p>
+    <ul style="margin:0 0 14px;padding-left:20px;color:${INK};">${docList}</ul>
+    ${customBlock}
+    <p style="margin:18px 0 8px;color:${INK};">${validText}</p>
+    ${cardHtml}
+    <p style="margin:14px 0 0;font-size:13px;color:${GREY};">${replyToLine}</p>
+    <p style="margin:8px 0 0;font-size:12px;color:#A0AEC0;font-style:italic;">${portalLine}</p>
+    <hr style="border:none;border-top:1px solid #E2E8F0;margin:14px 0;" />
+    <p style="margin:0;font-size:12px;color:${GREY};">${contactLine}</p>`;
+
+  const subject = args.lang === "nl"
+    ? `Documenten gevraagd \u2014 ${args.object_adres}`
+    : `Documents requested \u2014 ${args.object_adres}`;
+
+  const text = `${args.lang === "nl" ? "Documenten gevraagd" : "Documents requested"}\n\n${args.lang === "nl" ? `Beste ${args.recipient_name},` : `Hi ${args.recipient_name},`}\n\n${intro.replace(/<[^>]+>/g, "")}\n\n${args.required_documents.join("\n- ")}\n\n${validText} ${args.upload_url}\n\n${args.lang === "nl" ? `Link verloopt over ${args.valid_days} dagen.` : `Link expires in ${args.valid_days} days.`}\n\n${replyToLine.replace(/<[^>]+>/g, "")}\n${portalLine}\n\n${contactLine}`;
+
+  return { subject, html: shell(args.lang === "nl" ? "Documenten gevraagd" : "Documents requested", body), text };
+}

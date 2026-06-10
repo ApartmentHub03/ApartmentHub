@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { DOC_DESCRIPTIONS } from "@/app/lib/doc-descriptions";
 
 const client = new Anthropic({
   apiKey:
@@ -6,27 +7,6 @@ const client = new Anthropic({
 });
 
 const MODEL = process.env.VERKOOP_MODEL || "claude-sonnet-4-6";
-
-// What each document key (from the front-end form) means.
-const DOC_DESCRIPTIONS: Record<string, string> = {
-  leveringsakte:   "Notarial deed of transfer (leveringsakte). Confirms ownership.",
-  hypotheek:       "Mortgage payoff statement / pro-forma calculation.",
-  vergunningen:    "Building / renovation permits (omgevingsvergunningen).",
-  bouwtekeningen:  "Construction or renovation drawings.",
-  garanties:       "Warranties for roof / boiler / kitchen / bathroom / solar.",
-  "cv-onderhoud":  "Boiler service contract and last service report.",
-  zonnepanelen:    "Solar panel invoice, warranty, inverter info.",
-  splitsingsakte:  "Notarial split deed defining the apartment right (Dutch: splitsingsakte).",
-  notulen:         "Minutes of the VvE general meeting (ALV).",
-  jaarrekening:    "VvE annual accounts and budget.",
-  mjop:            "Multi-year maintenance plan of the VvE (MJOP).",
-  reservefonds:    "Bank statement or accounts showing the VvE reserve fund balance.",
-  opstal:          "VvE building insurance policy.",
-  kvk:             "Chamber of Commerce excerpt of the VvE.",
-  erfpacht:        "Amsterdam leasehold (erfpacht) documents: deed, canon notice, transition offer, buyout confirmation.",
-  asbest:          "Asbestos inventory (SC-540).",
-  fundering:       "Foundation survey or KCAF report.",
-};
 
 // Questions the AI may answer if the documents support it. The IDs match
 // the front-end exactly. The front-end skips any question whose ID is
@@ -54,6 +34,9 @@ const PREFILLABLE_FIELDS: { key: string; description: string }[] = [
   // Free fields (text/number) extracted from documents
   { key: "vve_naam",        description: "Name of the VvE" },
   { key: "vve_kvk",         description: "Chamber of Commerce number of the VvE" },
+  { key: "vve_email",        description: "Contact email of the VvE board or property manager" },
+  { key: "vve_beheerder",    description: "Name of the VvE property manager (beheerder) if mentioned" },
+  { key: "vve_telefoon",     description: "Contact phone of the VvE board or manager" },
   { key: "vve_maand",       description: "Monthly VvE contribution in euros" },
   { key: "reservefonds",    description: "Reserve fund balance in euros" },
   { key: "modelreglement",  description: "Year of the model regulation (1973/1983/1992/2006/2017)" },
@@ -78,7 +61,7 @@ function buildPrompt(lang: "nl" | "en", suppliedDocs: string[]): string {
     .map(f => `  ${f.key}: ${f.description}`)
     .join("\n");
   const docList = suppliedDocs
-    .map(k => `  - ${k}: ${DOC_DESCRIPTIONS[k] ?? "(unknown document type)"}`)
+    .map(k => `  - ${k}: ${DOC_DESCRIPTIONS[k]?.en ?? "(unknown document type)"}`)
     .join("\n");
 
   return `You are an extraction assistant for ApartmentHub, a real estate agency in Amsterdam.

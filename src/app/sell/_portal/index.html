@@ -41,6 +41,8 @@
     --soft: #E8F5F3;
     --soft-orange: #FFF1E6;
     --ok: #15803D;
+    --red: #B42318;
+    --danger: #B42318;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
@@ -341,7 +343,7 @@
   .doc-tag.optional { background: #F2F4F7; color: var(--grey); }
 
   /* Ask-VvE secondary button, sits next to the upload field */
-  .doc-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 18px 16px; }
+  .doc-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 18px 16px; align-items: center; }
   .ask-vve-btn {
     display: inline-flex; align-items: center; gap: 6px;
     background: #fff; border: 1px solid var(--teal);
@@ -351,6 +353,27 @@
   }
   .ask-vve-btn::before { content: "✉"; font-size: 14px; }
   .ask-vve-btn:hover { background: var(--soft); text-decoration: none; }
+
+  /* VvE request checkbox — right side of doc-actions row */
+  .doc-actions .vve-check-inline { display: none; align-items: center; gap: 6px; margin-left: auto; }
+  .doc-actions .vve-check-inline.show { display: flex; }
+  .doc-actions .vve-check-inline input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--teal); cursor: pointer; margin: 0; }
+  .doc-actions .vve-check-inline label { font-size: 12px; cursor: pointer; color: var(--teal-dark); white-space: nowrap; }
+
+  /* Floating VvE send button */
+  .vve-send-bar { position: sticky; bottom: 0; background: #fff; border-top: 1px solid var(--line); padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; z-index: 100; box-shadow: 0 -2px 8px rgba(0,0,0,.06); border-radius: 0 0 14px 14px; }
+  .vve-send-bar .vve-send-count { font-size: 13px; color: var(--grey); }
+  .vve-send-bar button:disabled { opacity: .5; cursor: not-allowed; }
+  .vve-request-status { font-size: 13px; margin-top: 10px; }
+  /* VvE modal */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 9000; display: flex; align-items: center; justify-content: center; }
+  .modal-backdrop[hidden] { display: none; }
+  .modal-box { background: #fff; border-radius: 16px; padding: 28px; max-width: 520px; width: 92%; max-height: 90vh; overflow-y: auto; }
+  .modal-box h3 { margin: 0 0 8px; }
+  .modal-box ul { margin: 8px 0 16px; padding-left: 20px; }
+  .modal-box .preview-toggle { font-size: 13px; color: var(--teal); cursor: pointer; margin-bottom: 10px; }
+  .modal-box .preview-box { border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-bottom: 14px; display: none; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
 
   /* Yes/No gate for documents like the mortgage upload */
   .doc-gate {
@@ -897,8 +920,8 @@
         <select id="vveBeheerder"></select>
       </div>
       <div class="field">
-        <label class="lbl" for="vveEmail"><span data-i18n="lbl_vve_email"></span></label>
-        <input id="vveEmail" type="email" autocomplete="off" data-placeholder="ph_vve_email" />
+        <label class="lbl" for="vveEmail"><span data-i18n="lbl_vve_email"></span> <span style="color:var(--red)">*</span></label>
+        <input id="vveEmail" type="email" required autocomplete="off" data-placeholder="ph_vve_email" />
       </div>
     </div>
     <div class="field" id="vveOtherWrap" style="display:none;">
@@ -992,6 +1015,22 @@
   </div>
 
   <!-- Wat wij voor de klant ophalen. Geen upload nodig. -->
+
+  <div id="vveRequestModal" hidden class="modal-backdrop" onclick="if(event.target===this)closeVveModal()">
+      <div class="modal-box">
+        <h3 data-i18n="vve_request_modal_title"></h3>
+        <p id="vveModalTo" style="font-size:14px;color:var(--grey);margin:0 0 12px;"></p>
+        <p style="font-weight:600;font-size:13px;margin:0 0 4px;" data-i18n="vve_request_modal_docs_label"></p>
+        <ul id="vveModalDocList"></ul>
+        <span id="vvePreviewToggle" class="preview-toggle"><span id="vvePreviewToggleText" data-i18n="vve_request_modal_preview"></span></span>
+        <div id="vvePreviewBox" class="preview-box"></div>
+        <div class="modal-actions">
+          <button type="button" id="vveModalCancel" class="btn ghost" data-i18n="vve_request_modal_cancel" onclick="closeVveModal()"></button>
+          <button type="button" id="vveModalSend" class="btn" data-i18n="vve_request_modal_send"></button>
+        </div>
+      </div>
+    </div>
+
   <div class="banner public" id="weHandleBanner">
     <b data-i18n="we_handle_title"></b>
     <ul class="we-handle-list">
@@ -1009,6 +1048,13 @@
 
   <h3 class="group-title group-conditional" data-i18n="grp_conditional"></h3>
   <div class="docs" id="docs-conditional"></div>
+
+  <!-- Sticky VvE send bar — appears when VvE email is filled -->
+  <div id="vveSendBar" class="vve-send-bar" style="display:none;">
+    <span id="vveSendCount" class="vve-send-count"></span>
+    <button type="button" id="vveRequestBtn" class="btn" disabled></button>
+    <span id="vveRequestStatus" class="vve-request-status"></span>
+  </div>
 
   <div class="nav-row">
     <div class="left">
@@ -1311,13 +1357,13 @@ const I18N = {
     lbl_vve_manager: "Wie beheert jullie VvE?",
     lbl_vve_manager_other: "Naam VvE-beheerder",
     ph_vve_manager_other: "Naam van je beheerder",
-    lbl_vve_email: "E-mail VvE-beheerder (optioneel)",
+    lbl_vve_email: "E-mail VvE-beheerder",
     ph_vve_email: "bijv. beheer@vve.nl",
     opt_vve_choose: "Kies of typ…",
     opt_vve_self: "Zelf beheerd",
     opt_vve_unknown: "Weet ik niet",
     opt_vve_other: "Anders (vul in)",
-    ask_vve_btn: "Vraag dit op bij de VvE",
+    ask_vve_btn: "Vraag de VvE om dit document",
     vve_link_search: "Zoek het portaal van {x}",
     hyp_gate_q: "Heb je een hypotheek op deze woning?",
     banner_public_title: "Wat we voor je proberen op te halen",
@@ -1362,6 +1408,21 @@ const I18N = {
     we_handle_stadsarchief: "Bouw en verbouwtekeningen (via Stadsarchief Amsterdam)",
     we_handle_kcaf: "Funderingsstatus (via KCAF Funderingsviewer)",
     we_handle_bag: "Bouwjaar, oppervlakte en energielabel (via BAG + EP online)",
+
+    vve_request_card_title: "VvE-documenten aanvragen",
+    vve_request_card_sub: "Selecteer welke documenten je van de VvE-beheerder wilt aanvragen.",
+    vve_request_check_label: "Vraag VvE",
+    vve_request_btn: "{count} documenten aanvragen →",
+    vve_request_btn_zero: "Selecteer minstens 1 document",
+    vve_request_hint: "{count} van {total} geselecteerd",
+    vve_request_success: "✅ Verzoek verstuurd naar {email}",
+    vve_request_error: "Verzenden mislukt. Probeer opnieuw of stuur zelf een e-mail.",
+    vve_request_modal_title: "Bevestig VvE-verzoek",
+    vve_request_modal_docs_label: "Geselecteerde documenten:",
+    vve_request_modal_preview: "E-mailvoorbeeld bekijken",
+    vve_request_modal_hide_preview: "E-mailvoorbeeld verbergen",
+    vve_request_modal_cancel: "Annuleren",
+    vve_request_modal_send: "Versturen",
 
     grp_required: "Verplicht",
     grp_important: "Belangrijk (VvE)",
@@ -1449,6 +1510,7 @@ const I18N = {
     yn_no: "Nee",
     err_step1: "Vul je adres, naam en email in.",
     err_email: "Vul een geldig emailadres in.",
+    err_vve_email_required: "Vul het e-mailadres van je VvE-beheerder in.",
     err_postcode: "Vul een geldige Nederlandse postcode in (bijv. 1015 EA).",
     err_step2_empty: "Upload minstens één document, of ga via 'Vorige' naar deel 1 als je liever zonder documenten verder gaat.",
     err_file_too_big: "Bestand te groot (max 32 MB):",
@@ -1561,13 +1623,13 @@ const I18N = {
     lbl_vve_manager: "Who manages your VvE?",
     lbl_vve_manager_other: "VvE manager name",
     ph_vve_manager_other: "Your manager's name",
-    lbl_vve_email: "VvE manager email (optional)",
+    lbl_vve_email: "VvE manager email",
     ph_vve_email: "e.g. manager@vve.nl",
     opt_vve_choose: "Choose or type…",
     opt_vve_self: "Self-managed",
     opt_vve_unknown: "Don't know",
     opt_vve_other: "Other (fill in)",
-    ask_vve_btn: "Ask VvE for this document",
+    ask_vve_btn: "Ask the Homeowners Association about this",
     vve_link_search: "Find the {x} portal",
     hyp_gate_q: "Do you have a mortgage on this property?",
     banner_public_title: "What we try to fetch for you",
@@ -1612,6 +1674,21 @@ const I18N = {
     we_handle_stadsarchief: "Construction & renovation drawings (via Amsterdam City Archive)",
     we_handle_kcaf: "Foundation status (via KCAF Foundation Viewer)",
     we_handle_bag: "Year built, floor area and energy label (via BAG + EP online)",
+
+    vve_request_card_title: "Request VvE documents",
+    vve_request_card_sub: "Select which documents you'd like to request from your VvE manager.",
+    vve_request_check_label: "Ask HOA",
+    vve_request_btn: "Request {count} documents →",
+    vve_request_btn_zero: "Select at least 1 document",
+    vve_request_hint: "{count} of {total} selected",
+    vve_request_success: "✅ Request sent to {email}",
+    vve_request_error: "Sending failed. Try again or email manually.",
+    vve_request_modal_title: "Confirm VvE request",
+    vve_request_modal_docs_label: "Selected documents:",
+    vve_request_modal_preview: "Preview email",
+    vve_request_modal_hide_preview: "Hide email preview",
+    vve_request_modal_cancel: "Cancel",
+    vve_request_modal_send: "Send",
 
     grp_required: "Required",
     grp_important: "Important (VvE)",
@@ -1699,6 +1776,7 @@ const I18N = {
     yn_no: "No",
     err_step1: "Please fill in your address, name and email.",
     err_email: "Please enter a valid email address.",
+    err_vve_email_required: "Please enter your VvE manager's email address.",
     err_postcode: "Please enter a valid Dutch postcode (e.g. 1015 EA).",
     err_step2_empty: "Upload at least one document, or click 'Back' to skip the document step.",
     err_file_too_big: "File too large (max 32 MB):",
@@ -1880,6 +1958,9 @@ function sellerNameParts() {
   return { first, last, full: `${first} ${last}`.trim() };
 }
 
+const VVE_DOC_KEYS = ["mjop","notulen","jaarrekening","reservefonds","opstal","huishoudelijk"];
+const REQUEST_VVE_URL = "/api/verkoop/request-vve";
+
 // Build a mailto: link to request a single document from the VvE manager.
 // Recipient = the optional manager email from step 1 (blank if not given,
 // the owner fills it in). Everything is editable in the mail client.
@@ -1913,6 +1994,152 @@ function buildAskVveMailto(docKey) {
   }
   return `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
+
+// ===== VvE request: per-card checkboxes + sticky send bar + magic-link email =====
+function syncVveRequestCard() {
+  const bar = document.getElementById("vveSendBar");
+  const btn = document.getElementById("vveRequestBtn");
+  if (!bar || !btn) return;
+  const vveEmail = (document.getElementById("vveEmail")?.value || "").trim();
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(vveEmail);
+  // Show/hide per-card checkboxes
+  document.querySelectorAll(".vve-check-inline").forEach(row => {
+    row.classList.toggle("show", emailOk);
+  });
+  if (!emailOk) { bar.style.display = "none"; return; }
+  if (btn.dataset.sent === "1") { bar.style.display = "flex"; return; }
+  bar.style.display = "flex";
+  updateVveButtonState();
+}
+
+function getSelectedVveDocs() {
+  const selected = [];
+  document.querySelectorAll('.vve-doc-check:checked').forEach(cb => { selected.push(cb.dataset.doc); });
+  return selected;
+}
+
+function updateVveButtonState() {
+  const btn = document.getElementById("vveRequestBtn");
+  const countEl = document.getElementById("vveSendCount");
+  if (!btn) return;
+  const selected = getSelectedVveDocs();
+  const total = VVE_DOC_KEYS.length;
+  const count = selected.length;
+  if (count > 0) {
+    btn.disabled = false;
+    btn.textContent = (t().vve_request_btn || "Request {count} documents \u2192").replace("{count}", String(count));
+    if (countEl) countEl.textContent = (t().vve_request_hint || "{count} of {total} selected").replace("{count}", String(count)).replace("{total}", String(total));
+  } else {
+    btn.disabled = true;
+    btn.textContent = t().vve_request_btn_zero || "Select at least 1 document";
+    if (countEl) countEl.textContent = "";
+  }
+}
+
+function buildVvePreviewHtml(selectedDocs) {
+  const vveEmail = (document.getElementById("vveEmail")?.value || "").trim();
+  const vveName = selectedVveManagerName() || "VvE-beheerder";
+  const { full } = sellerNameParts();
+  const address = (document.getElementById("straat")?.value || "").trim() || (lang === "nl" ? "het appartement" : "the apartment");
+  const isNL = lang === "nl";
+  const intro = isNL
+    ? "Dhr./Mevr. " + full + " verkoopt het appartement op " + address + ". Namens ApartmentHub vragen wij u vriendelijk om de volgende documenten aan te leveren:"
+    : "Mr./Ms. " + full + " is selling the apartment at " + address + ". On behalf of ApartmentHub, we kindly ask you to provide the following documents:";
+  const docs = selectedDocs.length > 0 ? selectedDocs : VVE_DOC_KEYS;
+  const docList = docs.map(k => { const tr = t().docs[k]; return "<li>" + (tr ? tr.naam : k) + "</li>"; }).join("");
+  const ctaText = isNL ? "Documenten uploaden \u2192" : "Upload documents \u2192";
+  const validText = isNL ? "Link verloopt over 30 dagen" : "Link expires in 30 days";
+  const replyText = isNL ? "Vragen? U kunt rechtstreeks antwoorden aan " + full + "." : "Questions? You can reply directly to " + full + ".";
+  const portalText = isNL ? "Dit verzoek is gestart via het ApartmentHub verkoopportaal." : "This request was initiated via the ApartmentHub seller portal.";
+  return '<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;color:#1A202C;line-height:1.5;"><p style="margin:0 0 8px;">' + (isNL ? "Beste " + vveName + "," : "Hi " + vveName + ",") + '</p><p style="margin:0 0 14px;">' + intro + '</p><ul style="margin:0 0 14px;padding-left:20px;">' + docList + '</ul><div style="background:#E8F5F3;border:1px solid rgba(0,155,138,0.2);border-radius:12px;padding:20px;text-align:center;margin:20px 0;"><p style="margin:0 0 16px;font-size:14px;">' + (isNL ? "Upload uw documenten veilig via onze beveiligde portal." : "Upload your documents safely via our secure portal.") + '</p><span style="display:inline-block;background:#009B8A;color:#fff;padding:12px 24px;border-radius:10px;font-weight:700;font-size:15px;">' + ctaText + '</span><p style="margin:12px 0 0;font-size:12px;color:#4A5568;">' + validText + '</p></div><p style="margin:14px 0 0;font-size:13px;color:#4A5568;">' + replyText + '</p><p style="margin:8px 0 0;font-size:12px;color:#A0AEC0;font-style:italic;">' + portalText + '</p><hr style="border:none;border-top:1px solid #E2E8F0;margin:14px 0;" /><p style="margin:0;font-size:12px;color:#4A5568;">Vragen? david@apartmenthub.nl \u00b7 +31 6 83221189</p></div>';
+}
+
+function openVveModal() {
+  const modal = document.getElementById("vveRequestModal");
+  const vveEmail = (document.getElementById("vveEmail")?.value || "").trim();
+  const vveName = selectedVveManagerName() || vveEmail;
+  document.getElementById("vveModalTo").textContent = vveName + " <" + vveEmail + ">";
+  const selected = getSelectedVveDocs();
+  const list = document.getElementById("vveModalDocList");
+  list.innerHTML = "";
+  selected.forEach(k => {
+    const tr = t().docs[k];
+    const li = document.createElement("li");
+    li.textContent = tr ? tr.naam : k;
+    list.appendChild(li);
+  });
+  document.getElementById("vvePreviewBox").style.display = "none";
+  document.getElementById("vvePreviewToggleText").textContent = t().vve_request_modal_preview;
+  modal.dataset.selectedDocs = JSON.stringify(selected);
+  modal.hidden = false;
+}
+
+function closeVveModal() {
+  document.getElementById("vveRequestModal").hidden = true;
+}
+
+function toggleVvePreview() {
+  const box = document.getElementById("vvePreviewBox");
+  const toggleText = document.getElementById("vvePreviewToggleText");
+  const modal = document.getElementById("vveRequestModal");
+  const selected = JSON.parse(modal.dataset.selectedDocs || "[]");
+  if (box.style.display === "none") {
+    box.innerHTML = buildVvePreviewHtml(selected);
+    box.style.display = "block";
+    toggleText.textContent = t().vve_request_modal_hide_preview;
+  } else {
+    box.style.display = "none";
+    toggleText.textContent = t().vve_request_modal_preview;
+  }
+}
+
+async function sendVveRequest() {
+  const btn = document.getElementById("vveModalSend");
+  const cancelBtn = document.getElementById("vveModalCancel");
+  btn.disabled = true;
+  cancelBtn.disabled = true;
+  btn.textContent = lang === "nl" ? "Versturen..." : "Sending...";
+  const vveEmail = (document.getElementById("vveEmail")?.value || "").trim();
+  const vveName = selectedVveManagerName() || "";
+  const selectedDocs = getSelectedVveDocs();
+  try {
+    const res = await fetch(REQUEST_VVE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ vve_email: vveEmail, vve_name: vveName, doc_keys: selectedDocs }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || "Failed");
+    closeVveModal();
+    const barBtn = document.getElementById("vveRequestBtn");
+    const status = document.getElementById("vveRequestStatus");
+    document.querySelectorAll(".vve-check-inline input[type=\"checkbox\"]").forEach(cb => { cb.disabled = true; });
+    barBtn.disabled = true;
+    barBtn.dataset.sent = "1";
+    barBtn.textContent = lang === "nl" ? "Verstuurd" : "Sent";
+    const successMsg = (t().vve_request_success || "\u2705 Request sent to {email}").replace("{email}", vveEmail);
+    status.textContent = successMsg;
+    status.style.color = "var(--ok)";
+    showToast({ type: "success", title: lang === "nl" ? "Verzoek verstuurd" : "Request sent", body: successMsg, ttl: 6000 });
+  } catch (err) {
+    console.error("[vve-request] failed", err);
+    btn.disabled = false;
+    cancelBtn.disabled = false;
+    btn.textContent = t().vve_request_modal_send;
+    const errMsg = t().vve_request_error || "Sending failed. Try again or email manually.";
+    showToast({ type: "error", title: lang === "nl" ? "Verzenden mislukt" : "Sending failed", body: errMsg, ttl: 6000 });
+  }
+}
+
+// Wire VvE request event listeners
+document.getElementById("vveRequestBtn")?.addEventListener("click", openVveModal);
+document.getElementById("vveModalCancel")?.addEventListener("click", closeVveModal);
+document.getElementById("vveModalSend")?.addEventListener("click", sendVveRequest);
+document.getElementById("vvePreviewToggle")?.addEventListener("click", toggleVvePreview);
+document.getElementById("vveEmail")?.addEventListener("input", syncVveRequestCard);
+document.getElementById("vveEmail")?.addEventListener("change", syncVveRequestCard);
+
 
 /* ===== rendering helpers ===== */
 function applyStaticI18n() {
@@ -2091,19 +2318,34 @@ function renderDocCard(group, doc) {
   list.dataset.for = doc.key;
   wrap.appendChild(list);
 
-  // "Ask VvE for this document" — opens a prefilled mailto so the seller
-  // can request the document from their VvE manager in one click.
+  // For VvE docs: mailto button on left, checkbox on right, same row
   if (doc.askVve) {
     const actions = document.createElement("div");
     actions.className = "doc-actions";
-    const askBtn = document.createElement("button");
-    askBtn.type = "button";
+    // Mailto button (left)
+    const askBtn = document.createElement("a");
     askBtn.className = "ask-vve-btn";
     askBtn.textContent = t().ask_vve_btn;
-    askBtn.addEventListener("click", () => {
+    askBtn.addEventListener("click", (e) => {
+      e.preventDefault();
       window.location.href = buildAskVveMailto(doc.key);
     });
     actions.appendChild(askBtn);
+    // Checkbox (right, pushed with margin-left: auto)
+    const checkWrap = document.createElement("div");
+    checkWrap.className = "vve-check-inline";
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.id = "vve_check_" + doc.key;
+    cb.dataset.doc = doc.key;
+    cb.className = "vve-doc-check";
+    cb.addEventListener("change", updateVveButtonState);
+    const cbLabel = document.createElement("label");
+    cbLabel.htmlFor = cb.id;
+    cbLabel.textContent = t().vve_request_check_label || "Ask HOA";
+    checkWrap.appendChild(cb);
+    checkWrap.appendChild(cbLabel);
+    actions.appendChild(checkWrap);
     wrap.appendChild(actions);
   }
 
@@ -2296,6 +2538,7 @@ function renderDocs() {
   });
   Object.keys(DOC_GROUPS).forEach(g => DOC_GROUPS[g].forEach(d => renderDocCard(g, d)));
   Object.keys(uploaded).forEach(rerenderFileList);
+  syncVveRequestCard();
 }
 
 function renderPriceEstimate() {
@@ -2587,6 +2830,13 @@ function validateStep1() {
   if (!emailOk) {
     alert(t().err_email);
     document.getElementById("email").focus();
+    return false;
+  }
+  // vveEmail required
+  const vveEmailVal = (document.getElementById("vveEmail")?.value || "").trim();
+  if (!vveEmailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(vveEmailVal)) {
+    alert(t().err_vve_email_required || "VvE email is required");
+    document.getElementById("vveEmail")?.focus();
     return false;
   }
   // postcode format (NL: 1234 AB)
@@ -2895,6 +3145,8 @@ async function actuallySaveServer() {
     gebreken_toel: v("gebreken_toel"),
     vve_sfeer: v("vve_sfeer"),
     verbouw_toel: v("verbouw_toel"),
+    vve_beheerder: v("vveBeheerder"),
+    vve_email: v("vveEmail"),
   };
   // Drop empties so we don't overwrite server fields the user hasn't touched yet
   Object.keys(payload).forEach(k => { if (!payload[k]) delete payload[k]; });
@@ -2976,6 +3228,7 @@ function restoreDraft() {
         document.getElementById("vveBeheerder")?.value === "__other" ? "block" : "none";
     }
     renderDocs();
+    syncVveRequestCard();
     Object.entries(s.radios || {}).forEach(([name, val]) => {
       const inp = document.querySelector(`input[type="radio"][name="${CSS.escape(name)}"][value="${CSS.escape(String(val))}"]`);
       if (inp) inp.checked = true;
@@ -4161,10 +4414,12 @@ document.getElementById("vveBeheerder")?.addEventListener("change", () => {
   if (otherWrap) otherWrap.style.display = sel.value === "__other" ? "block" : "none";
   if (sel.value === "__other") setTimeout(() => document.getElementById("vveBeheerderOther")?.focus(), 50);
   renderDocs();
+  syncVveRequestCard();
   saveDraft();
 });
 document.getElementById("vveBeheerderOther")?.addEventListener("input", () => {
   renderDocs();
+  syncVveRequestCard();
 });
 
 document.getElementById("phoneAltToggle")?.addEventListener("click", () => {

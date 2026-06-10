@@ -1,0 +1,312 @@
+.container {
+  min-height: 100vh;
+  background: #f7fafc;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #1a202c;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background: #009b8a;
+  padding: 16px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.headerInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.headerLogo {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brandText {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  flex: 1;
+}
+
+.infoCard {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #009b8a;
+  margin: 0 0 8px;
+}
+
+.address {
+  font-size: 15px;
+  color: #1a202c;
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+
+.roleBadge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #e8f5f3;
+  color: #009b8a;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+
+.recipient {
+  font-size: 14px;
+  color: #4a5568;
+  margin: 4px 0;
+}
+
+.expires {
+  font-size: 12px;
+  color: #718096;
+  margin: 4px 0 0;
+}
+
+.successCard {
+  background: #f0fff4;
+  border: 2px solid #38a169;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.successCard h2 {
+  margin: 8px 0 4px;
+  color: #15803d;
+  font-size: 20px;
+}
+
+.successCard p {
+  color: #4a5568;
+  font-size: 14px;
+  margin: 0;
+}
+
+.successIcon {
+  font-size: 40px;
+  color: #38a169;
+}
+
+.section {
+  margin-bottom: 20px;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0 0 12px;
+}
+
+.docList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.docItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.docUploaded {
+  background: #f0fff4;
+  border-color: #c6f6d5;
+}
+
+.docStatus {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkIcon {
+  color: #38a169;
+  font-weight: 700;
+}
+
+.pendingIcon {
+  color: #a0aec0;
+}
+
+.errorIcon {
+  color: #e53e3e;
+  font-weight: 700;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #009b8a;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.docLabel {
+  flex: 1;
+  min-width: 0;
+}
+
+.existingFile {
+  color: #718096;
+  font-size: 12px;
+}
+
+.progressLabel {
+  font-size: 12px;
+  color: #009b8a;
+}
+
+.replacingLabel {
+  font-size: 12px;
+  color: #d69e2e;
+}
+
+.errorLabel {
+  font-size: 12px;
+  color: #e53e3e;
+}
+
+.uploadForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.docSelect {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  font-size: 14px;
+  color: #1a202c;
+  background: #fff;
+  appearance: auto;
+}
+
+.dropzone {
+  border: 2px dashed #cbd5e0;
+  border-radius: 12px;
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.dropzone:hover {
+  border-color: #009b8a;
+  background: #f7fafc;
+}
+
+.dropzoneDisabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  border-color: #e2e8f0;
+}
+
+.dropzoneDisabled:hover {
+  border-color: #e2e8f0;
+  background: #fafbfc;
+}
+
+.dropzoneIcon {
+  margin-bottom: 8px;
+}
+
+.dropzoneText {
+  font-size: 14px;
+  color: #4a5568;
+  margin: 0 0 4px;
+}
+
+.dropzoneHint {
+  font-size: 12px;
+  color: #a0aec0;
+  margin: 0;
+}
+
+.progressBar {
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.progressFill {
+  height: 100%;
+  background: #009b8a;
+  border-radius: 2px;
+  animation: progress 2s ease-in-out infinite;
+  width: 60%;
+}
+
+@keyframes progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(180%);
+  }
+}
+
+.footer {
+  text-align: center;
+  padding: 16px;
+  color: #a0aec0;
+  font-size: 12px;
+  border-top: 1px solid #e2e8f0;
+  margin-top: auto;
+}

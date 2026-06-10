@@ -8,33 +8,16 @@ import { AnalyseSection } from "./analyse";
 import { ContactActions } from "./contact";
 import { EditableDossier } from "./edit";
 import { DeleteDossier } from "./delete";
+import { StaffUploadDropzone } from "./upload-dropzone";
+import { MagicLinksSection } from "./magic-links";
+import { NotesSection } from "./notes";
+import { DOC_DESCRIPTIONS } from "@/app/lib/doc-descriptions";
 import { Logo } from "@/app/lib/components/Logo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> };
-
-// Friendly labels for the doc_key slugs so non-technical staff see real names.
-const DOC_LABEL: Record<string, string> = {
-  mjop: "MJOP — maintenance plan",
-  notulen: "VvE meeting minutes",
-  jaarrekening: "VvE annual accounts",
-  reservefonds: "Reserve fund statement",
-  opstal: "Building insurance",
-  splitsingsakte: "Split deed",
-  leveringsakte: "Deed of transfer",
-  kvk: "Chamber of Commerce extract",
-  hypotheek: "Mortgage statement",
-  erfpacht: "Leasehold (erfpacht)",
-  garanties: "Warranties",
-  "cv-onderhoud": "Boiler service",
-  zonnepanelen: "Solar panels",
-  vergunningen: "Permits",
-  bouwtekeningen: "Construction drawings",
-  asbest: "Asbestos report",
-  fundering: "Foundation report",
-};
 
 const ACTION_LABEL: Record<string, string> = {
   viewed: "Viewed",
@@ -46,6 +29,13 @@ const ACTION_LABEL: Record<string, string> = {
   ai_followups_answered: "Answered follow-up",
   dossier_created: "Dossier started",
   dossier_edited: "Edited dossier",
+  magic_link_created: "Upload link created",
+  magic_link_email_sent: "Upload link email sent",
+  magic_link_revoked: "Upload link revoked",
+  magic_link_uploaded: "Uploaded via link",
+  note_added: "Note added",
+  note_edited: "Note edited",
+  note_deleted: "Note deleted",
 };
 
 function bytes(n: number | null): string {
@@ -87,6 +77,7 @@ function friendlyActor(actor: string | null, mePhone: string): string {
     return actor.slice(6) === mePhone ? "You" : "Staff";
   }
   if (actor.startsWith("seller:")) return "Seller";
+  if (actor.startsWith("magic_link:")) return "External link";
   return actor;
 }
 
@@ -158,8 +149,6 @@ function SignatureSection({ submit, otd }: { submit: SigBlock; otd: SigBlock }) 
             ) : null}
           </div>
           {imgSrc ? (
-            // Static PNG export from a canvas; next/image isn't a fit here.
-            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={imgSrc}
               alt={`${title} signature`}
@@ -187,6 +176,217 @@ function SignatureSection({ submit, otd }: { submit: SigBlock; otd: SigBlock }) 
   );
 }
 
+function VveCard({
+  vveEmail,
+  vveBeheerder,
+  vveTelefoon,
+  vveKvk,
+  source,
+}: {
+  vveEmail: string | null;
+  vveBeheerder: string | null;
+  vveTelefoon: string | null;
+  vveKvk: string | null;
+  source: "ai" | "manual" | null;
+}) {
+  if (!vveEmail && !vveBeheerder && !vveTelefoon && !vveKvk) return null;
+  return (
+    <div className={styles.section}>
+      <h2>VvE contact</h2>
+      {source && (
+        <span
+          style={{
+            display: "inline-block",
+            fontSize: 11,
+            fontWeight: 700,
+            padding: "2px 9px",
+            borderRadius: 999,
+            background: source === "ai" ? "var(--ok-soft)" : "#F2F4F7",
+            color: source === "ai" ? "var(--ok)" : "var(--grey-soft)",
+            textTransform: "uppercase",
+            letterSpacing: "0.04em",
+            marginBottom: 10,
+          }}
+        >
+          {source === "ai" ? "Auto-discovered" : "Manually entered"}
+        </span>
+      )}
+      <div style={{ display: "grid", gap: 6, fontSize: 13 }}>
+        {vveBeheerder && (
+          <div><span style={{ color: "var(--grey-soft)", width: 100, display: "inline-block" }}>Manager</span> <strong>{vveBeheerder}</strong></div>
+        )}
+        {vveEmail && (
+          <div><span style={{ color: "var(--grey-soft)", width: 100, display: "inline-block" }}>Email</span> <a href={`mailto:${vveEmail}`} style={{ color: "var(--teal)" }}>{vveEmail}</a></div>
+        )}
+        {vveTelefoon && (
+          <div><span style={{ color: "var(--grey-soft)", width: 100, display: "inline-block" }}>Phone</span> {vveTelefoon}</div>
+        )}
+        {vveKvk && (
+          <div><span style={{ color: "var(--grey-soft)", width: 100, display: "inline-block" }}>KvK</span> {vveKvk}</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type DocStatusFile = {
+  id: string;
+  doc_key: string;
+  filename: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  blob_url: string;
+  version: number | null;
+  uploaded_at: string;
+  preview_url: string | null;
+  ai_extract: Record<string, unknown> | null;
+};
+
+type MagicLinkForStatus = {
+  id: string;
+  token: string;
+  role: string;
+  required_documents: string[];
+  recipient_email: string | null;
+  recipient_name: string | null;
+  expires_at: string;
+  revoked_at: string | null;
+  used_count: number;
+  created_at: string;
+};
+
+function DocumentStatusPanel({
+  files,
+  magicLinks,
+}: {
+  files: DocStatusFile[];
+  magicLinks: MagicLinkForStatus[];
+}) {
+  const uploadedByDocKey = new Map<string, DocStatusFile>();
+  for (const f of files) uploadedByDocKey.set(f.doc_key, f);
+
+  const requestedByDocKey = new Map<string, MagicLinkForStatus[]>();
+  for (const ml of magicLinks) {
+    if (ml.revoked_at) continue;
+    if (new Date(ml.expires_at) < new Date()) continue;
+    for (const dk of ml.required_documents) {
+      const arr = requestedByDocKey.get(dk) ?? [];
+      arr.push(ml);
+      requestedByDocKey.set(dk, arr);
+    }
+  }
+
+  const allDocKeys = Object.keys(DOC_DESCRIPTIONS);
+  const rows = allDocKeys.map((key) => {
+    const file = uploadedByDocKey.get(key);
+    const requested = requestedByDocKey.get(key) ?? [];
+    const status = file ? "uploaded" : requested.length > 0 ? "requested" : "missing";
+    return { key, file, requested, status };
+  });
+
+  const ROLE_COLORS: Record<string, string> = {
+    vve: "#009B8A",
+    notary: "#1D4ED8",
+    lawyer: "#7C3AED",
+    partner: "#B7791F",
+    buyer: "#15803D",
+    seller: "#B42318",
+  };
+  const ROLE_LABELS: Record<string, string> = {
+    vve: "VvE",
+    notary: "Notary",
+    lawyer: "Lawyer",
+    partner: "Partner",
+    buyer: "Buyer",
+    seller: "Seller",
+  };
+
+  return (
+    <div className={styles.section}>
+      <h2>Documents</h2>
+      <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
+        {rows.map(({ key, file, requested, status }) => {
+          const label = DOC_DESCRIPTIONS[key]?.en ?? key;
+          const idReviewNeeded = key === "seller_id_masked" && file?.ai_extract && (
+            (file.ai_extract as Record<string, unknown>).needs_review === true ||
+            (file.ai_extract as Record<string, unknown>).bsn_masked === false
+          );
+          return (
+            <li
+              key={key}
+              style={{
+                padding: "10px 14px",
+                marginBottom: 6,
+                borderRadius: 10,
+                border: "1px solid var(--line)",
+                background: "#fff",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{label}</div>
+                {status === "uploaded" && file && (
+                  <div style={{ fontSize: 12, color: "var(--grey-soft)" }}>
+                    {file.filename} · {bytes(file.size_bytes)}
+                    {file.version && file.version > 1 ? ` · v${file.version}` : ""}
+                    {file.preview_url && (
+                      <a href={file.preview_url} target="_blank" rel="noreferrer" style={{ color: "var(--teal)", marginLeft: 8 }}>Open</a>
+                    )}
+                  </div>
+                )}
+                {status === "requested" && requested.map((ml) => (
+                  <div key={ml.id} style={{ fontSize: 12, color: "var(--grey-soft)" }}>
+                    <span
+                      style={{
+                        fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 999,
+                        background: (ROLE_COLORS[ml.role] || "var(--grey)") + "18",
+                        color: ROLE_COLORS[ml.role] || "var(--grey)",
+                        textTransform: "uppercase", letterSpacing: "0.04em", marginRight: 6,
+                      }}
+                    >
+                      {ROLE_LABELS[ml.role] || ml.role}
+                    </span>
+                    Requested · expires {new Date(ml.expires_at).toLocaleDateString()}
+                    {ml.recipient_name ? ` · ${ml.recipient_name}` : ""}
+                  </div>
+                ))}
+                {status === "missing" && (
+                  <div style={{ fontSize: 12, color: "var(--grey-soft)" }}>Not uploaded yet</div>
+                )}
+                {idReviewNeeded && (
+                  <div style={{ fontSize: 12, color: "var(--danger)", fontWeight: 600, marginTop: 4 }}>
+                    ⚠️ ID check needs review — BSN may not be masked properly
+                  </div>
+                )}
+              </div>
+              <div>
+                {status === "uploaded" && (
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 9px", borderRadius: 999, background: "var(--ok-soft)", color: "var(--ok)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                    ✓ Uploaded
+                  </span>
+                )}
+                {status === "requested" && (
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 9px", borderRadius: 999, background: "var(--amber-soft)", color: "var(--amber)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                    ⏳ Requested
+                  </span>
+                )}
+                {status === "missing" && (
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 9px", borderRadius: 999, background: "#F2F4F7", color: "var(--grey-soft)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                    ❌ Missing
+                  </span>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 export default async function DossierPage({ params }: Params) {
   const { id: dossierId } = await params;
   const staff = await getStaffUser();
@@ -209,7 +409,7 @@ export default async function DossierPage({ params }: Params) {
 
   const { data: filesRaw } = await sb
     .from("verkoop_files")
-    .select("id, doc_key, filename, mime_type, size_bytes, blob_url, uploaded_at, version")
+    .select("id, doc_key, filename, mime_type, size_bytes, blob_url, uploaded_at, version, ai_extract")
     .eq("dossier_id", d.id)
     .eq("is_current", true)
     .order("uploaded_at", { ascending: true });
@@ -221,6 +421,30 @@ export default async function DossierPage({ params }: Params) {
         staff.role === "viewer" || !f.blob_url ? null : await signedUrl(f.blob_url),
     }))
   );
+
+  const { data: magicLinksRaw } = await sb
+    .from("verkoop_magic_links")
+    .select("id, token, role, required_documents, recipient_email, recipient_name, expires_at, revoked_at, used_count, created_at")
+    .eq("dossier_id", d.id)
+    .order("created_at", { ascending: false });
+
+  const magicLinks = (magicLinksRaw ?? []) as MagicLinkForStatus[];
+
+  const { data: notesRaw } = await sb
+    .from("verkoop_notes")
+    .select("id, author, content, pinned, created_at, updated_at")
+    .eq("dossier_id", d.id)
+    .order("pinned", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  const dossierNotes = (notesRaw ?? []) as Array<{
+    id: string;
+    author: string;
+    content: string;
+    pinned: boolean;
+    created_at: string;
+    updated_at: string | null;
+  }>;
 
   const { data: audit } = await sb
     .from("verkoop_audit")
@@ -248,6 +472,15 @@ export default async function DossierPage({ params }: Params) {
   const sellerAnswers =
     ((d as { ai_followup_answers?: Record<string, unknown> | null })
       .ai_followup_answers) ?? {};
+
+  const prefilled = ((d as { ai_prefilled?: Record<string, unknown> | null }).ai_prefilled) ?? {};
+  const vveEmail = (prefilled as Record<string, unknown>).vve_email as string | null;
+  const vveBeheerder = (prefilled as Record<string, unknown>).vve_beheerder as string | null;
+  const vveTelefoon = (prefilled as Record<string, unknown>).vve_telefoon as string | null;
+  const vveKvk = (prefilled as Record<string, unknown>).vve_kvk as string | null;
+  const vveSource = vveEmail ? "ai" as const : null;
+
+  const dossierAddress = `${d.straat || ""}${d.woonplaats ? `, ${d.woonplaats}` : ""}`;
 
   return (
     <div className={styles.root}>
@@ -370,6 +603,14 @@ export default async function DossierPage({ params }: Params) {
               }}
             />
 
+            <VveCard
+              vveEmail={vveEmail}
+              vveBeheerder={vveBeheerder}
+              vveTelefoon={vveTelefoon}
+              vveKvk={vveKvk}
+              source={vveSource}
+            />
+
             <AnalyseSection
               dossierId={d.id}
               canAnalyse={staff.role !== "viewer"}
@@ -467,49 +708,26 @@ export default async function DossierPage({ params }: Params) {
           </div>
 
           <div>
-            <div className={styles.section}>
-              <h2>Uploaded documents ({files?.length ?? 0})</h2>
-              {!files || files.length === 0 ? (
-                <div className={styles.empty}>
-                  <p>No documents uploaded yet.</p>
-                </div>
-              ) : (
-                <ul className={styles.fileList}>
-                  {files.map((f) => {
-                    const kind = fileKind(f.mime_type, f.filename);
-                    const label = DOC_LABEL[f.doc_key] ?? f.doc_key;
-                    return (
-                      <li key={f.id} className={styles.fileItem}>
-                        <span
-                          className={styles.fileIcon}
-                          style={{ background: kind.color + "15", color: kind.color }}
-                          aria-hidden
-                        >
-                          {kind.label}
-                        </span>
-                        <span className={styles.fileMeta}>
-                          <span className={styles.fileName} title={f.filename}>{label}</span>
-                          <span className={styles.fileSub}>
-                            {f.filename} · {bytes(f.size_bytes)}
-                            {f.version && f.version > 1 ? ` · version ${f.version}` : ""}
-                          </span>
-                        </span>
-                        {f.preview_url ? (
-                          <a
-                            className={styles.fileLink}
-                            href={f.preview_url}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            Open
-                          </a>
-                        ) : null}
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
+            <DocumentStatusPanel files={files} magicLinks={magicLinks} />
+
+            {staff.role !== "viewer" && (
+              <StaffUploadDropzone dossierId={d.id} />
+            )}
+
+            <MagicLinksSection
+              dossierId={d.id}
+              initialLinks={magicLinks}
+              canCreate={staff.role !== "viewer"}
+              dossierAddress={dossierAddress}
+              prefillVveEmail={vveEmail}
+              prefillVveName={vveBeheerder}
+            />
+
+            <NotesSection
+              dossierId={d.id}
+              initialNotes={dossierNotes}
+              canEdit={staff.role !== "viewer"}
+            />
 
             <div className={styles.section}>
               <h2>Activity log</h2>

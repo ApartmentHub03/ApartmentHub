@@ -105,6 +105,8 @@ export async function POST(req: NextRequest) {
     "gebreken_toel",
     "vve_sfeer",
     "verbouw_toel",
+    "vve_beheerder",
+    "vve_email",
     "antwoorden",
     "consent",
   ] as const;
