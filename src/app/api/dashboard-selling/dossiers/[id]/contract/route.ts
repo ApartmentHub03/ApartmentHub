@@ -16,6 +16,7 @@ type Params = { params: Promise<{ id: string }> };
 // real signature and it gets embedded automatically; until then the route
 // falls back to a labelled placeholder box so the layout is identical.
 const DAVID_SIG_PATH = path.join(process.cwd(), "otd", "david-signature.png");
+const LOGO_PATH = path.join(process.cwd(), "public", "images", "site-logo.png");
 
 // --- layout constants (A4, points) ---------------------------------------
 const PAGE_W = 595.28;
@@ -116,6 +117,14 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const fontB = await pdf.embedFont(StandardFonts.HelveticaBold);
+
+  let logoImg: Awaited<ReturnType<typeof pdf.embedPng>> | null = null;
+  try {
+    const logoBytes = await fs.readFile(LOGO_PATH);
+    logoImg = await pdf.embedPng(new Uint8Array(logoBytes));
+  } catch {
+    logoImg = null;
+  }
 
   let page: PDFPage = pdf.addPage([PAGE_W, PAGE_H]);
   // Content flows below the header band and stops above the footer band.
@@ -360,11 +369,20 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const total = pages.length;
   pages.forEach((pg, i) => {
     // --- header band -------------------------------------------------------
-    const hTop = PAGE_H - MARGIN; // top of the brand mark
-    // Brand mark: teal square with a small orange accent square inset.
-    pg.drawRectangle({ x: MARGIN, y: hTop - 11, width: 11, height: 11, color: TEAL });
-    pg.drawRectangle({ x: MARGIN + 5.5, y: hTop - 5.5, width: 5.5, height: 5.5, color: ORANGE });
-    pg.drawText("Apartmenthub", { x: MARGIN + 19, y: hTop - 9.5, size: 12, font: fontB, color: TEAL });
+    const hTop = PAGE_H - MARGIN;
+    if (logoImg) {
+      const logoH = 16;
+      const scale = logoH / logoImg.height;
+      const logoW = logoImg.width * scale;
+      const logoY = hTop - 2 - logoH;
+      const textY = logoY + (logoH - 8.5) / 2;
+      pg.drawImage(logoImg, { x: MARGIN, y: logoY, width: logoW, height: logoH });
+      pg.drawText("Apartmenthub", { x: MARGIN + logoW + 5, y: textY, size: 12, font: fontB, color: TEAL });
+    } else {
+      pg.drawRectangle({ x: MARGIN, y: hTop - 11, width: 11, height: 11, color: TEAL });
+      pg.drawRectangle({ x: MARGIN + 5.5, y: hTop - 5.5, width: 5.5, height: 5.5, color: ORANGE });
+      pg.drawText("Apartmenthub", { x: MARGIN + 19, y: hTop - 9.5, size: 12, font: fontB, color: TEAL });
+    }
     // Right-aligned context label.
     const hTag = sanitize("Verkoopbemiddeling - OTD");
     const hTagW = font.widthOfTextAtSize(hTag, 9);
