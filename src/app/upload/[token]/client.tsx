@@ -146,23 +146,22 @@ export function UploadClient({
       <header className={styles.header}>
         <div className={styles.headerInner}>
           <div className={styles.logo}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" />
-            </svg>
+            <img src="/images/5a9afd14-27a5-40d8-a185-fac727f64fdf.png" alt="" className={styles.headerLogo} />
             <span className={styles.brandText}>ApartmentHub</span>
           </div>
-          <img src="/images/5a9afd14-27a5-40d8-a185-fac727f64fdf.png" alt="ApartmentHub" className={styles.headerLogo} />
+          <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 500, letterSpacing: "0.02em" }}>
+            {isNl ? "Veilig uploaden" : "Secure upload"}
+          </span>
         </div>
       </header>
 
       <main className={styles.main}>
         <div className={styles.infoCard}>
+          <span className={styles.roleBadge}>{roleLabel}</span>
           <h1 className={styles.title}>
             {isNl ? "Documenten uploaden" : "Upload documents"}
           </h1>
           <p className={styles.address}>{address}</p>
-          <span className={styles.roleBadge}>{roleLabel}</span>
           {recipientName && (
             <p className={styles.recipient}>
               {isNl ? "Voor" : "For"}: {recipientName}
