@@ -82,7 +82,16 @@
 .search { border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 13px 9px 34px; font: inherit; font-size: 13.5px; min-width: 230px; background: #fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2' stroke-linecap='round'><circle cx='11' cy='11' r='7'/><line x1='21' y1='21' x2='16.65' y2='16.65'/></svg>") no-repeat 11px center; }
 .search:focus { outline: 0; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0, 155, 138, 0.15); }
 .filters { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
-.tableWrap { overflow-x: auto; }
+.tableWrap { overflow-x: auto; position: relative; }
+.tableLoading {
+    position: absolute;
+    inset: 0;
+    background: rgba(241, 245, 246, 0.6);
+    z-index: 2;
+    pointer-events: none;
+    animation: fadeIn 0.15s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .tableWrap table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .tableWrap th { text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--grey-soft); font-weight: 700; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .tableWrap td { padding: 11px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }

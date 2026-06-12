@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, ChevronUp, Download } from 'lucide-react';
 import styles from './AanhuurLeadsDashboard.module.css';
@@ -230,6 +230,7 @@ export default function AanhuurLeadsDashboard() {
   const router = useRouter();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+  const initialLoadRef = useRef(true);
   const [lang, setLang] = useState<'nl' | 'en'>('nl');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [monthFilter, setMonthFilter] = useState<string>('all');
@@ -251,7 +252,7 @@ export default function AanhuurLeadsDashboard() {
   }, [search]);
 
   const fetchLeads = useCallback(async () => {
-    setLoading(true);
+    if (initialLoadRef.current) setLoading(true);
     try {
       const token = sessionStorage.getItem('admin_token') || '';
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
@@ -295,6 +296,7 @@ export default function AanhuurLeadsDashboard() {
       // silently fail
     } finally {
       setLoading(false);
+      initialLoadRef.current = false;
     }
   }, [page, limit, debouncedSearch, channelFilter, router, lang]);
 
@@ -424,15 +426,7 @@ export default function AanhuurLeadsDashboard() {
     URL.revokeObjectURL(url);
   };
 
-  if (loading) {
-    return (
-      <div className={styles.dashboard}>
-        <div className={styles.main} style={{ textAlign: 'center', padding: '3rem' }}>
-          Loading leads...
-        </div>
-      </div>
-    );
-  }
+
 
   const statsToday = serverStats?.today ?? 0;
   const statsThisWeek = serverStats?.thisWeek ?? 0;
@@ -605,7 +599,8 @@ export default function AanhuurLeadsDashboard() {
               ))}
             </div>
           </div>
-          <div className={styles.tableWrap}>
+          <div className={styles.tableWrap} style={{ position: 'relative' }}>
+            {loading && !initialLoadRef.current && <div className={styles.tableLoading} />}
             <table>
               <thead>
                 <tr>
