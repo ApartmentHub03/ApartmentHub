@@ -18,6 +18,7 @@ export const DOC_DESCRIPTIONS: Record<string, { en: string; nl: string }> = {
   asbest:           { en: "Asbestos report",                                    nl: "Asbestinventarisatie" },
   fundering:        { en: "Foundation report",                                  nl: "Funderingsrapport" },
   seller_id_masked: { en: "Masked ID (KopieID)",                                nl: "Gemaskerd ID (KopieID)" },
+  passport:         { en: "Passport or ID card",                                nl: "Paspoort of identiteitsbewijs" },
 };
 
 export const DOC_KEYS = Object.keys(DOC_DESCRIPTIONS);
