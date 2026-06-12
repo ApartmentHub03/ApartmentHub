@@ -5,7 +5,7 @@ function escapeIlike(str) {
     return str.replace(/[%_]/g, (m) => `\\${m}`);
 }
 
-function applyFilters(query, { search, source, language, bedrooms, budget }) {
+function applyFilters(query, { search, source, language, bedrooms, budget, stage }) {
     if (search) {
         const escaped = escapeIlike(search);
         query = query.or(`full_name.ilike.%${escaped}%,phone.ilike.%${escaped}%,email.ilike.%${escaped}%`);
@@ -21,6 +21,9 @@ function applyFilters(query, { search, source, language, bedrooms, budget }) {
     }
     if (budget) {
         query = query.ilike('budget', `%${escapeIlike(budget)}%`);
+    }
+    if (stage && ['lead', 'scheduled', 'qualified', 'won'].includes(stage)) {
+        query = query.eq('stage', stage);
     }
     return query;
 }
@@ -49,13 +52,14 @@ export async function GET(request) {
     const language = searchParams.get('language') || '';
     const bedrooms = searchParams.get('bedrooms') || '';
     const budget = searchParams.get('budget') || '';
+    const stage = searchParams.get('stage') || '';
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const limitParam = parseInt(searchParams.get('limit') || '50', 10);
     const limit = [50, 100, 500].includes(limitParam) ? limitParam : 50;
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    const filters = { search, source, language, bedrooms, budget };
+    const filters = { search, source, language, bedrooms, budget, stage };
 
     const pagedQuery = applyFilters(
         supabase.from('meta_leads').select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(from, to),
@@ -63,7 +67,7 @@ export async function GET(request) {
     );
 
     const allQuery = applyFilters(
-        supabase.from('meta_leads').select('created_at,language,source'),
+        supabase.from('meta_leads').select('created_at,language,source,stage,amount'),
         filters
     );
 

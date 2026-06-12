@@ -102,7 +102,7 @@
 .badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: 0.9; }
 .bLead { background: #EEF2F7; color: #5A6B82; }
 .bScheduled { background: var(--soft); color: var(--teal-dark); }
-.bOffer { background: var(--soft-orange); color: var(--orange-dark); }
+.bQualified { background: var(--soft-orange); color: var(--orange-dark); }
 .bWon { background: #E6F6EC; color: var(--ok); }
 .amt { font-weight: 700; }
 .muted { color: var(--grey-soft); }

@@ -137,6 +137,7 @@ export async function POST(request) {
     const supabase = getSupabaseServer();
     if (supabase) {
         try {
+            const externalId = await sha256(normalizedPhone);
             const { data, error } = await supabase
                 .from('meta_leads')
                 .upsert({
@@ -150,6 +151,7 @@ export async function POST(request) {
                     source_url: sourceUrl,
                     consent: true,
                     event_id: eventId,
+                    external_id: externalId,
                     tracking_fbp: tracking?.fbp || null,
                     tracking_fbc: tracking?.fbc || null,
                     tracking_fbclid: tracking?.fbclid || null,

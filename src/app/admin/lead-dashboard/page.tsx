@@ -8,7 +8,7 @@ import styles from './AanhuurLeadsDashboard.module.css';
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
 /* ------------------------------------------------------------------ */
-export type Stage = 'lead' | 'scheduled' | 'offer' | 'won';
+export type Stage = 'lead' | 'scheduled' | 'qualified' | 'won';
 
 export interface Lead {
   id: string;
@@ -55,7 +55,7 @@ const STRINGS = {
     totalLeads: 'Totaal leads',
     received: 'binnengekomen',
     viewings: 'Bezichtigingen',
-    offerMade: 'Bod uitgebracht',
+    offerMade: 'Gekwalificeerd',
     dealsWon: 'Deals gewonnen',
     revenue: 'Omzet',
     fromWonDeals: 'uit gewonnen deals',
@@ -103,7 +103,7 @@ const STRINGS = {
     totalLeads: 'Total Leads',
     received: 'received',
     viewings: 'Viewings',
-    offerMade: 'Offer Made',
+    offerMade: 'Qualified',
     dealsWon: 'Deals Won',
     revenue: 'Revenue',
     fromWonDeals: 'from won deals',
@@ -148,7 +148,7 @@ const STRINGS = {
 const STAGES: StageDef[] = [
   { key: 'lead', rank: 1, labelNl: 'Lead', labelEn: 'Lead', badge: styles.bLead },
   { key: 'scheduled', rank: 2, labelNl: 'Bezichtiging gepland', labelEn: 'Viewing Scheduled', badge: styles.bScheduled, bar: styles.barS2 },
-  { key: 'offer', rank: 3, labelNl: 'Bod uitgebracht', labelEn: 'Offer Made', badge: styles.bOffer, bar: styles.barS3 },
+  { key: 'qualified', rank: 3, labelNl: 'Gekwalificeerd', labelEn: 'Qualified', badge: styles.bQualified, bar: styles.barS3 },
   { key: 'won', rank: 4, labelNl: 'Deal gewonnen', labelEn: 'Deal Won', badge: styles.bWon, bar: styles.barS4 },
 ];
 
@@ -156,7 +156,7 @@ const STATUS_FILTERS: { key: 'all' | Stage; labelNl: string; labelEn: string }[]
   { key: 'all', labelNl: 'Alle', labelEn: 'All' },
   { key: 'lead', labelNl: 'Lead', labelEn: 'Lead' },
   { key: 'scheduled', labelNl: 'Bezichtiging', labelEn: 'Viewing' },
-  { key: 'offer', labelNl: 'Bod', labelEn: 'Offer' },
+  { key: 'qualified', labelNl: 'Gekwalificeerd', labelEn: 'Qualified' },
   { key: 'won', labelNl: 'Gewonnen', labelEn: 'Won' },
 ];
 
@@ -276,8 +276,8 @@ export default function AanhuurLeadsDashboard() {
           language: l.language as string || 'nl',
           bedrooms: l.bedrooms as string || '',
           budget: l.budget as string || '',
-          stage: 'lead' as Stage,
-          amount: null,
+          stage: (l.stage as Stage) || 'lead',
+          amount: (l.amount as number) || null,
           createdAt: l.created_at as string || '',
           channel: l.source as string || 'meta_ads',
           utm_source: l.utm_source as string || '',
@@ -489,10 +489,10 @@ export default function AanhuurLeadsDashboard() {
             <div className={styles.kpiValue}>{countAtLeast('scheduled')}</div>
             <div className={styles.kpiSub}>{pct(countAtLeast('scheduled'), total)}</div>
           </div>
-          <div className={cx(styles.kpi, styles.accent)}>
+            <div className={cx(styles.kpi, styles.accent)}>
             <div className={styles.kpiLabel}>{s.offerMade}</div>
-            <div className={styles.kpiValue}>{countAtLeast('offer')}</div>
-            <div className={styles.kpiSub}>{pct(countAtLeast('offer'), total)}</div>
+            <div className={styles.kpiValue}>{countAtLeast('qualified')}</div>
+            <div className={styles.kpiSub}>{pct(countAtLeast('qualified'), total)}</div>
           </div>
           <div className={cx(styles.kpi, styles.accent)}>
             <div className={styles.kpiLabel}>{s.dealsWon}</div>
