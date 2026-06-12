@@ -80,7 +80,7 @@ Centralized remote MCP server so any team member can connect from any device via
 - **Transport**: Streamable HTTP at `/mcp` (Express + `@modelcontextprotocol/sdk`)
 - **Auth**: Bearer tokens — `VALID_TOKENS` env var maps `token:username` pairs
 - **Plugins**: Auto-loaded from `mcp-server/plugins/` — drop in a `.js` file, restart, new tools available
-
+ 
 ### Plugins & Tools (16 total)
 | Plugin | Tools |
 |--------|-------|
