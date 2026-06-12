@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { createHmac } from 'node:crypto';
 import { getSupabaseServer } from '@/lib/supabaseServer';
 import { sha256, normalizePhone, buildUserData, eventId, sendCapiEvent, findZokoCustomerId, addZokoTags } from '@/lib/meta-capi';
 
@@ -9,23 +10,13 @@ function verifyCalcomHmac(reqBody, signature) {
     const secret = process.env.CALCOM_WEBHOOK_SECRET;
     if (!secret || !signature) return false;
     try {
-        const encoder = new TextEncoder();
-        const keyData = encoder.encode(secret);
-        const bodyData = encoder.encode(typeof reqBody === 'string' ? reqBody : JSON.stringify(reqBody));
-        const crypto = globalThis.crypto;
-        const algorithm = { name: 'HMAC', hash: 'SHA-256' };
-        return crypto.subtle.importKey('raw', keyData, algorithm, false, ['verify']).then(key =>
-            crypto.subtle.verify(algorithm, key, hexToBytes(signature), bodyData)
-        );
+        const computed = createHmac('sha256', secret).update(reqBody).digest('hex');
+        console.log('[webhook/calcom] Computed HMAC:', computed);
+        console.log('[webhook/calcom] Received HMAC:', signature);
+        return computed === signature;
     } catch {
         return false;
     }
-}
-
-function hexToBytes(hex) {
-    const bytes = new Uint8Array(hex.length / 2);
-    for (let i = 0; i < hex.length; i += 2) bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
-    return bytes;
 }
 
 /* ------------------------------------------------------------------ */
@@ -83,14 +74,19 @@ export async function POST(request) {
     const headerEntries = Object.fromEntries(request.headers);
     console.log('[webhook/calcom] Headers:', JSON.stringify(headerEntries));
 
-    // Verify HMAC using RAW body text
+    // Verify HMAC using RAW body text (skip if CALCOM_WEBHOOK_SECRET is not set)
     const signature = request.headers.get('calcom-webhook-signature')
         || request.headers.get('x-calcom-signature')
         || request.headers.get('x-cal-signature-256');
-    const verified = await verifyCalcomHmac(rawBody, signature);
-    console.log('[webhook/calcom] HMAC verified:', verified, 'signature:', signature ? signature.slice(0, 20) + '...' : 'NONE');
-    if (!verified) {
-        return NextResponse.json({ success: false, message: 'Invalid HMAC signature' }, { status: 401 });
+    const calcomSecret = process.env.CALCOM_WEBHOOK_SECRET;
+    if (calcomSecret) {
+        const verified = await verifyCalcomHmac(rawBody, signature);
+        console.log('[webhook/calcom] HMAC verified:', verified, 'signature:', signature ? signature.slice(0, 20) + '...' : 'NONE');
+        if (!verified) {
+            return NextResponse.json({ success: false, message: 'Invalid HMAC signature' }, { status: 401 });
+        }
+    } else {
+        console.log('[webhook/calcom] HMAC skipped — CALCOM_WEBHOOK_SECRET not set');
     }
 
     const triggerEvent = body.triggerEvent;
