@@ -45,7 +45,7 @@ interface StageDef { key: Stage; rank: number; labelNl: string; labelEn: string;
 /* ------------------------------------------------------------------ */
 const STRINGS = {
   nl: {
-    title: 'Meta Leads Dashboard',
+    title: 'Leads Dashboard',
     updated: 'Bijgewerkt',
     refresh: 'Vernieuwen',
     admin: 'Admin',
@@ -93,7 +93,7 @@ const STRINGS = {
     exportCsv: 'CSV',
   },
   en: {
-    title: 'Meta Leads Dashboard',
+    title: 'Leads Dashboard',
     updated: 'Updated',
     refresh: 'Refresh',
     admin: 'Admin',
@@ -436,13 +436,7 @@ export default function AanhuurLeadsDashboard() {
   return (
     <div className={styles.dashboard}>
       <header className={styles.topbar}>
-        <span className={styles.brandChip}>
-          <svg className={styles.logo} viewBox="0 0 1114.3 537.2" fill="#009B8A" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ApartmentHub">
-            <path d="M557,73l-1.2,0c-73.5,0.6-132.7,60.9-132.1,134.4c0.2,23.3,6.5,46.2,18.2,66.2c11.4,19.4,27.6,35.7,46.9,47.2 l4.2,2.5l-1.1-129l-0.4-0.6c0-0.1-3.9-6.7-0.1-9.4c1.4-1,2.8-1.3,4.3-0.8c2.6,0.8,4.4,3.3,4.7,4l0.5,3.9l3.7-2.2 c3.9-2.4,11.1-7.8,15-17.7c3.7-9.2,3.1-23.8,2.5-30.8l9.6-0.1l-0.5-3.1c0-0.1-1.8-12.2,5-20.3c4.2-5,11-7.6,20.1-7.7 c9.1-0.1,15.9,2.4,20.2,7.3c7,7.9,5.4,20.1,5.4,20.2l-0.4,3.2l9.6-0.1c-0.4,7-0.8,21.6,3.1,30.8c4.1,9.8,11.4,15.1,15.3,17.4 l3.7,2.2l0.4-3.9c0.4-0.7,2.1-3.2,4.7-4c1.5-0.5,2.8-0.3,4.3,0.7c3.8,2.6,0.1,9.3,0.1,9.4l-0.4,0.6l1.1,128.7l4.2-2.6 c39.6-24.8,63.1-67.5,62.7-114.2C689.6,132.2,629.8,73,557,73z" />
-            <path d="M557.9,250.9l-0.5,0c-30.6,0.3-30.8,27.1-30.8,27.4l0.5,57.7l2.2,0.5c9.1,1.9,18.5,2.9,27.7,2.9l1.1,0 c10.1-0.1,20.2-1.3,30.1-3.7l2.1-0.5l-0.5-58.8C589.9,276.1,587.9,250.9,557.9,250.9z" />
-            <path d="M557.4,243.8l0.2,0c6.7-0.1,12.9-2.7,17.6-7.5c4.7-4.8,7.2-11.1,7.2-17.8c-0.1-6.7-2.7-13-7.5-17.6 c-4.8-4.7-11.1-7.2-17.8-7.2c-6.7,0.1-13,2.7-17.6,7.5c-4.7,4.8-7.2,11.1-7.2,17.8s2.7,13,7.5,17.6 C544.6,241.3,550.8,243.8,557.4,243.8z" />
-          </svg>
-        </span>
+        <img  src={'/images/horizontal-logo.png'}/>
         <span className={styles.ttl}>{s.title}</span>
         <div className={styles.right}>
           <div className={styles.langToggle}>
