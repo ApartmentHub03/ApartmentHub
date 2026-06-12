@@ -69,22 +69,25 @@ async function findLead(supabase, phoneOrEmail) {
 /* POST handler                                                       */
 /* ------------------------------------------------------------------ */
 export async function POST(request) {
-    let body;
+    // Read raw body text first for HMAC verification (must use raw string, not JSON.stringify)
+    let rawBody, body;
     try {
-        body = await request.json();
+        rawBody = await request.text();
+        if (!rawBody) throw new Error('Empty body');
+        body = JSON.parse(rawBody);
     } catch {
         return NextResponse.json({ success: false, message: 'Invalid JSON' }, { status: 400 });
     }
 
-    console.log('[webhook/calcom] Payload:', JSON.stringify(body));
+    console.log('[webhook/calcom] Body preview:', rawBody.slice(0, 500));
     const headerEntries = Object.fromEntries(request.headers);
     console.log('[webhook/calcom] Headers:', JSON.stringify(headerEntries));
 
-    // Verify HMAC
+    // Verify HMAC using RAW body text
     const signature = request.headers.get('calcom-webhook-signature')
         || request.headers.get('x-calcom-signature')
         || request.headers.get('x-cal-signature-256');
-    const verified = await verifyCalcomHmac(body, signature);
+    const verified = await verifyCalcomHmac(rawBody, signature);
     console.log('[webhook/calcom] HMAC verified:', verified, 'signature:', signature ? signature.slice(0, 20) + '...' : 'NONE');
     if (!verified) {
         return NextResponse.json({ success: false, message: 'Invalid HMAC signature' }, { status: 401 });
