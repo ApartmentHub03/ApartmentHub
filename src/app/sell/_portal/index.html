@@ -920,8 +920,8 @@
         <select id="vveBeheerder"></select>
       </div>
       <div class="field">
-        <label class="lbl" for="vveEmail"><span data-i18n="lbl_vve_email"></span> <span style="color:var(--red)">*</span></label>
-        <input id="vveEmail" type="email" required autocomplete="off" data-placeholder="ph_vve_email" />
+        <label class="lbl" for="vveEmail"><span data-i18n="lbl_vve_email"></span></label>
+        <input id="vveEmail" type="email" autocomplete="off" data-placeholder="ph_vve_email" />
       </div>
     </div>
     <div class="field" id="vveOtherWrap" style="display:none;">
@@ -1897,9 +1897,26 @@ function t() { return I18N[lang]; }
 
 /* ===== VvE manager + seller-name helpers ===== */
 const VVE_MANAGERS = [
-  "Twinq", "Munnik", "MVGM", "VvE Beheer Nederland", "Bouwinvest", "BVV",
-  "Pro VvE Beheer", "Newomij", "VvE Diensten", "De Vrije VvE", "BMO", "TWG",
-  "Spazio", "VVE Centraal", "Eigenhulp",
+  { name: "VVEgemak BV", email: "info@vvegemak.nl" },
+  { name: "Parel Beheer", email: "info@parelbeheer.nl" },
+  { name: "VvE Beheer Amsterdam", email: "info@vvebeheer-amsterdam.nl" },
+  { name: "De Amsterdamse VvE Beheerder", email: "info@amsterdamsevvebeheerder.nl" },
+  { name: "Minerva Vastgoedbeheer", email: "info@minervavastgoedbeheer.nl" },
+  { name: "VVE NL", email: "info@vvenl.nl" },
+  { name: "Newomij VvE Beheer", email: "vvebeheer@newomij.nl" },
+  { name: "Direct VvE Beheer", email: "info@directvvebeheer.nl" },
+  { name: "De BeheerCompagnie", email: "info@debeheercompagnie.nl" },
+  { name: "Commitment VVEbeheer", email: "info@commitmentvvebeheer.nl" },
+  { name: "Twinss VvE Beheer", email: "" },
+  { name: "Fidata VvE Beheer", email: "admin@fidata.nl" },
+  { name: "VT2000", email: "info@vt2000.nl" },
+  { name: "Iris VvE Beheer", email: "info@irisbeheer.nl" },
+  { name: "Munnik VvE Beheer", email: "beheer@munnik-vve.nl" },
+  { name: "MVGM VvE", email: "backoffice.vve@mvgm.nl" },
+  { name: "Pro VVE Beheer", email: "vve@provvebeheer.nl" },
+  { name: "Zomer VvE Beheer", email: "info@zomervve.nl" },
+  { name: "Smart VvE Beheer", email: "info@smartvvebeheer.nl" },
+  { name: "DK VvE Beheer", email: "info@dkvvebeheer.nl" },
 ];
 
 // (Re)build the VvE manager <select>, preserving the current selection. The
@@ -1910,7 +1927,7 @@ function populateVveManagers() {
   const cur = sel.value;
   sel.innerHTML = "";
   sel.appendChild(new Option(t().opt_vve_choose, ""));
-  VVE_MANAGERS.forEach(name => sel.appendChild(new Option(name, name)));
+  VVE_MANAGERS.forEach(m => sel.appendChild(new Option(m.name, m.name)));
   sel.appendChild(new Option(t().opt_vve_self, "__self"));
   sel.appendChild(new Option(t().opt_vve_unknown, "__unknown"));
   sel.appendChild(new Option(t().opt_vve_other, "__other"));
@@ -2832,10 +2849,10 @@ function validateStep1() {
     document.getElementById("email").focus();
     return false;
   }
-  // vveEmail required
+  // vveEmail optional but validate format if provided
   const vveEmailVal = (document.getElementById("vveEmail")?.value || "").trim();
-  if (!vveEmailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(vveEmailVal)) {
-    alert(t().err_vve_email_required || "VvE email is required");
+  if (vveEmailVal && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(vveEmailVal)) {
+    alert(t().err_vve_email_required || "Please enter a valid email address");
     document.getElementById("vveEmail")?.focus();
     return false;
   }
@@ -4413,6 +4430,17 @@ document.getElementById("vveBeheerder")?.addEventListener("change", () => {
   const otherWrap = document.getElementById("vveOtherWrap");
   if (otherWrap) otherWrap.style.display = sel.value === "__other" ? "block" : "none";
   if (sel.value === "__other") setTimeout(() => document.getElementById("vveBeheerderOther")?.focus(), 50);
+  // Auto-fill VvE manager email
+  const mgr = VVE_MANAGERS.find(m => m.name === sel.value);
+  const vveEmailInput = document.getElementById("vveEmail");
+  if (mgr && mgr.email) {
+    vveEmailInput.value = mgr.email;
+  } else {
+    const cur = (vveEmailInput?.value || "").trim();
+    if (VVE_MANAGERS.some(m => m.email && m.email === cur)) {
+      vveEmailInput.value = "";
+    }
+  }
   renderDocs();
   syncVveRequestCard();
   saveDraft();
