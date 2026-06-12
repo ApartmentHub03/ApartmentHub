@@ -1043,6 +1043,9 @@
     </ul>
   </div>
 
+  <h3 class="group-title group-required" data-i18n="grp_seller"></h3>
+  <div class="docs" id="docs-seller"></div>
+
   <h3 class="group-title group-important" data-i18n="grp_important"></h3>
   <div class="docs" id="docs-important"></div>
 
@@ -1316,6 +1319,9 @@ const DOC_GROUPS = {
     { key: "zonnepanelen",  level: "conditional", legal: "optional", skippable: true,  link: "" },
     { key: "bouwkundig",    level: "conditional", legal: "optional", skippable: true,  link: "" },
     { key: "asbest",        level: "conditional", legal: "optional", skippable: true,  link: "" }
+  ],
+  "docs-seller": [
+    { key: "seller_id_masked", level: "seller", legal: "law", vve: false, askVve: false, skippable: false, link: "https://www.kopieid.nl/" }
   ]
 };
 // Static question pool removed — step 4 is now driven entirely by the
@@ -1425,6 +1431,7 @@ const I18N = {
     vve_request_modal_send: "Versturen",
 
     grp_required: "Verplicht",
+    grp_seller: "Persoonlijke documenten",
     grp_important: "Belangrijk (VvE)",
     grp_conditional: "Indien van toepassing",
 
@@ -1554,6 +1561,7 @@ const I18N = {
     price_no_estimate: "Geen schatting beschikbaar voor dit adres. Vul je gewenste prijs in.",
 
     docs: {
+      seller_id_masked: { naam: "KopieID — Gemaskerd identiteitsbewijs", desc: "Upload een KopieID via de KopieID-app. Hierbij zijn je BSN, pasfoto en MRZ-streepjes zwart gemaakt.", where: "Maak een KopieID via de officiële KopieID-app (gratis). Je BSN, pasfoto en MRZ-streepjes worden automatisch afgedekt.", linkLabel: "KopieID-app →", tag: "Verplicht" },
       hypotheek: { naam: "Hypotheekgegevens (aflosnota of pro forma)", desc: "Voor de doorhaling bij de notaris en boeterente inzicht.", where: "Te downloaden in je klantportal van je hypotheekverstrekker (ABN, ING, Rabobank, etc.). Vaak heet het 'pro forma berekening'.", linkLabel: "", tag: "Privé", skipLabel: "Ik heb geen hypotheek op deze woning" },
       garanties: { naam: "Garantiebewijzen", desc: "Garanties van dak, cv, kozijnen, keuken, badkamer, zonnepanelen.", where: "Eigen administratie. Vraag je aannemer of installateur om een kopie als je 'm kwijt bent.", linkLabel: "", tag: "Privé" },
       "cv-onderhoud": { naam: "CV onderhoudscontract + laatste rapport", desc: "Contract en jaarlijkse keuring van de cv ketel.", where: "Bij je onderhoudspartij (bv. Feenstra, Energiewacht, Bonarius). Te vinden in hun klantportal of je emailarchief.", linkLabel: "", tag: "Privé" },
@@ -1691,6 +1699,7 @@ const I18N = {
     vve_request_modal_send: "Send",
 
     grp_required: "Required",
+    grp_seller: "Personal documents",
     grp_important: "Important (VvE)",
     grp_conditional: "If applicable",
 
@@ -1820,6 +1829,7 @@ const I18N = {
     price_no_estimate: "No estimate available for this address. Please enter your desired price.",
 
     docs: {
+      seller_id_masked: { naam: "KopieID — Masked identity document", desc: "Upload a KopieID created via the KopieID app. Your BSN, passport photo, and MRZ strip must be blacked out.", where: "Create a KopieID using the official KopieID app (free). Your BSN, passport photo and MRZ strip will be automatically masked.", linkLabel: "KopieID app →", tag: "Required" },
       hypotheek: { naam: "Mortgage details (payoff statement or pro forma)", desc: "Needed for cancellation by the notary and to check early redemption penalties.", where: "Download from your mortgage lender's customer portal (ABN, ING, Rabobank, etc.). Often called a 'pro forma calculation'.", linkLabel: "", tag: "Private", skipLabel: "I don't have a mortgage on this property" },
       garanties: { naam: "Warranties", desc: "Warranties for roof, boiler, window frames, kitchen, bathroom, solar.", where: "Your own files. Ask your contractor or installer for a copy if missing.", linkLabel: "", tag: "Private" },
       "cv-onderhoud": { naam: "Boiler service contract + last report", desc: "Contract and annual inspection of the boiler.", where: "From your service provider (e.g. Feenstra, Energiewacht, Bonarius). Found in their portal or your email.", linkLabel: "", tag: "Private" },
