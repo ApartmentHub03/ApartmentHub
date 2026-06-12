@@ -165,7 +165,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
       continue;
     }
     if (f.ai_extract_status === "skipped") {
-      skipped.push(`${f.filename} (${f.mime_type || "unknown"} — not supported by AI)`);
+      skipped.push(`${f.filename} (${f.mime_type || "unknown"} not supported by AI)`);
       continue;
     }
     skipped.push(`${f.filename} (extract ${f.ai_extract_status || "missing"})`);

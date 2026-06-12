@@ -11,7 +11,7 @@ import {
 
 // Seller-triggered analyse. Differs from the staff route in three ways:
 //   1. Auth is the seller's session (cookie), not getStaffUser()
-//   2. We resolve the dossier from session.phone_e164 — no [id] path param
+//   2. We resolve the dossier from session.phone_e164 no [id] path param
 //   3. The prompt no longer references the "16 standard portal questions"
 //      because the seller portal step 4 is now 100% AI-generated.
 //
@@ -208,7 +208,7 @@ export async function POST(_req: NextRequest) {
       continue;
     }
     if (f.ai_extract_status === "skipped") {
-      skipped.push(`${f.filename} (${f.mime_type || "unknown"} — not supported by AI)`);
+      skipped.push(`${f.filename} (${f.mime_type || "unknown"} not supported by AI)`);
       continue;
     }
     skipped.push(`${f.filename} (extract ${f.ai_extract_status || "missing"})`);

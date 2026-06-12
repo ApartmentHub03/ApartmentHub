@@ -643,7 +643,7 @@ const Aanvraag = () => {
         // treat them as complete (no required docs to check).
         return personen.every(p => {
             const progress = tenantProgress[p.persoonId];
-            if (!progress) return true; // No progress tracked yet — no work status selected
+            if (!progress) return true; // No progress tracked yet no work status selected
             return progress.isDocsComplete === true;
         });
     };
@@ -1031,7 +1031,7 @@ const Aanvraag = () => {
             setInviteLinkCopied(false);
             setShowShareModal(true);
         } else {
-            // Directly add empty person card inline — no popup
+            // Directly add empty person card inline no popup
             const newPerson = {
                 persoonId: `p${Date.now()}`,
                 naam: '',

@@ -13,7 +13,7 @@ type Analysis = {
 };
 
 const ERRORS: Record<string, string> = {
-  no_files: "This dossier has no uploaded files yet — nothing for the AI to read.",
+  no_files: "This dossier has no uploaded files yet nothing for the AI to read.",
   no_analysable_files:
     "All uploaded files are in formats Claude can't read (Word / Excel). Ask the seller to re-upload as PDF.",
   forbidden_role: "Your role (viewer) can't trigger AI analysis. Ask an admin.",

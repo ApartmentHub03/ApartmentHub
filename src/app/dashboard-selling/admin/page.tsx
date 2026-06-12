@@ -91,7 +91,7 @@ export default async function AdminPage() {
               }}
             >
               <strong>Admin</strong> manages staff. <strong>Agent</strong> can view dossiers and download
-              files. <strong>Viewer</strong> sees dossier metadata only — no files or downloads.
+              files. <strong>Viewer</strong> sees dossier metadata only no files or downloads.
             </p>
           </div>
         </div>
