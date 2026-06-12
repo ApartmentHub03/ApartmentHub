@@ -1569,7 +1569,7 @@ const I18N = {
       notulen: { naam: "Notulen ALV. Laatste 3 jaar.", desc: "Vergaderverslagen van de algemene ledenvergadering.", where: "Vraag je VvE beheerder of bestuur. Bij grote VvE's staan ze in het beheerportaal (Twinq, Bouwinvest, BVV, Pro VvE Beheer).", linkLabel: "", tag: "Via VvE" },
       jaarrekening: { naam: "Jaarrekening + begroting VvE", desc: "Laatste twee boekjaren plus lopende begroting.", where: "Via je VvE beheerder of bestuur.", linkLabel: "", tag: "Via VvE" },
       mjop: { naam: "MJOP. Meerjarenonderhoudsplan.", desc: "Van de afgelopen 5 jaar. Niet wettelijk verplicht als los document, maar de bank van de koper vraagt er bijna altijd om. Zonder MJOP moet de VvE jaarlijks 0,5% van de herbouwwaarde reserveren. (BW 5:126)", where: "Via je VvE beheerder. Geen MJOP? Geef dat aan in stap 4. Een ontbrekend MJOP is geen blokkade voor verkoop, wel een aandachtspunt.", linkLabel: "", tag: "Via VvE" },
-      reservefonds: { naam: "Bewijs saldo reservefonds", desc: "Wettelijk verplicht (BW 5:126). Vaak al opgenomen in je jaarrekening — dan is een aparte upload niet nodig.", where: "Via je VvE beheerder, of terug te vinden in de jaarrekening.", linkLabel: "", tag: "Via VvE" },
+      reservefonds: { naam: "Bewijs saldo reservefonds", desc: "Wettelijk verplicht (BW 5:126). Vaak al opgenomen in je jaarrekening dan is een aparte upload niet nodig.", where: "Via je VvE beheerder, of terug te vinden in de jaarrekening.", linkLabel: "", tag: "Via VvE" },
       opstal: { naam: "Opstalverzekeringspolis VvE", desc: "Polis met dekking en herbouwwaarde van het gebouw.", where: "Via je VvE beheerder. Veelvoorkomend bij Centraal Beheer, Klaverblad, NN.", linkLabel: "", tag: "Via VvE" },
       huishoudelijk: { naam: "Huishoudelijk reglement VvE", desc: "De regels van de VvE over gebruik van het gebouw en de gemeenschappelijke ruimtes.", where: "Via je VvE beheerder of bestuur. Vaak ook te vinden in het beheerportaal.", linkLabel: "", tag: "Via VvE" },
       erfpacht: { naam: "Erfpachtstukken (Amsterdam)", desc: "Erfpachtakte, canon aanslag, afkoopbevestiging of overstapaanbieding.", where: "Log in met DigiD op mijn.amsterdam.nl. Daar staan al je erfpachtstukken bij elkaar.", linkLabel: "Open mijn.amsterdam.nl", tag: "Gemeente" },
@@ -1829,7 +1829,7 @@ const I18N = {
     price_no_estimate: "No estimate available for this address. Please enter your desired price.",
 
     docs: {
-      passport: { naam: "Passport or identity document", desc: "Upload a copy of your passport or Dutch identity card.", where: "Your own passport or ID card. Take a clear photo or scan of the page with your personal details.", linkLabel: "", tag: "Required" },
+      passport: { naam: "Passport", desc: "Upload a copy of your passport.", where: "Your own passport or ID card. Take a clear photo or scan of the page with your personal details.", linkLabel: "", tag: "Required" },
       hypotheek: { naam: "Mortgage details (payoff statement or pro forma)", desc: "Needed for cancellation by the notary and to check early redemption penalties.", where: "Download from your mortgage lender's customer portal (ABN, ING, Rabobank, etc.). Often called a 'pro forma calculation'.", linkLabel: "", tag: "Private", skipLabel: "I don't have a mortgage on this property" },
       garanties: { naam: "Warranties", desc: "Warranties for roof, boiler, window frames, kitchen, bathroom, solar.", where: "Your own files. Ask your contractor or installer for a copy if missing.", linkLabel: "", tag: "Private" },
       "cv-onderhoud": { naam: "Boiler service contract + last report", desc: "Contract and annual inspection of the boiler.", where: "From your service provider (e.g. Feenstra, Energiewacht, Bonarius). Found in their portal or your email.", linkLabel: "", tag: "Private" },
@@ -2762,7 +2762,7 @@ function rerenderFileList(docKey) {
     item.querySelector(".size").textContent = formatSize(f.size);
     const tag = item.querySelector(".status-tag");
     if (f.status === "uploading") tag.textContent = (lang === "en" ? "uploading…" : "uploaden…");
-    else if (f.status === "failed") tag.textContent = (lang === "en" ? "failed — retry" : "mislukt — opnieuw");
+    else if (f.status === "failed") tag.textContent = (lang === "en" ? "failed retry" : "mislukt  opnieuw");
     else if (f.status === "uploaded" && f.version > 1) tag.textContent = `v${f.version}`;
     else tag.textContent = "";
 
@@ -3372,7 +3372,7 @@ function validateBeforeSubmit() {
     list.innerHTML = "";
     missing.forEach(m => {
       const li = document.createElement("li");
-      li.innerHTML = `<strong></strong> — <span></span>`;
+      li.innerHTML = `<strong></strong>  <span></span>`;
       li.querySelector("strong").textContent = m.label;
       li.querySelector("span").textContent = m.reason;
       list.appendChild(li);
@@ -4139,7 +4139,7 @@ function buildOtdContractHtml() {
       <div class="otd-sign-col">
         <div class="otd-sign-role">${isNL ? "De makelaar (Apartmenthub)" : "The agent (Apartmenthub)"}</div>
         <div class="otd-sig-david">David van Wachem</div>
-        <div class="otd-sign-name">David van Wachem — Apartmenthub</div>
+        <div class="otd-sign-name">David van Wachem Apartmenthub</div>
       </div>
       <div class="otd-sign-col">
         <div class="otd-sign-role">${isNL ? "De verkoper" : "The seller"}</div>
