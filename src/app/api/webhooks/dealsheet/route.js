@@ -27,6 +27,8 @@ export async function POST(request) {
         return NextResponse.json({ success: false, message: 'Invalid JSON' }, { status: 400 });
     }
 
+    console.log('[webhook/dealsheet] Payload:', JSON.stringify(body));
+
     const { phone, status, amount } = body;
     if (!phone || !status) {
         return NextResponse.json({ success: false, message: 'Missing required fields: phone, status' }, { status: 400 });
@@ -55,11 +57,15 @@ export async function POST(request) {
     }
 
     if (!lead) {
+        console.log('[webhook/dealsheet] Lead not found for phone:', normalizedPhone);
         return NextResponse.json({ success: false, message: 'Lead not found' }, { status: 404 });
     }
 
+    console.log('[webhook/dealsheet] Found lead:', lead.id, 'current stage:', lead.stage, 'new status:', status);
+
     // Stage guard: only allow forward progression
     if (!stageGuard(lead.stage || 'lead', status)) {
+        console.log('[webhook/dealsheet] Stage guard blocked:', lead.stage, '->', status);
         return NextResponse.json({
             success: false,
             message: `Stage guard: cannot go from ${lead.stage} to ${status}`,
@@ -92,15 +98,18 @@ export async function POST(request) {
                 }
             }
 
+            console.log('[webhook/dealsheet] Updating', normalizedPhone, 'to stage=qualified');
+
             const { error: updateErr } = await supabase.from('meta_leads').update({
                 stage: 'qualified',
                 qualified_at: new Date().toISOString(),
             }).eq('phone', normalizedPhone);
 
             if (updateErr) {
-                console.error('[webhook/dealsheet] Update error:', updateErr);
+                console.error('[webhook/dealsheet] qualified update error:', updateErr);
                 results.db = { success: false, error: updateErr.message };
             } else {
+                console.log('[webhook/dealsheet] Updated', normalizedPhone, 'to stage=qualified');
                 results.db = { success: true };
             }
 
@@ -138,14 +147,17 @@ export async function POST(request) {
                 updateData.amount = parseFloat(amount);
             }
 
+            console.log('[webhook/dealsheet] Updating', normalizedPhone, 'to stage=won', amount ? `amount=${amount}` : '');
+
             const { error: updateErr } = await supabase.from('meta_leads')
                 .update(updateData)
                 .eq('phone', normalizedPhone);
 
             if (updateErr) {
-                console.error('[webhook/dealsheet] Update error:', updateErr);
+                console.error('[webhook/dealsheet] won update error:', updateErr);
                 results.db = { success: false, error: updateErr.message };
             } else {
+                console.log('[webhook/dealsheet] Updated', normalizedPhone, 'to stage=won');
                 results.db = { success: true };
             }
 

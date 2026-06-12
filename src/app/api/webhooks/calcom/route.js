@@ -76,16 +76,22 @@ export async function POST(request) {
         return NextResponse.json({ success: false, message: 'Invalid JSON' }, { status: 400 });
     }
 
+    console.log('[webhook/calcom] Payload:', JSON.stringify(body));
+    const headerEntries = Object.fromEntries(request.headers);
+    console.log('[webhook/calcom] Headers:', JSON.stringify(headerEntries));
+
     // Verify HMAC
     const signature = request.headers.get('calcom-webhook-signature')
         || request.headers.get('x-calcom-signature')
         || request.headers.get('x-cal-signature-256');
     const verified = await verifyCalcomHmac(body, signature);
+    console.log('[webhook/calcom] HMAC verified:', verified, 'signature:', signature ? signature.slice(0, 20) + '...' : 'NONE');
     if (!verified) {
         return NextResponse.json({ success: false, message: 'Invalid HMAC signature' }, { status: 401 });
     }
 
     const triggerEvent = body.triggerEvent;
+    console.log('[webhook/calcom] Trigger event:', triggerEvent, 'has payload:', !!body.payload);
     if (!triggerEvent || !body.payload) {
         return NextResponse.json({ success: false, message: 'Missing triggerEvent or payload' }, { status: 400 });
     }
@@ -101,12 +107,16 @@ export async function POST(request) {
     try {
         switch (triggerEvent) {
             case 'BOOKING_CREATED': {
+                console.log('[webhook/calcom] payload.responses:', JSON.stringify(body.payload.responses));
+                console.log('[webhook/calcom] payload.attendees:', JSON.stringify(body.payload.attendees?.map(a => a.email)));
                 const phoneOrEmail = extractPhone(body.payload);
+                console.log('[webhook/calcom] Extracted phoneOrEmail:', phoneOrEmail);
                 if (!phoneOrEmail) {
                     return NextResponse.json({ success: false, message: 'No phone or email found' }, { status: 400 });
                 }
 
                 const lead = await findLead(supabase, phoneOrEmail);
+                console.log('[webhook/calcom] Lead lookup:', lead ? `id=${lead.id} phone=${lead.phone} stage=${lead.stage}` : 'NOT FOUND');
                 if (!lead) {
                     return NextResponse.json({ success: false, message: 'Lead not found' }, { status: 404 });
                 }
@@ -148,6 +158,7 @@ export async function POST(request) {
                     console.error('[webhook/calcom] Update error:', error);
                     results.db = { success: false, error: error.message };
                 } else {
+                    console.log('[webhook/calcom] Updated lead', normalizedPhone, 'to stage=scheduled');
                     results.db = { success: true };
                 }
 
@@ -156,20 +167,33 @@ export async function POST(request) {
 
             case 'BOOKING_CANCELLED': {
                 const phoneOrEmail = extractPhone(body.payload);
-                if (!phoneOrEmail) return NextResponse.json({ success: true, message: 'No phone — skipping' });
+                if (!phoneOrEmail) {
+                    console.log('[webhook/calcom] CANCELLED: no phone extracted, skipping');
+                    return NextResponse.json({ success: true, message: 'No phone — skipping' });
+                }
 
                 const lead = await findLead(supabase, phoneOrEmail);
-                if (!lead) return NextResponse.json({ success: true, message: 'Lead not found — skipping' });
+                if (!lead) {
+                    console.log('[webhook/calcom] CANCELLED: lead not found for', phoneOrEmail);
+                    return NextResponse.json({ success: true, message: 'Lead not found — skipping' });
+                }
 
-                // Reset stage to lead if currently scheduled
                 const normalizedPhone = normalizePhone(lead.phone);
+                console.log('[webhook/calcom] CANCELLED: lead', normalizedPhone, 'current stage:', lead.stage);
                 if (lead.stage === 'scheduled') {
-                    await supabase.from('meta_leads').update({
+                    const { error } = await supabase.from('meta_leads').update({
                         stage: 'lead',
                         cal_booking_uid: null,
                         cal_booking_url: null,
                         scheduled_at: null,
                     }).eq('phone', normalizedPhone);
+                    if (error) {
+                        console.error('[webhook/calcom] CANCELLED update error:', error);
+                    } else {
+                        console.log('[webhook/calcom] CANCELLED: reset', normalizedPhone, 'to stage=lead');
+                    }
+                } else {
+                    console.log('[webhook/calcom] CANCELLED: stage is', lead.stage, '- no reset needed');
                 }
 
                 return NextResponse.json({ success: true, message: 'Booking cancelled, stage reset if applicable' });
@@ -177,29 +201,42 @@ export async function POST(request) {
 
             case 'BOOKING_RESCHEDULED': {
                 const phoneOrEmail = extractPhone(body.payload);
-                if (!phoneOrEmail) return NextResponse.json({ success: true, message: 'No phone — skipping' });
+                if (!phoneOrEmail) {
+                    console.log('[webhook/calcom] RESCHEDULED: no phone extracted, skipping');
+                    return NextResponse.json({ success: true, message: 'No phone — skipping' });
+                }
 
                 const lead = await findLead(supabase, phoneOrEmail);
-                if (!lead) return NextResponse.json({ success: true, message: 'Lead not found — skipping' });
+                if (!lead) {
+                    console.log('[webhook/calcom] RESCHEDULED: lead not found for', phoneOrEmail);
+                    return NextResponse.json({ success: true, message: 'Lead not found — skipping' });
+                }
 
                 const normalizedPhone = normalizePhone(lead.phone);
                 const uid = body.payload.uid;
                 const bookingUrl = body.payload.url || body.payload.manageLink || null;
+                console.log('[webhook/calcom] RESCHEDULED: updating', normalizedPhone, 'uid:', uid);
 
-                await supabase.from('meta_leads').update({
+                const { error } = await supabase.from('meta_leads').update({
                     cal_booking_uid: uid,
                     cal_booking_url: bookingUrl,
                     scheduled_at: new Date().toISOString(),
                 }).eq('phone', normalizedPhone);
+                if (error) {
+                    console.error('[webhook/calcom] RESCHEDULED update error:', error);
+                } else {
+                    console.log('[webhook/calcom] RESCHEDULED: done for', normalizedPhone);
+                }
 
                 return NextResponse.json({ success: true, message: 'Booking rescheduled' });
             }
 
             default:
+                console.log('[webhook/calcom] Unhandled trigger:', triggerEvent);
                 return NextResponse.json({ success: true, message: `Unhandled trigger: ${triggerEvent}` });
         }
     } catch (err) {
-        console.error('[webhook/calcom] Error:', err);
+        console.error('[webhook/calcom] Unhandled error:', err);
         return NextResponse.json({ success: false, message: err.message }, { status: 500 });
     }
 }
