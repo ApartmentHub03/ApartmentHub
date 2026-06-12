@@ -236,6 +236,7 @@ export default function AanhuurLeadsDashboard() {
   const [channelFilter, setChannelFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | Stage>('all');
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [updated, setUpdated] = useState('');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(50);
@@ -244,12 +245,17 @@ export default function AanhuurLeadsDashboard() {
 
   const s = STRINGS[lang];
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     try {
       const token = sessionStorage.getItem('admin_token') || '';
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
-      if (search.trim()) params.set('search', search.trim());
+      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
       if (channelFilter !== 'all') params.set('source', channelFilter);
       const res = await fetch(`/api/admin/lead-dashboard?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -290,7 +296,7 @@ export default function AanhuurLeadsDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [page, limit, search, channelFilter, router, lang]);
+  }, [page, limit, debouncedSearch, channelFilter, router, lang]);
 
   useEffect(() => {
     const token = sessionStorage.getItem('admin_token');
