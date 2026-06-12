@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import { Plus, Copy, Check, Link, LogOut, Building2, Trash2, ClipboardList, X, BarChart3, Home } from 'lucide-react';
+import { Plus, Copy, Check, Link, LogOut, Building2, Trash2, ClipboardList, X, BarChart3, Home, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import styles from './dashboard.module.css';
 
@@ -341,6 +341,14 @@ export default function AdminDashboard() {
                         >
                             <Home size={16} />
                             Selling
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push('/admin/lead-dashboard')}
+                        >
+                            <Users size={16} />
+                            Leads
                         </Button>
                         <Button
                             variant="outline"

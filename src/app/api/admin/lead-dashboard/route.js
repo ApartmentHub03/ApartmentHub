@@ -1,0 +1,113 @@
+import { NextResponse } from 'next/server';
+import { getSupabaseServer } from '@/lib/supabaseServer';
+
+function escapeIlike(str) {
+    return str.replace(/[%_]/g, (m) => `\\${m}`);
+}
+
+function applyFilters(query, { search, source, language, bedrooms, budget }) {
+    if (search) {
+        const escaped = escapeIlike(search);
+        query = query.or(`full_name.ilike.%${escaped}%,phone.ilike.%${escaped}%,email.ilike.%${escaped}%`);
+    }
+    if (source) {
+        query = query.eq('source', source);
+    }
+    if (language) {
+        query = query.eq('language', language);
+    }
+    if (bedrooms) {
+        query = query.ilike('bedrooms', `%${escapeIlike(bedrooms)}%`);
+    }
+    if (budget) {
+        query = query.ilike('budget', `%${escapeIlike(budget)}%`);
+    }
+    return query;
+}
+
+export async function GET(request) {
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    if (!token) {
+        return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const validUsername = process.env.NEXT_PUBLIC_ADMIN_USERNAME;
+    const validPassword = process.env.ADMIN_PASSWORD;
+    if (!validUsername || !validPassword) {
+        return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+    }
+
+    const supabase = getSupabaseServer();
+    if (!supabase) {
+        return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search') || '';
+    const source = searchParams.get('source') || '';
+    const language = searchParams.get('language') || '';
+    const bedrooms = searchParams.get('bedrooms') || '';
+    const budget = searchParams.get('budget') || '';
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    const limitParam = parseInt(searchParams.get('limit') || '50', 10);
+    const limit = [50, 100, 500].includes(limitParam) ? limitParam : 50;
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    const filters = { search, source, language, bedrooms, budget };
+
+    const pagedQuery = applyFilters(
+        supabase.from('meta_leads').select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(from, to),
+        filters
+    );
+
+    const allQuery = applyFilters(
+        supabase.from('meta_leads').select('created_at,language,source'),
+        filters
+    );
+
+    const [pagedResult, allResult] = await Promise.all([
+        pagedQuery,
+        allQuery,
+    ]);
+
+    if (pagedResult.error) {
+        return NextResponse.json({ success: false, message: pagedResult.error.message }, { status: 500 });
+    }
+    if (allResult.error) {
+        return NextResponse.json({ success: false, message: allResult.error.message }, { status: 500 });
+    }
+
+    const leads = pagedResult.data || [];
+    const total = pagedResult.count || 0;
+    const allLeads = allResult.data || [];
+
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 1).toISOString();
+
+    const stats = {
+        total,
+        today: 0,
+        thisWeek: 0,
+        byLanguage: {},
+        bySource: {},
+    };
+
+    for (const l of allLeads) {
+        if (l.created_at >= todayStart) stats.today++;
+        if (l.created_at >= weekStart) stats.thisWeek++;
+        stats.byLanguage[l.language] = (stats.byLanguage[l.language] || 0) + 1;
+        if (l.source) stats.bySource[l.source] = (stats.bySource[l.source] || 0) + 1;
+    }
+
+    return NextResponse.json({
+        success: true,
+        leads,
+        total,
+        page,
+        limit,
+        stats,
+    });
+}
