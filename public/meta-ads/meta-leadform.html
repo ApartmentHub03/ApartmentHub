@@ -134,6 +134,22 @@
     appearance:none;-webkit-appearance:none}
   input:focus{outline:0;border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,155,138,.15)}
   input.invalid{border-color:var(--err);box-shadow:0 0 0 3px rgba(180,35,24,.12)}
+
+  /* Phone row with country selector */
+  .phoneRow{display:flex;gap:8px;align-items:stretch}
+  .phoneRow input[type=tel]{flex:1;width:auto}
+  .countrySelectWrap{position:relative;flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;
+    padding:0 30px 0 12px;border:1.5px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;
+    font-weight:600;font-size:14px;color:var(--ink);transition:border-color .12s,box-shadow .12s;min-width:110px}
+  .countrySelectWrap:hover{border-color:rgba(0,155,138,.4)}
+  .countrySelectWrap:focus-within{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,155,138,.18)}
+  .countryFlag{font-size:18px;line-height:1}
+  .countryDial{font-variant-numeric:tabular-nums;color:var(--grey);font-weight:600}
+  .countrySelectWrap::after{content:"";position:absolute;right:12px;top:50%;width:8px;height:8px;
+    border-right:2px solid var(--grey-soft);border-bottom:2px solid var(--grey-soft);
+    transform:translateY(-70%) rotate(45deg);pointer-events:none}
+  .countrySelect{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font:inherit}
+  @media(max-width:860px){.countrySelectWrap{min-width:88px;padding-right:26px;padding-left:10px}}
   .err-msg{display:none;color:var(--err);font-size:12.5px;margin-top:5px}
   .field.show-err .err-msg{display:block}
 
@@ -268,8 +284,15 @@
 
             <div class="field">
               <label class="lbl" for="phone" data-i="l_phone">WhatsApp <span class="req">*</span></label>
-              <input type="tel" id="phone" name="phone" autocomplete="tel" inputmode="tel" placeholder="+31 6 12345678" required />
-              <div class="err-msg" data-i="e_phone">Vul een geldig telefoonnummer in (incl. landcode, bijv. +31).</div>
+              <div class="phoneRow">
+                <span class="countrySelectWrap">
+                  <span class="countryFlag" id="countryFlag">🇳🇱</span>
+                  <span class="countryDial" id="countryDial">+31</span>
+                  <select class="countrySelect" id="countrySelect" aria-label="Country"></select>
+                </span>
+                <input type="tel" id="phone" name="phone" autocomplete="tel-national" inputmode="tel" placeholder="6 1234 5678" required />
+              </div>
+              <div class="err-msg" data-i="e_phone">Vul je telefoonnummer in (zonder landcode).</div>
             </div>
 
             <div class="field">
@@ -374,7 +397,7 @@ const STRINGS = {
     video_title:'Zo werkt ApartmentHub',
     greviews:'Google-recensies',
     l_name:'Voornaam & achternaam', e_name:'Vul je naam in.',
-    l_phone:'WhatsApp', e_phone:'Vul een geldig telefoonnummer in (incl. landcode, bijv. +31).',
+    l_phone:'WhatsApp', e_phone:'Vul je telefoonnummer in (zonder landcode).',
     l_email:'E-mailadres (optioneel)', e_email:'Vul een geldig e-mailadres in.',
     socialproof:'Sluit je aan bij honderden huurders. We reageren snel via WhatsApp.',
     consent:'Ik ga akkoord met de <a href="{terms}" target="_blank" rel="noopener">algemene voorwaarden</a>.',
@@ -402,7 +425,7 @@ const STRINGS = {
     video_title:'How ApartmentHub works',
     greviews:'Google reviews',
     l_name:'First & last name', e_name:'Please enter your name.',
-    l_phone:'WhatsApp', e_phone:'Please enter a valid phone number (incl. country code, e.g. +31).',
+    l_phone:'WhatsApp', e_phone:'Enter your phone number (without country code).',
     l_email:'Email address (optional)', e_email:'Please enter a valid email address.',
     socialproof:'Join hundreds of tenants. We reply fast on WhatsApp.',
     consent:'I agree to the <a href="{terms}" target="_blank" rel="noopener">Terms and Conditions</a>.',
@@ -484,9 +507,72 @@ nextBtns.forEach(btn=>btn.addEventListener('click',()=>goStep(+btn.dataset.next)
 
 /* ===== Autosave/resume ===== */
 const LS_KEY='ah_leadform_v2';
+
+/* ===== Country code selector ===== */
+const COUNTRIES=[
+  {code:"31",flag:"🇳🇱",name:"Netherlands",example:"6 1234 5678"},
+  {code:"32",flag:"🇧🇪",name:"Belgium",example:"470 12 34 56"},
+  {code:"49",flag:"🇩🇪",name:"Germany",example:"1512 3456789"},
+  {code:"33",flag:"🇫🇷",name:"France",example:"6 12 34 56 78"},
+  {code:"44",flag:"🇬🇧",name:"United Kingdom",example:"7400 123456"},
+  {code:"1",flag:"🇺🇸",name:"United States",example:"415 555 0132"},
+  {code:"1",flag:"🇨🇦",name:"Canada",example:"416 555 0132"},
+  {code:"91",flag:"🇮🇳",name:"India",example:"98765 43210"},
+  {code:"971",flag:"🇦🇪",name:"United Arab Em.",example:"50 123 4567"},
+  {code:"966",flag:"🇸🇦",name:"Saudi Arabia",example:"50 123 4567"},
+  {code:"34",flag:"🇪🇸",name:"Spain",example:"612 34 56 78"},
+  {code:"39",flag:"🇮🇹",name:"Italy",example:"312 345 6789"},
+  {code:"41",flag:"🇨🇭",name:"Switzerland",example:"78 123 45 67"},
+  {code:"43",flag:"🇦🇹",name:"Austria",example:"664 1234567"},
+  {code:"351",flag:"🇵🇹",name:"Portugal",example:"912 345 678"},
+  {code:"46",flag:"🇸🇪",name:"Sweden",example:"70 123 45 67"},
+  {code:"47",flag:"🇳🇴",name:"Norway",example:"406 12 345"},
+  {code:"45",flag:"🇩🇰",name:"Denmark",example:"20 12 34 56"},
+  {code:"358",flag:"🇫🇮",name:"Finland",example:"40 123 4567"},
+  {code:"353",flag:"🇮🇪",name:"Ireland",example:"85 012 3456"},
+  {code:"48",flag:"🇵🇱",name:"Poland",example:"512 345 678"},
+  {code:"90",flag:"🇹🇷",name:"Turkey",example:"501 234 56 78"},
+  {code:"30",flag:"🇬🇷",name:"Greece",example:"691 234 5678"},
+  {code:"420",flag:"🇨🇿",name:"Czech Republic",example:"601 234 567"},
+  {code:"36",flag:"🇭🇺",name:"Hungary",example:"20 123 4567"},
+  {code:"40",flag:"🇷🇴",name:"Romania",example:"712 345 678"},
+  {code:"972",flag:"🇮🇱",name:"Israel",example:"50 123 4567"},
+  {code:"63",flag:"🇵🇭",name:"Philippines",example:"917 123 4567"},
+  {code:"27",flag:"🇿🇦",name:"South Africa",example:"71 123 4567"},
+  {code:"61",flag:"🇦🇺",name:"Australia",example:"412 345 678"},
+  {code:"64",flag:"🇳🇿",name:"New Zealand",example:"21 123 4567"}
+];
+
+let selectedCountry=COUNTRIES[0];
+
+function initCountrySelect(){
+  const sel=document.getElementById('countrySelect');
+  COUNTRIES.forEach(c=>{
+    const opt=document.createElement('option');
+    opt.value=c.code;
+    opt.textContent=c.flag+' '+c.name+' (+'+c.code+')';
+    sel.appendChild(opt);
+  });
+  sel.value=selectedCountry.code;
+  sel.addEventListener('change',()=>{
+    selectedCountry=COUNTRIES.find(c=>c.code===sel.value)||COUNTRIES[0];
+    document.getElementById('countryFlag').textContent=selectedCountry.flag;
+    document.getElementById('countryDial').textContent='+'+selectedCountry.code;
+    document.getElementById('phone').placeholder=selectedCountry.example;
+    saveState();
+  });
+}
+
+function buildE164(localInput,countryCode){
+  let digits=localInput.replace(/\D/g,'');
+  digits=digits.replace(/^0+/,'');
+  return digits?'+'+countryCode+digits:'';
+}
+
+initCountrySelect();
 function saveState(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({
   bedrooms:state.bedrooms, budget:state.budget,
-  fullName:form.fullName.value, phone:form.phone.value, email:form.email.value, ts:Date.now()
+  fullName:form.fullName.value, phone:form.phone.value, countryCode:selectedCountry.code, email:form.email.value, ts:Date.now()
 })); }catch(e){} }
 function clearState(){ try{ localStorage.removeItem(LS_KEY); }catch(e){} }
 function syncChoices(name){
@@ -505,6 +591,10 @@ function restoreState(){ try{
   if(d.fullName) form.fullName.value=d.fullName;
   if(d.phone) form.phone.value=d.phone;
   if(d.email) form.email.value=d.email;
+  if(d.countryCode){
+    const sel=document.getElementById('countrySelect');
+    if(sel){ sel.value=d.countryCode; sel.dispatchEvent(new Event('change')); }
+  }
   updateNextBtns();
 }catch(e){} }
 
@@ -524,15 +614,15 @@ document.querySelectorAll('.choice').forEach(btn=>{
 /* ===== Validatie contactstap ===== */
 const form=document.getElementById('leadForm');
 const emailRe=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const phoneRe=/^\+?[0-9][0-9\s().-]{7,17}$/;
 function setErr(el,show){const f=el.closest('.field'); if(f) f.classList.toggle('show-err',show);}
 
 function validateContact(){
   let ok=true;
   const name=form.fullName, phone=form.phone, email=form.email, consent=form.consent;
   const nameOk=name.value.trim().length>=2; setErr(name,!nameOk); name.classList.toggle('invalid',!nameOk); ok=ok&&nameOk;
-  const phoneOk=phoneRe.test(phone.value.trim()); setErr(phone,!phoneOk); phone.classList.toggle('invalid',!phoneOk); ok=ok&&phoneOk;
-  const emailVal=email.value.trim(); const emailOk = emailVal==='' || emailRe.test(emailVal); setErr(email,!emailOk); email.classList.toggle('invalid',!emailOk); ok=ok&&emailOk; /* e-mail optioneel: alleen checken indien ingevuld */
+  const phoneDigits=phone.value.replace(/\D/g,'').replace(/^0+/,'');
+  const phoneOk=phoneDigits.length>=7&&phoneDigits.length<=15; setErr(phone,!phoneOk); phone.classList.toggle('invalid',!phoneOk); ok=ok&&phoneOk;
+  const emailVal=email.value.trim(); const emailOk = emailVal==='' || emailRe.test(emailVal); setErr(email,!emailOk); email.classList.toggle('invalid',!emailOk); ok=ok&&emailOk;
   const consentOk=consent.checked; document.getElementById('consentErr').style.display=consentOk?'none':'block'; ok=ok&&consentOk;
   return ok;
 }
@@ -572,7 +662,7 @@ form.addEventListener('submit',async(e)=>{
   const eventId=makeEventId();
   const payload={
     fullName:form.fullName.value.trim(),
-    phone:form.phone.value.replace(/[\s().-]/g,''),
+    phone:buildE164(form.phone.value,selectedCountry.code),
     email:form.email.value.trim().toLowerCase(),
     bedrooms:state.bedrooms.join(','),
     budget:state.budget.join(','),
@@ -604,7 +694,6 @@ form.addEventListener('submit',async(e)=>{
 /* init */
 restoreState();
 updateNextBtns();
-if(!form.phone.value){ form.phone.value='+31 '; }
 applyLang(LANG);
 goStep(state.bedrooms.length>0?(state.budget.length>0?3:2):1);
 </script>

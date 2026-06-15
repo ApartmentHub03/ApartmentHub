@@ -187,24 +187,27 @@ const cx = (...c: Array<string | false | undefined | null>) => c.filter(Boolean)
 const eur = (n: number, lang: 'nl' | 'en' = 'nl') =>
   new Intl.NumberFormat(lang === 'nl' ? 'nl-NL' : 'en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n || 0);
 const pct = (n: number, t: number) => (t ? `${Math.round((n / t) * 100)}%` : '0%');
-const asArr = (v: string | string[] | undefined | null): string[] =>
-  v == null || v === '' ? [] : Array.isArray(v) ? v : [v];
+const asArr = (v: string | string[] | undefined | null): string[] => {
+  if (v == null || v === '') return [];
+  if (Array.isArray(v)) return v;
+  try {
+    const p = JSON.parse(v);
+    if (Array.isArray(p)) return p;
+  } catch {}
+  return String(v).split(',').map(s => s.trim()).filter(Boolean);
+};
 const bedroomsText = (d: Lead) => asArr(d.bedrooms).filter(Boolean).join(', ');
 
-function budgetText(d: Lead, lang: 'nl' | 'en'): string {
+function budgetItems(d: Lead, lang: 'nl' | 'en'): string[] {
   const a = asArr(d.budget).filter(Boolean);
-  if (!a.length) return '';
-  let lo = Infinity;
-  let hi = -Infinity;
-  for (const r of a) {
+  if (!a.length) return [];
+  return a.map((r) => {
     const m = String(r).split('-');
     const x = parseInt(m[0], 10);
     const y = parseInt(m[1] ?? m[0], 10);
-    if (!isNaN(x) && x < lo) lo = x;
-    if (!isNaN(y) && y > hi) hi = y;
-  }
-  if (lo === Infinity) return a.join(', ');
-  return lang === 'nl' ? `€${lo} tot €${hi}` : `€${lo} – €${hi}`;
+    if (isNaN(x)) return String(r);
+    return x === y ? `€${x}` : `€${x}–€${y}`;
+  });
 }
 
 const monthKey = (d: Lead) => (d.createdAt || '').slice(0, 7);
@@ -409,7 +412,7 @@ export default function AanhuurLeadsDashboard() {
     ];
     const csvRows = leads.map(d => [
       d.name, d.phone, (d.language || '').toUpperCase(),
-      bedroomsText(d), budgetText(d, lang),
+      bedroomsText(d), budgetItems(d, lang).join(', '),
       lang === 'nl' ? stageMeta(d.stage).labelNl : stageMeta(d.stage).labelEn,
       chanMeta(d.channel, lang).label,
       d.utm_source || '', d.utm_medium || '', d.utm_campaign || '',
@@ -627,7 +630,15 @@ export default function AanhuurLeadsDashboard() {
                         <td className={styles.muted}>{d.phone}</td>
                         <td>{(d.language || '').toUpperCase()}</td>
                         <td>{bedroomsText(d)}</td>
-                        <td className={styles.muted}>{budgetText(d, lang)}</td>
+                        <td className={styles.muted}>
+                          {(() => {
+                            const items = budgetItems(d, lang);
+                            if (items.length <= 2) return items.join(', ');
+                            return items.map((b, i) => (
+                              <span key={i}>{i > 0 && <br />}{b}</span>
+                            ));
+                          })()}
+                        </td>
                         <td>
                           <span className={cx(styles.badge, sm.badge)}>{lang === 'nl' ? sm.labelNl : sm.labelEn}</span>
                         </td>

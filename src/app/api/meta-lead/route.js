@@ -6,7 +6,13 @@ const ZOKO_MESSAGE_URL = `${ZOKO_API_BASE}/message`;
 
 function normalizePhone(phone) {
     if (!phone) return '';
-    return String(phone).replace(/\D/g, '');
+    let s = String(phone).replace(/[^\d+]/g, '');
+    if (!s) return '';
+    if (s.startsWith('+')) return s.slice(1);
+    if (s.startsWith('00')) return s.slice(2);
+    if (s.startsWith('0') && s.length >= 10) return '31' + s.slice(1);
+    if (s.length >= 9 && s.length <= 10 && !s.startsWith('31')) return '31' + s;
+    return s;
 }
 
 function sha256(str) {
