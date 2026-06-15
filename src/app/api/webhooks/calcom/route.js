@@ -27,7 +27,7 @@ function extractPhone(payload) {
     const attendees = payload.attendees || [];
 
     // Try custom fields first
-    for (const key of ['whatsappNumber', 'whatsapp_number', 'phone', 'telefoon', 'phoneNumber', 'attendeePhoneNumber']) {
+    for (const key of ['whatsapp', 'whatsappNumber', 'whatsapp_number', 'phone', 'telefoon', 'phoneNumber', 'attendeePhoneNumber']) {
         if (responses[key]?.value) return normalizePhone(responses[key].value);
     }
 
