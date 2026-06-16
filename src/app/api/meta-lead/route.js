@@ -53,6 +53,48 @@ async function findZokoCustomerId(apiKey, phone) {
     return null;
 }
 
+const META_LEAD_TAG_PATTERNS = [
+    /^€/,
+    /\d\s*Bedroom/i,
+    /\d\s*slaapkamer/i,
+    /^Meta Ads$/i,
+    /^source_meta$/i,
+];
+
+function isMetaLeadTag(tag) {
+    return META_LEAD_TAG_PATTERNS.some(p => p.test(tag));
+}
+
+function normalizeTag(tag) {
+    return tag.replace(/\s*-\s*/g, '-').replace(/€\s+/g, '€');
+}
+
+async function getZokoTags(apiKey, customerId) {
+    if (!customerId) return [];
+    try {
+        const res = await fetch(`${ZOKO_API_BASE}/customer/${customerId}/tags`, {
+            method: 'GET',
+            headers: zokoHeaders(apiKey),
+        });
+        if (res.ok) {
+            const data = await res.json();
+            return Array.isArray(data) ? data : (data?.tags ? data.tags : []);
+        }
+    } catch (err) {
+        console.error('[meta-lead] Zoko get tags error:', err);
+    }
+    return [];
+}
+
+function mergeZokoTags(existingTags, newTags) {
+    const newNormalized = new Set((newTags || []).map(normalizeTag));
+    const preserved = (existingTags || []).filter(t =>
+        !isMetaLeadTag(t) || !newNormalized.has(normalizeTag(t))
+    );
+    const merged = [...new Set([...preserved, ...(newTags || [])])];
+    return merged;
+}
+
 async function addZokoTags(apiKey, customerId, tags) {
     if (!customerId || !tags || tags.length === 0) return;
     try {
@@ -187,14 +229,17 @@ export async function POST(request) {
     if (zokoApiKey) {
         try {
             let customerId = null;
+            console.log('[meta-lead] Zoko tags for', normalizedPhone, ':', JSON.stringify(tags));
 
             // Step 1: Try to find existing contact by phone (digits only for Zoko)
             customerId = await findZokoCustomerId(zokoApiKey, normalizedPhone);
 
-            // For existing contacts: update tags (properties API requires dashboard setup)
+            // For existing contacts: merge tags (preserve non-meta-lead tags, replace meta-lead categories)
             if (customerId) {
                 if (tags && tags.length > 0) {
-                    await addZokoTags(zokoApiKey, customerId, tags);
+                    const existingTags = await getZokoTags(zokoApiKey, customerId);
+                    const mergedTags = mergeZokoTags(existingTags, tags);
+                    await addZokoTags(zokoApiKey, customerId, mergedTags);
                 }
             }
 
@@ -218,7 +263,9 @@ export async function POST(request) {
                         || await findZokoCustomerId(zokoApiKey, normalizedPhone);
                     if (newCustomerId) {
                         if (tags && tags.length > 0) {
-                            await addZokoTags(zokoApiKey, newCustomerId, tags);
+                            const existingTags = await getZokoTags(zokoApiKey, newCustomerId);
+                            const mergedTags = mergeZokoTags(existingTags, tags);
+                            await addZokoTags(zokoApiKey, newCustomerId, mergedTags);
                         }
                     }
                 }

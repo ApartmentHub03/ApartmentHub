@@ -166,7 +166,7 @@
     display:flex;align-items:center;justify-content:center;gap:9px}
   .btn:hover{background:var(--orange-dark)}
   .btn:active{transform:translateY(1px)}
-  .btn[disabled]{opacity:.65;cursor:not-allowed}
+  .btn[disabled],.btn.locked{opacity:.65;cursor:not-allowed}
   .btn .spinner{width:17px;height:17px;border:2.5px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
   .btn.loading .spinner{display:inline-block}
   @keyframes spin{to{transform:rotate(360deg)}}
@@ -257,11 +257,11 @@
             <h2 data-i="q_budget">Wat is je budget per maand?</h2>
             <p class="q-sub" data-i="qs_budget">Kies alles wat je interesseert.</p>
             <div class="choice-grid">
-              <button type="button" class="choice" data-name="budget" data-value="2000-2500"><span>€2.000 - €2.500</span><span class="tick"><svg width="12" height="9" viewBox="0 0 12 9"><path d="M1 4.5l3.5 3.5L11 1" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
-              <button type="button" class="choice" data-name="budget" data-value="2500-3000"><span>€2.500 - €3.000</span><span class="tick"><svg width="12" height="9" viewBox="0 0 12 9"><path d="M1 4.5l3.5 3.5L11 1" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
-              <button type="button" class="choice" data-name="budget" data-value="3000-3500"><span>€3.000 - €3.500</span><span class="tick"><svg width="12" height="9" viewBox="0 0 12 9"><path d="M1 4.5l3.5 3.5L11 1" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
-              <button type="button" class="choice" data-name="budget" data-value="3500-4000"><span>€3.500 - €4.000</span><span class="tick"><svg width="12" height="9" viewBox="0 0 12 9"><path d="M1 4.5l3.5 3.5L11 1" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
-              <button type="button" class="choice" data-name="budget" data-value="4000-4500"><span>€4.000 - €4.500</span><span class="tick"><svg width="12" height="9" viewBox="0 0 12 9"><path d="M1 4.5l3.5 3.5L11 1" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+              <button type="button" class="choice" data-name="budget" data-value="2000-2500"><span data-i="bgt_1">€2.000 - €2.500</span><span class="tick"><svg width="12" height="9" viewBox="0 0 12 9"><path d="M1 4.5l3.5 3.5L11 1" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+              <button type="button" class="choice" data-name="budget" data-value="2500-3000"><span data-i="bgt_2">€2.500 - €3.000</span><span class="tick"><svg width="12" height="9" viewBox="0 0 12 9"><path d="M1 4.5l3.5 3.5L11 1" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+              <button type="button" class="choice" data-name="budget" data-value="3000-3500"><span data-i="bgt_3">€3.000 - €3.500</span><span class="tick"><svg width="12" height="9" viewBox="0 0 12 9"><path d="M1 4.5l3.5 3.5L11 1" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+              <button type="button" class="choice" data-name="budget" data-value="3500-4000"><span data-i="bgt_4">€3.500 - €4.000</span><span class="tick"><svg width="12" height="9" viewBox="0 0 12 9"><path d="M1 4.5l3.5 3.5L11 1" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+              <button type="button" class="choice" data-name="budget" data-value="4000-4500"><span data-i="bgt_5">€4.000 - €4.500</span><span class="tick"><svg width="12" height="9" viewBox="0 0 12 9"><path d="M1 4.5l3.5 3.5L11 1" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
             </div>
             <button type="button" class="next-btn" data-next="3" disabled><span data-i="next_btn">Volgende</span><span class="arrow">→</span></button>
           </div>
@@ -391,6 +391,7 @@ const STRINGS = {
     q_bedrooms:'Hoeveel slaapkamers zoek je?', qs_bedrooms:'Kies alles wat van toepassing is · 3 korte vragen, ± 30 sec.',
     bed_1:'1 slaapkamer', bed_2:'2 slaapkamers', bed_3:'3 slaapkamers', bed_4:'4+ slaapkamers',
     q_budget:'Wat is je budget per maand?', qs_budget:'Kies alles wat je interesseert.',
+    bgt_1:'€2.000 - €2.500', bgt_2:'€2.500 - €3.000', bgt_3:'€3.000 - €3.500', bgt_4:'€3.500 - €4.000', bgt_5:'€4.000 - €4.500',
     next_btn:'Volgende',
     q_contact:'Waar mogen we de woningen naartoe sturen?', qs_contact:'Laatste stap. Daarna sturen we je passend aanbod.',
     reassure:'We sturen je pas het aanbod via WhatsApp, geen spam. Je kunt je altijd afmelden via WhatsApp met 1 druk op de knop.',
@@ -418,7 +419,8 @@ const STRINGS = {
     back:'Back', step_count:'Step {n} of {t}',
     q_bedrooms:'How many bedrooms are you looking for?', qs_bedrooms:'Select all that apply · 3 quick questions, ± 30 sec.',
     bed_1:'1 bedroom', bed_2:'2 bedrooms', bed_3:'3 bedrooms', bed_4:'4+ bedrooms',
-    q_budget:'What’s your monthly budget?', qs_budget:'Select all that interest you.',
+    q_budget:'What\u2019s your monthly budget?', qs_budget:'Select all that interest you.',
+    bgt_1:'€2,000 - €2,500', bgt_2:'€2,500 - €3,000', bgt_3:'€3,000 - €3,500', bgt_4:'€3,500 - €4,000', bgt_5:'€4,000 - €4,500',
     next_btn:'Next',
     q_contact:'Where can we send the properties?', qs_contact:'Last step. Then we’ll send matching homes.',
     reassure:'We only send you listings via WhatsApp, no spam. You can unsubscribe anytime via WhatsApp with one tap.',
@@ -499,7 +501,7 @@ function goStep(n){
   backBtn.classList.toggle('show', step>1);
   updateProgress();
   if(step>1 && !window.__ahStarted){ window.__ahStarted=true; if(window.fbq) fbq('trackCustom','StartLeadForm',{language:LANG}); }
-  if(step===3){ setTimeout(()=>document.getElementById('fullName').focus(),60); }
+  if(step===3){ setTimeout(()=>{updateSubmitBtn();document.getElementById('fullName').focus();},60); }
   try{ document.querySelector('.card').scrollIntoView({behavior:'smooth',block:'nearest'}); }catch(e){}
 }
 backBtn.addEventListener('click',()=>goStep(step-1));
@@ -572,7 +574,7 @@ function buildE164(localInput,countryCode){
 initCountrySelect();
 function saveState(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({
   bedrooms:state.bedrooms, budget:state.budget,
-  fullName:form.fullName.value, phone:form.phone.value, countryCode:selectedCountry.code, email:form.email.value, ts:Date.now()
+  fullName:form.fullName.value, phone:form.phone.value, countryCode:selectedCountry.code, email:form.email.value, consent:consentBox.checked, ts:Date.now()
 })); }catch(e){} }
 function clearState(){ try{ localStorage.removeItem(LS_KEY); }catch(e){} }
 function syncChoices(name){
@@ -591,6 +593,7 @@ function restoreState(){ try{
   if(d.fullName) form.fullName.value=d.fullName;
   if(d.phone) form.phone.value=d.phone;
   if(d.email) form.email.value=d.email;
+  if(d.consent){ consentBox.checked=true; updateSubmitBtn(); }
   if(d.countryCode){
     const sel=document.getElementById('countrySelect');
     if(sel){ sel.value=d.countryCode; sel.dispatchEvent(new Event('change')); }
@@ -628,6 +631,23 @@ function validateContact(){
 }
 form.querySelectorAll('input').forEach(el=>{
   el.addEventListener('input',()=>{el.classList.remove('invalid'); const f=el.closest('.field'); if(f) f.classList.remove('show-err'); document.getElementById('consentErr').style.display='none'; saveState();});
+});
+
+/* ===== Consent gate — submit locked until T\u0026C checked ===== */
+const consentBox=document.getElementById('consent');
+const submitBtn=document.getElementById('submitBtn');
+function updateSubmitBtn(){
+  submitBtn.classList.toggle('locked',!consentBox.checked);
+}
+consentBox.addEventListener('change',()=>{ updateSubmitBtn(); saveState(); });
+submitBtn.addEventListener('click',(e)=>{
+  if(!consentBox.checked){
+    e.preventDefault();
+    document.getElementById('consentErr').style.display='block';
+    consentBox.closest('.consent').scrollIntoView({behavior:'smooth',block:'center'});
+    consentBox.focus();
+    return;
+  }
 });
 
 /* ===== eventID (Pixel/CAPI dedup) ===== */
@@ -694,6 +714,7 @@ form.addEventListener('submit',async(e)=>{
 /* init */
 restoreState();
 updateNextBtns();
+updateSubmitBtn();
 applyLang(LANG);
 goStep(state.bedrooms.length>0?(state.budget.length>0?3:2):1);
 </script>
