@@ -66,7 +66,7 @@ function isMetaLeadTag(tag) {
 }
 
 function normalizeTag(tag) {
-    return tag.replace(/\s*-\s*/g, '-').replace(/€\s+/g, '€');
+    return tag.replace(/\s*-\s*/g, '-').replace(/€\s+/g, '€').toLowerCase();
 }
 
 async function getZokoTags(apiKey, customerId) {
@@ -98,14 +98,26 @@ function mergeZokoTags(existingTags, newTags) {
 async function addZokoTags(apiKey, customerId, tags) {
     if (!customerId || !tags || tags.length === 0) return;
     try {
+        console.log('[meta-lead] Zoko add tags request:', customerId, JSON.stringify(tags));
         const res = await fetch(`${ZOKO_API_BASE}/customer/${customerId}/tags`, {
             method: 'PUT',
             headers: zokoHeaders(apiKey),
             body: JSON.stringify({ tags }),
         });
+        const resBody = await res.text().catch(() => '');
         if (!res.ok) {
-            const errText = await res.text().catch(() => '');
-            console.error('[meta-lead] Zoko add tags error:', res.status, errText);
+            console.error('[meta-lead] Zoko add tags error:', res.status, resBody);
+        } else {
+            console.log('[meta-lead] Zoko add tags response:', res.status, resBody);
+        }
+        // Verify what Zoko actually stored
+        const verifyRes = await fetch(`${ZOKO_API_BASE}/customer/${customerId}/tags`, {
+            method: 'GET',
+            headers: zokoHeaders(apiKey),
+        });
+        if (verifyRes.ok) {
+            const stored = await verifyRes.json();
+            console.log('[meta-lead] Zoko tags stored:', JSON.stringify(stored));
         }
     } catch (err) {
         console.error('[meta-lead] Zoko add tags error:', err);

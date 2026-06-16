@@ -418,7 +418,7 @@ const STRINGS = {
     ratingsub:'Rated by hundreds of tenants',
     back:'Back', step_count:'Step {n} of {t}',
     q_bedrooms:'How many bedrooms are you looking for?', qs_bedrooms:'Select all that apply · 3 quick questions, ± 30 sec.',
-    bed_1:'1 bedroom', bed_2:'2 bedrooms', bed_3:'3 bedrooms', bed_4:'4+ bedrooms',
+    bed_1:'1 Bedroom', bed_2:'2 Bedrooms', bed_3:'3 Bedrooms', bed_4:'4+ Bedrooms',
     q_budget:'What\u2019s your monthly budget?', qs_budget:'Select all that interest you.',
     bgt_1:'€2,000 - €2,500', bgt_2:'€2,500 - €3,000', bgt_3:'€3,000 - €3,500', bgt_4:'€3,500 - €4,000', bgt_5:'€4,000 - €4,500',
     next_btn:'Next',
@@ -694,7 +694,7 @@ form.addEventListener('submit',async(e)=>{
     tags:[
           'Meta Ads',
           ...state.bedrooms.map(v=>v==='4+'?'4+ Bedrooms':v==='1'?'1 Bedroom':v+' Bedrooms'),
-          ...state.budget.map(v=>'\u20AC'+v.replace('-','-\u20AC'))
+          ...state.budget.map(v=>'\u20AC'+v.replace('-',' - \u20AC'))
     ]
   };
   btn.classList.add('loading'); btn.disabled=true;
