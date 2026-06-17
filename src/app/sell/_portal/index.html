@@ -662,6 +662,13 @@
   .yn-opts input:checked + label {
     background: var(--teal); color: #fff; border-color: var(--teal);
   }
+  .yn-opts input[value="notes"]:checked + label {
+    background: var(--orange); color: #fff; border-color: var(--orange);
+  }
+  .q-followup.notes-mode textarea {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 2px rgba(255, 125, 40, 0.15);
+  }
   .q-followup, .q-amount, .q-open {
     margin-top: 10px;
   }
@@ -1515,6 +1522,8 @@ const I18N = {
     open: "Openen",
     yn_yes: "Ja",
     yn_no: "Nee",
+    yn_notes: "Toelichting",
+    yn_notes_placeholder: "Schrijf hier je toelichting…",
     err_step1: "Vul je adres, naam en email in.",
     err_email: "Vul een geldig emailadres in.",
     err_vve_email_required: "Vul het e-mailadres van je VvE-beheerder in.",
@@ -1783,6 +1792,8 @@ const I18N = {
     open: "Open",
     yn_yes: "Yes",
     yn_no: "No",
+    yn_notes: "Notes",
+    yn_notes_placeholder: "Write your notes here…",
     err_step1: "Please fill in your address, name and email.",
     err_email: "Please enter a valid email address.",
     err_vve_email_required: "Please enter your VvE manager's email address.",
@@ -3660,19 +3671,23 @@ function renderAiQuestions(questions, priorAnswers) {
     const priorNote = prior && typeof prior === "object" ? (prior.note || "") : "";
 
     const idEsc = escHtml(q.id);
+    const showFollowup = (priorYn === "ja" && q.if_yes) || priorYn === "notes";
+    const promptText = priorYn === "notes" ? t().yn_notes_placeholder : (q.if_yes || "");
     row.innerHTML = `
       <div class="q-head">
         <div class="q-label">${escHtml(q.question)}</div>
         <div class="yn-opts">
           <input type="radio" id="ai-${idEsc}-ja" name="ai-${idEsc}" value="ja" ${priorYn === "ja" ? "checked" : ""} />
-          <label for="ai-${idEsc}-ja">${isNL ? "Ja" : "Yes"}</label>
+          <label for="ai-${idEsc}-ja">${t().yn_yes}</label>
           <input type="radio" id="ai-${idEsc}-nee" name="ai-${idEsc}" value="nee" ${priorYn === "nee" ? "checked" : ""} />
-          <label for="ai-${idEsc}-nee">${isNL ? "Nee" : "No"}</label>
+          <label for="ai-${idEsc}-nee">${t().yn_no}</label>
+          <input type="radio" id="ai-${idEsc}-notes" name="ai-${idEsc}" value="notes" ${priorYn === "notes" ? "checked" : ""} />
+          <label for="ai-${idEsc}-notes">${t().yn_notes}</label>
         </div>
       </div>
-      <div class="q-followup" data-for="${idEsc}" style="display:${priorYn === "ja" && q.if_yes ? "block" : "none"};">
-        ${q.if_yes ? `<div style="font-size:12px;color:var(--grey-soft);margin-bottom:4px;">${escHtml(q.if_yes)}</div>` : ""}
-        <textarea class="ai-note" data-for="${idEsc}" rows="2" placeholder="${isNL ? "Toelichting (optioneel)" : "Notes (optional)"}">${escHtml(priorNote)}</textarea>
+      <div class="q-followup${priorYn === "notes" ? " notes-mode" : ""}" data-for="${idEsc}" style="display:${showFollowup ? "block" : "none"};">
+        ${q.if_yes ? `<div class="ai-followup-prompt" style="font-size:12px;color:var(--grey-soft);margin-bottom:4px;">${escHtml(promptText)}</div>` : ""}
+        <textarea class="ai-note" data-for="${idEsc}" rows="2" placeholder="${t().yn_notes_placeholder}">${escHtml(priorNote)}</textarea>
       </div>
     `;
     row.querySelectorAll(`input[name="ai-${q.id}"]`).forEach(r => {
@@ -3680,7 +3695,17 @@ function renderAiQuestions(questions, priorAnswers) {
         const yn = e.target.value;
         aiAnswers[q.id] = { yn, note: aiAnswers[q.id]?.note || "" };
         const fu = row.querySelector(`.q-followup[data-for="${q.id}"]`);
-        if (fu) fu.style.display = (yn === "ja" && q.if_yes) ? "block" : "none";
+        const show = (yn === "ja" && q.if_yes) || yn === "notes";
+        if (fu) {
+          fu.style.display = show ? "block" : "none";
+          fu.classList.toggle("notes-mode", yn === "notes");
+        }
+        const prompt = row.querySelector(".ai-followup-prompt");
+        if (prompt) {
+          const text = yn === "notes" ? t().yn_notes_placeholder : (q.if_yes || "");
+          prompt.textContent = text;
+          prompt.style.display = text ? "" : "none";
+        }
         scheduleAiSave();
         syncSignGate();
       });
@@ -3689,6 +3714,7 @@ function renderAiQuestions(questions, priorAnswers) {
     if (note) note.addEventListener("input", () => {
       aiAnswers[q.id] = { yn: aiAnswers[q.id]?.yn || null, note: note.value };
       scheduleAiSave();
+      syncSignGate();
     });
     host.appendChild(row);
   }
@@ -3752,9 +3778,11 @@ function renderDisclosureQuestions() {
           <label for="dq_claims_ja">${t().yn_yes}</label>
           <input type="radio" name="dq_claims" id="dq_claims_nee" value="nee" ${ds.claims.yn === "nee" ? "checked" : ""} />
           <label for="dq_claims_nee">${t().yn_no}</label>
+          <input type="radio" name="dq_claims" id="dq_claims_notes" value="notes" ${ds.claims.yn === "notes" ? "checked" : ""} />
+          <label for="dq_claims_notes">${t().yn_notes}</label>
         </span>
       </div>
-      <div class="q-followup" id="dq_claims_fuwrap" style="display:${ds.claims.yn === "ja" ? "block" : "none"};">
+      <div class="q-followup${ds.claims.yn === "notes" ? " notes-mode" : ""}" id="dq_claims_fuwrap" style="display:${ds.claims.yn === "ja" || ds.claims.yn === "notes" ? "block" : "none"};">
         <label for="dq_claims_fu">${escHtml(t().dq_claims_followup)}</label>
         <textarea id="dq_claims_fu" placeholder="${ph}">${escHtml(ds.claims.note)}</textarea>
       </div>
@@ -3793,7 +3821,9 @@ function renderDisclosureQuestions() {
   g("dq_uitgaven").addEventListener("input", e => { ds.uitgaven = e.target.value; saveDraft(); syncSignGate(); });
   host.querySelectorAll('input[name="dq_claims"]').forEach(r => r.addEventListener("change", e => {
     ds.claims.yn = e.target.value;
-    g("dq_claims_fuwrap").style.display = e.target.value === "ja" ? "block" : "none";
+    const fuwrap = g("dq_claims_fuwrap");
+    fuwrap.style.display = (e.target.value === "ja" || e.target.value === "notes") ? "block" : "none";
+    fuwrap.classList.toggle("notes-mode", e.target.value === "notes");
     saveDraft(); syncSignGate();
   }));
   g("dq_claims_fu").addEventListener("input", e => { ds.claims.note = e.target.value; saveDraft(); syncSignGate(); });
@@ -3811,6 +3841,7 @@ function isAllAdditionalAnswered() {
   if (!ds.geluid.trim()) return false;
   if (ds.claims.yn === null) return false;
   if (ds.claims.yn === "ja" && !ds.claims.note.trim()) return false;
+  if (ds.claims.yn === "notes" && !ds.claims.note.trim()) return false;
   if (!ds.verborgen.trim()) return false;
   if (!mjopUploaded() && !ds.uitgaven.trim()) return false; // optional once MJOP is uploaded
   if (ds.fundering.val === null) return false;
@@ -3818,7 +3849,8 @@ function isAllAdditionalAnswered() {
   for (const id of aiQuestionIds) {
     const a = aiAnswers[id];
     const yn = a && typeof a === "object" ? a.yn : a;
-    if (yn !== "ja" && yn !== "nee") return false;
+    if (yn !== "ja" && yn !== "nee" && yn !== "notes") return false;
+    if (yn === "notes" && !(a?.note || "").trim()) return false;
   }
   return true;
 }

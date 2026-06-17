@@ -330,6 +330,7 @@ export default function AdminDashboard() {
                     <div className={styles.headerLeft}>
                         <img src={"/images/site-logo.png"}  />
                         <h1 className={styles.headerTitle}>Admin Dashboard</h1>
+                        <span className={styles.rentalBadge}>Rental</span>
                     </div>
                     <div className={styles.headerActions}>
                         <Button
@@ -512,7 +513,10 @@ export default function AdminDashboard() {
                             <Card key={apt.id} shadow="lg" className={styles.apartmentCard}>
                                 <CardContent>
                                     <div className={styles.cardTop}>
-                                        <h3 className={styles.address}>{apt.full_address}</h3>
+                                        <div className={styles.addressRow}>
+                                            <h3 className={styles.address}>{apt.full_address}</h3>
+                                            <span className={styles.cardRentalTag}>Rental</span>
+                                        </div>
                                         <div className={styles.statusRow}>
                                             <Badge variant={getStatusVariant(apt.status)} size="lg">
                                                 {apt.status}

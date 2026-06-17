@@ -13,6 +13,7 @@ import { MagicLinksSection } from "./magic-links";
 import { NotesSection } from "./notes";
 import { DOC_DESCRIPTIONS } from "@/app/lib/doc-descriptions";
 import { Logo } from "@/app/lib/components/Logo";
+import Image from "next/image";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -486,10 +487,7 @@ export default async function DossierPage({ params }: Params) {
     <div className={styles.root}>
       <header className={styles.topbar}>
         <Link href="/dashboard-selling" className={styles.brand}>
-          <span className={styles.logoBox}>
-            <Logo variant="light" size={20} />
-          </span>
-          ApartmentHub
+          <Image src={"/images/horizontal-logo.png"} width={300} height={100} alt="apartmentHub Logo" className="horizontal-logo"/>
           <span className={styles.sub}>Dashboard</span>
         </Link>
         <span className={styles.topbarRight}>
@@ -655,7 +653,7 @@ export default async function DossierPage({ params }: Params) {
                       | undefined;
                     const yn = typeof ans === "object" && ans ? ans.yn : (ans as string | undefined);
                     const note = typeof ans === "object" && ans ? ans.note : "";
-                    const answered = yn === "ja" || yn === "nee";
+                    const answered = yn === "ja" || yn === "nee" || yn === "notes";
                     return (
                       <li
                         key={q.id}
@@ -682,12 +680,12 @@ export default async function DossierPage({ params }: Params) {
                                   fontSize: 11,
                                   textTransform: "uppercase",
                                   letterSpacing: "0.04em",
-                                  background: yn === "ja" ? "#DCFCE7" : "#FEE4E2",
-                                  color: yn === "ja" ? "#15803D" : "#B42318",
+                                  background: yn === "ja" ? "#DCFCE7" : yn === "notes" ? "#FFF1E6" : "#FEE4E2",
+                                  color: yn === "ja" ? "#15803D" : yn === "notes" ? "#E66C1A" : "#B42318",
                                   marginRight: 8,
                                 }}
                               >
-                                {yn === "ja" ? "Yes" : "No"}
+                                {yn === "ja" ? "Yes" : yn === "notes" ? "Notes" : "No"}
                               </span>
                               {note ? (
                                 <span style={{ color: "#4A5568" }}>{note}</span>

@@ -55,6 +55,22 @@
     margin: 0;
 }
 
+.rentalBadge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, hsl(var(--myrtle)), hsl(var(--myrtle) / 0.85));
+    color: white;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    white-space: nowrap;
+    box-shadow: 0 1px 2px hsl(var(--myrtle) / 0.3);
+}
+
 /* Main */
 .main {
     max-width: 1200px;
@@ -217,6 +233,29 @@
     color: #111827;
     margin: 0;
     line-height: 1.4;
+}
+
+.addressRow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.cardRentalTag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    background: hsl(var(--myrtle) / 0.08);
+    color: hsl(var(--myrtle));
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+    border: 1px solid hsl(var(--myrtle) / 0.2);
+    white-space: nowrap;
 }
 
 .statusRow {
