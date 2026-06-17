@@ -165,7 +165,7 @@ export function DashboardClient({
                     role="button"
                     tabIndex={0}
                     className={styles.cardDownload}
-                    title="Download signed contract (PDF)"
+                    title="Download contracts (ZIP)"
                     onClick={(e) => {
                       // The card itself navigates; keep this click local and
                       // let the attachment endpoint trigger the download.

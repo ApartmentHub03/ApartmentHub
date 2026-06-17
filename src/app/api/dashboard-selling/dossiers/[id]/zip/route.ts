@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import path from "node:path";
 import JSZip from "jszip";
 import { supabaseAdmin } from "@/app/lib/supabase-admin";
 import { getStaffUser } from "@/app/lib/auth";
 import { downloadFile } from "@/app/lib/storage";
+import { generateContract } from "../contract/contract-generator";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -204,6 +206,19 @@ export async function GET(req: NextRequest, { params }: Params) {
       2
     )
   );
+
+  // 5. Contracts (NL + EN)
+  const dossier = d as Record<string, unknown>;
+  try {
+    const [nlBytes, enBytes] = await Promise.all([
+      generateContract(dossier, path.join(process.cwd(), "public", "OTD_NL.pdf"), "nl"),
+      generateContract(dossier, path.join(process.cwd(), "public", "Service-Agreement.pdf"), "en"),
+    ]);
+    zip.file("contract-NL.pdf", nlBytes);
+    zip.file("contract-EN.pdf", enBytes);
+  } catch (err) {
+    console.error("[zip] Contract generation failed, skipping:", err);
+  }
 
   const archiveBuf = await zip.generateAsync({ type: "arraybuffer", compression: "DEFLATE" });
 

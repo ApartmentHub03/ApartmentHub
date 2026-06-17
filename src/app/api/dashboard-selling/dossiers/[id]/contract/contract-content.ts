@@ -1,4 +1,4 @@
-import type { DossierLike } from "./route";
+import type { DossierLike } from "./contract-generator";
 
 function nameParts(full: string | null | undefined): { first: string; last: string } {
   const parts = (full ?? "").trim().split(/\s+/).filter(Boolean);
@@ -16,9 +16,11 @@ function f(r: Record<string, unknown>, key: string): string | null {
   return typeof val === "string" ? val : null;
 }
 
-export function buildFieldMap(d: DossierLike): Record<string, string> {
+export function buildFieldMap(d: DossierLike, lang: string = "nl"): Record<string, string> {
   const { first, last } = nameParts(d.naam);
   const phone = d.telefoon?.trim() || d.phone_e164?.trim() || "";
+  const dateLocale = lang === "en" ? "en-GB" : "nl-NL";
+  const idType = lang === "en" ? "Passport" : "Paspoort";
 
   const raw = d as Record<string, unknown>;
   const payload = raw.payload ?? {};
@@ -48,7 +50,7 @@ export function buildFieldMap(d: DossierLike): Record<string, string> {
     vk_bsn: v(f(otd, "bsn") || f(p, "bsn")),
     vk_telefoon: v(phone),
     vk_email: v(d.email),
-    vk_id_type: "Paspoort",
+    vk_id_type: idType,
     vk_id_nummer: v(f(otd, "bsn") || f(p, "bsn") || f(a, "bsn")),
 
     vk2_voornaam: v(f(co, "voornaam")),
@@ -85,9 +87,9 @@ export function buildFieldMap(d: DossierLike): Record<string, string> {
     aanvaardingscode: v(raw.otd_acceptance_code as string | null),
     aanvaard_datum: v(
       raw.otd_signed_at as string | null
-        ? new Date(raw.otd_signed_at as string).toLocaleString("nl-NL")
+        ? new Date(raw.otd_signed_at as string).toLocaleString(dateLocale)
         : raw.signed_at as string | null
-          ? new Date(raw.signed_at as string).toLocaleString("nl-NL")
+          ? new Date(raw.signed_at as string).toLocaleString(dateLocale)
           : ""
     ),
     aanvaard_ip: v(raw.otd_signed_ip as string | null ?? raw.signed_ip as string | null),
