@@ -202,7 +202,7 @@ const InlineDocumentUpload = ({
             </div>
             <p className={styles.footer}>
                 <File className={styles.footerIcon} />
-                PDF, JPG, PNG, WEBP - Max 10MB
+                PDF, JPG, PNG, WEBP  Max 10MB
             </p>
         </div>
     );

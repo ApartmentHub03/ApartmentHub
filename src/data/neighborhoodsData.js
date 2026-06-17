@@ -3,7 +3,7 @@ export const neighborhoodsData = {
         en: {
             title: "Centrum",
             description: "The historic heart of Amsterdam, where centuries-old architecture meets modern city life, offering an unparalleled urban experience in one of Europe's most beautiful city centers.",
-            atmosphere: "Centrum attracts those who want to be in the center of everything - tourists, young professionals, and urbanites who thrive on energy and convenience. Living here means being walking distance from major attractions, restaurants, and nightlife.",
+            atmosphere: "Centrum attracts those who want to be in the center of everything  tourists, young professionals, and urbanites who thrive on energy and convenience. Living here means being walking distance from major attractions, restaurants, and nightlife.",
             highlights: [
                 "Dam Square and Royal Palace",
                 "Red Light District historic area",
@@ -60,7 +60,7 @@ export const neighborhoodsData = {
         nl: {
             title: "Centrum",
             description: "Het historische hart van Amsterdam, waar eeuwenoude architectuur moderne stadsleven ontmoet en een ongeëvenaarde stedelijke ervaring biedt in een van Europa's mooiste stadscentra.",
-            atmosphere: "Centrum trekt mensen aan die in het centrum van alles willen zijn - toeristen, jonge professionals en stadsmensen die gedijen op energie en gemak. Hier wonen betekent op loopafstand van belangrijke attracties, restaurants en uitgaansgelegenheden.",
+            atmosphere: "Centrum trekt mensen aan die in het centrum van alles willen zijn toeristen, jonge professionals en stadsmensen die gedijen op energie en gemak. Hier wonen betekent op loopafstand van belangrijke attracties, restaurants en uitgaansgelegenheden.",
             highlights: [
                 "De Dam en het Koninklijk Paleis",
                 "Historische Rosse Buurt",
@@ -353,7 +353,7 @@ export const neighborhoodsData = {
             description: "Amsterdam East combines residential tranquility with emerging cultural hotspots, offering a perfect balance between urban living and green spaces.",
             atmosphere: "Popular with families and young professionals who want more space and a relaxed atmosphere. The area features beautiful parks, diverse dining options, and a growing arts scene. It's well-connected to the city center while maintaining a peaceful, neighborhood feel.",
             highlights: [
-                "Oosterpark - large green recreational area",
+                "Oosterpark large green recreational area",
                 "Tropenmuseum showcasing world cultures",
                 "Park Frankendael with historic estate",
                 "Diverse international food scene",
@@ -410,11 +410,11 @@ export const neighborhoodsData = {
             description: "Amsterdam Oost combineert residentiële rust met opkomende culturele hotspots en biedt een perfecte balans tussen stedelijk wonen en groene ruimtes.",
             atmosphere: "Populair bij gezinnen en jonge professionals die meer ruimte en een ontspannen sfeer willen. Het gebied beschikt over prachtige parken, diverse eetgelegenheden en een groeiende kunstscene. Het is goed verbonden met het stadscentrum en behoudt tegelijkertijd een rustig buurtgevoel.",
             highlights: [
-                "Oosterpark - groot groen recreatiegebied",
+                "Oosterpark  groot groen recreatiegebied",
                 "Tropenmuseum met wereldculturen",
                 "Park Frankendael met historisch landgoed",
                 "Diverse internationale eetscene",
-                "Groeiende startup- en creatieve gemeenschap"
+                "Groeiende startup en creatieve gemeenschap"
             ],
             marketData: {
                 indicators: [
@@ -466,11 +466,11 @@ export const neighborhoodsData = {
     zeeburg: {
         en: {
             title: "Zeeburg",
-            description: "A water-rich district in East with characteristic architecture and a relaxed atmosphere. The proximity to the IJ and various recreational opportunities make this district attractive for nature lovers.",
+            description: "A water rich district in East with characteristic architecture and a relaxed atmosphere. The proximity to the IJ and various recreational opportunities make this district attractive for nature lovers.",
             atmosphere: "Zeeburg attracts young families, creative types, and people who love water and nature. The district offers a quiet living environment with good connections to the center.",
             highlights: [
                 "Proximity to the IJ with water sports options",
-                "Diemerparkbos - Extensive nature",
+                "Diemerparkbos  Extensive nature",
                 "Characteristic architecture",
                 "Relaxed atmosphere and greenery",
                 "Good accessibility",
@@ -528,7 +528,7 @@ export const neighborhoodsData = {
             atmosphere: "Zeeburg trekt jonge gezinnen, creatieve types en mensen die houden van water en natuur. De wijk biedt een rustige leefomgeving met goede verbindingen naar het centrum.",
             highlights: [
                 "Nabijheid van het IJ met watersportmogelijkheden",
-                "Diemerparkbos - Uitgestrekte natuur",
+                "Diemerparkbos  Uitgestrekte natuur",
                 "Karakteristieke architectuur",
                 "Ontspannen sfeer en groen",
                 "Goede bereikbaarheid",
@@ -589,9 +589,9 @@ export const neighborhoodsData = {
             highlights: [
                 "Modern high-rise and architecture",
                 "International companies and offices",
-                "Station Amsterdam Zuid - Excellent accessibility",
+                "Station Amsterdam Zuid  Excellent accessibility",
                 "Modern restaurants and lunchrooms",
-                "Beatrixpark - Greenery near the offices",
+                "Beatrixpark  Greenery near the offices",
                 "International schools and facilities"
             ],
             marketData: {
@@ -647,9 +647,9 @@ export const neighborhoodsData = {
             highlights: [
                 "Moderne hoogbouw en architectuur",
                 "Internationale bedrijven en kantoren",
-                "Station Amsterdam Zuid - Uitstekende bereikbaarheid",
+                "Station Amsterdam Zuid  Uitstekende bereikbaarheid",
                 "Moderne restaurants en lunchrooms",
-                "Beatrixpark - Groen nabij de kantoren",
+                "Beatrixpark  Groen nabij de kantoren",
                 "Internationale scholen en voorzieningen"
             ],
             marketData: {
@@ -705,8 +705,8 @@ export const neighborhoodsData = {
             description: "Known as the Latin Quarter of Amsterdam, De Pijp is a vibrant and multicultural neighborhood famous for the Albert Cuyp Market, diverse restaurants, and lively atmosphere.",
             atmosphere: "De Pijp is bustling with energy, attracting students, young professionals, and creatives. It's a food lover's paradise with countless brunch spots, cafes, and international cuisines. The streets are narrow and lively, giving it a cozy, urban village feel.",
             highlights: [
-                "Albert Cuyp Market - Europe's largest daily market",
-                "Sarphatipark - A beautiful green oasis",
+                "Albert Cuyp Market  Europe's largest daily market",
+                "Sarphatipark  A beautiful green oasis",
                 "Heineken Experience",
                 "Gerard Douplein for nightlife and dining",
                 "Diverse mix of cultures and cuisines"
@@ -762,8 +762,8 @@ export const neighborhoodsData = {
             description: "Bekend als het Quartier Latin van Amsterdam, is De Pijp een levendige en multiculturele wijk beroemd om de Albert Cuypmarkt, diverse restaurants en levendige sfeer.",
             atmosphere: "De Pijp bruist van energie en trekt studenten, jonge professionals en creatieven aan. Het is een paradijs voor voedselliefhebbers met talloze brunchplekken, cafés en internationale keukens. De straten zijn smal en levendig, wat het een gezellig, stedelijk dorpsgevoel geeft.",
             highlights: [
-                "Albert Cuypmarkt - Europa's grootste dagmarkt",
-                "Sarphatipark - Een prachtige groene oase",
+                "Albert Cuypmarkt  Europa's grootste dagmarkt",
+                "Sarphatipark  Een prachtige groene oase",
                 "Heineken Experience",
                 "Gerard Douplein voor uitgaan en dineren",
                 "Diverse mix van culturen en keukens"
@@ -822,7 +822,7 @@ export const neighborhoodsData = {
             atmosphere: "Oud-Zuid exudes luxury and sophistication. It attracts families, expats, and professionals who appreciate high-end living. The area is quieter and more spacious than the center, with wide avenues and proximity to Vondelpark.",
             highlights: [
                 "Museumplein (Rijksmuseum, Van Gogh Museum)",
-                "Vondelpark - Amsterdam's most famous park",
+                "Vondelpark  Amsterdam's most famous park",
                 "P.C. Hooftstraat luxury shopping",
                 "Concertgebouw",
                 "Elegant 19th-century architecture"
@@ -879,7 +879,7 @@ export const neighborhoodsData = {
             atmosphere: "Oud-Zuid straalt luxe en verfijning uit. Het trekt gezinnen, expats en professionals aan die houden van hoogwaardig wonen. Het gebied is rustiger en ruimer dan het centrum, met brede lanen en nabijheid van het Vondelpark.",
             highlights: [
                 "Museumplein (Rijksmuseum, Van Gogh Museum)",
-                "Vondelpark - Het beroemdste park van Amsterdam",
+                "Vondelpark  Het beroemdste park van Amsterdam",
                 "P.C. Hooftstraat luxe winkelen",
                 "Concertgebouw",
                 "Elegante 19e-eeuwse architectuur"
@@ -937,7 +937,7 @@ export const neighborhoodsData = {
             description: "A spacious and green district known for the Sloterplas lake and modern urban planning. It offers affordable living with plenty of recreational opportunities.",
             atmosphere: "Nieuw-West is a multicultural and family-friendly area. It's characterized by space, light, and greenery. The atmosphere is relaxed and diverse, with a mix of post-war architecture and new developments.",
             highlights: [
-                "Sloterplas and Sloterpark - Water sports and recreation",
+                "Sloterplas and Sloterpark  Water sports and recreation",
                 "Meervaart Theater",
                 "Diverse shopping centers (Osdorpplein)",
                 "Affordable housing options",
@@ -994,7 +994,7 @@ export const neighborhoodsData = {
             description: "Een ruim en groen stadsdeel bekend om de Sloterplas en moderne stedenbouw. Het biedt betaalbaar wonen met volop recreatiemogelijkheden.",
             atmosphere: "Nieuw-West is een multicultureel en gezinsvriendelijk gebied. Het wordt gekenmerkt door ruimte, licht en groen. De sfeer is ontspannen en divers, met een mix van naoorlogse architectuur en nieuwbouw.",
             highlights: [
-                "Sloterplas en Sloterpark - Watersport en recreatie",
+                "Sloterplas en Sloterpark  Watersport en recreatie",
                 "Theater de Meervaart",
                 "Diverse winkelcentra (Osdorpplein)",
                 "Betaalbare woonopties",

@@ -2065,7 +2065,7 @@ function updateVveButtonState() {
 
 function buildVvePreviewHtml(selectedDocs) {
   const vveEmail = (document.getElementById("vveEmail")?.value || "").trim();
-  const vveName = selectedVveManagerName() || "VvE-beheerder";
+  const vveName = selectedVveManagerName() || "VvE beheerder";
   const { full } = sellerNameParts();
   const address = (document.getElementById("straat")?.value || "").trim() || (lang === "nl" ? "het appartement" : "the apartment");
   const isNL = lang === "nl";

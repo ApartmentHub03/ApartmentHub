@@ -439,7 +439,7 @@ export default function AanhuurLeadsDashboard() {
   return (
     <div className={styles.dashboard}>
       <header className={styles.topbar}>
-        <img  src={'/images/horizontal-logo.png'}/>
+        <img  src={'/images/site-logo.png'}/>
         <span className={styles.ttl}>{s.title}</span>
         <div className={styles.right}>
           <div className={styles.langToggle}>

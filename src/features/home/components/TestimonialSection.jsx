@@ -80,11 +80,11 @@ const TestimonialSection = () => {
             { type: 'sent', text: "That's fast... didn't expect it to go so smoothly", time: "09:17" },
             { type: 'received', text: "Yes within 3 days! They even offered €50 above asking price. Contract will be signed tomorrow 👍", time: "09:18" },
             { type: 'sent', text: "above asking price??? Wow!!", time: "09:18" },
-            { type: 'received', text: "Screening is also good - permanent job, good references", time: "09:19" },
+            { type: 'received', text: "Screening is also good permanent job, good references", time: "09:19" },
             { type: 'sent', text: "That's really great! I was so stressed after that previous agent who did nothing for 2 months 😒", time: "09:21" },
             { type: 'received', text: "We hear that a lot... glad we could help!", time: "09:23" },
             { type: 'sent', text: "Definitely! I'm going to tell everyone about you", time: "09:25" },
-            { type: 'sent', text: "This is how renting should be - no stress, just results", time: "09:26" }
+            { type: 'sent', text: "This is how renting should be  no stress, just results", time: "09:26" }
         ]
     };
 

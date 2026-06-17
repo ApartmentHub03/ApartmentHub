@@ -4,10 +4,10 @@ import Script from 'next/script';
 
 export const metadata = {
     title: {
-        default: 'ApartmentHub - Find Your Perfect Apartment in Amsterdam',
+        default: 'ApartmentHub Find Your Perfect Apartment in Amsterdam',
         template: '%s | ApartmentHub',
     },
-    description: 'ApartmentHub - Find your perfect apartment in Amsterdam',
+    description: 'ApartmentHub Find your perfect apartment in Amsterdam',
     metadataBase: new URL('https://apartmenthub.nl'),
     verification: {
         google: 'WEk3DyM5hwLTLGZl6tySEgdmRfr5fd21mH53OExkkx0',

@@ -69,8 +69,8 @@ const DiscoverMore = () => {
                 value: '24/7',
                 title: isNL ? 'Volledige Ontzorging' : 'Full Service',
                 desc: isNL
-                    ? 'Van marketing tot contract en beheer - wij regelen alles 24/7 voor u.'
-                    : 'From marketing to contract and management - we handle everything 24/7 for you.'
+                    ? 'Van marketing tot contract en beheer  wij regelen alles 24/7 voor u.'
+                    : 'From marketing to contract and management we handle everything 24/7 for you.'
             }
         ],
 

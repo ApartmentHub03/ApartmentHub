@@ -174,7 +174,7 @@ export const translations = {
             badgeValue: "+15% more value",
 
             step2Title: "Step 2: The Marketing Magic",
-            step2Desc: "Now comes the art. We don't just create an ad - we tell your property's story. Professional photos, emotional descriptions and strategic placement ensure that the right people fall in love before they step over the threshold.",
+            step2Desc: "Now comes the art. We don't just create an ad  we tell your property's story. Professional photos, emotional descriptions and strategic placement ensure that the right people fall in love before they step over the threshold.",
             step2ListTitle: "Our secret ingredients:",
             step2List1: "Emotional storytelling that touches",
             step2List2: "Professional photography with 'wow-factor'",
@@ -183,12 +183,12 @@ export const translations = {
             badgeViewing: "72h to 1st viewing",
 
             step3Title: "Step 3: The Perfect Match",
-            step3Desc: "Not every candidate is suitable for your property. Our screening goes beyond income and credit checks. We look for the person who will treat your property as their home - because that's exactly what it becomes.",
+            step3Desc: "Not every candidate is suitable for your property. Our screening goes beyond income and credit checks. We look for the person who will treat your property as their home because that's exactly what it becomes.",
             step3ListTitle: "Our screening checklist:",
             step3List1: "Financial stability and history",
             step3List2: "Personality and lifestyle match",
             step3List3: "References from previous landlords",
-            step3List4: "Intuition - the feeling must be right",
+            step3List4: "Intuition  the feeling must be right",
             badgeMatch: "98% happy matches",
 
             numbersTitle: "The Numbers Don't Lie",
@@ -249,7 +249,7 @@ export const translations = {
             benefit1Title: "Free Market Analysis",
             benefit1Desc: "A complete valuation of your property within 24 hours",
             benefit2Title: "100% Non-binding",
-            benefit2Desc: "No obligations - only valuable insights",
+            benefit2Desc: "No obligations  only valuable insights",
             benefit3Title: "Personal Advice",
             benefit3Desc: "Customized strategies for your specific situation",
 
@@ -307,7 +307,7 @@ export const translations = {
             badgeValue: "+15% meer waarde",
 
             step2Title: "Stap 2: De Marketing Magie",
-            step2Desc: "Nu komt de kunst. We maken niet zomaar een advertentie - we vertellen het verhaal van uw woning. Professionele foto's, emotionele beschrijvingen en strategische plaatsing zorgen dat de juiste mensen verliefd worden voordat ze over de drempel stappen.",
+            step2Desc: "Nu komt de kunst. We maken niet zomaar een advertentie  we vertellen het verhaal van uw woning. Professionele foto's, emotionele beschrijvingen en strategische plaatsing zorgen dat de juiste mensen verliefd worden voordat ze over de drempel stappen.",
             step2ListTitle: "Onze geheime ingrediënten:",
             step2List1: "Emotionele storytelling die raakt",
             step2List2: "Professionele fotografie met 'wow-factor'",
@@ -316,12 +316,12 @@ export const translations = {
             badgeViewing: "72u tot 1e bezichtiging",
 
             step3Title: "Stap 3: De Perfecte Match",
-            step3Desc: "Niet elke kandidaat is geschikt voor uw woning. Onze screening gaat verder dan inkomen en kredietchecks. We zoeken de persoon die uw woning zal behandelen als hun thuis - want dat is precies wat het wordt.",
+            step3Desc: "Niet elke kandidaat is geschikt voor uw woning. Onze screening gaat verder dan inkomen en kredietchecks. We zoeken de persoon die uw woning zal behandelen als hun thuis  want dat is precies wat het wordt.",
             step3ListTitle: "Onze screening checklist:",
             step3List1: "Financiële stabiliteit en geschiedenis",
             step3List2: "Persoonlijkheid en levensstijl match",
             step3List3: "Referenties van vorige verhuurders",
-            step3List4: "Intuïtie - het gevoel moet goed zijn",
+            step3List4: "Intuïtie  het gevoel moet goed zijn",
             badgeMatch: "98% blije matches",
 
             numbersTitle: "De Cijfers Liegen Niet",
@@ -382,7 +382,7 @@ export const translations = {
             benefit1Title: "Gratis Marktanalyse",
             benefit1Desc: "Een complete waardebepaling van uw woning binnen 24 uur",
             benefit2Title: "100% Vrijblijvend",
-            benefit2Desc: "Geen verplichtingen - alleen waardevolle inzichten",
+            benefit2Desc: "Geen verplichtingen alleen waardevolle inzichten",
             benefit3Title: "Persoonlijk Advies",
             benefit3Desc: "Op maat gemaakte strategieën voor uw specifieke situatie",
 
