@@ -76,11 +76,7 @@ export default async function DashboardPage() {
     <div className={styles.root}>
       <header className={styles.topbar}>
         <Link href="/dashboard-selling" className={styles.brand}>
-          <span className={styles.logoBox}>
-            <Logo variant="light" size={20} />
-          </span>
-          ApartmentHub
-          <span className={styles.sub}>Dashboard</span>
+         <img src={"/images/horizontal-logo.png"} />
         </Link>
         <span className={styles.topbarRight}>
           <span className={styles.userPill}>

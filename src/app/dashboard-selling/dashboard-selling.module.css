@@ -55,6 +55,10 @@
   text-decoration: none;
   transition: transform .15s ease;
 }
+.brand img{
+    filter: brightness(0) invert(1);
+    max-width: 200px;
+}
 .brand:hover {
   text-decoration: none;
   transform: scale(1.03);

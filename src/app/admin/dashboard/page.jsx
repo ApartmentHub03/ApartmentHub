@@ -328,9 +328,7 @@ export default function AdminDashboard() {
             <header className={styles.header}>
                 <div className={styles.headerInner}>
                     <div className={styles.headerLeft}>
-                        <div className={styles.logoIcon}>
-                            <Building2 size={20} />
-                        </div>
+                        <img src={"/images/site-logo.png"}  />
                         <h1 className={styles.headerTitle}>Admin Dashboard</h1>
                     </div>
                     <div className={styles.headerActions}>
