@@ -36,6 +36,11 @@ interface ApiStats {
   thisWeek: number;
   byLanguage: Record<string, number>;
   bySource: Record<string, number>;
+  byMonth: Record<string, number>;
+  byStage: Record<string, number>;
+  totalRevenue: number;
+  bySourceWon: Record<string, number>;
+  bySourceRevenue: Record<string, number>;
 }
 
 interface StageDef { key: Stage; rank: number; labelNl: string; labelEn: string; badge?: string; bar?: string; }
@@ -313,30 +318,24 @@ export default function AanhuurLeadsDashboard() {
   }, [router, fetchLeads]);
 
   const months = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const d of leads) {
-      const k = monthKey(d);
-      if (k) counts[k] = (counts[k] || 0) + 1;
-    }
-    const keys = Object.keys(counts).sort().reverse();
+    const src = serverStats?.byMonth ?? {};
+    const keys = Object.keys(src).sort().reverse();
+    const totalAll = serverStats?.total ?? 0;
     return [
-      { key: 'all', label: s.all, count: leads.length },
-      ...keys.map((k) => ({ key: k, label: monthLabel(k, lang), count: counts[k] })),
+      { key: 'all', label: s.all, count: totalAll },
+      ...keys.map((k) => ({ key: k, label: monthLabel(k, lang), count: src[k] })),
     ];
-  }, [leads, s]);
+  }, [serverStats, s, lang]);
 
   const channels = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const d of leads) {
-      const k = d.channel;
-      if (k) counts[k] = (counts[k] || 0) + 1;
-    }
-    const keys = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+    const src = serverStats?.bySource ?? {};
+    const keys = Object.keys(src).sort((a, b) => src[b] - src[a]);
+    const totalAll = Object.values(src).reduce((a, b) => a + b, 0) || leads.length;
     return [
-      { key: 'all', label: s.all, count: leads.length },
-      ...keys.map((k) => ({ key: k, label: chanMeta(k, lang).label, count: counts[k] })),
+      { key: 'all', label: s.all, count: totalAll },
+      ...keys.map((k) => ({ key: k, label: chanMeta(k, lang).label, count: src[k] })),
     ];
-  }, [leads, s]);
+  }, [serverStats, leads.length, s, lang]);
 
   const monthScoped = useMemo(
     () => (monthFilter === 'all' ? leads : leads.filter((d) => monthKey(d) === monthFilter)),
@@ -347,23 +346,38 @@ export default function AanhuurLeadsDashboard() {
     [monthScoped, channelFilter],
   );
 
-  const total = serverStats?.total ?? scoped.length;
-  const countAtLeast = (k: Stage) => scoped.filter((d) => rankOf(d.stage) >= rankOf(k)).length;
-  const won = scoped.filter((d) => d.stage === 'won');
-  const revenue = won.reduce((acc, d) => acc + (d.amount || 0), 0);
-  const conv = total ? Math.round((won.length / total) * 100) : 0;
+  const statsTotal = serverStats?.total ?? 0;
+  const statsBySource = serverStats?.bySource ?? {};
+  const statsByStage = serverStats?.byStage ?? { lead: 0, scheduled: 0, qualified: 0, won: 0 };
+  const wonCount = statsByStage.won ?? 0;
+  const revenue = serverStats?.totalRevenue ?? 0;
+  const total = statsTotal;
+  const countAtLeast = (k: Stage) => {
+    const r = rankOf(k);
+    let c = 0;
+    for (const [s, n] of Object.entries(statsByStage)) {
+      if (rankOf(s as Stage) >= r) c += n;
+    }
+    return c;
+  };
+  const conv = total ? Math.round((wonCount / total) * 100) : 0;
 
   const channelRows = useMemo(() => {
-    const keys = Array.from(new Set(monthScoped.map((d) => d.channel).filter(Boolean)));
+    const src = statsBySource;
+    const srcWon = serverStats?.bySourceWon ?? {};
+    const srcRev = serverStats?.bySourceRevenue ?? {};
+    const keys = Object.keys(src).sort((a, b) => src[b] - src[a]);
     return keys
-      .map((k) => {
-        const arr = monthScoped.filter((d) => d.channel === k);
-        const w = arr.filter((d) => d.stage === 'won');
-        const rev = w.reduce((acc, d) => acc + (d.amount || 0), 0);
-        return { key: k, meta: chanMeta(k, lang), leads: arr.length, won: w.length, rev, conv: arr.length ? Math.round((w.length / arr.length) * 100) : 0 };
-      })
+      .map((k) => ({
+        key: k,
+        meta: chanMeta(k, lang),
+        leads: src[k],
+        won: srcWon[k] ?? 0,
+        rev: srcRev[k] ?? 0,
+        conv: src[k] ? Math.round(((srcWon[k] ?? 0) / src[k]) * 100) : 0,
+      }))
       .sort((a, b) => b.leads - a.leads);
-  }, [monthScoped, lang]);
+  }, [statsBySource, serverStats, lang]);
 
   const rows = useMemo(() => {
     return scoped
@@ -374,7 +388,7 @@ export default function AanhuurLeadsDashboard() {
 
   const DONUT_R = 54;
   const DONUT_C = 2 * Math.PI * DONUT_R;
-  const donutTotal = monthScoped.length || 1;
+  const donutTotal = statsTotal || 1;
   let donutOffset = 0;
   const donutSegments = channelRows.map((r) => {
     const len = (r.leads / donutTotal) * DONUT_C;
@@ -433,7 +447,6 @@ export default function AanhuurLeadsDashboard() {
 
   const statsToday = serverStats?.today ?? 0;
   const statsThisWeek = serverStats?.thisWeek ?? 0;
-  const statsBySource = serverStats?.bySource ?? {};
   const statsByLanguage = serverStats?.byLanguage ?? {};
 
   return (
@@ -484,7 +497,7 @@ export default function AanhuurLeadsDashboard() {
         <section className={styles.kpis}>
           <div className={styles.kpi}>
             <div className={styles.kpiLabel}>{s.totalLeads}</div>
-            <div className={styles.kpiValue}>{serverStats?.total ?? 0}</div>
+            <div className={styles.kpiValue}>{statsTotal}</div>
             <div className={styles.kpiSub}>{s.received}</div>
           </div>
           <div className={cx(styles.kpi, styles.accent)}>
@@ -499,8 +512,8 @@ export default function AanhuurLeadsDashboard() {
           </div>
           <div className={cx(styles.kpi, styles.accent)}>
             <div className={styles.kpiLabel}>{s.dealsWon}</div>
-            <div className={styles.kpiValue}>{won.length}</div>
-            <div className={styles.kpiSub}>{pct(won.length, total)}</div>
+            <div className={styles.kpiValue}>{wonCount}</div>
+            <div className={styles.kpiSub}>{pct(wonCount, total)}</div>
           </div>
           <div className={cx(styles.kpi, styles.money)}>
             <div className={styles.kpiLabel}>{s.revenue}</div>
@@ -561,7 +574,7 @@ export default function AanhuurLeadsDashboard() {
                     />
                   ))}
                   <text x="70" y="68" textAnchor="middle" fontSize="27" fontWeight="800" fill="#1A202C">
-                    {monthScoped.length}
+                    {statsTotal}
                   </text>
                   <text x="70" y="85" textAnchor="middle" fontSize="11" fill="#718096">
                     {s.leads}

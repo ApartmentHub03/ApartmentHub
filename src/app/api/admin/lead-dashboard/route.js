@@ -66,10 +66,9 @@ export async function GET(request) {
         filters
     );
 
-    const allQuery = applyFilters(
-        supabase.from('meta_leads').select('created_at,language,source,stage,amount'),
-        filters
-    );
+    const allQuery = supabase
+        .from('meta_leads')
+        .select('created_at,language,source,stage,amount');
 
     const [pagedResult, allResult] = await Promise.all([
         pagedQuery,
@@ -97,13 +96,28 @@ export async function GET(request) {
         thisWeek: 0,
         byLanguage: {},
         bySource: {},
+        byMonth: {},
+        byStage: { lead: 0, scheduled: 0, qualified: 0, won: 0 },
+        totalRevenue: 0,
+        bySourceWon: {},
+        bySourceRevenue: {},
     };
 
     for (const l of allLeads) {
         if (l.created_at >= todayStart) stats.today++;
         if (l.created_at >= weekStart) stats.thisWeek++;
         stats.byLanguage[l.language] = (stats.byLanguage[l.language] || 0) + 1;
-        if (l.source) stats.bySource[l.source] = (stats.bySource[l.source] || 0) + 1;
+        if (l.source) {
+            stats.bySource[l.source] = (stats.bySource[l.source] || 0) + 1;
+            if (l.stage === 'won') {
+                stats.bySourceWon[l.source] = (stats.bySourceWon[l.source] || 0) + 1;
+                stats.bySourceRevenue[l.source] = (stats.bySourceRevenue[l.source] || 0) + (l.amount || 0);
+            }
+        }
+        const mk = (l.created_at || '').slice(0, 7);
+        if (mk) stats.byMonth[mk] = (stats.byMonth[mk] || 0) + 1;
+        if (l.stage && stats.byStage[l.stage] !== undefined) stats.byStage[l.stage]++;
+        if (l.stage === 'won') stats.totalRevenue += l.amount || 0;
     }
 
     return NextResponse.json({
@@ -112,6 +126,9 @@ export async function GET(request) {
         total,
         page,
         limit,
-        stats,
+        stats: {
+            ...stats,
+            total: allLeads.length,
+        },
     });
 }
