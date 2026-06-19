@@ -225,7 +225,7 @@ Fired once per batch, **after** all `document_file` POSTs. Contains all document
 | `start_date` | string (YYYY-MM-DD) | yes | Tenant's preferred move-in date. `""` if missing. |
 | `motivation` | string | yes | Tenant's motivation text. `""` if missing. |
 | `months_advance` | number | yes | Months of rent the tenant is willing to pay upfront. `0` if missing. |
-| `signature_image_base64` | string | yes | Base64-encoded PNG bytes of the tenant's signature (no `data:` prefix). Only populated for `trigger_source: "letterofintent"`; `""` for `aanvraag`. The bucket is private — no public/signed URL is minted; SF ingests the bytes directly. |
+| `signature_image_base64` | string | yes | Base64-encoded PNG bytes of the tenant's signature (no `data:` prefix). Only populated for `trigger_source: "letterofintent"`; `""` for `aanvraag`. The bucket is private no public/signed URL is minted; SF ingests the bytes directly. |
 | `signature_image_mime_type` | string | yes | MIME type of the signature image. `"image/png"` when present, `""` otherwise. |
 | `signature_image_size` | number | yes | Byte size of the signature PNG. `0` when not present. |
 | `signature_image_path` | string | yes | Storage path of the audit copy on Supabase (private bucket — informational only, not externally fetchable). `""` when not present. |

@@ -42,7 +42,7 @@ Open Claude Code (`claude`) and ask:
 
 ## Ground Rules
 
-- SQL queries are **read-only** — no DROP, DELETE, ALTER
+- SQL queries are **read-only** no DROP, DELETE, ALTER
 - Always create **new** migration files, never modify existing ones
 - Never push directly to `main`
 - See full rules: `mcp-server/RULES.md`

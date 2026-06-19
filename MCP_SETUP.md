@@ -84,7 +84,7 @@ CLOUDFLARE_TUNNEL_TOKEN=your_tunnel_token
 docker compose up -d
 ```
 
-Your server is now at `https://mcp.yourdomain.com/mcp` — no ports exposed, automatic HTTPS, works behind NAT.
+Your server is now at `https://mcp.yourdomain.com/mcp` no ports exposed, automatic HTTPS, works behind NAT.
 
 ### Token Rotation
 
