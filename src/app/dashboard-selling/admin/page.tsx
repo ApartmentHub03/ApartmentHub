@@ -40,7 +40,7 @@ export default async function AdminPage() {
   return (
     <div className={styles.root}>
       <header className={styles.topbar}>
-        <Link href="/dashboard-selling" className={styles.brand}>
+        <Link href="/admin" className={styles.brand}>
           <span className={styles.logoBox}>
             <Logo variant="light" size={20} />
           </span>
