@@ -75,7 +75,7 @@ export default async function DashboardPage() {
   return (
     <div className={styles.root}>
       <header className={styles.topbar}>
-        <Link href="/admin" className={styles.brand}>
+        <Link href="/admin/dashboard" className={styles.brand}>
          <img src={"/images/horizontal-logo.png"} />
         </Link>
         <span className={styles.topbarRight}>

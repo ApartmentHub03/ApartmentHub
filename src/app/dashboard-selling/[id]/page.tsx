@@ -486,7 +486,7 @@ export default async function DossierPage({ params }: Params) {
   return (
     <div className={styles.root}>
       <header className={styles.topbar}>
-        <Link href="/admin" className={styles.brand}>
+        <Link href="/admin/dashboard" className={styles.brand}>
           <Image src={"/images/horizontal-logo.png"} width={300} height={100} alt="apartmentHub Logo" className="horizontal-logo"/>
           <span className={styles.sub}>Dashboard</span>
         </Link>
