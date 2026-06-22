@@ -16,7 +16,7 @@ export type Database = {
           telefoon: string | null;
           beste_moment: string | null;
           taal: "nl" | "en";
-          status: "nieuw" | "gecontacteerd" | "bezichtiging_gepland" | "verkocht" | "gestopt";
+          status: "new" | "contacted" | "viewing_scheduled" | "sold" | "stopped";
           bag_id: string | null;
           agent_assigned: string | null;
           notes: string | null;

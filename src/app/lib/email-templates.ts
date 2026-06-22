@@ -297,3 +297,79 @@ export function documentRequestEmail(args: {
 
   return { subject, html: shell(args.lang === "nl" ? "Documenten gevraagd" : "Documents requested", body), text };
 }
+
+/* ====================================================================
+ * Valuation confirmation — sent to the seller after submitting the
+ * valuation form with their estimated value range.
+ * ==================================================================== */
+export function valuationConfirmationEmail(
+  lang: "nl" | "en",
+  fields: {
+    naam: string;
+    adres: string;
+    postcode: string;
+    wijk: string;
+    stad: string;
+    oppervlakte: string;
+    valueLow: string;
+    valueHigh: string;
+  }
+) {
+  const naam = escapeHtml(fields.naam || "");
+  const adres = escapeHtml(fields.adres || "");
+  const postcode = escapeHtml(fields.postcode || "");
+  const wijk = escapeHtml(fields.wijk || "");
+  const stad = escapeHtml(fields.stad || "");
+  const oppervlakte = escapeHtml(fields.oppervlakte || "");
+  const valueLow = escapeHtml(fields.valueLow || "");
+  const valueHigh = escapeHtml(fields.valueHigh || "");
+
+  if (lang === "nl") {
+    return {
+      subject: `Jouw woningwaarde-indicatie — ${adres}`,
+      html: shell("Woningwaarde-indicatie", `
+        <h2 style="margin:0 0 8px;color:${TEAL};font-size:22px;letter-spacing:-0.01em;">Bedankt, ${naam}!</h2>
+        <p style="margin:0 0 16px;color:${INK};">We hebben je aanvraag ontvangen voor <strong>${adres}${postcode ? `, ${postcode}` : ""}</strong>.</p>
+        <div style="background:${SOFT};border-left:4px solid ${TEAL};padding:16px 18px;border-radius:8px;margin:18px 0;">
+          <p style="margin:0 0 4px;color:${INK};font-size:14px;">Geschatte marktwaarde van je woning:</p>
+          <p style="margin:0;font-size:24px;font-weight:700;color:${TEAL};">${valueLow} tot ${valueHigh}</p>
+          <p style="margin:8px 0 0;color:${GREY};font-size:13px;">${stad} · ${wijk} · ${oppervlakte} m²</p>
+        </div>
+        <p style="margin:0 0 14px;color:${INK};">Dit is een geautomatiseerde indicatie op basis van marktdata en het BAG, geen taxatie. Voor een exacte waardebepaling komen we graag langs.</p>
+        <div style="background:#F7FAFC;border-radius:8px;padding:14px 16px;margin:18px 0;">
+          <strong style="color:${TEAL};">Wat gebeurt er nu?</strong>
+          <ol style="margin:8px 0 0;padding-left:20px;color:${INK};">
+            <li>We bellen je <strong>binnen één werkdag</strong>.</li>
+            <li>We plannen een gratis en vrijblijvend huisbezoek in.</li>
+            <li>Op locatie bepalen we de exacte waarde en verkoopstrategie.</li>
+          </ol>
+        </div>
+        <p style="margin:0 0 12px;color:${GREY};font-size:14px;">Heb je tussendoor vragen? Bel ons gerust of antwoord op deze mail.</p>
+        <p style="margin:24px 0 0;color:${GREY};">Tot snel,<br/>Het ApartmentHub-team</p>
+      `),
+    };
+  }
+  return {
+    subject: `Your property value estimate — ${adres}`,
+    html: shell("Property value estimate", `
+      <h2 style="margin:0 0 8px;color:${TEAL};font-size:22px;letter-spacing:-0.01em;">Thank you, ${naam}!</h2>
+      <p style="margin:0 0 16px;color:${INK};">We've received your request for <strong>${adres}${postcode ? `, ${postcode}` : ""}</strong>.</p>
+      <div style="background:${SOFT};border-left:4px solid ${TEAL};padding:16px 18px;border-radius:8px;margin:18px 0;">
+        <p style="margin:0 0 4px;color:${INK};font-size:14px;">Estimated market value of your property:</p>
+        <p style="margin:0;font-size:24px;font-weight:700;color:${TEAL};">${valueLow} to ${valueHigh}</p>
+        <p style="margin:8px 0 0;color:${GREY};font-size:13px;">${stad} · ${wijk} · ${oppervlakte} m²</p>
+      </div>
+      <p style="margin:0 0 14px;color:${INK};">This is an automated indication based on market data and the BAG, not a formal appraisal. For an exact valuation, we are happy to visit.</p>
+      <div style="background:#F7FAFC;border-radius:8px;padding:14px 16px;margin:18px 0;">
+        <strong style="color:${TEAL};">What happens next?</strong>
+        <ol style="margin:8px 0 0;padding-left:20px;color:${INK};">
+          <li>We'll call you <strong>within one business day</strong>.</li>
+          <li>We schedule a free, no-obligation home visit.</li>
+          <li>On-site we determine the exact value and sales strategy.</li>
+        </ol>
+      </div>
+      <p style="margin:0 0 12px;color:${GREY};font-size:14px;">Have questions in the meantime? Feel free to call us or reply to this email.</p>
+      <p style="margin:24px 0 0;color:${GREY};">See you soon,<br/>The ApartmentHub team</p>
+    `),
+  };
+}

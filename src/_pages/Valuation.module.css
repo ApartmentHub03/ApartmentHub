@@ -1,0 +1,571 @@
+.pageContainer {
+    min-height: 100vh;
+    background: linear-gradient(to bottom right, hsl(var(--myrtle) / 0.05), #f9fafb);
+    padding: 2.5rem 1rem;
+}
+
+@media (min-width: 768px) {
+    .pageContainer {
+        padding: 4rem 1rem;
+    }
+}
+
+.innerContainer {
+    max-width: 42rem;
+    margin: 0 auto;
+}
+
+.header {
+    margin-bottom: 2rem;
+}
+
+.backLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: hsl(var(--myrtle));
+    text-decoration: none;
+    margin-bottom: 1rem;
+}
+
+.backLink:hover {
+    text-decoration: underline;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    background: hsl(var(--myrtle) / 0.1);
+    color: hsl(var(--myrtle));
+    margin-bottom: 0.75rem;
+}
+
+.title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: hsl(var(--foreground));
+}
+
+@media (min-width: 768px) {
+    .title {
+        font-size: 2.25rem;
+    }
+}
+
+.subtitle {
+    color: hsl(var(--muted-foreground));
+    margin-top: 0.5rem;
+}
+
+.stepLabel {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: hsl(var(--myrtle));
+    margin-top: 1rem;
+}
+
+.progressBarTrack {
+    height: 0.5rem;
+    background: hsl(var(--muted));
+    border-radius: 9999px;
+    margin-top: 0.5rem;
+    overflow: hidden;
+}
+
+.progressBarFill {
+    height: 100%;
+    background: hsl(var(--myrtle));
+    border-radius: 9999px;
+    transition: width 0.3s ease-out;
+}
+
+.card {
+    background: white;
+    border-radius: 0.75rem;
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+}
+
+.cardContent {
+    padding: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .cardContent {
+        padding: 2rem;
+    }
+}
+
+.errorText {
+    color: hsl(var(--destructive));
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+}
+
+.stepSection {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.stepTitle {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.stepDesc {
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+}
+
+.grid2 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .grid2 {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.grid3 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .grid3 {
+        grid-template-columns: 2fr 1fr;
+    }
+}
+
+.fieldGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.fieldLabel {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: hsl(var(--foreground));
+}
+
+.input {
+    width: 100%;
+    height: 2.5rem;
+    padding: 0 0.75rem;
+    border: 1px solid hsl(var(--input));
+    border-radius: 0.375rem;
+    background: white;
+    color: hsl(var(--foreground));
+    font-size: 0.875rem;
+    line-height: 2.5rem;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input:focus {
+    border-color: hsl(var(--myrtle));
+    box-shadow: 0 0 0 2px hsl(var(--myrtle) / 0.2);
+}
+
+.input::placeholder {
+    color: hsl(var(--muted-foreground));
+}
+
+.phoneRow {
+    display: flex;
+    gap: 0.5rem;
+    align-items: stretch;
+}
+
+.dialCodeSelect {
+    width: auto;
+    min-width: 7rem;
+    padding: 0 2rem 0 0.75rem;
+    border: 1px solid hsl(var(--input));
+    border-radius: 0.375rem;
+    background: white;
+    color: hsl(var(--foreground));
+    font-size: 0.875rem;
+    height: 2.5rem;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234A5568' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    transition: border-color 0.15s ease;
+    flex-shrink: 0;
+}
+
+.dialCodeSelect:focus {
+    border-color: hsl(var(--myrtle));
+    box-shadow: 0 0 0 2px hsl(var(--myrtle) / 0.2);
+}
+
+.phoneInput {
+    flex: 1;
+    width: 100%;
+    height: 2.5rem;
+    padding: 0 0.75rem;
+    border: 1px solid hsl(var(--input));
+    border-radius: 0.375rem;
+    background: white;
+    color: hsl(var(--foreground));
+    font-size: 0.875rem;
+    line-height: 2.5rem;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.phoneInput:focus {
+    border-color: hsl(var(--myrtle));
+    box-shadow: 0 0 0 2px hsl(var(--myrtle) / 0.2);
+}
+
+.phoneInput::placeholder {
+    color: hsl(var(--muted-foreground));
+}
+
+@media (max-width: 480px) {
+    .phoneRow { flex-direction: column; gap: 0.5rem; }
+    .dialCodeSelect { width: 100%; min-width: 0; }
+}
+
+.select {
+    width: 100%;
+    height: 2.5rem;
+    padding: 0 0.75rem;
+    border: 1px solid hsl(var(--input));
+    border-radius: 0.375rem;
+    background: white;
+    color: hsl(var(--foreground));
+    font-size: 0.875rem;
+    line-height: 2.5rem;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.select:focus {
+    border-color: hsl(var(--myrtle));
+    box-shadow: 0 0 0 2px hsl(var(--myrtle) / 0.2);
+}
+
+.select:invalid,
+.select option[value=""] {
+    color: hsl(var(--muted-foreground));
+}
+
+.btnOutline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 2.5rem;
+    padding: 0 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: 1px solid hsl(var(--input));
+    border-radius: 0.375rem;
+    background: white;
+    color: hsl(var(--foreground));
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.btnOutline:hover {
+    background: hsl(var(--muted));
+}
+
+.btnOutline:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btnPrimary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    height: 2.5rem;
+    padding: 0 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 0.375rem;
+    background: hsl(var(--myrtle));
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.btnPrimary:hover {
+    background: hsl(var(--myrtle-dark));
+}
+
+.btnPrimary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btnOrange {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex: 1;
+    height: 2.5rem;
+    padding: 0 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 0.375rem;
+    background: hsl(var(--orange));
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.btnOrange:hover {
+    background: hsl(var(--orange) / 0.9);
+}
+
+.btnOrange:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btnRow {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.bagResult {
+    border-radius: 0.5rem;
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--muted) / 0.3);
+    padding: 1rem;
+}
+
+.bagMap {
+    width: 100%;
+    height: 10rem;
+    border-radius: 0.5rem;
+    margin-bottom: 0.75rem;
+    border: none;
+}
+
+.bagFoundLabel {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: hsl(var(--myrtle));
+}
+
+.bagTags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.bagTag {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    background: hsl(var(--myrtle) / 0.1);
+    color: hsl(var(--myrtle));
+    border-radius: 9999px;
+}
+
+.bagNote {
+    font-size: 0.75rem;
+    color: hsl(var(--muted-foreground));
+    margin-top: 0.5rem;
+}
+
+.bagNotFound {
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+}
+
+.neighborhoodInfo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    background: hsl(var(--myrtle) / 0.1);
+    color: hsl(var(--myrtle));
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+}
+
+.consentRow {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    cursor: pointer;
+}
+
+.consentCheckbox {
+    width: 1.125rem;
+    height: 1.125rem;
+    margin-top: 0.125rem;
+    accent-color: hsl(var(--myrtle));
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.consentText {
+    font-size: 0.875rem;
+}
+
+.consentLink {
+    color: hsl(var(--myrtle));
+    text-decoration: underline;
+}
+
+.consentLink:hover {
+    text-decoration: none;
+}
+
+.resultSection {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.resultAddressLabel {
+    color: hsl(var(--muted-foreground));
+}
+
+.resultAddress {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: hsl(var(--foreground));
+}
+
+.resultPrice {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: hsl(var(--myrtle));
+}
+
+@media (min-width: 768px) {
+    .resultPrice {
+        font-size: 2.25rem;
+    }
+}
+
+.breakdownCard {
+    text-align: left;
+    border-radius: 0.5rem;
+    border: 1px solid hsl(var(--border));
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.breakdownTitle {
+    font-weight: 600;
+}
+
+.breakdownDetail {
+    font-size: 0.875rem;
+}
+
+.breakdownSmall {
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+}
+
+.breakdownTags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.breakdownTag {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    background: hsl(var(--muted));
+    border-radius: 9999px;
+}
+
+.resultNote {
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+}
+
+.resultDisclaimer {
+    font-size: 0.75rem;
+    color: hsl(var(--muted-foreground));
+}
+
+.spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.icon3_5 {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+.icon4 {
+    width: 1rem;
+    height: 1rem;
+}
+
+.callButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    height: 2.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 0.375rem;
+    background: hsl(var(--myrtle));
+    color: white;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.15s ease;
+}
+
+.callButton:hover {
+    background: hsl(var(--myrtle-dark));
+}

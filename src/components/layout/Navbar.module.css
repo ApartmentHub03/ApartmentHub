@@ -148,11 +148,24 @@
   display: none;
   align-items: center;
   gap: 2rem;
-  /* space-x-8 */
+  flex: 1;
+  justify-content: center;
 }
 
 @media (min-width: 768px) {
   .desktopMenu {
+    display: flex;
+  }
+}
+
+.desktopActions {
+  display: none;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .desktopActions {
     display: flex;
   }
 }
@@ -392,4 +405,174 @@
   color: #009B8A;
   /* myrtle */
   font-weight: 500;
+}
+
+/* More Button (desktop - hamburger icon) */
+.moreButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  color: #374151;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+  margin-left: 0.5rem;
+}
+
+.moreButton:hover {
+  color: #009B8A;
+  background-color: #f9fafb;
+}
+
+.moreButtonActive {
+  color: #009B8A;
+  background-color: #f3f4f6;
+}
+
+/* Side Menu Overlay */
+.sideMenuOverlay {
+  position: fixed;
+  inset: 0;
+  top: 4rem;
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 40;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Side Menu Drawer */
+.sideMenu {
+  position: fixed;
+  top: 4rem;
+  right: 0;
+  bottom: 0;
+  width: 280px;
+  max-width: 85vw;
+  background-color: #ffffff;
+  z-index: 50;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.08);
+  border-left: 1px solid #f3f4f6;
+  overflow-y: auto;
+}
+
+.sideMenuOpen {
+  transform: translateX(0);
+}
+
+.sideMenuHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.sideMenuTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.sideMenuClose {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem;
+  border-radius: 0.5rem;
+  color: #6b7280;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.sideMenuClose:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.sideMenuNav {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem;
+}
+
+.sideMenuLink {
+  display: block;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #374151;
+  text-decoration: none;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.sideMenuLink:hover {
+  background-color: #f9fafb;
+  color: #009B8A;
+}
+
+.sideMenuLinkActive {
+  background-color: #e5e7eb;
+  color: #009B8A;
+}
+
+/* Mobile More Section (accordion) */
+.mobileMoreSection {
+  display: flex;
+  flex-direction: column;
+}
+
+.mobileMoreToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.9375rem;
+  color: #374151;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.mobileMoreToggle:hover {
+  background-color: #f9fafb;
+  color: #009B8A;
+}
+
+.moreChevron {
+  transition: transform 0.2s ease;
+}
+
+.moreChevronOpen {
+  transform: rotate(180deg);
+}
+
+.mobileMoreContent {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease-out;
+}
+
+.mobileMoreContentOpen {
+  max-height: 200px;
+}
+
+.mobileMoreContent .mobileNavLink {
+  padding-left: 2rem;
 }

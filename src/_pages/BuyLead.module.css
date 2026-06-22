@@ -1,0 +1,709 @@
+.page {
+  min-height: 100vh;
+  background-color: #f7faf9;
+}
+
+.container {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding: 3rem 1rem;
+  }
+}
+
+.progressBarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.progressBarStepLabel {
+  font-weight: 600;
+  color: hsl(var(--myrtle));
+}
+
+.progressBarStepName {
+  color: hsl(var(--muted-foreground));
+}
+
+.progressBarTrack {
+  height: 0.5rem;
+  background: hsl(var(--muted));
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.progressBarFill {
+  height: 100%;
+  background: hsl(var(--myrtle));
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+.progressBarSteps {
+  display: none;
+  justify-content: space-between;
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+}
+
+@media (min-width: 768px) {
+  .progressBarSteps {
+    display: flex;
+  }
+}
+
+.progressBarStepActive {
+  color: hsl(var(--myrtle));
+  font-weight: 600;
+}
+
+.card {
+  background: #fff;
+  color: hsl(var(--card-foreground));
+  border-radius: 0.75rem;
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+}
+
+.cardContent {
+  padding: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .cardContent {
+    padding: 2rem;
+  }
+}
+
+.error {
+  color: hsl(var(--destructive));
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.stepContent {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.stepContentTransitioning {
+  opacity: 0;
+  transform: translateY(0.625rem);
+}
+
+.stepContentVisible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.heading {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+  margin: 0;
+}
+
+.subheading {
+  color: hsl(var(--muted-foreground));
+  margin: 0;
+}
+
+.journeyGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.journeyButton {
+  min-height: 7.5rem;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  border: 2px solid hsl(var(--border));
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-weight: 600;
+  font-size: 1.125rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.journeyButton:hover {
+  border-color: hsl(var(--myrtle));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.journeyButtonActive {
+  border-color: hsl(var(--myrtle));
+  background: hsl(var(--myrtle) / 0.05);
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .formGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.formGroupFull {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  grid-column: 1 / -1;
+}
+
+.label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.375rem;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  min-height: 2.25rem;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.input:focus {
+  border-color: hsl(var(--myrtle));
+  box-shadow: 0 0 0 2px hsl(var(--myrtle) / 0.1);
+}
+
+.input::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+.select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.375rem;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  min-height: 2.25rem;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234A5568' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  padding-right: 2rem;
+  transition: border-color 0.15s ease;
+}
+
+.select:focus {
+  border-color: hsl(var(--myrtle));
+  box-shadow: 0 0 0 2px hsl(var(--myrtle) / 0.1);
+}
+
+.phoneRow {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.dialCodeSelect {
+  width: auto;
+  min-width: 7rem;
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.375rem;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  min-height: 2.25rem;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234A5568' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  transition: border-color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.dialCodeSelect:focus {
+  border-color: hsl(var(--myrtle));
+  box-shadow: 0 0 0 2px hsl(var(--myrtle) / 0.1);
+}
+
+.phoneInput {
+  flex: 1;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.375rem;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  min-height: 2.25rem;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.phoneInput:focus {
+  border-color: hsl(var(--myrtle));
+  box-shadow: 0 0 0 2px hsl(var(--myrtle) / 0.1);
+}
+
+.phoneInput::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+@media (max-width: 480px) {
+  .phoneRow { flex-direction: column; gap: 0.5rem; }
+  .dialCodeSelect { width: 100%; min-width: 0; }
+}
+
+.radioButtonGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.radioButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 2px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 0.875rem;
+}
+
+.radioButton:hover {
+  border-color: hsl(var(--myrtle));
+}
+
+.radioButtonActive {
+  border-color: hsl(var(--myrtle));
+  background: hsl(var(--myrtle) / 0.05);
+}
+
+.radioButtonCenter {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 2px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 0.875rem;
+  flex: 1;
+}
+
+.radioButtonCenter:hover {
+  border-color: hsl(var(--myrtle));
+}
+
+.radioButtonCenterActive {
+  border-color: hsl(var(--myrtle));
+  background: hsl(var(--myrtle) / 0.05);
+}
+
+.radioIndicator {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 9999px;
+  border: 2px solid hsl(var(--border));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.15s ease;
+}
+
+.radioIndicatorActive {
+  border-color: hsl(var(--myrtle));
+}
+
+.radioIndicatorDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: hsl(var(--myrtle));
+}
+
+.radioButtonSideGroup {
+  display: flex;
+  gap: 1rem;
+}
+
+.pillGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pill {
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pill:hover {
+  border-color: hsl(var(--myrtle));
+}
+
+.pillActive {
+  background: hsl(var(--myrtle));
+  color: white;
+  border-color: hsl(var(--myrtle));
+}
+
+.chip {
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chip:hover {
+  border-color: hsl(var(--myrtle));
+}
+
+.chipActive {
+  background: hsl(var(--myrtle));
+  color: white;
+  border-color: hsl(var(--myrtle));
+}
+
+.neighborhoodGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .neighborhoodGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.neighborhoodCard {
+  position: relative;
+  min-height: 5.5rem;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 2px solid hsl(var(--border));
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-weight: 600;
+  font-size: 1rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.neighborhoodCard:hover {
+  border-color: hsl(var(--myrtle));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.neighborhoodCardActive {
+  background: hsl(var(--myrtle));
+  color: white;
+  border-color: hsl(var(--myrtle));
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.neighborhoodCardCheck {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  background: white;
+  color: hsl(var(--myrtle));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sectionGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.sectionLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+.summaryBox {
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--muted) / 0.3);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.summaryRow {
+  margin: 0;
+}
+
+.summaryLabel {
+  font-weight: 600;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.checkboxInput {
+  margin-top: 0.25rem;
+  width: 1rem;
+  height: 1rem;
+  accent-color: hsl(var(--myrtle));
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.checkboxText {
+  font-size: 0.875rem;
+  color: hsl(var(--foreground));
+}
+
+.checkboxLink {
+  color: hsl(var(--myrtle));
+  text-decoration: underline;
+}
+
+.checkboxLink:hover {
+  text-decoration: none;
+}
+
+.navButtons {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 1rem;
+  border-top: 1px solid hsl(var(--border));
+}
+
+.navButtonsStart {
+  display: flex;
+  justify-content: flex-start;
+  padding-top: 1rem;
+  border-top: 1px solid hsl(--border);
+}
+
+.submitButton {
+  width: 100%;
+  min-height: 3rem;
+  font-size: 1rem;
+  background: hsl(var(--orange));
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  transition: background-color 0.15s ease;
+}
+
+.submitButton:hover {
+  background: hsl(var(--orange) / 0.9);
+}
+
+.submitButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spinner {
+  width: 1rem;
+  height: 1rem;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.successContainer {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 4rem 1rem;
+}
+
+.successCard {
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border-radius: 0.75rem;
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.successIconCircle {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 9999px;
+  background: hsl(var(--myrtle) / 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.successIconCircle svg {
+  width: 2rem;
+  height: 2rem;
+  color: hsl(var(--myrtle));
+}
+
+.successTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+  margin: 0;
+}
+
+.successMessage {
+  color: hsl(var(--muted-foreground));
+  margin: 0;
+}
+
+.successButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  justify-content: center;
+  align-items: center;
+}
+
+@media (min-width: 640px) {
+  .successButtons {
+    flex-direction: row;
+  }
+}
+
+.ctaPrimary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #FF7D28;
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(255, 125, 40, 0.3);
+  width: 100%;
+}
+
+.ctaPrimary:hover {
+  background: #e86e1e;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 10px -1px rgba(255, 125, 40, 0.4);
+}
+
+.ctaOutline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  border: 2px solid #009B8A;
+  color: #009B8A;
+  background: none;
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  width: 100%;
+}
+
+.ctaOutline:hover {
+  background: rgba(0, 155, 138, 0.1);
+  transform: translateY(-1px);
+}
+
+@media (min-width: 640px) {
+  .ctaPrimary, .ctaOutline { width: auto; }
+}

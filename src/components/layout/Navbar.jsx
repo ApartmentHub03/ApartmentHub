@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSelector, useDispatch } from 'react-redux';
-import { Menu, X, LogIn } from 'lucide-react';
+import { Menu, X, LogIn, ChevronDown } from 'lucide-react';
 import { toggleMobileMenu, closeMobileMenu, setLanguage } from '@/features/ui/uiSlice';
 import { useAuth } from '@/contexts/AuthContext';
 import styles from './Navbar.module.css';
@@ -18,6 +18,12 @@ const SLUG_PAIRS = [
     ['letter-of-intent', 'intentieverklaring'],
     ['terms-and-conditions', 'algemene-voorwaarden'],
     ['privacy-policy', 'privacyverklaring'],
+    ['buy', 'koop'],
+    ['sell-lead', 'verkoop-aanvraag'],
+    ['valuation', 'waardebepaling'],
+    ['buying-power', 'koopkracht'],
+    ['buy-lead', 'koop-lead'],
+    ['terms-and-conditions', 'algemene-voorwaarden'],
 ];
 const EN_TO_NL = Object.fromEntries(SLUG_PAIRS);
 const NL_TO_EN = Object.fromEntries(SLUG_PAIRS.map(([en, nl]) => [nl, en]));
@@ -91,20 +97,30 @@ const Navbar = () => {
         lowerPath.includes('/intentieverklaring');
     const showLoginButton = !isInsideAccountFlow;
 
-    const navLinks = [
+    const mainLinks = [
         { name: t.rentOut, path: currentLang === 'nl' ? '/nl/rent-out' : '/en/rent-out' },
-        { name: t.rentIn, path: currentLang === 'nl' ? '/nl/rent-in' : '/en/rent-in' },
-        { name: t.faq, path: currentLang === 'nl' ? '/nl/faq' : '/en/faq' },
-        { name: t.about, path: currentLang === 'nl' ? '/nl/about-us' : '/en/about-us' },
-        { name: t.contact, path: currentLang === 'nl' ? '/nl/contact' : '/en/contact' },
+        { name: t.rentIn,  path: currentLang === 'nl' ? '/nl/rent-in'  : '/en/rent-in'  },
+        { name: t.buy,     path: currentLang === 'nl' ? '/nl/koop'     : '/en/buy'      },
+        { name: t.sell,    path: currentLang === 'nl' ? '/nl/verkoop-aanvraag' : '/en/sell-lead' },
+    ];
+
+    const sideLinks = [
+        { name: t.faq,     path: currentLang === 'nl' ? '/nl/faq'     : '/en/faq'       },
+        { name: t.about,   path: currentLang === 'nl' ? '/nl/about-us' : '/en/about-us'  },
+        { name: t.contact, path: currentLang === 'nl' ? '/nl/contact'  : '/en/contact'   },
     ];
 
     const mobileNavLinks = [
-        ...navLinks,
+        ...mainLinks,
     ];
+
+    const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
+    const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
 
     const handleLinkClick = () => {
         dispatch(closeMobileMenu());
+        setIsSideMenuOpen(false);
+        setIsMobileMoreOpen(false);
         window.scrollTo(0, 0);
     };
 
@@ -168,7 +184,7 @@ const Navbar = () => {
                     </Link>
 
                     <div className={styles.desktopMenu}>
-                        {navLinks.map((link) => (
+                        {mainLinks.map((link) => (
                             <Link
                                 key={link.name}
                                 href={link.path}
@@ -178,6 +194,9 @@ const Navbar = () => {
                                 {link.name}
                             </Link>
                         ))}
+                    </div>
+
+                    <div className={styles.desktopActions}>
                         <LanguageSwitcher />
                         {showLoginButton && (
                             <Link
@@ -189,6 +208,13 @@ const Navbar = () => {
                                 {isAuthenticated ? authedLabel : t.login}
                             </Link>
                         )}
+                        <button
+                            className={`${styles.moreButton} ${isSideMenuOpen ? styles.moreButtonActive : ''}`}
+                            onClick={() => setIsSideMenuOpen(!isSideMenuOpen)}
+                            aria-label="More links"
+                        >
+                            <Menu size={22} />
+                        </button>
                     </div>
 
                     <div className={styles.mobileActions}>
@@ -217,6 +243,27 @@ const Navbar = () => {
                             {link.name}
                         </Link>
                     ))}
+                    <div className={styles.mobileMoreSection}>
+                        <button
+                            className={styles.mobileMoreToggle}
+                            onClick={() => setIsMobileMoreOpen(!isMobileMoreOpen)}
+                        >
+                            {t.more}
+                            <ChevronDown size={16} className={`${styles.moreChevron} ${isMobileMoreOpen ? styles.moreChevronOpen : ''}`} />
+                        </button>
+                        <div className={`${styles.mobileMoreContent} ${isMobileMoreOpen ? styles.mobileMoreContentOpen : ''}`}>
+                            {sideLinks.map((link) => (
+                                <Link
+                                    key={link.name}
+                                    href={link.path}
+                                    className={`${styles.mobileNavLink} ${pathname === link.path ? styles.active : ''}`}
+                                    onClick={handleLinkClick}
+                                >
+                                    {link.name}
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
                     {showLoginButton && (
                         <Link
                             href={isAuthenticated ? aanvraagPath : loginPath}
@@ -228,6 +275,35 @@ const Navbar = () => {
                         </Link>
                     )}
                 </div>
+            </div>
+
+            {/* Desktop Side Menu Drawer */}
+            {isSideMenuOpen && (
+                <div className={styles.sideMenuOverlay} onClick={() => setIsSideMenuOpen(false)} />
+            )}
+            <div className={`${styles.sideMenu} ${isSideMenuOpen ? styles.sideMenuOpen : ''}`}>
+                <div className={styles.sideMenuHeader}>
+                    <span className={styles.sideMenuTitle}>{t.more}</span>
+                    <button
+                        className={styles.sideMenuClose}
+                        onClick={() => setIsSideMenuOpen(false)}
+                        aria-label="Close menu"
+                    >
+                        <X size={20} />
+                    </button>
+                </div>
+                <nav className={styles.sideMenuNav}>
+                    {sideLinks.map((link) => (
+                        <Link
+                            key={link.name}
+                            href={link.path}
+                            className={`${styles.sideMenuLink} ${pathname === link.path ? styles.sideMenuLinkActive : ''}`}
+                            onClick={() => { setIsSideMenuOpen(false); window.scrollTo(0, 0); }}
+                        >
+                            {link.name}
+                        </Link>
+                    ))}
+                </nav>
             </div>
         </nav>
     );

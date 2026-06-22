@@ -7,7 +7,7 @@ import { ArrowRight } from 'lucide-react';
 import styles from './NeighborhoodSection.module.css';
 import { translations } from '../../../data/translations';
 
-const NeighborhoodSection = () => {
+const NeighborhoodSection = ({ title }) => {
     const scrollWrapperRef = useRef(null);
     const scrollContentRef = useRef(null);
     const animationFrameId = useRef(null);
@@ -139,7 +139,7 @@ const NeighborhoodSection = () => {
         <section className={styles.section}>
             <div className={styles.container}>
                 <div className={styles.header}>
-                    <h2 className={styles.title}>{t.neighborhoodsTitle}</h2>
+                    <h2 className={styles.title}>{title || t.neighborhoodsTitle}</h2>
                 </div>
                 <div
                     className={styles.scrollWrapper}

@@ -1,0 +1,129 @@
+.contactSection {
+    padding: 4rem 0;
+    background: #fff;
+}
+
+@media (min-width: 768px) {
+    .contactSection {
+        padding: 6rem 0;
+    }
+}
+
+.contactContainer {
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 0 1rem;
+    text-align: center;
+}
+
+@media (min-width: 640px) {
+    .contactContainer {
+        padding: 0 1.5rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .contactContainer {
+        padding: 0 2rem;
+    }
+}
+
+.contactTitle {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text-dark);
+    margin-bottom: 0.5rem;
+}
+
+@media (min-width: 768px) {
+    .contactTitle {
+        font-size: 2.25rem;
+    }
+}
+
+.contactDesc {
+    color: var(--color-text-gray);
+    margin-bottom: 2rem;
+}
+
+.contactCard {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    text-align: left;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.contactCard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+@media (min-width: 640px) {
+    .contactCard {
+        padding: 2rem;
+    }
+}
+
+.contactPhone {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: hsl(var(--myrtle));
+    text-decoration: none;
+    display: block;
+    margin-bottom: 1rem;
+}
+
+.contactPhone:hover {
+    text-decoration: underline;
+}
+
+.contactInfoList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.contactInfoItem {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--color-text-dark);
+    text-decoration: none;
+    font-size: 0.9375rem;
+    transition: color 0.2s;
+}
+
+.contactInfoItem:hover {
+    color: hsl(var(--myrtle));
+}
+
+.contactInfoIcon {
+    color: hsl(var(--myrtle));
+    flex-shrink: 0;
+}
+
+.ctaPrimary {
+    display: block;
+    text-align: center;
+    background: #FF7D28;
+    color: #fff;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 1rem;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 6px -1px rgba(255, 125, 40, 0.3);
+}
+
+.ctaPrimary:hover {
+    background: #e86e1e;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 10px -1px rgba(255, 125, 40, 0.4);
+}

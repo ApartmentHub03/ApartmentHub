@@ -1,0 +1,566 @@
+.pageContainer {
+    min-height: 100vh;
+    background: linear-gradient(135deg, hsl(var(--myrtle) / 0.05), #f9fafb);
+    padding: 2.5rem 1rem;
+}
+
+@media (min-width: 768px) {
+    .pageContainer {
+        padding: 4rem 1rem;
+    }
+}
+
+.inner {
+    max-width: 42rem;
+    margin: 0 auto;
+}
+
+.backLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: hsl(var(--myrtle));
+    text-decoration: none;
+    margin-bottom: 1rem;
+}
+
+.backLink:hover {
+    text-decoration: underline;
+}
+
+.title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: hsl(var(--foreground));
+    margin: 0;
+}
+
+@media (min-width: 768px) {
+    .title {
+        font-size: 2.25rem;
+    }
+}
+
+.stepLabel {
+    font-size: 0.875rem;
+    color: hsl(var(--myrtle));
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+.progressBar {
+    height: 0.5rem;
+    margin-top: 0.5rem;
+    background-color: hsl(var(--muted));
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+.progressFill {
+    height: 100%;
+    background: linear-gradient(to right, hsl(var(--myrtle)), hsl(var(--myrtle) / 0.85));
+    border-radius: 9999px;
+    transition: width 0.4s ease;
+}
+
+.card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.75rem;
+    margin-top: 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.cardContent {
+    padding: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .cardContent {
+        padding: 2rem;
+    }
+}
+
+.errorText {
+    color: hsl(var(--destructive));
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.sectionTitle {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: hsl(var(--foreground));
+    margin: 0;
+}
+
+.sectionDesc {
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+    margin: 0;
+}
+
+.fieldGroup {
+    display: flex;
+    flex-direction: column;
+}
+
+.label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: hsl(var(--foreground));
+    margin-bottom: 0.75rem;
+}
+
+.chipGroup {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.chipButton {
+    min-height: 2.75rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid hsl(var(--input));
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+}
+
+.chipButton:hover {
+    border-color: hsl(var(--orange));
+}
+
+.chipButtonSelected {
+    background: hsl(var(--orange));
+    color: white;
+    border-color: hsl(var(--orange));
+}
+
+.chipButtonSelected:hover {
+    background: hsl(21 100% 52%);
+    border-color: hsl(21 100% 52%);
+}
+
+.cityGroup {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.cityButton {
+    flex: 1;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    border: 2px solid hsl(var(--input));
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+}
+
+.cityButton:hover {
+    border-color: hsl(var(--myrtle));
+}
+
+.cityButtonSelected {
+    border-color: hsl(var(--myrtle));
+    background: hsl(var(--myrtle) / 0.05);
+}
+
+.wijkGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+    .wijkGrid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.wijkButton {
+    position: relative;
+    min-height: 5.5rem;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    border: 2px solid hsl(var(--input));
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-weight: 600;
+    font-size: 1rem;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+}
+
+.wijkButton:hover {
+    border-color: hsl(var(--myrtle));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.wijkButtonSelected {
+    background: hsl(var(--myrtle));
+    color: white;
+    border-color: hsl(var(--myrtle));
+    box-shadow: 0 4px 6px rgba(0, 155, 138, 0.25);
+}
+
+.wijkButtonSelected:hover {
+    border-color: hsl(var(--myrtle));
+}
+
+.wijkCheckIcon {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 9999px;
+    background: white;
+    color: hsl(var(--myrtle));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wijkPrice {
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: hsl(var(--muted-foreground));
+}
+
+.wijkPriceSelected {
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.wijkCount {
+    font-size: 0.875rem;
+    color: hsl(var(--myrtle));
+    margin-top: 0.5rem;
+}
+
+.inputField {
+    width: 100%;
+    height: 2.5rem;
+    padding: 0 0.75rem;
+    border: 1px solid hsl(var(--input));
+    border-radius: 0.5rem;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-size: 0.875rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s ease;
+    margin-top: 0.25rem;
+}
+
+.inputField:focus {
+    border-color: hsl(var(--myrtle));
+    box-shadow: 0 0 0 2px hsl(var(--myrtle) / 0.15);
+}
+
+.inputField::placeholder {
+    color: hsl(var(--muted-foreground));
+}
+
+.formRow {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .formRow {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.checkboxLabel {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    cursor: pointer;
+}
+
+.checkboxInput {
+    width: 1.125rem;
+    height: 1.125rem;
+    margin-top: 0.125rem;
+    accent-color: hsl(var(--myrtle));
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.consentText {
+    font-size: 0.875rem;
+    color: hsl(var(--foreground));
+    line-height: 1.5;
+}
+
+.consentLink {
+    color: hsl(var(--myrtle));
+    text-decoration: underline;
+}
+
+.consentLink:hover {
+    text-decoration: none;
+}
+
+.buttonRow {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.submitButton {
+    flex: 1;
+}
+
+.resultMeta {
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+    margin-top: 0.25rem;
+}
+
+.resultCard {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid;
+}
+
+.resultCardGreen {
+    border-color: #22c55e;
+    background-color: #f0fdf4;
+}
+
+.resultCardOrange {
+    border-color: #fb923c;
+    background-color: #fff7ed;
+}
+
+.resultCardRed {
+    border-color: #f87171;
+    background-color: #fef2f2;
+}
+
+.resultIcon {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+}
+
+.resultIconGreen {
+    color: #16a34a;
+}
+
+.resultIconOrange {
+    color: #f97316;
+}
+
+.resultIconRed {
+    color: #ef4444;
+}
+
+.resultContent {
+    flex: 1;
+    min-width: 0;
+}
+
+.resultTitleRow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.resultWijk {
+    font-weight: 600;
+    color: hsl(var(--foreground));
+}
+
+.resultBadge {
+    font-size: 0.75rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-weight: 500;
+}
+
+.resultBadgeGreen {
+    background-color: #dcfce7;
+    color: #15803d;
+}
+
+.resultBadgeOrange {
+    background-color: #ffedd5;
+    color: #c2410c;
+}
+
+.resultBadgeRed {
+    background-color: #fee2e2;
+    color: #b91c1c;
+}
+
+.resultMessage {
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+    margin: 0;
+}
+
+.resultPrice {
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+    margin-top: 0.25rem;
+}
+
+.noResultCard {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #f87171;
+    background-color: #fef2f2;
+}
+
+.noResultIcon {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #ef4444;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+}
+
+.noResultText {
+    font-size: 0.875rem;
+    color: #b91c1c;
+    margin: 0;
+}
+
+.suggestionsBox {
+    border-radius: 0.5rem;
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--myrtle) / 0.05);
+    padding: 1rem;
+}
+
+.suggestionsTitle {
+    font-weight: 600;
+    color: hsl(var(--foreground));
+    margin-bottom: 0.5rem;
+}
+
+.suggestionsList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+}
+
+.disclaimer {
+    font-size: 0.75rem;
+    color: hsl(var(--muted-foreground));
+    margin: 0;
+}
+
+.actionRow {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+    .actionRow {
+        flex-direction: row;
+    }
+}
+
+.actionButtonPrimary {
+    flex: 1;
+    background: linear-gradient(to right, hsl(var(--myrtle)), hsl(var(--myrtle) / 0.9));
+    color: white;
+    border: none;
+    border-radius: 0.75rem;
+    height: 2.5rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    font-family: inherit;
+}
+
+.actionButtonPrimary:hover {
+    background: linear-gradient(to right, hsl(var(--myrtle) / 0.9), hsl(var(--myrtle) / 0.8));
+    box-shadow: 0 4px 12px rgba(0, 155, 138, 0.3);
+}
+
+.actionButtonOutline {
+    flex: 1;
+    background: transparent;
+    border: 2px solid hsl(var(--myrtle));
+    color: hsl(var(--myrtle));
+    border-radius: 0.75rem;
+    height: 2.5rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    font-family: inherit;
+}
+
+.actionButtonOutline:hover {
+    background: hsl(var(--myrtle) / 0.1);
+}
+
+.spinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
