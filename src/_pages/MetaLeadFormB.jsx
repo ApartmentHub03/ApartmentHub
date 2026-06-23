@@ -406,7 +406,7 @@ const MetaLeadFormB = () => {
       tags: [
         'Meta Ads',
         'variant_b',
-        bedrooms === '4+' ? '4+ Bedrooms' : bedrooms + ' Bedrooms',
+        bedrooms === '4+' ? '4+ Bedrooms' : bedrooms === '1' ? '1 Bedroom' : bedrooms + ' Bedrooms',
         '€' + budget.replace('-', ' - €'),
       ],
     };
