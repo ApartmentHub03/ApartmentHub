@@ -162,7 +162,9 @@ const LS_KEY = 'ah_leadform_b_v1';
 
 function Logo() {
   return (
-    <img src="/images/horizontal-logo.png" alt="ApartmentHub" className={styles.logo} />
+    <div className={styles.divLogo}>
+    <img src="/images/vertical-logo.png" alt="ApartmentHub" className={styles.logo} />
+ </div>
   );
 }
 
@@ -384,6 +386,7 @@ const MetaLeadFormB = () => {
     setSubmitting(true);
     const tracking = getTracking();
     const eventId = makeEventId();
+    const source = (tracking.utm.utm_source === 'facebook' || tracking.utm.utm_source === 'meta' || tracking.fbclid) ? 'meta_ads' : tracking.utm.utm_source === 'instagram' ? 'instagram' : tracking.utm.utm_source === 'google' ? 'google_ads' : tracking.referrer.includes('instagram') ? 'instagram' : tracking.referrer.includes('google') ? 'google_ads' : 'organic';
     const payload = {
       fullName: fullName.trim(),
       phone: combinePhone(cc, phone),
@@ -395,14 +398,14 @@ const MetaLeadFormB = () => {
       budget,
       language: lang,
       consent: true,
-      source: (tracking.utm.utm_source === 'facebook' || tracking.utm.utm_source === 'meta' || tracking.fbclid) ? 'meta_ads' : tracking.utm.utm_source === 'instagram' ? 'instagram' : tracking.utm.utm_source === 'google' ? 'google_ads' : tracking.referrer.includes('instagram') ? 'instagram' : tracking.referrer.includes('google') ? 'google_ads' : 'organic',
+      source,
       sourceUrl: typeof window !== 'undefined' ? window.location.href : '',
       variant: 'B',
       submittedAt: new Date().toISOString(),
       eventId,
       tracking,
       tags: [
-        'Meta Ads',
+        source === 'google_ads' ? 'Google Ads' : source === 'instagram' ? 'Instagram' : source === 'organic' ? 'Organic' : 'Meta Ads',
         'variant_b',
         bedrooms === '4+' ? '4+ Bedrooms' : bedrooms === '1' ? '1 Bedroom' : bedrooms + ' Bedrooms',
         '€' + budget.replace('-', ' - €'),

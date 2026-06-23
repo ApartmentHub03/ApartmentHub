@@ -28,7 +28,8 @@
 .topbar{background:var(--teal);color:#fff;display:flex;align-items:center;padding:14px 22px;gap:14px}
 .brand-chip{display:inline-flex;align-items:center;background:#fff;border-radius:11px;padding:8px 14px;box-shadow:0 2px 8px rgba(0,0,0,.14)}
 .logoLink{display:inline-flex;align-items:center;text-decoration:none}
-.logo{height:40px;width:auto;display:block;filter:brightness(0) invert(1)}
+.logo{height:30px;width:auto;display:block;}
+.divLogo{background-color: #fff;padding:10px; border-radius: 5px }
 .right{margin-left:auto;display:flex;gap:16px;align-items:center}
 .lang{display:inline-flex;background:rgba(255,255,255,.2);border-radius:999px;padding:3px}
 .lang a{background:transparent;border:0;color:rgba(255,255,255,.6);padding:6px 14px;border-radius:999px;cursor:pointer;font:inherit;font-size:13px;font-weight:600;line-height:1;text-decoration:none;display:inline-flex;align-items:center;transition:color .15s,background .15s}
