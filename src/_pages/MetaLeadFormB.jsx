@@ -260,12 +260,7 @@ const MetaLeadFormB = () => {
   const videoRef = useRef(null);
   const pixelLoadedRef = useRef(false);
   const startedRef = useRef(false);
-
-  useEffect(() => {
-    const onPageShow = (e) => { if (e.persisted) setSubmitting(false); };
-    window.addEventListener('pageshow', onPageShow);
-    return () => window.removeEventListener('pageshow', onPageShow);
-  }, []);
+  const submittingRef = useRef(false);
 
   const TOTAL = 3;
 
@@ -375,6 +370,7 @@ const MetaLeadFormB = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     setShowError(false);
     if (!bedrooms) { goStep(1); return; }
     if (!budget) { goStep(2); return; }
@@ -384,6 +380,8 @@ const MetaLeadFormB = () => {
       return;
     }
     if (honeypot) { return; }
+    submittingRef.current = true;
+    setSubmitting(true);
     const tracking = getTracking();
     const eventId = makeEventId();
     const payload = {
@@ -410,7 +408,6 @@ const MetaLeadFormB = () => {
         '€' + budget.replace('-', ' - €'),
       ],
     };
-    setSubmitting(true);
     try {
       const res = await fetch(LEAD_ENDPOINT, {
         method: 'POST',
@@ -422,9 +419,10 @@ const MetaLeadFormB = () => {
         window.fbq('track', 'Lead', { content_name: 'meta_leadform', language: lang, variant: 'B' }, { eventID: eventId });
       }
       try { localStorage.removeItem(LS_KEY); } catch {}
-      if (typeof window !== 'undefined') window.location.assign(THANK_YOU[lang] || THANK_YOU.nl);
+      window.location.href = THANK_YOU[lang] || THANK_YOU.nl;
     } catch (err) {
       console.error('Lead submit failed:', err);
+      submittingRef.current = false;
       setSubmitting(false);
       setShowError(true);
     }
@@ -662,7 +660,7 @@ const MetaLeadFormB = () => {
 
                   <p className={styles.socialProof}>{s.socialproof}</p>
 
-                  <button type="submit" className={`${styles.btn} ${submitting ? styles.btnLoading : ''} ${!consent ? styles.btnLocked : ''}`} disabled={submitting}>
+                  <button type="submit" className={`${styles.btn} ${submitting ? styles.btnLoading : ''} ${!consent ? styles.btnLocked : ''}`}>
                     {submitting && <span className={styles.spinner} aria-hidden="true" />}
                     <span>{s.submit}</span>
                   </button>
