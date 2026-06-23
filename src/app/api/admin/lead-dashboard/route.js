@@ -5,7 +5,7 @@ function escapeIlike(str) {
     return str.replace(/[%_]/g, (m) => `\\${m}`);
 }
 
-function applyFilters(query, { search, source, language, bedrooms, budget, stage }) {
+function applyFilters(query, { search, source, language, bedrooms, budget, stage, variant }) {
     if (search) {
         const escaped = escapeIlike(search);
         query = query.or(`full_name.ilike.%${escaped}%,phone.ilike.%${escaped}%,email.ilike.%${escaped}%`);
@@ -22,8 +22,11 @@ function applyFilters(query, { search, source, language, bedrooms, budget, stage
     if (budget) {
         query = query.ilike('budget', `%${escapeIlike(budget)}%`);
     }
-    if (stage && ['lead', 'scheduled', 'qualified', 'won'].includes(stage)) {
+    if (stage && ['lead', 'scheduled', 'offer', 'won'].includes(stage)) {
         query = query.eq('stage', stage);
+    }
+    if (variant && ['A', 'B'].includes(variant)) {
+        query = query.eq('variant', variant);
     }
     return query;
 }
@@ -53,22 +56,24 @@ export async function GET(request) {
     const bedrooms = searchParams.get('bedrooms') || '';
     const budget = searchParams.get('budget') || '';
     const stage = searchParams.get('stage') || '';
+    const variant = searchParams.get('variant') || '';
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const limitParam = parseInt(searchParams.get('limit') || '50', 10);
     const limit = [50, 100, 500].includes(limitParam) ? limitParam : 50;
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    const filters = { search, source, language, bedrooms, budget, stage };
+    const filters = { search, source, language, bedrooms, budget, stage, variant };
 
     const pagedQuery = applyFilters(
         supabase.from('meta_leads').select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(from, to),
         filters
     );
 
-    const allQuery = supabase
-        .from('meta_leads')
-        .select('created_at,language,source,stage,amount');
+    const allQuery = applyFilters(
+        supabase.from('meta_leads').select('created_at,language,source,stage,amount,variant'),
+        filters
+    );
 
     const [pagedResult, allResult] = await Promise.all([
         pagedQuery,
@@ -97,10 +102,11 @@ export async function GET(request) {
         byLanguage: {},
         bySource: {},
         byMonth: {},
-        byStage: { lead: 0, scheduled: 0, qualified: 0, won: 0 },
+        byStage: { lead: 0, scheduled: 0, offer: 0, won: 0 },
         totalRevenue: 0,
         bySourceWon: {},
         bySourceRevenue: {},
+        byVariant: { A: { leads: 0, won: 0, revenue: 0 }, B: { leads: 0, won: 0, revenue: 0 } },
     };
 
     for (const l of allLeads) {
@@ -118,6 +124,14 @@ export async function GET(request) {
         if (mk) stats.byMonth[mk] = (stats.byMonth[mk] || 0) + 1;
         if (l.stage && stats.byStage[l.stage] !== undefined) stats.byStage[l.stage]++;
         if (l.stage === 'won') stats.totalRevenue += l.amount || 0;
+        const v = l.variant || 'A';
+        if (stats.byVariant[v]) {
+            stats.byVariant[v].leads++;
+            if (l.stage === 'won') {
+                stats.byVariant[v].won++;
+                stats.byVariant[v].revenue += l.amount || 0;
+            }
+        }
     }
 
     return NextResponse.json({

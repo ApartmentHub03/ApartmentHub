@@ -161,7 +161,11 @@ export async function POST(request) {
         return NextResponse.json({ success: false, message: 'Invalid JSON body' }, { status: 400 });
     }
 
-    const { fullName, phone, email, bedrooms, budget, language, consent, source, sourceUrl, submittedAt, eventId, tracking, tags } = body;
+    const { fullName, phone, email, bedrooms, budget, language, consent, source, sourceUrl, submittedAt, eventId, tracking, tags, variant, fullName2, phone2, websiteUrl } = body;
+
+    if (websiteUrl) {
+        return NextResponse.json({ success: true }, { status: 200 });
+    }
 
     if (!fullName || !phone || !consent) {
         return NextResponse.json({ success: false, message: 'Missing required fields: fullName, phone, consent' }, { status: 400 });
@@ -223,6 +227,9 @@ export async function POST(request) {
                     referrer: tracking?.referrer || null,
                     tags: tags || [],
                     submitted_at: submittedAt,
+                    variant: variant || 'A',
+                    second_tenant_name: fullName2 || null,
+                    second_tenant_phone: phone2 || null,
                 }, { onConflict: 'phone' });
 
             if (error) {
@@ -316,7 +323,7 @@ export async function POST(request) {
                     event_source_url: sourceUrl,
                     action_source: 'website',
                     user_data: userData,
-                    custom_data: { content_name: 'meta_leadform', language: language || 'nl' },
+                    custom_data: { content_name: 'meta_leadform', language: language || 'nl', variant: variant || 'A' },
                 }],
             };
 

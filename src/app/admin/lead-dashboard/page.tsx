@@ -8,7 +8,7 @@ import styles from './AanhuurLeadsDashboard.module.css';
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
 /* ------------------------------------------------------------------ */
-export type Stage = 'lead' | 'scheduled' | 'qualified' | 'won';
+export type Stage = 'lead' | 'scheduled' | 'offer' | 'won';
 
 export interface Lead {
   id: string;
@@ -22,6 +22,9 @@ export interface Lead {
   amount: number | null;
   createdAt: string;
   channel: string;
+  variant?: string;
+  secondTenantName?: string;
+  secondTenantPhone?: string;
   utm_source?: string;
   utm_medium?: string;
   utm_campaign?: string;
@@ -41,6 +44,7 @@ interface ApiStats {
   totalRevenue: number;
   bySourceWon: Record<string, number>;
   bySourceRevenue: Record<string, number>;
+  byVariant?: { A: { leads: number; won: number; revenue: number }; B: { leads: number; won: number; revenue: number } };
 }
 
 interface StageDef { key: Stage; rank: number; labelNl: string; labelEn: string; badge?: string; bar?: string; }
@@ -60,7 +64,7 @@ const STRINGS = {
     totalLeads: 'Totaal leads',
     received: 'binnengekomen',
     viewings: 'Bezichtigingen',
-    offerMade: 'Gekwalificeerd',
+    offerMade: 'Bod uitgebracht',
     dealsWon: 'Deals gewonnen',
     revenue: 'Omzet',
     fromWonDeals: 'uit gewonnen deals',
@@ -108,7 +112,7 @@ const STRINGS = {
     totalLeads: 'Total Leads',
     received: 'received',
     viewings: 'Viewings',
-    offerMade: 'Qualified',
+    offerMade: 'Offer Made',
     dealsWon: 'Deals Won',
     revenue: 'Revenue',
     fromWonDeals: 'from won deals',
@@ -153,7 +157,7 @@ const STRINGS = {
 const STAGES: StageDef[] = [
   { key: 'lead', rank: 1, labelNl: 'Lead', labelEn: 'Lead', badge: styles.bLead },
   { key: 'scheduled', rank: 2, labelNl: 'Bezichtiging gepland', labelEn: 'Viewing Scheduled', badge: styles.bScheduled, bar: styles.barS2 },
-  { key: 'qualified', rank: 3, labelNl: 'Gekwalificeerd', labelEn: 'Qualified', badge: styles.bQualified, bar: styles.barS3 },
+  { key: 'offer', rank: 3, labelNl: 'Bod uitgebracht', labelEn: 'Offer Made', badge: styles.bOffer, bar: styles.barS3 },
   { key: 'won', rank: 4, labelNl: 'Deal gewonnen', labelEn: 'Deal Won', badge: styles.bWon, bar: styles.barS4 },
 ];
 
@@ -161,7 +165,7 @@ const STATUS_FILTERS: { key: 'all' | Stage; labelNl: string; labelEn: string }[]
   { key: 'all', labelNl: 'Alle', labelEn: 'All' },
   { key: 'lead', labelNl: 'Lead', labelEn: 'Lead' },
   { key: 'scheduled', labelNl: 'Bezichtiging', labelEn: 'Viewing' },
-  { key: 'qualified', labelNl: 'Gekwalificeerd', labelEn: 'Qualified' },
+  { key: 'offer', labelNl: 'Bod', labelEn: 'Offer' },
   { key: 'won', labelNl: 'Gewonnen', labelEn: 'Won' },
 ];
 
@@ -232,6 +236,105 @@ const stageMeta = (k: Stage) => STAGES.find((x) => x.key === k) ?? STAGES[0];
 const chanMeta = (k: string, lang: 'nl' | 'en') => (lang === 'nl' ? CHANNELS_NL : CHANNELS_EN)[k] ?? { label: k || '', cls: styles.chOrganic };
 
 /* ------------------------------------------------------------------ */
+/* Stage Editor                                                        */
+/* ------------------------------------------------------------------ */
+function StageEditor({ lead, lang, onUpdate }: { lead: Lead; lang: 'nl' | 'en'; onUpdate: () => void }) {
+  const [showAmount, setShowAmount] = useState(false);
+  const [amountVal, setAmountVal] = useState(lead.amount ? String(lead.amount) : '');
+  const [confirmStage, setConfirmStage] = useState<Stage | null>(null);
+  const stageLabels: Record<Stage, string> = {
+    lead: lang === 'nl' ? 'Lead' : 'Lead',
+    scheduled: lang === 'nl' ? 'Bezichtiging' : 'Viewing',
+    offer: lang === 'nl' ? 'Bod' : 'Offer',
+    won: lang === 'nl' ? 'Gewonnen' : 'Won',
+  };
+  const stageOrder: Stage[] = ['lead', 'scheduled', 'offer', 'won'];
+  const currentRank = stageOrder.indexOf(lead.stage);
+
+  const updateStage = async (newStage: Stage) => {
+    const token = sessionStorage.getItem('admin_token') || '';
+    const body: Record<string, unknown> = { stage: newStage };
+    if (newStage === 'won' && amountVal) body.amount = parseFloat(amountVal);
+    try {
+      await fetch(`/api/admin/lead-dashboard/${lead.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+      onUpdate();
+    } catch {}
+    setShowAmount(false);
+    setConfirmStage(null);
+  };
+
+  const handleStageClick = (newStage: Stage) => {
+    const newRank = stageOrder.indexOf(newStage);
+    if (newRank < currentRank) {
+      setConfirmStage(newStage);
+    } else if (newStage === 'won') {
+      setShowAmount(true);
+    } else {
+      updateStage(newStage);
+    }
+  };
+
+  return (
+    <div className={styles.stageEditor}>
+      <div className={styles.stageEditorLabel}>
+        {lang === 'nl' ? 'Fase aanpassen' : 'Update stage'}
+      </div>
+      <div className={styles.stageBtns}>
+        {stageOrder.map((st) => (
+          <button
+            key={st}
+            className={cx(styles.stageBtn, lead.stage === st && styles.stageBtnActive)}
+            onClick={() => handleStageClick(st)}
+          >
+            {stageLabels[st]}
+          </button>
+        ))}
+      </div>
+      {showAmount && (
+        <div className={styles.amountInput}>
+          <input
+            type="number"
+            value={amountVal}
+            onChange={(e) => setAmountVal(e.target.value)}
+            placeholder={lang === 'nl' ? 'Bedrag (€)' : 'Amount (€)'}
+          />
+          <button onClick={() => updateStage('won')}>{lang === 'nl' ? 'Opslaan' : 'Save'}</button>
+          <button onClick={() => setShowAmount(false)} style={{ background: '#f1f5f9', color: 'var(--grey)' }}>
+            {lang === 'nl' ? 'Annuleren' : 'Cancel'}
+          </button>
+        </div>
+      )}
+      {confirmStage && (
+        <div className={styles.confirmDialog} onClick={() => setConfirmStage(null)}>
+          <div className={styles.confirmBox} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.confirmTitle}>
+              {lang === 'nl' ? 'Weet je het zeker?' : 'Are you sure?'}
+            </div>
+            <div className={styles.confirmText}>
+              {lang === 'nl'
+                ? `Deze lead teruggaan van "${stageLabels[lead.stage]}" naar "${stageLabels[confirmStage]}"?`
+                : `Move this lead back from "${stageLabels[lead.stage]}" to "${stageLabels[confirmStage]}"?`}
+            </div>
+            <div className={styles.confirmBtns}>
+              <button className={styles.confirmCancel} onClick={() => setConfirmStage(null)}>
+                {lang === 'nl' ? 'Annuleren' : 'Cancel'}
+              </button>
+              <button className={styles.confirmYes} onClick={() => updateStage(confirmStage)}>
+                {lang === 'nl' ? 'Ja, bevestig' : 'Yes, confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Component                                                          */
 /* ------------------------------------------------------------------ */
 export default function AanhuurLeadsDashboard() {
@@ -243,6 +346,7 @@ export default function AanhuurLeadsDashboard() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [monthFilter, setMonthFilter] = useState<string>('all');
   const [channelFilter, setChannelFilter] = useState<string>('all');
+  const [variantFilter, setVariantFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | Stage>('all');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -266,6 +370,7 @@ export default function AanhuurLeadsDashboard() {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
       if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
       if (channelFilter !== 'all') params.set('source', channelFilter);
+      if (variantFilter !== 'all') params.set('variant', variantFilter);
       const res = await fetch(`/api/admin/lead-dashboard?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -288,6 +393,9 @@ export default function AanhuurLeadsDashboard() {
           amount: (l.amount as number) || null,
           createdAt: l.created_at as string || '',
           channel: l.source as string || 'meta_ads',
+          variant: (l.variant as string) || 'A',
+          secondTenantName: (l.second_tenant_name as string) || '',
+          secondTenantPhone: (l.second_tenant_phone as string) || '',
           utm_source: l.utm_source as string || '',
           utm_medium: l.utm_medium as string || '',
           utm_campaign: l.utm_campaign as string || '',
@@ -306,7 +414,7 @@ export default function AanhuurLeadsDashboard() {
       setLoading(false);
       initialLoadRef.current = false;
     }
-  }, [page, limit, debouncedSearch, channelFilter, router, lang]);
+  }, [page, limit, debouncedSearch, channelFilter, variantFilter, router, lang]);
 
   useEffect(() => {
     const token = sessionStorage.getItem('admin_token');
@@ -348,7 +456,7 @@ export default function AanhuurLeadsDashboard() {
 
   const statsTotal = serverStats?.total ?? 0;
   const statsBySource = serverStats?.bySource ?? {};
-  const statsByStage = serverStats?.byStage ?? { lead: 0, scheduled: 0, qualified: 0, won: 0 };
+  const statsByStage = serverStats?.byStage ?? { lead: 0, scheduled: 0, offer: 0, won: 0 };
   const wonCount = statsByStage.won ?? 0;
   const revenue = serverStats?.totalRevenue ?? 0;
   const total = statsTotal;
@@ -361,6 +469,7 @@ export default function AanhuurLeadsDashboard() {
     return c;
   };
   const conv = total ? Math.round((wonCount / total) * 100) : 0;
+  const avgDeal = wonCount ? revenue / wonCount : 0;
 
   const channelRows = useMemo(() => {
     const src = statsBySource;
@@ -422,12 +531,15 @@ export default function AanhuurLeadsDashboard() {
     if (leads.length === 0) return;
     const headers = [
       s.nameCol, s.phoneCol, s.langCol, s.bedroomsCol, s.budgetCol, s.statusCol,
+      lang === 'nl' ? 'Bedrag' : 'Amount', 'Variant',
       s.channelCol, s.utmSource, s.utmMedium, s.utmCampaign, s.utmContent, s.utmTerm, s.referrer, s.createdCol,
     ];
     const csvRows = leads.map(d => [
       d.name, d.phone, (d.language || '').toUpperCase(),
       bedroomsText(d), budgetItems(d, lang).join(', '),
       lang === 'nl' ? stageMeta(d.stage).labelNl : stageMeta(d.stage).labelEn,
+      d.amount ? String(d.amount) : '',
+      d.variant || 'A',
       chanMeta(d.channel, lang).label,
       d.utm_source || '', d.utm_medium || '', d.utm_campaign || '',
       d.utm_content || '', d.utm_term || '', d.referrer || '',
@@ -492,6 +604,14 @@ export default function AanhuurLeadsDashboard() {
               ))}
             </div>
           </div>
+          <div className={styles.chipsGroup}>
+            <span className={styles.lbl}>Variant</span>
+            <div className={styles.chips}>
+              <button className={cx(styles.pill, variantFilter === 'all' && styles.active)} onClick={() => { setVariantFilter('all'); setPage(1); }}>All</button>
+              <button className={cx(styles.pill, variantFilter === 'A' && styles.active)} onClick={() => { setVariantFilter('A'); setPage(1); }}>A</button>
+              <button className={cx(styles.pill, variantFilter === 'B' && styles.active)} onClick={() => { setVariantFilter('B'); setPage(1); }}>B</button>
+            </div>
+          </div>
         </section>
 
         <section className={styles.kpis}>
@@ -507,8 +627,8 @@ export default function AanhuurLeadsDashboard() {
           </div>
             <div className={cx(styles.kpi, styles.accent)}>
             <div className={styles.kpiLabel}>{s.offerMade}</div>
-            <div className={styles.kpiValue}>{countAtLeast('qualified')}</div>
-            <div className={styles.kpiSub}>{pct(countAtLeast('qualified'), total)}</div>
+            <div className={styles.kpiValue}>{countAtLeast('offer')}</div>
+            <div className={styles.kpiSub}>{pct(countAtLeast('offer'), total)}</div>
           </div>
           <div className={cx(styles.kpi, styles.accent)}>
             <div className={styles.kpiLabel}>{s.dealsWon}</div>
@@ -552,47 +672,67 @@ export default function AanhuurLeadsDashboard() {
             })}
           </div>
           <div className={styles.card}>
-            <h2 className={styles.cardTitle}>{s.leadsPerSource}</h2>
-            <div className={styles.srcChart}>
-              <div className={styles.donutWrap}>
-                <svg width="140" height="140" viewBox="0 0 140 140">
-                  {donutSegments.length === 0 && (
-                    <circle cx="70" cy="70" r={DONUT_R} fill="none" stroke="#E2E8F0" strokeWidth="22" />
-                  )}
-                  {donutSegments.map((seg) => (
-                    <circle
-                      key={seg.key}
-                      cx="70"
-                      cy="70"
-                      r={DONUT_R}
-                      fill="none"
-                      stroke={seg.color}
-                      strokeWidth="22"
-                      strokeDasharray={`${seg.len} ${DONUT_C - seg.len}`}
-                      strokeDashoffset={-seg.offset}
-                      transform="rotate(-90 70 70)"
-                    />
-                  ))}
-                  <text x="70" y="68" textAnchor="middle" fontSize="27" fontWeight="800" fill="#1A202C">
-                    {statsTotal}
-                  </text>
-                  <text x="70" y="85" textAnchor="middle" fontSize="11" fill="#718096">
-                    {s.leads}
-                  </text>
-                </svg>
+            <h2 className={styles.cardTitle}>{lang === 'nl' ? 'Omzet uit deals' : 'Revenue from deals'}</h2>
+            <div className={styles.revBig}>{eur(revenue, lang)}</div>
+            <div className={styles.revSub}>{wonCount} {lang === 'nl' ? 'deals · gemiddeld' : 'deals · avg'} {eur(avgDeal, lang)}</div>
+            <div className={styles.revSplit}>
+              <div className={styles.revItem}>
+                <div className={styles.revItemVal}>{eur(avgDeal, lang)}</div>
+                <div className={styles.revItemLbl}>{lang === 'nl' ? 'Gem. dealwaarde' : 'Avg. deal value'}</div>
               </div>
-              <div className={styles.srcLegend}>
+              <div className={styles.revItem}>
+                <div className={styles.revItemVal}>{wonCount}</div>
+                <div className={styles.revItemLbl}>{lang === 'nl' ? 'Deals gewonnen' : 'Deals won'}</div>
+              </div>
+              <div className={styles.revItem}>
+                <div className={styles.revItemVal}>{conv}%</div>
+                <div className={styles.revItemLbl}>{lang === 'nl' ? 'Lead naar deal' : 'Lead to deal'}</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.card} style={{ marginBottom: 18 }}>
+          <h2 className={styles.cardTitle}>{s.leadsPerSource}</h2>
+          <div className={styles.srcChart}>
+            <div className={styles.donutWrap}>
+              <svg width="140" height="140" viewBox="0 0 140 140">
+                {donutSegments.length === 0 && (
+                  <circle cx="70" cy="70" r={DONUT_R} fill="none" stroke="#E2E8F0" strokeWidth="22" />
+                )}
                 {donutSegments.map((seg) => (
-                  <div key={seg.key} className={styles.legRow}>
-                    <span className={styles.legDot} style={{ background: seg.color }} />
-                    <span className={styles.legName}>{seg.label}</span>
-                    <span className={styles.legVal}>
-                      <b>{seg.leads}</b> · {seg.pc}%
-                    </span>
-                  </div>
+                  <circle
+                    key={seg.key}
+                    cx="70"
+                    cy="70"
+                    r={DONUT_R}
+                    fill="none"
+                    stroke={seg.color}
+                    strokeWidth="22"
+                    strokeDasharray={`${seg.len} ${DONUT_C - seg.len}`}
+                    strokeDashoffset={-seg.offset}
+                    transform="rotate(-90 70 70)"
+                  />
                 ))}
-                {donutSegments.length === 0 && <div className={styles.muted}>{s.noData}</div>}
-              </div>
+                <text x="70" y="68" textAnchor="middle" fontSize="27" fontWeight="800" fill="#1A202C">
+                  {statsTotal}
+                </text>
+                <text x="70" y="85" textAnchor="middle" fontSize="11" fill="#718096">
+                  {s.leads}
+                </text>
+              </svg>
+            </div>
+            <div className={styles.srcLegend}>
+              {donutSegments.map((seg) => (
+                <div key={seg.key} className={styles.legRow}>
+                  <span className={styles.legDot} style={{ background: seg.color }} />
+                  <span className={styles.legName}>{seg.label}</span>
+                  <span className={styles.legVal}>
+                    <b>{seg.leads}</b> · {seg.pc}%
+                  </span>
+                </div>
+              ))}
+              {donutSegments.length === 0 && <div className={styles.muted}>{s.noData}</div>}
             </div>
           </div>
         </section>
@@ -626,6 +766,7 @@ export default function AanhuurLeadsDashboard() {
                   <th>{s.bedroomsCol}</th>
                   <th>{s.budgetCol}</th>
                   <th>{s.statusCol}</th>
+                  <th>{lang === 'nl' ? 'Bedrag' : 'Amount'}</th>
                   <th>{s.channelCol}</th>
                   <th>{s.createdCol}</th>
                   <th></th>
@@ -639,22 +780,34 @@ export default function AanhuurLeadsDashboard() {
                   return (
                     <Fragment key={d.id}>
                       <tr className={isExpanded ? styles.expandedParent : undefined}>
-                        <td><b>{d.name}</b></td>
-                        <td className={styles.muted}>{d.phone}</td>
+                        <td>
+                          <b>{d.name}</b>
+                          {d.secondTenantName && <div className={styles.secondLine}>+ {d.secondTenantName}</div>}
+                        </td>
+                        <td className={styles.muted}>
+                          {d.phone}
+                          {d.secondTenantPhone && <div className={styles.secondLine}>{d.secondTenantPhone}</div>}
+                        </td>
                         <td>{(d.language || '').toUpperCase()}</td>
                         <td>{bedroomsText(d)}</td>
                         <td className={styles.muted}>
                           {(() => {
                             const items = budgetItems(d, lang);
-                            if (items.length <= 2) return items.join(', ');
+                            if (items.length <= 1) return items[0] || '';
                             return items.map((b, i) => (
                               <span key={i}>{i > 0 && <br />}{b}</span>
                             ));
                           })()}
                         </td>
                         <td>
-                          <span className={cx(styles.badge, sm.badge)}>{lang === 'nl' ? sm.labelNl : sm.labelEn}</span>
+                          <div className={styles.badgeStack}>
+                            <span className={cx(styles.badge, sm.badge)}>{lang === 'nl' ? sm.labelNl : sm.labelEn}</span>
+                            {d.variant && d.variant !== 'A' && (
+                              <span className={styles.variantBadge}>{d.variant}</span>
+                            )}
+                          </div>
                         </td>
+                        <td className={styles.amt}>{d.amount ? eur(d.amount, lang) : <span className={styles.muted}>—</span>}</td>
                         <td>
                           <span className={cx(styles.chan, cm.cls)}>{cm.label}</span>
                         </td>
@@ -667,7 +820,7 @@ export default function AanhuurLeadsDashboard() {
                       </tr>
                       {isExpanded && (
                         <tr key={`${d.id}-utm`}>
-                          <td colSpan={9} className={styles.expandedRow}>
+                          <td colSpan={10} className={styles.expandedRow}>
                             <div className={styles.utmGrid}>
                               {utmFields(d).map(({ label, value }) => (
                                 <div key={label} className={styles.utmItem}>
@@ -676,6 +829,7 @@ export default function AanhuurLeadsDashboard() {
                                 </div>
                               ))}
                             </div>
+                            <StageEditor lead={d} lang={lang} onUpdate={fetchLeads} />
                           </td>
                         </tr>
                       )}
@@ -684,7 +838,7 @@ export default function AanhuurLeadsDashboard() {
                 })}
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={9} className={styles.muted} style={{ textAlign: 'center', padding: 24 }}>
+                    <td colSpan={10} className={styles.muted} style={{ textAlign: 'center', padding: 24 }}>
                       {s.noLeads}
                     </td>
                   </tr>

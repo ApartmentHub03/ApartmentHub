@@ -99,9 +99,11 @@
 .miniTable th, .miniTable td { padding: 9px 8px; }
 
 .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; }
+.badgeStack { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
 .badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: 0.9; }
 .bLead { background: #EEF2F7; color: #5A6B82; }
 .bScheduled { background: var(--soft); color: var(--teal-dark); }
+.bOffer { background: var(--soft-orange); color: var(--orange-dark); }
 .bQualified { background: var(--soft-orange); color: var(--orange-dark); }
 .bWon { background: #E6F6EC; color: var(--ok); }
 .amt { font-weight: 700; }
@@ -244,3 +246,36 @@
 .langBtn:hover:not(.active) {
     background: rgba(255, 255, 255, 0.15);
 }
+
+/* ===== Revenue card ===== */
+.revBig { font-size: 38px; font-weight: 800; letter-spacing: -0.02em; color: var(--orange-dark); line-height: 1; }
+.revSub { font-size: 13px; color: var(--grey); margin-top: 6px; }
+.revSplit { display: flex; gap: 18px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.revItem { flex: 1; }
+.revItemVal { font-size: 20px; font-weight: 800; color: var(--ink); }
+.revItemLbl { font-size: 12px; color: var(--grey-soft); margin-top: 2px; }
+
+/* ===== Variant badge ===== */
+.variantBadge { display: inline-flex; align-items: center; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #EEF2F7; color: #5A6B82; margin-left: 4px; }
+
+/* ===== Stage editor ===== */
+.stageEditor { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.stageEditorLabel { font-size: 11px; font-weight: 700; color: var(--grey-soft); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+.stageBtns { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.stageBtn { background: #fff; border: 1.5px solid var(--line); color: var(--grey); font: inherit; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: all 0.12s; }
+.stageBtn:hover { border-color: var(--teal); color: var(--teal-dark); }
+.stageBtnActive { background: var(--teal); border-color: var(--teal); color: #fff; }
+.amountInput { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.amountInput input { padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 8px; font: inherit; font-size: 14px; width: 120px; }
+.amountInput button { padding: 8px 16px; border: 0; border-radius: 8px; background: var(--teal); color: #fff; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.amountInput button:hover { background: var(--teal-dark); }
+.confirmDialog { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.confirmBox { background: #fff; border-radius: 12px; padding: 24px; max-width: 360px; box-shadow: 0 12px 40px rgba(0,0,0,0.2); }
+.confirmTitle { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+.confirmText { font-size: 14px; color: var(--grey); margin-bottom: 16px; }
+.confirmBtns { display: flex; gap: 8px; justify-content: flex-end; }
+.confirmBtns button { padding: 8px 16px; border-radius: 8px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.confirmCancel { background: #f1f5f9; border: 1px solid var(--line); color: var(--grey); }
+.confirmCancel:hover { background: #e2e8f0; }
+.confirmYes { background: var(--orange); border: 0; color: #fff; }
+.confirmYes:hover { background: var(--orange-dark); }
