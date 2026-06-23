@@ -49,6 +49,11 @@ const nextConfig = {
                 destination: '/en/about-us',
                 permanent: true,
             },
+            {
+                source: '/meta-leadform-b',
+                destination: '/nl/meta-leadform-b',
+                permanent: true,
+            },
         ];
     },
     async rewrites() {
