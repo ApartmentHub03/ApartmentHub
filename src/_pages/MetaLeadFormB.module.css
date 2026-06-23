@@ -115,6 +115,7 @@
 .btn:active{transform:translateY(1px)}
 .btn[disabled]{opacity:.65;cursor:not-allowed}
 .btnLoading{}
+.btnLocked{background:var(--grey-soft);opacity:.7;cursor:not-allowed}
 .spinner{width:17px;height:17px;border:2.5px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
 @keyframes spin{to{transform:rotate(360deg)}}
 

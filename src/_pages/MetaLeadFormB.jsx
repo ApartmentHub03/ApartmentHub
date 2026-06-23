@@ -398,9 +398,10 @@ const MetaLeadFormB = () => {
       eventId,
       tracking,
       tags: [
-        'source_meta_ads', 'language_' + lang, 'variant_b',
-        'bedrooms_' + (bedrooms === '4+' ? '4_plus' : bedrooms),
-        'budget_' + budget.replace('-', '_'),
+        'Meta Ads',
+        'variant_b',
+        bedrooms === '4+' ? '4+ Bedrooms' : bedrooms + ' Bedrooms',
+        '€' + budget.replace('-', ' - €'),
       ],
     };
     setSubmitting(true);
@@ -655,7 +656,7 @@ const MetaLeadFormB = () => {
 
                   <p className={styles.socialProof}>{s.socialproof}</p>
 
-                  <button type="submit" className={`${styles.btn} ${submitting ? styles.btnLoading : ''}`} disabled={submitting}>
+                  <button type="submit" className={`${styles.btn} ${submitting ? styles.btnLoading : ''} ${!consent ? styles.btnLocked : ''}`} disabled={submitting || !consent}>
                     {submitting && <span className={styles.spinner} aria-hidden="true" />}
                     <span>{s.submit}</span>
                   </button>
