@@ -26,12 +26,10 @@ function extractPhone(payload) {
     const responses = payload.responses || {};
     const attendees = payload.attendees || [];
 
-    // Try custom fields first
     for (const key of ['whatsapp', 'whatsappNumber', 'whatsapp_number', 'phone', 'telefoon', 'phoneNumber', 'attendeePhoneNumber']) {
         if (responses[key]?.value) return normalizePhone(responses[key].value);
     }
 
-    // Fallback: attendee email — return normalized phone placeholder or null
     if (attendees.length > 0 && attendees[0].email) {
         return attendees[0].email.toLowerCase().trim();
     }
@@ -39,21 +37,42 @@ function extractPhone(payload) {
     return null;
 }
 
-/* ------------------------------------------------------------------ */
-/* Look up lead by phone or email fallback                            */
-/* ------------------------------------------------------------------ */
-async function findLead(supabase, phoneOrEmail) {
-    if (!phoneOrEmail) return null;
+function extractName(payload) {
+    const attendees = payload.attendees || [];
+    if (attendees.length > 0 && attendees[0].name) {
+        return attendees[0].name.trim();
+    }
+    const responses = payload.responses || {};
+    for (const key of ['name', 'fullName', 'full_name', 'attendeeName']) {
+        if (responses[key]?.value) return responses[key].value.trim();
+    }
+    return null;
+}
 
-    // Try exact phone match first
-    if (/^\d{7,15}$/.test(phoneOrEmail)) {
+async function findLead(supabase, phoneOrEmail, name) {
+    // 1. Try exact phone match
+    if (phoneOrEmail && /^\d{7,15}$/.test(phoneOrEmail)) {
         const { data } = await supabase.from('meta_leads').select('*').eq('phone', phoneOrEmail).maybeSingle();
         if (data) return data;
     }
 
-    // Fallback to email
-    const { data } = await supabase.from('meta_leads').select('*').eq('email', phoneOrEmail).maybeSingle();
-    return data;
+    // 2. Fallback to email
+    if (phoneOrEmail) {
+        const { data } = await supabase.from('meta_leads').select('*').eq('email', phoneOrEmail).maybeSingle();
+        if (data) return data;
+    }
+
+    // 3. Fallback to full name (stripped, case-insensitive)
+    if (name) {
+        const stripped = name.replace(/\s+/g, '').toLowerCase();
+        const { data } = await supabase.from('meta_leads').select('*').ilike('full_name', `%${name}%`).limit(10);
+        if (data && data.length > 0) {
+            const match = data.find(lead => lead.full_name && lead.full_name.replace(/\s+/g, '').toLowerCase() === stripped);
+            if (match) return match;
+        }
+    }
+
+    return null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -109,12 +128,13 @@ export async function POST(request) {
                 console.log('[webhook/calcom] payload.responses:', JSON.stringify(body.payload.responses));
                 console.log('[webhook/calcom] payload.attendees:', JSON.stringify(body.payload.attendees?.map(a => a.email)));
                 const phoneOrEmail = extractPhone(body.payload);
-                console.log('[webhook/calcom] Extracted phoneOrEmail:', phoneOrEmail);
-                if (!phoneOrEmail) {
-                    return NextResponse.json({ success: false, message: 'No phone or email found' }, { status: 400 });
+                const name = extractName(body.payload);
+                console.log('[webhook/calcom] Extracted phoneOrEmail:', phoneOrEmail, 'name:', name);
+                if (!phoneOrEmail && !name) {
+                    return NextResponse.json({ success: false, message: 'No phone, email, or name found' }, { status: 400 });
                 }
 
-                const lead = await findLead(supabase, phoneOrEmail);
+                const lead = await findLead(supabase, phoneOrEmail, name);
                 console.log('[webhook/calcom] Lead lookup:', lead ? `id=${lead.id} phone=${lead.phone} stage=${lead.stage}` : 'NOT FOUND');
                 if (!lead) {
                     return NextResponse.json({ success: false, message: 'Lead not found' }, { status: 404 });
@@ -166,12 +186,13 @@ export async function POST(request) {
 
             case 'BOOKING_CANCELLED': {
                 const phoneOrEmail = extractPhone(body.payload);
-                if (!phoneOrEmail) {
-                    console.log('[webhook/calcom] CANCELLED: no phone extracted, skipping');
-                    return NextResponse.json({ success: true, message: 'No phone — skipping' });
+                const name = extractName(body.payload);
+                if (!phoneOrEmail && !name) {
+                    console.log('[webhook/calcom] CANCELLED: no phone or name extracted, skipping');
+                    return NextResponse.json({ success: true, message: 'No phone or name — skipping' });
                 }
 
-                const lead = await findLead(supabase, phoneOrEmail);
+                const lead = await findLead(supabase, phoneOrEmail, name);
                 if (!lead) {
                     console.log('[webhook/calcom] CANCELLED: lead not found for', phoneOrEmail);
                     return NextResponse.json({ success: true, message: 'Lead not found — skipping' });
@@ -200,12 +221,13 @@ export async function POST(request) {
 
             case 'BOOKING_RESCHEDULED': {
                 const phoneOrEmail = extractPhone(body.payload);
-                if (!phoneOrEmail) {
-                    console.log('[webhook/calcom] RESCHEDULED: no phone extracted, skipping');
-                    return NextResponse.json({ success: true, message: 'No phone — skipping' });
+                const name = extractName(body.payload);
+                if (!phoneOrEmail && !name) {
+                    console.log('[webhook/calcom] RESCHEDULED: no phone or name extracted, skipping');
+                    return NextResponse.json({ success: true, message: 'No phone or name — skipping' });
                 }
 
-                const lead = await findLead(supabase, phoneOrEmail);
+                const lead = await findLead(supabase, phoneOrEmail, name);
                 if (!lead) {
                     console.log('[webhook/calcom] RESCHEDULED: lead not found for', phoneOrEmail);
                     return NextResponse.json({ success: true, message: 'Lead not found — skipping' });
