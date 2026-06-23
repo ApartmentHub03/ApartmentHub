@@ -185,15 +185,6 @@
 
   footer{border-top:1px solid var(--line);padding:22px 20px;text-align:center;color:var(--grey-soft);font-size:13px}
   footer a{color:var(--grey-soft);text-decoration:underline}
-  .add-second{background:transparent;border:0;color:var(--teal-dark);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;padding:4px 0;margin:0 0 8px;text-decoration:underline}
-  .add-second:hover{color:var(--teal-darker)}
-  .add-second[hidden]{display:none}
-  .second-person{border-top:1px solid var(--line);margin-top:6px;padding-top:12px}
-  .sub-label{margin:0 0 10px;font-size:12.5px;font-weight:700;color:var(--grey-soft);text-transform:uppercase;letter-spacing:.04em}
-  .phone-row{display:flex;gap:8px}
-  .phone-row .cc{flex:0 0 auto;width:108px;border:1.5px solid var(--line);border-radius:10px;padding:0 8px;font:inherit;font-size:15px;background:#fff;color:var(--ink);cursor:pointer}
-  .phone-row .cc:focus{outline:0;border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,155,138,.15)}
-  .phone-row input{flex:1;min-width:0}
 </style>
 </head>
 <body>
@@ -298,23 +289,6 @@
             </div>
 
             <input type="text" name="website_url" style="position:absolute;left:-9999px;opacity:0;pointer-events:none;height:0;width:0;overflow:hidden;clip:rect(0,0,0,0)" tabindex="-1" autocomplete="new-password" aria-hidden="true" />
-
-            <button type="button" class="add-second" id="addSecond" data-i="add_second">+ Tweede huurder toevoegen</button>
-            <div class="second-person" id="secondPerson" hidden>
-              <p class="sub-label" data-i="second_title">Tweede huurder (optioneel)</p>
-              <div class="field">
-                <label class="lbl" for="fullName2" data-i="l_name2">Voornaam &amp; achternaam</label>
-                <input type="text" id="fullName2" name="fullName2" autocomplete="name" />
-              </div>
-              <div class="field">
-                <label class="lbl" for="phone2" data-i="l_phone2">WhatsApp</label>
-                <div class="phoneRow">
-                  <select class="cc" id="cc2" aria-label="Landcode"><option value="+31" selected>🇳🇱 +31</option><option value="+32">🇧🇪 +32</option><option value="+49">🇩🇪 +49</option><option value="+44">🇬🇧 +44</option><option value="+33">🇫🇷 +33</option><option value="+34">🇪🇸 +34</option><option value="+39">🇮🇹 +39</option><option value="+351">🇵🇹 +351</option><option value="+48">🇵🇱 +48</option><option value="+40">🇷🇴 +40</option><option value="+90">🇹🇷 +90</option><option value="+1">🇺🇸 +1</option><option value="+91">🇮🇳 +91</option><option value="+55">🇧🇷 +55</option></select>
-                  <input type="tel" id="phone2" name="phone2" inputmode="tel" placeholder="6 12345678" />
-                </div>
-                <div class="err-msg" data-i="e_phone2">Vul een geldig telefoonnummer in (incl. landcode, bijv. +31).</div>
-              </div>
-            </div>
 
             <div class="consent">
               <input type="checkbox" id="consent" name="consent" required />
@@ -424,8 +398,6 @@ const STRINGS = {
     l_name:'Voornaam & achternaam', e_name:'Vul je naam in.',
     l_phone:'WhatsApp', e_phone:'Vul je telefoonnummer in (zonder landcode).',
     l_email:'E-mailadres (optioneel)', e_email:'Vul een geldig e-mailadres in.',
-    add_second:'+ Tweede huurder toevoegen', second_title:'Tweede huurder (optioneel)',
-    l_name2:'Voornaam & achternaam', l_phone2:'WhatsApp', e_phone2:'Vul een geldig telefoonnummer in (incl. landcode, bijv. +31).',
     socialproof:'Sluit je aan bij honderden huurders. We reageren snel via WhatsApp.',
     consent:'Ik ga akkoord met de <a href="{terms}" target="_blank" rel="noopener">algemene voorwaarden</a>.',
     e_consent:'Je moet akkoord gaan om verder te gaan.',
@@ -455,8 +427,6 @@ const STRINGS = {
     l_name:'First & last name', e_name:'Please enter your name.',
     l_phone:'WhatsApp', e_phone:'Enter your phone number (without country code).',
     l_email:'Email address (optional)', e_email:'Please enter a valid email address.',
-    add_second:'+ Add a second tenant', second_title:'Second tenant (optional)',
-    l_name2:'First & last name', l_phone2:'WhatsApp', e_phone2:'Please enter a valid phone number (incl. country code, e.g. +31).',
     socialproof:'Join hundreds of tenants. We reply fast on WhatsApp.',
     consent:'I agree to the <a href="{terms}" target="_blank" rel="noopener">Terms and Conditions</a>.',
     e_consent:'You must agree before submitting.',
@@ -709,9 +679,6 @@ form.addEventListener('submit',async(e)=>{
   }
   var honeypotVal=form.querySelector('[name="website_url"]')?form.querySelector('[name="website_url"]').value:'';
   if(honeypotVal){ console.warn('[leadform-a] honeypot filled, blocking submission'); return; }
-  var cc2El=document.getElementById('cc2'),phone2El=document.getElementById('phone2');
-  var fullName2El=document.getElementById('fullName2');
-  function combinePhoneA(ccId,inp){ var code=(document.getElementById(ccId)||{}).value||'+31'; var num=(inp.value||'').replace(/[\s().\-]/g,''); if(num.charAt(0)==='+') return num; num=num.replace(/^0+/,''); return num? code+num : ''; }
   const eventId=makeEventId();
   const tracking=getTracking();
   var source=(tracking.utm.utm_source==='facebook'||tracking.utm.utm_source==='meta'||tracking.fbclid)?'meta_ads':tracking.utm.utm_source==='instagram'?'instagram':tracking.utm.utm_source==='google'?'google_ads':tracking.referrer.includes('instagram')?'instagram':tracking.referrer.includes('google')?'google_ads':'organic';
@@ -719,8 +686,6 @@ form.addEventListener('submit',async(e)=>{
     fullName:form.fullName.value.trim(),
     phone:buildE164(form.phone.value,selectedCountry.code),
     email:form.email.value.trim().toLowerCase(),
-    fullName2:fullName2El?fullName2El.value.trim():'',
-    phone2:phone2El?combinePhoneA('cc2',phone2El):'',
     websiteUrl:honeypotVal,
     bedrooms:state.bedrooms.join(','),
     budget:state.budget.join(','),
@@ -750,10 +715,6 @@ form.addEventListener('submit',async(e)=>{
     formError.style.display='block'; formError.scrollIntoView({behavior:'smooth',block:'center'});
   }
 });
-
-/* Second tenant toggle */
-var addSecondBtn=document.getElementById('addSecond');
-if(addSecondBtn){ addSecondBtn.addEventListener('click',function(){ document.getElementById('secondPerson').hidden=false; addSecondBtn.hidden=true; }); }
 
 /* init */
 restoreState();

@@ -121,12 +121,6 @@
 .spinner{width:17px;height:17px;border:2.5px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* ===== Second tenant ===== */
-.addSecond{background:transparent;border:0;color:var(--teal-dark);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;padding:4px 0;margin:0 0 8px;text-decoration:underline}
-.addSecond:hover{color:var(--teal-darker)}
-.secondPerson{border-top:1px solid var(--line);margin-top:6px;padding-top:12px}
-.subLabel{margin:0 0 10px;font-size:12.5px;font-weight:700;color:var(--grey-soft);text-transform:uppercase;letter-spacing:.04em}
-
 /* ===== Honeypot ===== */
 .honeypot{position:absolute;left:-9999px;opacity:0;pointer-events:none;height:0;width:0;overflow:hidden;clip:rect(0,0,0,0)}
 

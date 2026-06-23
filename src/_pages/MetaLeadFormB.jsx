@@ -50,11 +50,6 @@ const STRINGS = {
     e_phone: 'Vul een geldig telefoonnummer in (incl. landcode, bijv. +31).',
     l_email: 'E-mailadres (optioneel)',
     e_email: 'Vul een geldig e-mailadres in.',
-    add_second: '+ Tweede huurder toevoegen',
-    second_title: 'Tweede huurder (optioneel)',
-    l_name2: 'Voornaam & achternaam',
-    l_phone2: 'WhatsApp',
-    e_phone2: 'Vul een geldig telefoonnummer in (incl. landcode, bijv. +31).',
     socialproof: 'Sluit je aan bij honderden huurders. We reageren snel via WhatsApp.',
     priority: 'Via ons krijg je voorrang op de meeste huurwoningen.',
     consent: 'Ik ga akkoord met de',
@@ -99,11 +94,6 @@ const STRINGS = {
     e_phone: 'Please enter a valid phone number (incl. country code, e.g. +31).',
     l_email: 'Email address (optional)',
     e_email: 'Please enter a valid email address.',
-    add_second: '+ Add a second tenant',
-    second_title: 'Second tenant (optional)',
-    l_name2: 'First & last name',
-    l_phone2: 'WhatsApp',
-    e_phone2: 'Please enter a valid phone number (incl. country code, e.g. +31).',
     socialproof: 'Join hundreds of tenants. We reply fast on WhatsApp.',
     priority: 'Through us you get priority on most rental properties.',
     consent: 'I agree to the',
@@ -248,10 +238,6 @@ const MetaLeadFormB = () => {
   const [phone, setPhone] = useState('');
   const [cc, setCc] = useState('+31');
   const [email, setEmail] = useState('');
-  const [fullName2, setFullName2] = useState('');
-  const [phone2, setPhone2] = useState('');
-  const [cc2, setCc2] = useState('+31');
-  const [showSecond, setShowSecond] = useState(false);
   const [consent, setConsent] = useState(false);
   const [honeypot, setHoneypot] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -283,9 +269,6 @@ const MetaLeadFormB = () => {
       if (d.phone) setPhone(d.phone);
       if (d.cc) setCc(d.cc);
       if (d.email) setEmail(d.email);
-      if (d.fullName2) { setFullName2(d.fullName2); setShowSecond(true); }
-      if (d.phone2) setPhone2(d.phone2);
-      if (d.cc2) setCc2(d.cc2);
       if (d.bedrooms && d.budget) setStep(3);
       else if (d.bedrooms) setStep(2);
     } catch {}
@@ -295,11 +278,10 @@ const MetaLeadFormB = () => {
   const saveState = useCallback(() => {
     try {
       localStorage.setItem(LS_KEY, JSON.stringify({
-        bedrooms, budget, fullName, phone, cc, email,
-        fullName2, phone2, cc2, ts: Date.now(),
+        bedrooms, budget, fullName, phone, cc, email, ts: Date.now(),
       }));
     } catch {}
-  }, [bedrooms, budget, fullName, phone, cc, email, fullName2, phone2, cc2]);
+  }, [bedrooms, budget, fullName, phone, cc, email]);
 
   // Deferred Meta Pixel loading
   useEffect(() => {
@@ -363,8 +345,6 @@ const MetaLeadFormB = () => {
     if (!phoneOk) { errs.phone = true; ok = false; }
     const emailVal = email.trim();
     if (emailVal !== '' && !EMAIL_RE.test(emailVal)) { errs.email = true; ok = false; }
-    const p2num = (phone2 || '').replace(/[\s().\-]/g, '');
-    if (p2num !== '' && !E164_RE.test(combinePhone(cc2, phone2))) { errs.phone2 = true; ok = false; }
     if (!consent) { setConsentErr(true); ok = false; } else { setConsentErr(false); }
     setErrors(errs);
     return ok;
@@ -391,8 +371,6 @@ const MetaLeadFormB = () => {
       fullName: fullName.trim(),
       phone: combinePhone(cc, phone),
       email: email.trim().toLowerCase(),
-      fullName2: fullName2.trim(),
-      phone2: combinePhone(cc2, phone2),
       websiteUrl: honeypot,
       bedrooms,
       budget,
@@ -606,46 +584,6 @@ const MetaLeadFormB = () => {
                     autoComplete="new-password"
                     aria-hidden="true"
                   />
-
-                  {!showSecond ? (
-                    <button type="button" className={styles.addSecond} onClick={() => setShowSecond(true)}>
-                      {s.add_second}
-                    </button>
-                  ) : (
-                    <div className={styles.secondPerson}>
-                      <p className={styles.subLabel}>{s.second_title}</p>
-                      <div className={styles.field}>
-                        <label className={styles.lbl} htmlFor="fullName2">{s.l_name2}</label>
-                        <input
-                          type="text"
-                          id="fullName2"
-                          value={fullName2}
-                          onChange={(e) => { setFullName2(e.target.value); saveState(); }}
-                          autoComplete="name"
-                        />
-                      </div>
-                      <div className={`${styles.field} ${errors.phone2 ? styles.fieldErr : ''}`}>
-                        <label className={styles.lbl} htmlFor="phone2">{s.l_phone2}</label>
-                        <div className={styles.phoneRow}>
-                          <select className={styles.cc} value={cc2} onChange={(e) => { setCc2(e.target.value); saveState(); }} aria-label="Country code">
-                            {COUNTRY_CODES.map((c) => (
-                              <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
-                            ))}
-                          </select>
-                          <input
-                            type="tel"
-                            id="phone2"
-                            value={phone2}
-                            onChange={(e) => { setPhone2(e.target.value); saveState(); }}
-                            className={errors.phone2 ? styles.inputInvalid : ''}
-                            inputMode="tel"
-                            placeholder="6 12345678"
-                          />
-                        </div>
-                        {errors.phone2 && <div className={styles.errMsg}>{s.e_phone2}</div>}
-                      </div>
-                    </div>
-                  )}
 
                   <div className={styles.consent}>
                     <input
