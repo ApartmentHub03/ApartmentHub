@@ -240,13 +240,12 @@ const MetaLeadFormB = () => {
   const pageUrl = lang === 'en' ? '/en/meta-leadform-b' : '/nl/meta-leadform-b';
 
   useEffect(() => {
-    console.log('[leadform] component mounted, pathname:', pathname, 'lang:', lang);
     const onError = (e) => console.error('[leadform] uncaught error:', e.error || e.message, e);
     const onRejection = (e) => console.error('[leadform] unhandled rejection:', e.reason);
     window.addEventListener('error', onError);
     window.addEventListener('unhandledrejection', onRejection);
     return () => { window.removeEventListener('error', onError); window.removeEventListener('unhandledrejection', onRejection); };
-  }, [pathname, lang]);
+  }, []);
 
   const [step, setStep] = useState(1);
   const [bedrooms, setBedrooms] = useState('');
@@ -378,21 +377,17 @@ const MetaLeadFormB = () => {
   };
 
   const handleSubmit = async (e) => {
-    console.log('[leadform] handleSubmit fired', { step, bedrooms, budget, fullName: fullName?.length, phone: phone?.length, consent, honeypot, submittingRef: submittingRef.current });
     e.preventDefault();
-    if (submittingRef.current) { console.log('[leadform] blocked by submittingRef'); return; }
+    if (submittingRef.current) return;
     setShowError(false);
-    if (!bedrooms) { console.log('[leadform] no bedrooms, going to step 1'); goStep(1); return; }
-    if (!budget) { console.log('[leadform] no budget, going to step 2'); goStep(2); return; }
-    const valid = validateContact();
-    console.log('[leadform] validateContact result:', valid, { errors, consentErr });
-    if (!valid) {
+    if (!bedrooms) { goStep(1); return; }
+    if (!budget) { goStep(2); return; }
+    if (!validateContact()) {
       const card = document.querySelector('.' + styles.card);
       if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
-    if (honeypot) { console.log('[leadform] honeypot filled, blocking'); return; }
-    console.log('[leadform] all validations passed, submitting...');
+    if (honeypot) { console.warn('[leadform] honeypot filled, blocking submission'); return; }
     submittingRef.current = true;
     setSubmitting(true);
     const tracking = getTracking();
@@ -422,19 +417,16 @@ const MetaLeadFormB = () => {
       ],
     };
     try {
-      console.log('[leadform] sending fetch to', LEAD_ENDPOINT);
       const res = await fetch(LEAD_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      console.log('[leadform] fetch response:', res.status, res.ok);
       if (!res.ok) throw new Error('Bad response ' + res.status);
       if (typeof window !== 'undefined' && window.fbq) {
         window.fbq('track', 'Lead', { content_name: 'meta_leadform', language: lang, variant: 'B' }, { eventID: eventId });
       }
       try { localStorage.removeItem(LS_KEY); } catch {}
-      console.log('[leadform] success, redirecting to', THANK_YOU[lang]);
       window.location.href = THANK_YOU[lang] || THANK_YOU.nl;
     } catch (err) {
       console.error('[leadform] submit failed:', err);
@@ -508,7 +500,7 @@ const MetaLeadFormB = () => {
                 <span className={`${styles.seg} ${step === 3 ? styles.segActive : ''}`} />
               </div>
 
-              <form onSubmit={(e) => { console.log('[leadform] form onSubmit fired'); handleSubmit(e); }} noValidate>
+              <form onSubmit={handleSubmit} noValidate>
                 {/* Step 1: Bedrooms */}
                 <div className={`${styles.step} ${step === 1 ? styles.stepActive : ''}`}>
                   <div className={styles.priority}>
@@ -612,11 +604,12 @@ const MetaLeadFormB = () => {
                   {/* Honeypot */}
                   <input
                     type="text"
+                    name="website_url"
                     className={styles.honeypot}
                     value={honeypot}
                     onChange={(e) => setHoneypot(e.target.value)}
                     tabIndex={-1}
-                    autoComplete="off"
+                    autoComplete="new-password"
                     aria-hidden="true"
                   />
 
@@ -676,7 +669,7 @@ const MetaLeadFormB = () => {
 
                   <p className={styles.socialProof}>{s.socialproof}</p>
 
-                  <button type="submit" className={`${styles.btn} ${submitting ? styles.btnLoading : ''} ${!consent ? styles.btnLocked : ''}`} onClick={() => console.log('[leadform] submit button clicked, submitting:', submitting, 'consent:', consent, 'step:', step)}>
+                  <button type="submit" className={`${styles.btn} ${submitting ? styles.btnLoading : ''} ${!consent ? styles.btnLocked : ''}`}>
                     {submitting && <span className={styles.spinner} aria-hidden="true" />}
                     <span>{s.submit}</span>
                   </button>

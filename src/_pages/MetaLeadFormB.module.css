@@ -126,7 +126,7 @@
 .subLabel{margin:0 0 10px;font-size:12.5px;font-weight:700;color:var(--grey-soft);text-transform:uppercase;letter-spacing:.04em}
 
 /* ===== Honeypot ===== */
-.honeypot{position:absolute;left:-9999px;opacity:0;pointer-events:none;height:0;width:0;overflow:hidden}
+.honeypot{position:absolute;left:-9999px;opacity:0;pointer-events:none;height:0;width:0;overflow:hidden;clip:rect(0,0,0,0)}
 
 /* ===== Social proof + notes ===== */
 .socialProof{display:flex;align-items:center;justify-content:center;gap:7px;margin:16px 0 0;font-size:13px;font-weight:600;color:var(--teal-darker);text-align:center;line-height:1.4}
