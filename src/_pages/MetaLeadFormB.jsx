@@ -656,7 +656,7 @@ const MetaLeadFormB = () => {
 
                   <p className={styles.socialProof}>{s.socialproof}</p>
 
-                  <button type="submit" className={`${styles.btn} ${submitting ? styles.btnLoading : ''} ${!consent ? styles.btnLocked : ''}`} disabled={submitting || !consent}>
+                  <button type="submit" className={`${styles.btn} ${submitting ? styles.btnLoading : ''} ${!consent ? styles.btnLocked : ''}`} disabled={submitting}>
                     {submitting && <span className={styles.spinner} aria-hidden="true" />}
                     <span>{s.submit}</span>
                   </button>
