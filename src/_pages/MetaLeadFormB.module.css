@@ -30,9 +30,10 @@
 .logoLink{display:inline-flex;align-items:center;text-decoration:none}
 .logo{height:40px;width:auto;display:block;filter:brightness(0) invert(1)}
 .right{margin-left:auto;display:flex;gap:16px;align-items:center}
-.lang{display:inline-flex;background:rgba(255,255,255,.18);border-radius:999px;padding:3px}
-.lang a{background:transparent;border:0;color:#fff;padding:6px 13px;border-radius:999px;cursor:pointer;font:inherit;font-size:13px;font-weight:600;line-height:1;text-decoration:none;display:inline-flex;align-items:center}
-.activeLang{background:#fff;color:var(--teal-dark)}
+.lang{display:inline-flex;background:rgba(255,255,255,.2);border-radius:999px;padding:3px}
+.lang a{background:transparent;border:0;color:rgba(255,255,255,.6);padding:6px 14px;border-radius:999px;cursor:pointer;font:inherit;font-size:13px;font-weight:600;line-height:1;text-decoration:none;display:inline-flex;align-items:center;transition:color .15s,background .15s}
+.lang a:hover{color:#fff}
+.activeLang{background:var(--teal-dark)!important;color:#fff!important;box-shadow:0 1px 4px rgba(0,0,0,.15)}
 
 /* ===== Layout ===== */
 .wrap{max-width:1080px;margin:0 auto;padding:40px 20px 56px}

@@ -43,7 +43,7 @@ const STRINGS = {
     stat1: 'Mensen aan een woning geholpen',
     stat2: 'Slaagt binnen 30 dagen',
     stat3: 'Gemiddelde beoordeling',
-    stat4: 'WhatsApp-ondersteuning',
+    stat4: 'WhatsApp ondersteuning',
     l_name: 'Voornaam & achternaam',
     e_name: 'Vul je naam in.',
     l_phone: 'WhatsApp',
@@ -239,14 +239,6 @@ const MetaLeadFormB = () => {
   const s = STRINGS[lang];
   const pageUrl = lang === 'en' ? '/en/meta-leadform-b' : '/nl/meta-leadform-b';
 
-  useEffect(() => {
-    const onError = (e) => console.error('[leadform] uncaught error:', e.error || e.message, e);
-    const onRejection = (e) => console.error('[leadform] unhandled rejection:', e.reason);
-    window.addEventListener('error', onError);
-    window.addEventListener('unhandledrejection', onRejection);
-    return () => { window.removeEventListener('error', onError); window.removeEventListener('unhandledrejection', onRejection); };
-  }, []);
-
   const [step, setStep] = useState(1);
   const [bedrooms, setBedrooms] = useState('');
   const [budget, setBudget] = useState('');
@@ -387,7 +379,7 @@ const MetaLeadFormB = () => {
       if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
-    if (honeypot) { console.warn('[leadform] honeypot filled, blocking submission'); return; }
+    if (honeypot) { return; }
     submittingRef.current = true;
     setSubmitting(true);
     const tracking = getTracking();
@@ -429,7 +421,6 @@ const MetaLeadFormB = () => {
       try { localStorage.removeItem(LS_KEY); } catch {}
       window.location.href = THANK_YOU[lang] || THANK_YOU.nl;
     } catch (err) {
-      console.error('[leadform] submit failed:', err);
       submittingRef.current = false;
       setSubmitting(false);
       setShowError(true);
