@@ -261,6 +261,12 @@ const MetaLeadFormB = () => {
   const pixelLoadedRef = useRef(false);
   const startedRef = useRef(false);
 
+  useEffect(() => {
+    const onPageShow = (e) => { if (e.persisted) setSubmitting(false); };
+    window.addEventListener('pageshow', onPageShow);
+    return () => window.removeEventListener('pageshow', onPageShow);
+  }, []);
+
   const TOTAL = 3;
 
   useEffect(() => {
