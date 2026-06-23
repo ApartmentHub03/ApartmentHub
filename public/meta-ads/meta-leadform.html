@@ -713,6 +713,7 @@ form.addEventListener('submit',async(e)=>{
   var fullName2El=document.getElementById('fullName2');
   function combinePhoneA(ccId,inp){ var code=(document.getElementById(ccId)||{}).value||'+31'; var num=(inp.value||'').replace(/[\s().\-]/g,''); if(num.charAt(0)==='+') return num; num=num.replace(/^0+/,''); return num? code+num : ''; }
   const eventId=makeEventId();
+  const tracking=getTracking();
   const payload={
     fullName:form.fullName.value.trim(),
     phone:buildE164(form.phone.value,selectedCountry.code),
@@ -727,7 +728,7 @@ form.addEventListener('submit',async(e)=>{
     variant:(CONFIG.variant||'A'),
     submittedAt:new Date().toISOString(),
     eventId:eventId,
-    tracking:getTracking(),
+    tracking:tracking,
     tags:[
           'Meta Ads',
           'variant_'+(CONFIG.variant||'A').toLowerCase(),
