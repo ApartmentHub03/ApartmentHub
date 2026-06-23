@@ -33,9 +33,9 @@ The CRM is private. Team members log in with a **password** before they can see 
 
 ---
 
-## The four sections
+## The five sections
 
-The CRM is organised into four simple sections.
+The CRM is organised into five simple sections.
 
 ```mermaid
 flowchart LR
@@ -43,11 +43,13 @@ flowchart LR
     CRM --> B[Apartments]
     CRM --> C[Bookings]
     CRM --> D[Agents]
+    CRM --> E[Applications]
     style CRM fill:#009B8A,stroke:#00665b,color:#fff
     style A fill:#e0f3f0,stroke:#009B8A,color:#00665b
     style B fill:#e0f3f0,stroke:#009B8A,color:#00665b
     style C fill:#e0f3f0,stroke:#009B8A,color:#00665b
     style D fill:#e0f3f0,stroke:#009B8A,color:#00665b
+    style E fill:#e0f3f0,stroke:#009B8A,color:#00665b
 ```
 
 ---
@@ -73,7 +75,7 @@ flowchart LR
 - **On every later message** — the account picks up a **new set of tags**, so it always reflects their latest interests.
 - The phone number is the key that ties everything together — it's how we match the account to bookings later.
 
-The account also holds the applicant's documents, motivation, offer details, and any co-tenants (partner, housemate, or guarantor).
+The account also holds the applicant's motivation and offer details. Uploaded documents live in the **Applications** section (section 5).
 
 ---
 
@@ -169,6 +171,26 @@ Agents can then be assigned to apartments and shown on offers as the point of co
 
 ---
 
+## 5. Applications
+
+An exact replica of the website's application form (`/aanvraag`). Everything an applicant fills in and uploads on the website is reflected here.
+
+```mermaid
+flowchart LR
+    WEB[Application form<br/>on the website] --> PH[Phone number]
+    PH --> APP[Reflected in the<br/>Applications section]
+    style WEB fill:#e0f3f0,stroke:#009B8A,color:#00665b
+    style APP fill:#009B8A,stroke:#00665b,color:#fff
+```
+
+- The form mirrors the website exactly — tenant details, work status, the offer/bid, and document uploads.
+- Documents uploaded on the website appear here, **matched by phone number**.
+- **All documents are simply uploaded into the Applications section** — including any co-tenant or guarantor documents.
+
+> **Note:** there is **no phone-number matching for co-tenants**. Co-tenant documents are just uploaded alongside the rest in the Applications section, not matched to a separate account.
+
+---
+
 ## In short
 
-Everything starts from a single WhatsApp message, which creates an **account**. **Apartments** are sent out to the right segments; the people who respond book viewings, which appear under **Bookings** — matched by phone number and tracked through reminders, cancellations, and reschedules. **Agents** handle the listings and close the deals. All four sections live behind one password-protected login.
+Everything starts from a single WhatsApp message, which creates an **account**. **Apartments** are sent out to the right segments; the people who respond book viewings, which appear under **Bookings** — matched by phone number and tracked through reminders, cancellations, and reschedules. **Agents** handle the listings and close the deals, and **Applications** mirror the website form so every uploaded document is in one place. All five sections live behind one password-protected login.
