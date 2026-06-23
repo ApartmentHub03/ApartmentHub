@@ -297,7 +297,7 @@
               <div class="err-msg" data-i="e_email">Vul een geldig e-mailadres in.</div>
             </div>
 
-            <input type="text" name="website_url" style="position:absolute;left:-9999px;opacity:0;pointer-events:none;height:0;width:0;overflow:hidden" tabindex="-1" autocomplete="off" aria-hidden="true" />
+            <input type="text" name="website_url" style="position:absolute;left:-9999px;opacity:0;pointer-events:none;height:0;width:0;overflow:hidden;clip:rect(0,0,0,0)" tabindex="-1" autocomplete="new-password" aria-hidden="true" />
 
             <button type="button" class="add-second" id="addSecond" data-i="add_second">+ Tweede huurder toevoegen</button>
             <div class="second-person" id="secondPerson" hidden>
@@ -708,7 +708,7 @@ form.addEventListener('submit',async(e)=>{
     return;
   }
   var honeypotVal=form.querySelector('[name="website_url"]')?form.querySelector('[name="website_url"]').value:'';
-  if(honeypotVal){ return; }
+  if(honeypotVal){ console.warn('[leadform-a] honeypot filled, blocking submission'); return; }
   var cc2El=document.getElementById('cc2'),phone2El=document.getElementById('phone2');
   var fullName2El=document.getElementById('fullName2');
   function combinePhoneA(ccId,inp){ var code=(document.getElementById(ccId)||{}).value||'+31'; var num=(inp.value||'').replace(/[\s().\-]/g,''); if(num.charAt(0)==='+') return num; num=num.replace(/^0+/,''); return num? code+num : ''; }
