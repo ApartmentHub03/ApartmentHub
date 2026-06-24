@@ -391,7 +391,7 @@ function DocumentStatusPanel({
 export default async function DossierPage({ params }: Params) {
   const { id: dossierId } = await params;
   const staff = await getStaffUser();
-  if (!staff) redirect(`/sell/login?next=/dashboard-selling/${dossierId}`);
+  if (!staff) redirect(`/sell-intake/login?next=/dashboard-selling/${dossierId}`);
 
   const sb = supabaseAdmin();
   const { data: d } = await sb

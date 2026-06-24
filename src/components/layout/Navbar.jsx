@@ -19,7 +19,7 @@ const SLUG_PAIRS = [
     ['terms-and-conditions', 'algemene-voorwaarden'],
     ['privacy-policy', 'privacyverklaring'],
     ['buy', 'koop'],
-    ['sell-lead', 'verkoop-aanvraag'],
+    ['sell', 'verkoop'],
     ['valuation', 'waardebepaling'],
     ['buying-power', 'koopkracht'],
     ['buy-lead', 'koop-lead'],
@@ -28,7 +28,7 @@ const SLUG_PAIRS = [
 const EN_TO_NL = Object.fromEntries(SLUG_PAIRS);
 const NL_TO_EN = Object.fromEntries(SLUG_PAIRS.map(([en, nl]) => [nl, en]));
 
-// Legacy un-prefixed paths the app once exposed (e.g. /aanvraag, /tenants).
+// Un-prefixed root paths (default-language pages without /nl/ prefix).
 const LEGACY_TO_LOCALE = {
     '/aanvraag': { en: '/en/application', nl: '/nl/aanvraag' },
     '/appartementen': { en: '/en/apartments', nl: '/nl/appartementen' },
@@ -39,10 +39,22 @@ const LEGACY_TO_LOCALE = {
     '/faq': { en: '/en/faq', nl: '/nl/faq' },
     '/about': { en: '/en/about-us', nl: '/nl/about-us' },
     '/contact': { en: '/en/contact', nl: '/nl/contact' },
+    '/verkoop': { en: '/en/sell', nl: '/verkoop' },
+    '/waardebepaling': { en: '/en/valuation', nl: '/waardebepaling' },
 };
 
 // Translate a path between /en/ and /nl/, mapping the first segment via SLUG_PAIRS.
 // Falls through unchanged for paths that don't carry a locale prefix and aren't legacy.
+// Root-level NL pages (e.g. /verkoop) use ROOT_NL_MAP so /en/sell ↔ /verkoop works.
+const ROOT_NL_MAP = {
+    verkoop: '/verkoop',
+    waardebepaling: '/waardebepaling',
+};
+const ROOT_NL_TO_EN = {
+    '/verkoop': '/en/sell',
+    '/waardebepaling': '/en/valuation',
+};
+
 const translatePath = (currentPath, targetLang) => {
     if (!currentPath) return currentPath;
 
@@ -51,6 +63,11 @@ const translatePath = (currentPath, targetLang) => {
 
     const legacy = LEGACY_TO_LOCALE[currentPath];
     if (legacy) return legacy[targetLang] || currentPath;
+
+    // Root-level NL pages (e.g. /verkoop) — switch to their EN counterpart
+    if (ROOT_NL_TO_EN[currentPath] && targetLang === 'en') {
+        return ROOT_NL_TO_EN[currentPath];
+    }
 
     const localeMatch = currentPath.match(/^\/(en|nl)(\/(.*))?$/);
     if (!localeMatch) return currentPath;
@@ -66,6 +83,12 @@ const translatePath = (currentPath, targetLang) => {
     if (segments[0] && dict[segments[0]]) {
         segments[0] = dict[segments[0]];
     }
+
+    // When switching from EN to NL, some pages should be root-level (no /nl/ prefix)
+    if (targetLang === 'nl' && segments.length === 1 && ROOT_NL_MAP[segments[0]]) {
+        return ROOT_NL_MAP[segments[0]];
+    }
+
     return `/${targetLang}/${segments.join('/')}`;
 };
 
@@ -101,7 +124,7 @@ const Navbar = () => {
         { name: t.rentOut, path: currentLang === 'nl' ? '/nl/rent-out' : '/en/rent-out' },
         { name: t.rentIn,  path: currentLang === 'nl' ? '/nl/rent-in'  : '/en/rent-in'  },
         { name: t.buy,     path: currentLang === 'nl' ? '/nl/koop'     : '/en/buy'      },
-        { name: t.sell,    path: currentLang === 'nl' ? '/nl/verkoop-aanvraag' : '/en/sell-lead' },
+        { name: t.sell,    path: currentLang === 'nl' ? '/verkoop' : '/en/sell' },
     ];
 
     const sideLinks = [

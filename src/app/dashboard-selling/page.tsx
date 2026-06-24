@@ -69,7 +69,7 @@ function shortName(name: string | null | undefined): string {
 
 export default async function DashboardPage() {
   const staff = await getStaffUser();
-  if (!staff) redirect("/sell/login?next=/dashboard-selling");
+  if (!staff) redirect("/sell-intake/login?next=/dashboard-selling");
 
   const dossiers = await loadDossiers();
   return (

@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   ApartmentHub Sale Portal / Verkoop-portal
-  Voor: https://apartmenthub.nl/verkoop  (NL)  +  /sell  (EN)
+  Voor: https://apartmenthub.nl/verkoop  (NL)  +  /sell-intake  (EN)
 
   Multi-step wizard:
     Step 1: Address + seller details      (intake)
@@ -831,13 +831,13 @@
 <script>
   function logout() {
     // The /api/auth/signout POST clears the verkoop_sessions row + ah_sess
-    // cookie and replies with a 303 redirect to /sell. From there the route
-    // handler sees no cookie and redirects to /sell/login. Using fetch then
+    // cookie and replies with a 303 redirect to /sell-intake. From there the route
+    // handler sees no cookie and redirects to /sell-intake/login. Using fetch then
     // window.location instead of a form post so we stay on the same tab
     // without a flash of the browser's POST-redirect intermediate page.
     fetch("/api/auth/signout", { method: "POST", credentials: "same-origin" })
       .catch(() => { /* even on network error, force the user to the login */ })
-      .finally(() => { window.location.href = "/sell"; });
+      .finally(() => { window.location.href = "/sell-intake"; });
   }
 </script>
 
@@ -1883,15 +1883,13 @@ const I18N = {
 };
 
 /* ===== state ===== */
-// Default is NL. Override via ?lang=en or legacy /selling path.
+// Default is NL. Override via ?lang=en query parameter.
 const params = new URLSearchParams(location.search);
 let lang =
   params.get("lang") === "en"
     ? "en"
     : params.get("lang") === "nl"
     ? "nl"
-    : location.pathname.includes("/selling")
-    ? "en"
     : "nl";
 let currentStep = 1;
 const uploaded = {};
@@ -3519,7 +3517,7 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
 });
 
 /* ===== language toggle =====
-   /verkoop is the Dutch URL, /selling is the English URL.
+   /verkoop is the Dutch URL, /sell-intake is the English URL.
    Toggling languages updates the URL via pushState (no full reload) and
    re-renders all i18n content in place. This keeps the page state (uploads,
    filled fields, scroll position) and is way faster than a real navigation. */
@@ -3529,7 +3527,7 @@ document.querySelectorAll(".lang button").forEach(b => {
     if (target === lang) return;
     lang = target;
     if (location.protocol !== "file:") {
-      // Single route /sell — toggle language via ?lang= query so we don't
+       // Single route /sell-intake — toggle language via ?lang= query so we don't
       // navigate away from the page (and lose form state).
       const qp = new URLSearchParams(location.search);
       qp.set("lang", target);

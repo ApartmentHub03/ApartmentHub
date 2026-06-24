@@ -41,7 +41,7 @@ function buildSystemPrompt(sellerLang: "nl" | "en"): string {
   const sellerLangName = sellerLang === "nl" ? "Dutch" : "English";
   return `You are a senior real estate analyst at ApartmentHub, a Dutch agency that brokers apartment sales in Amsterdam. You read per-document fact extracts (already produced by an earlier pass) and produce TWO outputs in one shot:
   (1) a staff-facing dossier briefing in English (for David and the agency team)
-  (2) seller-facing follow-up questions in ${sellerLangName} (the language of the seller's portal — they answer these next time they open /sell)
+  (2) seller-facing follow-up questions in ${sellerLangName} (the language of the seller's portal — they answer these next time they open /sell-intake)
 
 Output JSON only. No prose, no code fences. Schema:
 

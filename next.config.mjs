@@ -33,6 +33,37 @@ const nextConfig = {
                 destination: '/:path*',
                 permanent: true,
             },
+            // Redirect old sell/verkoop URLs to new paths
+            {
+                source: '/sell',
+                destination: '/sell-intake',
+                permanent: true,
+            },
+            {
+                source: '/sell/login',
+                destination: '/sell-intake/login',
+                permanent: true,
+            },
+            {
+                source: '/en/sell-lead',
+                destination: '/en/sell',
+                permanent: true,
+            },
+            {
+                source: '/nl/verkoop-aanvraag',
+                destination: '/verkoop',
+                permanent: true,
+            },
+            {
+                source: '/nl/verkoop',
+                destination: '/verkoop',
+                permanent: true,
+            },
+            {
+                source: '/nl/waardebepaling',
+                destination: '/waardebepaling',
+                permanent: true,
+            },
             // Redirect old root pages to canonical locale versions
             {
                 source: '/landlords',

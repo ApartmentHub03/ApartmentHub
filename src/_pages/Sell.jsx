@@ -99,7 +99,7 @@ const Sell = () => {
     const contacts = useServiceContacts('verkoop');
     const isNl = currentLang === 'nl';
     const telHref = `tel:${contacts.phone.replace(/\s/g, '')}`;
-    const valuationLink = isNl ? '/nl/waardebepaling' : '/en/valuation';
+    const valuationLink = isNl ? '/waardebepaling' : '/en/valuation';
 
     return (
         <div className={styles.page}>

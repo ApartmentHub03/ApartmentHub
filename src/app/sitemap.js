@@ -268,6 +268,81 @@ export default function sitemap() {
         },
       },
     },
+    // Sell
+    {
+      url: `${BASE_URL}/verkoop`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.9,
+      alternates: {
+        languages: {
+          en: `${BASE_URL}/en/sell`,
+          nl: `${BASE_URL}/verkoop`,
+        },
+      },
+    },
+    {
+      url: `${BASE_URL}/en/sell`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.9,
+      alternates: {
+        languages: {
+          en: `${BASE_URL}/en/sell`,
+          nl: `${BASE_URL}/verkoop`,
+        },
+      },
+    },
+    // Valuation
+    {
+      url: `${BASE_URL}/waardebepaling`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.9,
+      alternates: {
+        languages: {
+          en: `${BASE_URL}/en/valuation`,
+          nl: `${BASE_URL}/waardebepaling`,
+        },
+      },
+    },
+    {
+      url: `${BASE_URL}/en/valuation`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.9,
+      alternates: {
+        languages: {
+          en: `${BASE_URL}/en/valuation`,
+          nl: `${BASE_URL}/waardebepaling`,
+        },
+      },
+    },
+    // Sell Terms
+    {
+      url: `${BASE_URL}/en/terms-and-conditions-sell`,
+      lastModified: now,
+      changeFrequency: 'yearly',
+      priority: 0.3,
+      alternates: {
+        languages: {
+          en: `${BASE_URL}/en/terms-and-conditions-sell`,
+          nl: `${BASE_URL}/nl/algemene-voorwaarden-verkoop`,
+        },
+      },
+    },
+    {
+      url: `${BASE_URL}/nl/algemene-voorwaarden-verkoop`,
+      lastModified: now,
+      changeFrequency: 'yearly',
+      priority: 0.3,
+      alternates: {
+        languages: {
+          en: `${BASE_URL}/en/terms-and-conditions-sell`,
+          nl: `${BASE_URL}/nl/algemene-voorwaarden-verkoop`,
+        },
+      },
+    },
   ];
 
   return pages;

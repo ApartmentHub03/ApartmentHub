@@ -15,7 +15,7 @@ import {
 import { summarizeEnrichment, type AddressEnrichment } from "@/app/lib/public-registers";
 import { supabaseAdmin } from "@/app/lib/supabase-admin";
 
-// Prefer the /sell-specific Resend key, falling back to the rental app's
+// Prefer the /sell-intake-specific Resend key, falling back to the rental app's
 // RESEND_API_KEY so a single key still works.
 const resendKey = process.env.VERKOOP_RESEND_API_KEY ?? process.env.RESEND_API_KEY;
 const resend = resendKey ? new Resend(resendKey) : null;

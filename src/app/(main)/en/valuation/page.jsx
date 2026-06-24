@@ -7,7 +7,7 @@ export const metadata = {
         canonical: 'https://apartmenthub.nl/en/valuation',
         languages: {
             en: 'https://apartmenthub.nl/en/valuation',
-            nl: 'https://apartmenthub.nl/nl/waardebepaling',
+            nl: 'https://apartmenthub.nl/waardebepaling',
         },
     },
 };

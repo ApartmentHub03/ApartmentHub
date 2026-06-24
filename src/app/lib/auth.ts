@@ -51,7 +51,7 @@ export function attachSessionCookie(response: NextResponse, sessionId: string, e
     httpOnly: true,
     // `secure: true` makes browsers reject the cookie on plain HTTP.
     // In dev (http://localhost:3000) that meant the cookie was silently
-    // dropped and /sell looped back to /sell/login forever. Only set it
+    // dropped and /sell-intake looped back to /sell-intake/login forever. Only set it
     // in production where the site is served over HTTPS.
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

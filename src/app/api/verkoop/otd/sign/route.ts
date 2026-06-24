@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
         naam: `${userData.vk_voornaam ?? ""} ${userData.vk_achternaam ?? ""}`.trim(),
         email: userData.vk_email ?? "",
         telefoon: userData.vk_telefoon ?? null,
-        taal: req.headers.get("referer")?.includes("/selling") ? "en" : "nl",
+        taal: (req.headers.get("referer")?.includes("/selling") || req.headers.get("referer")?.includes("/sell-intake")) ? "en" : "nl",
         last_activity_at: signedAt,
       })
       .select("id")

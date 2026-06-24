@@ -157,7 +157,7 @@ const Valuation = () => {
   };
 
   const progress = result ? 100 : step === 1 ? 33 : step === 2 ? 66 : 90;
-  const backLink = currentLang === 'nl' ? '/nl/verkoop-aanvraag' : '/en/sell-lead';
+  const backLink = currentLang === 'nl' ? '/verkoop' : '/en/sell';
   const termsLink = currentLang === 'nl' ? '/nl/algemene-voorwaarden' : '/en/terms-and-conditions';
   const privacyLink = currentLang === 'nl' ? '/nl/privacyverklaring' : '/en/privacy-policy';
 

@@ -28,7 +28,7 @@ function initials(name: string | null | undefined): string {
 
 export default async function AdminPage() {
   const me = await getStaffUser();
-  if (!me) redirect("/sell/login?next=/dashboard-selling/admin");
+  if (!me) redirect("/sell-intake/login?next=/dashboard-selling/admin");
   if (me.role !== "admin") redirect("/dashboard-selling");
 
   const sb = supabaseAdmin();

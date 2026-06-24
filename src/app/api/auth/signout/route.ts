@@ -43,11 +43,11 @@ export async function GET(req: NextRequest) {
     return new NextResponse(null, { status: 204, headers: { "Cache-Control": "no-store" } });
   }
   await clear();
-  return NextResponse.redirect(new URL("/sell", req.url));
+  return NextResponse.redirect(new URL("/sell-intake", req.url));
 }
 
 export async function POST(req: NextRequest) {
   await clear();
-  // Form posts expect a redirect back to /sell so the page re-renders unauthed.
-  return NextResponse.redirect(new URL("/sell", req.url), { status: 303 });
+  // Form posts expect a redirect back to /sell-intake so the page re-renders unauthed.
+  return NextResponse.redirect(new URL("/sell-intake", req.url), { status: 303 });
 }

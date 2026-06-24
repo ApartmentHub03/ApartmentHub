@@ -296,7 +296,7 @@ export default function SellLoginPage() {
       // Post-login redirect:
       //   1. Staff phone → /dashboard-selling (placeholder, not yet wired in main app)
       //   2. ?next= param if present (preserves original destination)
-      //   3. Otherwise stay on /sell with a resume flag for returning sellers
+      //   3. Otherwise stay on /sell-intake with a resume flag for returning sellers
       if (data.isStaff) {
         window.location.href = "/dashboard-selling";
         return;
@@ -333,7 +333,7 @@ export default function SellLoginPage() {
       const params = new URLSearchParams(window.location.search);
       const nextParam = params.get("next");
       const baseTarget =
-        nextParam && nextParam.startsWith("/") ? nextParam : "/sell";
+        nextParam && nextParam.startsWith("/") ? nextParam : "/sell-intake";
       const sep = baseTarget.includes("?") ? "&" : "?";
       const url = data.isReturning ? `${baseTarget}${sep}resume=1` : baseTarget;
       window.location.href = url;
