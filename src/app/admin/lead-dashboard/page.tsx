@@ -802,10 +802,8 @@ export default function AanhuurLeadsDashboard() {
                         <td>
                           <div className={styles.badgeStack}>
                             <span className={cx(styles.badge, sm.badge)}>{lang === 'nl' ? sm.labelNl : sm.labelEn}</span>
-                            {d.variant && d.variant !== 'A' && (
-                              <span className={styles.variantBadge}>{d.variant}</span>
-                            )}
                           </div>
+                          <div className={styles.variantBelow}>Variant {d.variant || 'A'}</div>
                         </td>
                         <td className={styles.amt}>{d.amount ? eur(d.amount, lang) : <span className={styles.muted}>—</span>}</td>
                         <td>

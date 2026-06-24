@@ -257,6 +257,7 @@
 
 /* ===== Variant badge ===== */
 .variantBadge { display: inline-flex; align-items: center; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #EEF2F7; color: #5A6B82; margin-left: 4px; }
+.variantBelow { font-size: 11px; color: var(--grey-soft); margin-top: 3px; }
 
 /* ===== Stage editor ===== */
 .stageEditor { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
