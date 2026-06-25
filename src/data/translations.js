@@ -74,7 +74,7 @@ export const translations = {
             neighborhoodsAction: "Discover more",
 
             testimonialsStatsLandlords: "2500+ satisfied landlords",
-            testimonialsStatsRating: "4.9/5 average rating",
+            testimonialsStatsRating: "{{rating}}/5 average rating",
             testimonialsStatsTime: "5 days average rental time",
             testimonialsTitle: "Conversations we've had with our rental clients",
             testimonialsTitlePrefix: "",
@@ -127,7 +127,7 @@ export const translations = {
             neighborhoodsAction: "Ontdek meer",
 
             testimonialsStatsLandlords: "2500+ tevreden verhuurders",
-            testimonialsStatsRating: "4.9/5 gemiddelde beoordeling",
+            testimonialsStatsRating: "{{rating}}/5 gemiddelde beoordeling",
             testimonialsStatsTime: "5 dagen gemiddelde verhuur tijd",
             testimonialsTitle: "Echte gesprekken die wij hebben gevoerd met onze verhuur klanten",
             testimonialsTitlePrefix: "Echte ",

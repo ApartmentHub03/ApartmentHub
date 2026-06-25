@@ -7,11 +7,13 @@ import {
     Star, TrendingUp, Clock, Shield, Users, Phone,
     ArrowRight, CheckCircle, Home
 } from 'lucide-react';
+import useGoogleReviews from '@/hooks/useGoogleReviews';
 import styles from './DiscoverMore.module.css';
 
 const DiscoverMore = () => {
     const currentLang = useSelector((state) => state.ui.language);
     const isNL = currentLang === 'nl';
+    const { rating } = useGoogleReviews(currentLang);
 
     // Content translations
     const content = {
@@ -28,7 +30,7 @@ const DiscoverMore = () => {
         // Stats
         stats: [
             { value: '2500+', label: isNL ? 'Tevreden verhuurders' : 'Satisfied landlords' },
-            { value: '4.9/5', label: isNL ? 'Gemiddelde beoordeling' : 'Average rating' },
+            { value: `${rating.toFixed(1)}/5`, label: isNL ? 'Gemiddelde beoordeling' : 'Average rating' },
             { value: '5', label: isNL ? 'Dagen gemiddelde verhuur' : 'Days average rental' },
             { value: '€247', label: isNL ? 'Extra per maand' : 'Extra per month' }
         ],

@@ -6,11 +6,13 @@ import { useSelector } from 'react-redux';
 import { Users, Star, Clock, CircleCheck, MapPin, CheckCheck, MessageCircle, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import styles from './TestimonialSection.module.css';
 import { translations } from '../../../data/translations';
+import useGoogleReviews from '@/hooks/useGoogleReviews';
 import ChatModal from './ChatModal';
 
 const TestimonialSection = () => {
     const currentLang = useSelector((state) => state.ui.language);
     const t = translations.home[currentLang] || translations.home.en;
+    const { rating } = useGoogleReviews(currentLang);
     const [selectedChat, setSelectedChat] = useState(null);
     const [activeSlide, setActiveSlide] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
@@ -195,7 +197,7 @@ const TestimonialSection = () => {
                     </div>
                     <div className={styles.statItem}>
                         <Star className={styles.statIconOrange} />
-                        <span className={styles.statText}>{t.testimonialsStatsRating}</span>
+                        <span className={styles.statText}>{t.testimonialsStatsRating.replace('{{rating}}', rating.toFixed(1))}</span>
                     </div>
                     <div className={styles.statItem}>
                         <Clock className={styles.statIconGreen} />

@@ -10,6 +10,7 @@ import PricingCallout from '../components/landing/PricingCallout';
 import GoogleReviews from '../components/landing/GoogleReviews';
 import GoogleG from '../components/landing/GoogleG';
 import NeighborhoodSection from '../features/home/components/NeighborhoodSection';
+import useGoogleReviews from '../hooks/useGoogleReviews';
 import {
     UserCheck, Search, Handshake, FileSignature, Eye, Sparkles,
     Building2, ClipboardList, Star, ChevronDown, Calculator, Wallet, TrendingUp,
@@ -80,6 +81,7 @@ const StepCard = ({ step, isNl, expanded, onToggle }) => {
 function ReviewsBadge() {
     const currentLang = useSelector((state) => state.ui.language);
     const isNl = currentLang === 'nl';
+    const { rating, reviewCount } = useGoogleReviews(currentLang);
     return (
         <div className={styles.reviewsBadge}>
             <GoogleG size={14} className={styles.reviewsG} />
@@ -88,11 +90,11 @@ function ReviewsBadge() {
                     <Star key={i} size={14} fill="currentColor" />
                 ))}
             </span>
-            <span className={styles.reviewsScore}>4.9</span>
+            <span className={styles.reviewsScore}>{rating}</span>
             <span className={styles.reviewsSource}>
                 {isNl
-                    ? 'op basis van Google-reviews · 60+ tevreden klanten'
-                    : 'based on Google reviews · 60+ happy clients'}
+                    ? `op basis van Google-reviews · ${reviewCount} tevreden klanten`
+                    : `based on Google reviews · ${reviewCount} happy clients`}
             </span>
         </div>
     );

@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
+import useGoogleReviews from '@/hooks/useGoogleReviews';
 import styles from './MetaLeadFormB.module.css';
 
 const META_PIXEL_ID = '171580591302554';
@@ -12,7 +13,6 @@ const TERMS_URL = {
   en: 'https://www.apartmenthub.nl/en/terms-and-conditions',
 };
 const GOOGLE_REVIEWS_URL = 'https://www.google.com/maps/search/ApartmentHub+Amsterdam';
-const GOOGLE_RATING = '4.9';
 const VIDEO_SRC = '/images/Apartmenthub%20rent%20in.mp4';
 
 const STRINGS = {
@@ -230,6 +230,7 @@ const MetaLeadFormB = () => {
   const lang = pathname && pathname.includes('/en/') ? 'en' : 'nl';
   const s = STRINGS[lang];
   const pageUrl = lang === 'en' ? '/en/meta-leadform-b' : '/nl/meta-leadform-b';
+  const { rating: googleRating } = useGoogleReviews(lang);
 
   const [step, setStep] = useState(1);
   const [bedrooms, setBedrooms] = useState('');
@@ -446,7 +447,7 @@ const MetaLeadFormB = () => {
             <div className={styles.trustRow}>
               <a className={styles.gtrust} href={GOOGLE_REVIEWS_URL} target="_blank" rel="noopener">
                 <GoogleIcon />
-                <span className={styles.grate}>{GOOGLE_RATING}</span>
+                <span className={styles.grate}>{googleRating.toFixed(1)}</span>
                 <span className={styles.gstars}>★★★★★</span>
                 <span className={styles.gtext}>{s.greviews}</span>
               </a>
