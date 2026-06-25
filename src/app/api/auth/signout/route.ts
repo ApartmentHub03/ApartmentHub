@@ -42,12 +42,13 @@ export async function GET(req: NextRequest) {
   if (isPrefetch) {
     return new NextResponse(null, { status: 204, headers: { "Cache-Control": "no-store" } });
   }
+  const redirectTo = req.nextUrl.searchParams.get("redirect") || "/sell-intake";
   await clear();
-  return NextResponse.redirect(new URL("/sell-intake", req.url));
+  return NextResponse.redirect(new URL(redirectTo, req.url));
 }
 
 export async function POST(req: NextRequest) {
+  const redirectTo = req.nextUrl.searchParams.get("redirect") || "/sell-intake";
   await clear();
-  // Form posts expect a redirect back to /sell-intake so the page re-renders unauthed.
-  return NextResponse.redirect(new URL("/sell-intake", req.url), { status: 303 });
+  return NextResponse.redirect(new URL(redirectTo, req.url), { status: 303 });
 }

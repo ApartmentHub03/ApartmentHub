@@ -1,17 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import Link from 'next/link';
 import { translations } from '../data/translations';
-import useServiceContacts from '../hooks/useServiceContacts';
 import ContactSection from '../components/shared/ContactSection';
 import styles from './Buy.module.css';
+import PricingCallout from '../components/landing/PricingCallout';
+import GoogleReviews from '../components/landing/GoogleReviews';
+import GoogleG from '../components/landing/GoogleG';
 import NeighborhoodSection from '../features/home/components/NeighborhoodSection';
 import {
     UserCheck, Search, Handshake, FileSignature, Eye, Sparkles,
-    Building2, CheckCircle2, ClipboardList, MessageCircle, Phone, Mail,
-    Star, ChevronDown,
+    Building2, ClipboardList, Star, ChevronDown, Calculator, Wallet, TrendingUp,
 } from 'lucide-react';
 
 const steps = [
@@ -76,83 +77,159 @@ const StepCard = ({ step, isNl, expanded, onToggle }) => {
     );
 };
 
+function ReviewsBadge() {
+    const currentLang = useSelector((state) => state.ui.language);
+    const isNl = currentLang === 'nl';
+    return (
+        <div className={styles.reviewsBadge}>
+            <GoogleG size={14} className={styles.reviewsG} />
+            <span className={styles.reviewsStars}>
+                {[...Array(5)].map((_, i) => (
+                    <Star key={i} size={14} fill="currentColor" />
+                ))}
+            </span>
+            <span className={styles.reviewsScore}>4.9</span>
+            <span className={styles.reviewsSource}>
+                {isNl
+                    ? 'op basis van Google-reviews · 60+ tevreden klanten'
+                    : 'based on Google reviews · 60+ happy clients'}
+            </span>
+        </div>
+    );
+}
+
 const Buy = () => {
     const currentLang = useSelector((state) => state.ui.language);
     const t = translations.buy[currentLang] || translations.buy.en;
-    const contacts = useServiceContacts('koop');
+
     const isNl = currentLang === 'nl';
-    const telHref = `tel:${contacts.phone.replace(/\s/g, '')}`;
     const leadLink = isNl ? '/nl/koop/lead' : '/en/buy/lead';
-    const powerLink = isNl ? '/nl/koopkracht' : '/en/buying-power';
+    const powerLink = isNl ? '/nl/koop/koopkracht' : '/en/buy/buying-power';
     const [expandedSteps, setExpandedSteps] = useState({});
+    const [showAllSteps, setShowAllSteps] = useState(false);
 
     return (
         <div className={styles.page}>
+            {/* Hero */}
             <section className={styles.heroSection}>
+                <div className={styles.blob1} aria-hidden="true"></div>
+                <div className={styles.blob2} aria-hidden="true"></div>
+                <div className={styles.blob3} aria-hidden="true"></div>
+
                 <div className={styles.heroContainer}>
-                    <h1 className={styles.heroTitle}>{t.heroTitle}</h1>
-                    <p className={styles.heroSubtitle}>{t.heroSubtitle}</p>
+                    <div style={{ textAlign: 'center', maxWidth: '50rem', margin: '0 auto', marginBottom: '2.5rem' }}>
+                        <div className={styles.badge}>
+                             <GoogleG size={14} className={styles.badgeIcon} />
+                            {t.heroBadge || (isNl ? 'Aankoopbegeleiding van A tot Z' : 'Buyer guidance from A to Z')}
+                        </div>
+                        <h1 className={styles.heroTitle}>
+                            {t.heroTitlePrefix || t.heroTitle}{' '}
+                            <span className={styles.heroCityGradient}>Amsterdam</span>
+                        </h1>
+                        <p className={styles.heroIntro}>
+                            {t.heroSubtitleNew || t.heroSubtitle}{' '}
+                            <span className={styles.heroIntroExtra}>{t.heroSubtitleExtra || ''}</span>
+                        </p>
+                        <div className={styles.heroBadgeRow}>
+                            <ReviewsBadge />
+                        </div>
+                        <p className={styles.heroTerms}>{t.heroTerms}</p>
+                    </div>
 
-                    <div className={styles.heroBadgeRow}>
-                        <div className={styles.reviewsBadge}>
-                            <span className={styles.reviewsG}>G</span>
-                            <span className={styles.reviewsStars}>
-                                {[...Array(5)].map((_, i) => (
-                                    <Star key={i} size={14} fill="currentColor" />
-                                ))}
-                            </span>
-                            <span className={styles.reviewsScore}>4.9</span>
-                            <span className={styles.reviewsSource}>
-                                {isNl
-                                    ? 'op basis van Google-reviews · 60+ tevreden klanten'
-                                    : 'based on Google reviews · 60+ happy clients'}
-                            </span>
+                    <div className={styles.heroCards}>
+                        {/* Calculator card */}
+                        <div className={`${styles.heroCard} ${styles.heroCardFirst}`}>
+                            <div className={styles.heroCardGlow} aria-hidden="true"></div>
+                            <div className={styles.heroCardInner}>
+                                <div className={styles.heroCardHeader}>
+                                    <div className={`${styles.heroCardIcon} ${styles.heroCardIconOrange}`}>
+                                        <Calculator size={24} />
+                                    </div>
+                                    <div>
+                                        <div className={styles.heroCardTitle}>{t.calculatorCardTitle}</div>
+                                        <div className={styles.heroCardMeta}>{t.calculatorCardMeta}</div>
+                                    </div>
+                                </div>
+                                <p className={styles.heroCardDesc}>{t.calculatorCardDesc}</p>
+                                <div className={styles.heroCardBullets}>
+                                    <div className={styles.heroCardBullet}>
+                                        <Wallet size={16} className={styles.heroCardBulletIcon} />
+                                        {t.calculatorCardBullet1}
+                                    </div>
+                                    <div className={styles.heroCardBullet}>
+                                        <Building2 size={16} className={styles.heroCardBulletIcon} />
+                                        {t.calculatorCardBullet2}
+                                    </div>
+                                    <div className={styles.heroCardBullet}>
+                                        <TrendingUp size={16} className={styles.heroCardBulletIcon} />
+                                        {t.calculatorCardBullet3}
+                                    </div>
+                                </div>
+                                <Link href={powerLink} className={`${styles.heroCardCta} ${styles.heroCardCtaOrange}`}>
+                                    {t.calculatorCardCta}
+                                </Link>
+                            </div>
+                        </div>
+
+                        {/* Intake card */}
+                        <div className={styles.heroCard}>
+                            <div className={styles.heroCardInner}>
+                                <div className={styles.heroCardHeader}>
+                                    <div className={`${styles.heroCardIcon} ${styles.heroCardIconMyrtle}`}>
+                                        <ClipboardList size={24} />
+                                    </div>
+                                    <div>
+                                        <div className={styles.heroCardTitle}>{t.intakeCardTitle}</div>
+                                        <div className={styles.heroCardMeta}>{t.intakeCardMeta}</div>
+                                    </div>
+                                </div>
+                                <p className={styles.heroCardDesc}>{t.intakeCardDesc}</p>
+                                <div className={styles.heroCardBullets}>
+                                    <div className={styles.heroCardBullet}>
+                                        <Search size={16} className={styles.heroCardBulletIcon} />
+                                        {t.intakeCardBullet1}
+                                    </div>
+                                    <div className={styles.heroCardBullet}>
+                                        <Eye size={16} className={styles.heroCardBulletIcon} />
+                                        {t.intakeCardBullet2}
+                                    </div>
+                                    <div className={styles.heroCardBullet}>
+                                        <Handshake size={16} className={styles.heroCardBulletIcon} />
+                                        {t.intakeCardBullet3}
+                                    </div>
+                                </div>
+                                <Link href={leadLink} className={`${styles.heroCardCta} ${styles.heroCardCtaOutline}`}>
+                                    {t.intakeCardCta}
+                                </Link>
+                            </div>
                         </div>
                     </div>
 
-                    <div className={styles.heroActions}>
-                        <Link href={leadLink} className={styles.ctaPrimary}>{t.heroCta}</Link>
-                        <Link href={powerLink} className={styles.ctaOutline}>{t.heroCta2}</Link>
-                    </div>
-
-                    <div className={styles.heroContactRow}>
-                        <a href={telHref} className={styles.contactPill}>
-                            <Phone size={16} /> {contacts.phone}
-                        </a>
-                        <a href={contacts.whatsappLink} target="_blank" rel="noopener noreferrer" className={styles.contactPill}>
-                            <MessageCircle size={16} /> {isNl ? 'Chat directly' : 'Chat directly'}
-                        </a>
-                        <a href={`mailto:${contacts.email}`} className={styles.contactPill}>
-                            <Mail size={16} /> {contacts.email}
-                        </a>
-                    </div>
+                    <p className={styles.orientation}>
+                        <span>{t.orientationPrefix || (isNl ? 'Liever eerst oriënteren?' : 'Prefer to explore first?')}</span>{' '}
+                        <Link href={powerLink} className={styles.orientationLink}>
+                            {t.orientationLink || (isNl ? 'Bekijk wat je kunt kopen per wijk' : 'See what you can buy per neighbourhood')}
+                        </Link>
+                    </p>
                 </div>
+
+
             </section>
 
-            <section className={styles.pricingSection}>
-                <div className={styles.pricingCard}>
-                    <div className={styles.pricingAccent}></div>
-                    <div className={styles.pricingBody}>
-                        <div className={styles.pricingIconBadge}>
-                            <CheckCircle2 size={24} />
-                        </div>
-                        <div className={styles.pricingTextBlock}>
-                            <p className={styles.pricingHeadline}>
-                                1% {isNl ? 'courtage excl. BTW, geen cure geen pay' : 'commission excl. VAT, no cure no pay'}
-                            </p>
-                            <p className={styles.pricingSupport}>
-                                {isNl
-                                    ? 'Geen vooraf-kosten. Geen verrassingen. Alleen courtage bij succesvolle transactie, te voldoen bij notariële overdracht.'
-                                    : 'No upfront costs. No surprises. Commission only on successful transaction, payable at notarial transfer.'}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            {/* Pricing callout */}
+            <PricingCallout
+                headline={isNl
+                    ? '1% courtage excl. BTW, geen cure geen pay'
+                    : '1% commission excl. VAT, no cure no pay'}
+                supportText={isNl
+                    ? 'Geen vooraf-kosten. Geen verrassingen. Alleen courtage bij succesvolle transactie, te voldoen bij notariële overdracht.'
+                    : 'No upfront costs. No surprises. Commission only on successful transaction, payable at notarial transfer.'}
+            />
 
+            {/* How it works */}
             <section className={styles.section}>
                 <div className={styles.sectionContainer}>
-                    <h2 className={styles.sectionTitle}>{t.howTitle}</h2>
+                    <h2 className={styles.sectionTitleSmall}>{t.howTitle}</h2>
                     <div className={styles.stepsGrid}>
                         {steps.map((step) => (
                             <StepCard
@@ -169,21 +246,33 @@ const Buy = () => {
                             />
                         ))}
                     </div>
+                    {steps.length > 3 && (
+                        <div className={styles.showStepsWrap}>
+                            <button
+                                type="button"
+                                onClick={() => setShowAllSteps((v) => !v)}
+                                className={styles.showStepsBtn}
+                            >
+                                {showAllSteps
+                                    ? (t.showLessSteps || (isNl ? 'Toon minder' : 'Show less'))
+                                    : (t.showAllSteps || (isNl ? 'Bekijk alle stappen' : 'View all steps'))}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </section>
 
-            <NeighborhoodSection title="Discover Neighborhoods" />
-
+            {/* USPs */}
             <section className={styles.sectionAlt}>
                 <div className={styles.sectionContainer}>
-                    <h2 className={styles.sectionTitle}>{t.whyTitle}</h2>
+                    <h2 className={styles.sectionTitle}>{t.whyUsTitle || t.whyTitle}</h2>
                     <div className={styles.uspGrid}>
                         {usps.map((usp, i) => {
                             const Icon = usp.icon;
                             const title = isNl ? usp.titleNl : usp.titleEn;
                             const desc = isNl ? usp.descNl : usp.descEn;
                             return (
-                                <div key={i} className={styles.uspCard}>
+                                <div key={i} className={`${styles.uspCard} ${i >= 3 ? styles.uspCardHidden : ''}`}>
                                     <div className={styles.uspIconCircle}>
                                         <Icon size={24} />
                                     </div>
@@ -196,13 +285,16 @@ const Buy = () => {
                 </div>
             </section>
 
+            <NeighborhoodSection title={isNl ? 'Ontdek wijken' : 'Discover Neighborhoods'} />
+
+            {/* What we do for you */}
             <section className={styles.section}>
                 <div className={styles.sectionContainerNarrow}>
-                    <h2 className={styles.sectionTitle}>{t.whatTitle}</h2>
+                    <h2 className={styles.sectionTitleSmall}>{t.servicesTitle || t.whatTitle}</h2>
                     <div className={styles.servicesGrid}>
                         {services.map((s, i) => (
                             <div key={i} className={styles.serviceItem}>
-                                <CheckCircle2 size={20} className={styles.serviceCheck} />
+                                <span className={styles.serviceNumber}>{i + 1}</span>
                                 <span className={styles.serviceText}>{isNl ? s.nl : s.en}</span>
                             </div>
                         ))}
@@ -210,6 +302,7 @@ const Buy = () => {
                 </div>
             </section>
 
+            {/* CTA teaser card */}
             <section className={styles.sectionAlt}>
                 <div className={styles.sectionContainerNarrow}>
                     <div className={styles.ctaCard}>
@@ -218,14 +311,18 @@ const Buy = () => {
                                 <ClipboardList size={24} />
                             </div>
                             <div className={styles.ctaContent}>
-                                <h3 className={styles.ctaTitle}>{t.ctaTitle}</h3>
-                                <p className={styles.ctaDesc}>{t.ctaDesc}</p>
+                                <h3 className={styles.ctaTitle}>{t.teaserTitle || t.ctaTitle}</h3>
+                                <p className={styles.ctaDesc}>{t.teaserSubtitle || t.ctaDesc}</p>
                             </div>
-                            <Link href={leadLink} className={`${styles.ctaPrimary} ${styles.ctaButtonFull}`}>{t.heroCta}</Link>
+                            <Link href={leadLink} className={`${styles.ctaPrimary} ${styles.ctaButtonFull}`}>
+                                {t.teaserCta || t.heroCta}
+                            </Link>
                         </div>
                     </div>
                 </div>
             </section>
+
+            <GoogleReviews />
 
             <ContactSection
                 service="koop"

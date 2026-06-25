@@ -1,17 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useSelector } from 'react-redux';
-import Link from 'next/link';
 import { translations } from '../data/translations';
 import useServiceContacts from '../hooks/useServiceContacts';
-import ContactSection from '../components/shared/ContactSection';
 import styles from './Sell.module.css';
+import PricingCallout from '../components/landing/PricingCallout';
+import QuickContactStrip from '../components/landing/QuickContactStrip';
+import GoogleReviews from '../components/landing/GoogleReviews';
+import GoogleG from '../components/landing/GoogleG';
 import NeighborhoodSection from '../features/home/components/NeighborhoodSection';
+import ValuationWidget from './ValuationWidget';
 import {
     Camera, FileSignature, Megaphone, Sparkles,
     BarChart3, Users, Home, ClipboardList, Wrench, Phone,
-    Mail, MessageCircle, ChevronDown, Star, CheckCircle2,
+    Mail, MessageCircle, ChevronDown, Star,
 } from 'lucide-react';
 
 const steps = [
@@ -52,7 +55,7 @@ function ReviewsBadge() {
     const isNl = currentLang === 'nl';
     return (
         <div className={styles.reviewsBadge}>
-            <span className={styles.reviewsG}>G</span>
+            <GoogleG size={14} className={styles.reviewsG} />
             <span className={styles.reviewsStars}>
                 {[...Array(5)].map((_, i) => (
                     <Star key={i} size={14} fill="currentColor" />
@@ -68,103 +71,123 @@ function ReviewsBadge() {
     );
 }
 
-function PricingCallout() {
-    const currentLang = useSelector((state) => state.ui.language);
-    const isNl = currentLang === 'nl';
-    return (
-        <div className={styles.pricingCard}>
-            <div className={styles.pricingAccent}></div>
-            <div className={styles.pricingBody}>
-                <div className={styles.pricingIconBadge}>
-                    <CheckCircle2 size={24} />
-                </div>
-                <div className={styles.pricingTextBlock}>
-                    <p className={styles.pricingHeadline}>
-                        1% courtage {isNl ? 'excl. BTW, geen cure geen pay' : 'excl. VAT, no cure no pay'}
-                    </p>
-                    <p className={styles.pricingSupport}>
-                        {isNl
-                            ? 'Geen vooraf-kosten. Geen verrassingen. Alleen courtage bij succesvolle transactie, te voldoen bij notariële overdracht.'
-                            : 'No upfront costs. No surprises. Commission only on successful transaction, payable at notarial transfer.'}
-                    </p>
-                </div>
-            </div>
-        </div>
-    );
-}
-
 const Sell = () => {
     const currentLang = useSelector((state) => state.ui.language);
     const t = translations.sell[currentLang] || translations.sell.en;
     const contacts = useServiceContacts('verkoop');
     const isNl = currentLang === 'nl';
     const telHref = `tel:${contacts.phone.replace(/\s/g, '')}`;
-    const valuationLink = isNl ? '/waardebepaling' : '/en/valuation';
+    const [showSteps, setShowSteps] = useState(false);
+
+    const cityName = 'Amsterdam';
+
+    const scrollToValuation = () => {
+        document.getElementById('waardebepaling')?.scrollIntoView({ behavior: 'smooth' });
+    };
 
     return (
         <div className={styles.page}>
+            {/* Hero with gradient background */}
             <section className={styles.hero}>
+                <div className={styles.blob1} aria-hidden="true"></div>
+                <div className={styles.blob2} aria-hidden="true"></div>
+                <div className={styles.blob3} aria-hidden="true"></div>
+
                 <div className={styles.heroInner}>
-                    <h1 className={styles.heroTitle}>{t.heroTitle}</h1>
-                    <p className={styles.heroSubtitle}>{t.heroSubtitle}</p>
-                    <div className={styles.reviewsRow}>
-                        <ReviewsBadge />
-                    </div>
-                    <div className={styles.heroCta}>
-                        <Link href={valuationLink} className={styles.ctaPrimary}>{t.valuationCta}</Link>
+                    <div className={styles.heroContent}>
+                        <div className={styles.badge}>
+                             <GoogleG size={14} className={styles.badgeIcon} />
+                            {t.heroBadge || (isNl ? 'Gratis waardebepaling in 2 minuten' : 'Free property valuation in 2 minutes')}
+                        </div>
+                        <h1 className={styles.heroTitle}>
+                            {t.heroTitlePrefix || t.heroTitle}{' '}
+                            <span className={styles.heroCityGradient}>{cityName}</span>
+                            {t.heroTitleSuffix || ''}
+                        </h1>
+                        <p className={styles.heroIntro}>
+                            {t.heroIntro || t.heroSubtitle}{' '}
+                            <span className={styles.heroIntroExtra}>{t.heroIntroExtra || ''}</span>
+                        </p>
+                        <div className={styles.reviewsRow}>
+                            <ReviewsBadge />
+                        </div>
+                        <div className={styles.heroCtas}>
+                            <a href={contacts.whatsappLink} target="_blank" rel="noopener noreferrer" className={styles.ctaOutline}>
+                                <MessageCircle size={16} /> WhatsApp
+                            </a>
+                            <a href={`tel:${contacts.phone.replace(/\s/g, '')}`} className={styles.ctaOutline}>
+                                <Phone size={16} /> {t.heroCallUs || (isNl ? 'Bel ons' : 'Call us')}
+                            </a>
+                        </div>
+                        <p className={styles.heroUsps}>{t.heroUsps}</p>
                     </div>
 
-                    <div className={styles.heroContactRow}>
-                        <a href={telHref} className={styles.contactPill}>
-                            <Phone size={16} /> {contacts.phone}
-                        </a>
-                        <a href={contacts.whatsappLink} target="_blank" rel="noopener noreferrer" className={styles.contactPill}>
-                            <MessageCircle size={16} /> {isNl ? 'Direct chatten' : 'Chat directly'}
-                        </a>
-                        <a href={`mailto:${contacts.email}`} className={styles.contactPill}>
-                            <Mail size={16} /> {contacts.email}
-                        </a>
+                    <div className={styles.heroWidget} id="waardebepaling">
+                        <div className={styles.heroWidgetGlow} aria-hidden="true"></div>
+                        <div className={styles.heroWidgetInner}>
+                            <ValuationWidget embedded />
+                        </div>
                     </div>
+                </div>
+
+                <div className={styles.container}>
+                    <QuickContactStrip
+                        service="verkoop"
+                        whatsappLabel={isNl ? 'WhatsApp ons' : 'WhatsApp us'}
+                        emailLabel={isNl ? 'Stuur mail' : 'Send email'}
+                    />
                 </div>
             </section>
 
-            <PricingCallout />
+            {/* Pricing callout */}
+            <PricingCallout
+                headline={isNl
+                    ? '1% courtage excl. BTW, geen cure geen pay'
+                    : '1% commission excl. VAT, no cure no pay'}
+                supportText={isNl
+                    ? 'Geen vooraf-kosten. Geen verrassingen. Alleen courtage bij succesvolle transactie, te voldoen bij notariële overdracht.'
+                    : 'No upfront costs. No surprises. Commission only on successful transaction, payable at notarial transfer.'}
+            />
 
-            <section className={styles.valuation}>
-                <h2 className={styles.valuationTitle}>{t.valuationTitle}</h2>
-                <p className={styles.valuationDesc}>{t.valuationDesc}</p>
-                <Link href={valuationLink} className={styles.ctaPrimary}>{t.valuationCta}</Link>
-            </section>
-
+            {/* How it works */}
             <section className={styles.stepsSection}>
                 <div className={styles.container}>
                     <h2 className={styles.sectionTitle}>{t.howTitle}</h2>
                     <p className={styles.sectionSubtitle}>{t.howSubtitle}</p>
                     <div className={styles.stepsGrid}>
-                        {steps.map((step) => {
+                        {steps.map((step, i) => {
                             const Icon = step.icon;
                             const title = isNl ? step.titleNl : step.titleEn;
                             const desc = isNl ? step.descNl : step.descEn;
                             const detail = isNl ? step.detailNl : step.detailEn;
+                            const hiddenMobile = i >= 3 && !showSteps;
                             return (
-                                <ExpandableStepCard
-                                    key={title}
-                                    icon={Icon}
-                                    title={title}
-                                    desc={desc}
-                                    detail={detail}
-                                />
+                                <div key={title} className={hiddenMobile ? styles.stepHiddenMobile : undefined}>
+                                    <ExpandableStepCard icon={Icon} title={title} desc={desc} detail={detail} />
+                                </div>
                             );
                         })}
                     </div>
+                    {steps.length > 3 && (
+                        <div className={styles.showStepsWrap}>
+                            <button
+                                type="button"
+                                onClick={() => setShowSteps((v) => !v)}
+                                className={styles.showStepsBtn}
+                            >
+                                {showSteps
+                                    ? (t.showLessSteps || (isNl ? 'Toon minder' : 'Show less'))
+                                    : (t.showAllSteps || (isNl ? 'Bekijk alle stappen' : 'View all steps'))}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </section>
 
-            <NeighborhoodSection title="Discover Neighborhoods" />
-
+            {/* Benefits */}
             <section className={styles.benefitsSection}>
                 <div className={styles.container}>
-                    <h2 className={styles.sectionTitle}>{t.whyTitle}</h2>
+                    <h2 className={styles.sectionTitle}>{t.benefitsHeading || t.whyTitle}</h2>
                     <div className={styles.benefitsGrid}>
                         {benefits.map((b, i) => {
                             const Icon = b.icon;
@@ -184,14 +207,46 @@ const Sell = () => {
                 </div>
             </section>
 
-            <ContactSection
-                service="verkoop"
-                ctaLink={valuationLink}
-                ctaLabel={t.valuationCta}
-                title={t.contactTitle}
-                description={t.contactDesc}
-                isNl={isNl}
-            />
+            <NeighborhoodSection title={isNl ? 'Ontdek wijken' : 'Discover Neighborhoods'} />
+
+            <GoogleReviews />
+
+            {/* Contact */}
+            <section id="contact" className={styles.contactSection}>
+                <div className={styles.contactContainer}>
+                    <h2 className={styles.contactTitle}>{t.contactTitle}</h2>
+                    <p className={styles.contactSubtitle}>
+                        {t.contactSubtitle || t.contactDesc}
+                    </p>
+                    <div className={styles.contactCard}>
+                        <div className={styles.contactInfoList}>
+                            <a href={telHref} className={styles.contactInfoItem}>
+                                <Phone size={18} className={styles.contactInfoIcon} />
+                                {contacts.phone}
+                            </a>
+                            <a href={`mailto:${contacts.email}`} className={styles.contactInfoItem}>
+                                <Mail size={18} className={styles.contactInfoIcon} />
+                                {contacts.email}
+                            </a>
+                            <a href={contacts.whatsappLink} target="_blank" rel="noopener noreferrer" className={styles.contactInfoItem}>
+                                <MessageCircle size={18} className={styles.contactInfoIcon} />
+                                WhatsApp
+                            </a>
+                        </div>
+                        <div className={styles.contactCtaRow}>
+                            <button className={styles.ctaPrimary} onClick={scrollToValuation}>
+                                {t.contactCalcButton || t.valuationCta}
+                            </button>
+                            <a href={contacts.whatsappLink} target="_blank" rel="noopener noreferrer" className={styles.ctaOutline}>
+                                <MessageCircle size={16} /> WhatsApp
+                            </a>
+                            <a href={telHref} className={styles.ctaOutline}>
+                                <Phone size={16} /> {t.heroCallUs || (isNl ? 'Bel ons' : 'Call us')}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     );
 };

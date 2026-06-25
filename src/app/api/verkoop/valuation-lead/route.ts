@@ -1,27 +1,20 @@
-// app/api/verkoop/valuation-lead/route.ts
-//
-// Sell-lead valuation form submission. Creates a row in both:
-//   1. valuation_leads (flat lead record)
-//   2. verkoop_dossiers (dashboard-selling entry, status = in_progress)
-//
-// Uses supabaseAdmin (service role) so RLS on verkoop_dossiers is bypassed
-// without needing an anon INSERT policy. Errors are logged but non-blocking
-// (fail silently) — the user still sees their valuation result regardless.
-
 import { Resend } from "resend";
 import { valuationConfirmationEmail } from "@/app/lib/email-templates";
 import { supabaseAdmin } from "@/app/lib/supabase-admin";
+import { createClient } from "@supabase/supabase-js";
 
 const resendKey = process.env.VERKOOP_RESEND_API_KEY ?? process.env.RESEND_API_KEY;
 const resend = resendKey ? new Resend(resendKey) : null;
 
 const MAIL_FROM = process.env.VERKOOP_MAIL_FROM ?? process.env.MAIL_FROM;
 
-let supabase: ReturnType<typeof supabaseAdmin> | null = null;
-try {
-  supabase = supabaseAdmin();
-} catch {
-  supabase = null;
+const ANON_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
+
+function getAnonClient() {
+  return createClient(ANON_URL, ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 }
 
 function formatEUR(n: number | null): string {
@@ -58,17 +51,21 @@ export async function POST(req: Request) {
     if (!address || !naam || !email) {
       return Response.json(
         { ok: false, error: "missing_required_fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     let dossierId: string | null = null;
 
-    if (supabase) {
-      // 1. Upsert into valuation_leads (update if phone already exists)
-      const { error: leadError } = await supabase
+    const admin = supabaseAdmin();
+
+    // 1. Insert into valuation_leads using anon client (respects RLS: public can
+    //    INSERT, but not UPDATE/DELETE). Duplicates on phone are silently ignored.
+    try {
+      const anon = getAnonClient();
+      const { error: leadError } = await anon
         .from("valuation_leads")
-        .upsert({
+        .insert({
           address,
           postcode,
           city,
@@ -80,38 +77,45 @@ export async function POST(req: Request) {
           energy_label,
           outdoor_space,
           parking,
+          souterrain,
           first_name,
           last_name,
           email,
           phone,
           estimated_value_low,
           estimated_value_high,
-        }, { onConflict: "phone" });
+        });
       if (leadError) {
-        console.warn("[valuation-lead] valuation_leads insert failed:", leadError);
+        // Duplicate key (23505) means phone already exists — silently ignore
+        if (!leadError.message?.includes("23505") && !leadError.message?.includes("duplicate")) {
+          console.warn("[valuation-lead] valuation_leads insert failed:", leadError);
+        }
       }
+    } catch (leadErr) {
+      console.warn("[valuation-lead] valuation_leads insert failed (non-blocking):", leadErr);
+    }
 
-      // 2. Check for existing dossier by phone, if found return it (no update)
-      const { data: existingDossier } = await supabase
+    // 2. Check for existing dossier by phone_e164 (unique index), if found skip insert
+    try {
+      const { data: existingDossier } = await admin
         .from("verkoop_dossiers")
         .select("id")
-        .eq("telefoon", phone)
+        .eq("phone_e164", phone)
         .maybeSingle();
 
       if (existingDossier) {
         dossierId = existingDossier.id;
-        console.log("[valuation-lead] Existing dossier found for phone:", dossierId);
       } else {
-        // Insert new dossier
-        const { data: dossier, error: dossierError } = await supabase
+        const { data: dossier, error: dossierError } = await admin
           .from("verkoop_dossiers")
           .insert({
             straat: address,
-            postcode,
+            postcode: postcode || "Onbekend",
             woonplaats: city,
             naam,
             email,
             telefoon: phone,
+            phone_e164: phone,
             taal,
             antwoorden: {
               wijk: neighborhood,
@@ -138,6 +142,8 @@ export async function POST(req: Request) {
           dossierId = dossier?.id ?? null;
         }
       }
+    } catch (dossierErr) {
+      console.warn("[valuation-lead] verkoop_dossiers operation failed (non-blocking):", dossierErr);
     }
 
     // 3. Send confirmation email via Resend (best-effort, fail silently)

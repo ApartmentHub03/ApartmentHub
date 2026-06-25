@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSelector, useDispatch } from 'react-redux';
-import { Menu, X, LogIn, ChevronDown } from 'lucide-react';
-import { toggleMobileMenu, closeMobileMenu, setLanguage } from '@/features/ui/uiSlice';
-import { useAuth } from '@/contexts/AuthContext';
+import { Menu, X, ChevronDown } from 'lucide-react';
+import { toggleMobileMenu, closeMobileMenu, setLanguage, setCity, openCityModal, closeCityModal } from '@/features/ui/uiSlice';
+import { AmsterdamFlag, UtrechtFlag } from './CityFlags';
 import styles from './Navbar.module.css';
 import { translations } from '@/data/translations';
 
@@ -21,7 +21,7 @@ const SLUG_PAIRS = [
     ['buy', 'koop'],
     ['sell', 'verkoop'],
     ['valuation', 'waardebepaling'],
-    ['buying-power', 'koopkracht'],
+    ['buy/buying-power', 'koop/koopkracht'],
     ['buy-lead', 'koop-lead'],
     ['terms-and-conditions', 'algemene-voorwaarden'],
 ];
@@ -98,27 +98,33 @@ const Navbar = () => {
     const currentLang = useSelector((state) => state.ui.language);
     const pathname = usePathname();
     const router = useRouter();
-    const { isAuthenticated, firstName } = useAuth();
 
     const t = translations.nav[currentLang] || translations.nav.en;
-    const loginPath = '/login';
-    const aanvraagPath = currentLang === 'nl' ? '/nl/aanvraag' : '/en/application';
-    // When the user is authenticated, show their first name in place of the
-    // login label. Falls back to a generic greeting if first name is missing.
-    const authedLabel = firstName
-        ? (currentLang === 'en' ? `Hi, ${firstName}` : `Hoi, ${firstName}`)
-        : (currentLang === 'en' ? 'My Account' : 'Mijn Account');
 
-    // Hide the login / "My Account" button when the user is already inside
-    // the application flow (aanvraag / application / letter-of-intent), since
-    // those pages already represent "being inside My Account".
-    const lowerPath = (pathname || '').toLowerCase();
-    const isInsideAccountFlow =
-        lowerPath.includes('/aanvraag') ||
-        lowerPath.includes('/application') ||
-        lowerPath.includes('/letter-of-intent') ||
-        lowerPath.includes('/intentieverklaring');
-    const showLoginButton = !isInsideAccountFlow;
+    const city = useSelector((state) => state.ui.city);
+    const showCityModal = useSelector((state) => state.ui.showCityModal);
+    const [cityReady, setCityReady] = useState(false);
+
+    useEffect(() => {
+        try {
+            const stored = localStorage.getItem('ah_city');
+            const exp = localStorage.getItem('ah_city_exp');
+            if (stored && exp && Date.now() <= Number(exp)) {
+                dispatch(setCity(stored));
+            } else {
+                localStorage.removeItem('ah_city');
+                localStorage.removeItem('ah_city_exp');
+                dispatch(openCityModal());
+            }
+        } catch {
+            dispatch(openCityModal());
+        }
+        setCityReady(true);
+    }, [dispatch]);
+
+    const cityLabel = city === 'utrecht'
+        ? t.middenNederland
+        : t.amsterdam;
 
     const mainLinks = [
         { name: t.rentOut, path: currentLang === 'nl' ? '/nl/rent-out' : '/en/rent-out' },
@@ -221,16 +227,15 @@ const Navbar = () => {
 
                     <div className={styles.desktopActions}>
                         <LanguageSwitcher />
-                        {showLoginButton && (
-                            <Link
-                                href={isAuthenticated ? aanvraagPath : loginPath}
-                                className={styles.loginButton}
-                                onClick={() => window.scrollTo(0, 0)}
-                            >
-                                <LogIn size={16} />
-                                {isAuthenticated ? authedLabel : t.login}
-                            </Link>
-                        )}
+                        <button
+                            className={styles.cityButton}
+                            onClick={() => dispatch(openCityModal())}
+                            aria-label={t.selectCity}
+                        >
+                            <span className={styles.cityIcon}>{city === 'utrecht' ? '📍' : '🎈'}</span>
+                            {cityReady && <span>{cityLabel}</span>}
+                            <span className={styles.cityChevron}><ChevronDown size={13} /></span>
+                        </button>
                         <button
                             className={`${styles.moreButton} ${isSideMenuOpen ? styles.moreButtonActive : ''}`}
                             onClick={() => setIsSideMenuOpen(!isSideMenuOpen)}
@@ -287,16 +292,14 @@ const Navbar = () => {
                             ))}
                         </div>
                     </div>
-                    {showLoginButton && (
-                        <Link
-                            href={isAuthenticated ? aanvraagPath : loginPath}
-                            className={styles.mobileLoginButton}
-                            onClick={handleLinkClick}
-                        >
-                            <LogIn size={16} />
-                            {isAuthenticated ? authedLabel : t.login}
-                        </Link>
-                    )}
+                    <button
+                        className={styles.mobileCityButton}
+                        onClick={() => { dispatch(openCityModal()); handleLinkClick(); }}
+                    >
+                        <span className={styles.cityIcon}>{city === 'utrecht' ? '📍' : '🎈'}</span>
+                        {cityReady && <span>{cityLabel}</span>}
+                        <span className={styles.cityChevron}><ChevronDown size={13} /></span>
+                    </button>
                 </div>
             </div>
 
@@ -328,6 +331,41 @@ const Navbar = () => {
                     ))}
                 </nav>
             </div>
+
+            {cityReady && showCityModal && (
+                <div className={styles.cityModalOverlay} onClick={() => dispatch(closeCityModal())}>
+                    <div className={styles.cityModal} onClick={(e) => e.stopPropagation()}>
+                        <h2 className={styles.cityModalTitle}>{t.cityModalTitle}</h2>
+                        <p className={styles.cityModalSubtitle}>{t.cityModalSubtitle}</p>
+                        <div className={styles.cityCards}>
+                            <button
+                                className={`${styles.cityCard} ${city === 'amsterdam' ? styles.cityCardActive : ''}`}
+                                onClick={() => dispatch(setCity('amsterdam'))}
+                            >
+                                <div className={styles.cityCardFlag}>
+                                    <AmsterdamFlag className={styles.cityFlag} />
+                                </div>
+                                <div className={styles.cityCardInfo}>
+                                    <span className={styles.cityCardName}>{t.amsterdam}</span>
+                                    <span className={styles.cityCardRegion}>NL</span>
+                                </div>
+                            </button>
+                            <button
+                                className={`${styles.cityCard} ${city === 'utrecht' ? styles.cityCardActive : ''}`}
+                                onClick={() => dispatch(setCity('utrecht'))}
+                            >
+                                <div className={styles.cityCardFlag}>
+                                    <UtrechtFlag className={styles.cityFlag} />
+                                </div>
+                                <div className={styles.cityCardInfo}>
+                                    <span className={styles.cityCardName}>{t.middenNederland}</span>
+                                    <span className={styles.cityCardRegion}>{t.middenNederlandSub}</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </nav>
     );
 };

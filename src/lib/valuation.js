@@ -21,6 +21,34 @@ export const NEIGHBORHOOD_PRICES = {
   },
 };
 
+export const NEIGHBORHOOD_CENTROIDS = {
+  amsterdam: {
+    'Oud Zuid': [52.354, 4.876],
+    'Zuidas': [52.339, 4.873],
+    'Centrum': [52.372, 4.897],
+    'Jordaan': [52.374, 4.881],
+    'De Pijp': [52.355, 4.892],
+    'Oost': [52.359, 4.926],
+    'Noord': [52.398, 4.917],
+    'West': [52.376, 4.86],
+  },
+  utrecht: {
+    'Wilhelminapark': [52.087, 5.142],
+    'Wittevrouwen': [52.094, 5.134],
+    'Binnenstad': [52.09, 5.121],
+    'Lombok': [52.089, 5.103],
+    'Oog in Al': [52.088, 5.092],
+    'Tuinwijk': [52.097, 5.13],
+    'Voordorp': [52.108, 5.146],
+    'Leidsche Rijn': [52.083, 5.045],
+  },
+};
+
+export const CITY_CENTER = {
+  amsterdam: [52.366, 4.9],
+  utrecht: [52.093, 5.108],
+};
+
 export const DEFAULT_PRICE = {
   amsterdam: 7500,
   utrecht: 5800,
@@ -156,7 +184,7 @@ export function calculateValuation({
   const hoog = Math.round(basicswaarde * 1.08);
 
   return {
-    basicswaarde: Math.round(basicswaarde),
+    basiswaarde: Math.round(basicswaarde),
     laag,
     hoog,
     pricePerM2: Math.round(basePerM2),

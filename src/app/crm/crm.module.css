@@ -1,0 +1,150 @@
+.crmRoot {
+  --teal: #009B8A;
+  --teal-dark: #007A6D;
+  --orange: #FF7D28;
+  --orange-dark: #E66C1A;
+  --ink: #1A202C;
+  --grey: #4A5568;
+  --grey-soft: #718096;
+  --line: #E2E8F0;
+  --bg: #F7FAFC;
+  --soft: #E8F5F3;
+  --soft-orange: #FFF1E6;
+  --danger: #B42318;
+  --danger-soft: #FEE4E2;
+  --ok: #15803D;
+  --ok-soft: #DCFCE7;
+  --amber: #B7791F;
+  --amber-soft: #FEF3C7;
+
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+.crmTopbar {
+  background: var(--teal);
+  color: #fff;
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.crmBrand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: #fff;
+  font-weight: 700;
+  font-size: 17px;
+  margin-right: auto;
+}
+
+.crmBrand img {
+  height: 34px;
+  width: auto;
+  filter: brightness(0) invert(1);
+}
+
+.crmBrandText {
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0.85;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+.crmTopbarRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.crmTopbarBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: background 0.15s;
+  cursor: pointer;
+}
+
+.crmTopbarBtn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.crmDanger {
+  background: rgba(180, 35, 24, 0.3);
+  border-color: rgba(180, 35, 24, 0.4);
+}
+
+.crmDanger:hover {
+  background: rgba(180, 35, 24, 0.5);
+}
+
+.crmUserPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.crmAvatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--orange);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.crmRole {
+  font-size: 11px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.crmMain {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px 28px;
+}
+
+@media (max-width: 720px) {
+  .crmTopbar {
+    padding: 12px 16px;
+    gap: 8px;
+  }
+  .crmMain {
+    padding: 16px 12px;
+  }
+  .crmBrandText {
+    display: none;
+  }
+}

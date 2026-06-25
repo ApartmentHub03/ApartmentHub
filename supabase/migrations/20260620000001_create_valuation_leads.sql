@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS public.valuation_leads (
 
 ALTER TABLE public.valuation_leads ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anon can INSERT valuation_leads" ON public.valuation_leads;
 CREATE POLICY "Anon can INSERT valuation_leads"
     ON public.valuation_leads FOR INSERT
     TO anon, authenticated

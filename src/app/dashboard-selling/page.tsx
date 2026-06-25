@@ -78,8 +78,14 @@ export default async function DashboardPage() {
         <Link href="/admin/dashboard" className={styles.brand}>
          <img src={"/images/horizontal-logo.png"} />
         </Link>
-        <span className={styles.topbarRight}>
-          <span className={styles.userPill}>
+         <span className={styles.topbarRight}>
+           <Link href="/crm/kanban" className={styles.topbarBtn}>
+             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+               <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+             </svg>
+             CRM
+           </Link>
+           <span className={styles.userPill}>
             <span className={styles.avatar}>{initials(staff.display_name ?? staff.phone_e164)}</span>
             <span>{shortName(staff.display_name)}</span>
             <span className={styles.role}>{staff.role}</span>
