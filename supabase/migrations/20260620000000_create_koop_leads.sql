@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS public.koop_leads (
 
 ALTER TABLE public.koop_leads ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anon can INSERT koop_leads" ON public.koop_leads;
 CREATE POLICY "Anon can INSERT koop_leads"
     ON public.koop_leads FOR INSERT
     TO anon, authenticated

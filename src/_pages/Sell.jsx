@@ -8,6 +8,7 @@ import styles from './Sell.module.css';
 import PricingCallout from '../components/landing/PricingCallout';
 import QuickContactStrip from '../components/landing/QuickContactStrip';
 import GoogleReviews from '../components/landing/GoogleReviews';
+import GoogleG from '../components/landing/GoogleG';
 import NeighborhoodSection from '../features/home/components/NeighborhoodSection';
 import ValuationWidget from './ValuationWidget';
 import {
@@ -54,7 +55,7 @@ function ReviewsBadge() {
     const isNl = currentLang === 'nl';
     return (
         <div className={styles.reviewsBadge}>
-            <span className={styles.reviewsG}>G</span>
+            <GoogleG size={14} className={styles.reviewsG} />
             <span className={styles.reviewsStars}>
                 {[...Array(5)].map((_, i) => (
                     <Star key={i} size={14} fill="currentColor" />
@@ -95,7 +96,7 @@ const Sell = () => {
                 <div className={styles.heroInner}>
                     <div className={styles.heroContent}>
                         <div className={styles.badge}>
-                            <Sparkles size={14} className={styles.badgeIcon} />
+                             <GoogleG size={14} className={styles.badgeIcon} />
                             {t.heroBadge || (isNl ? 'Gratis waardebepaling in 2 minuten' : 'Free property valuation in 2 minutes')}
                         </div>
                         <h1 className={styles.heroTitle}>

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { translations } from '../data/translations';
 import { COUNTRIES, DIAL_CODES, PHONE_EXAMPLES } from '../data/countries';
 import { supabase } from '../integrations/supabase/client';
@@ -127,6 +128,7 @@ const BuyLead = () => {
   const [loading, setLoading] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
   const [error, setError] = useState('');
+  const router = useRouter();
 
   const update = (key, value) => setData((d) => ({ ...d, [key]: value }));
   const toggleArr = (key, value) => setData((d) => ({
@@ -158,7 +160,10 @@ const BuyLead = () => {
 
   const handleJourney = (value) => {
     update('journey', value);
-    if (value === 'sell') return;
+    if (value === 'sell') {
+      router.push(isNl ? '/nl/verkoop' : '/en/sell');
+      return;
+    }
     setTimeout(() => goToStep(2), 300);
   };
 

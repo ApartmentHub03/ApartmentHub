@@ -8,6 +8,7 @@ import ContactSection from '../components/shared/ContactSection';
 import styles from './Buy.module.css';
 import PricingCallout from '../components/landing/PricingCallout';
 import GoogleReviews from '../components/landing/GoogleReviews';
+import GoogleG from '../components/landing/GoogleG';
 import NeighborhoodSection from '../features/home/components/NeighborhoodSection';
 import {
     UserCheck, Search, Handshake, FileSignature, Eye, Sparkles,
@@ -81,7 +82,7 @@ function ReviewsBadge() {
     const isNl = currentLang === 'nl';
     return (
         <div className={styles.reviewsBadge}>
-            <span className={styles.reviewsG}>G</span>
+            <GoogleG size={14} className={styles.reviewsG} />
             <span className={styles.reviewsStars}>
                 {[...Array(5)].map((_, i) => (
                     <Star key={i} size={14} fill="currentColor" />
@@ -118,7 +119,7 @@ const Buy = () => {
                 <div className={styles.heroContainer}>
                     <div style={{ textAlign: 'center', maxWidth: '50rem', margin: '0 auto', marginBottom: '2.5rem' }}>
                         <div className={styles.badge}>
-                            <Sparkles size={14} className={styles.badgeIcon} />
+                             <GoogleG size={14} className={styles.badgeIcon} />
                             {t.heroBadge || (isNl ? 'Aankoopbegeleiding van A tot Z' : 'Buyer guidance from A to Z')}
                         </div>
                         <h1 className={styles.heroTitle}>
