@@ -4,73 +4,14 @@ import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import Link from 'next/link';
 import { translations } from '../data/translations';
+import { COUNTRIES, DIAL_CODES, PHONE_EXAMPLES } from '../data/countries';
 import { supabase } from '../integrations/supabase/client';
+import dynamic from 'next/dynamic';
 import Button from '../components/ui/Button';
 import { ArrowLeft, ArrowRight, Check, Home, Loader2 } from 'lucide-react';
 import styles from './BuyLead.module.css';
 
-const COUNTRIES = [
-  'Nederland', 'België', 'Duitsland', 'Verenigd Koninkrijk', 'Verenigde Staten',
-  'Frankrijk', 'Italië', 'Spanje', 'Portugal', 'Polen', 'Zweden', 'Noorwegen',
-  'Denemarken', 'Finland', 'Ierland', 'Oostenrijk', 'Zwitserland', 'Australië',
-  'Canada', 'Brazilië', 'India', 'China', 'Japan', 'Zuid-Afrika', 'Anders',
-];
-
-const DIAL_CODES = {
-  'Nederland': '+31',
-  'België': '+32',
-  'Duitsland': '+49',
-  'Verenigd Koninkrijk': '+44',
-  'Verenigde Staten': '+1',
-  'Frankrijk': '+33',
-  'Italië': '+39',
-  'Spanje': '+34',
-  'Portugal': '+351',
-  'Polen': '+48',
-  'Zweden': '+46',
-  'Noorwegen': '+47',
-  'Denemarken': '+45',
-  'Finland': '+358',
-  'Ierland': '+353',
-  'Oostenrijk': '+43',
-  'Zwitserland': '+41',
-  'Australië': '+61',
-  'Canada': '+1',
-  'Brazilië': '+55',
-  'India': '+91',
-  'China': '+86',
-  'Japan': '+81',
-  'Zuid-Afrika': '+27',
-  'Anders': '+',
-};
-
-const PHONE_EXAMPLES = {
-  'Nederland': '612345678',
-  'België': '412345678',
-  'Duitsland': '1512345678',
-  'Verenigd Koninkrijk': '7123456789',
-  'Verenigde Staten': '5512345678',
-  'Frankrijk': '612345678',
-  'Italië': '3123456789',
-  'Spanje': '612345678',
-  'Portugal': '912345678',
-  'Polen': '5123456789',
-  'Zweden': '7123456789',
-  'Noorwegen': '412345678',
-  'Denemarken': '21234567',
-  'Finland': '4123456789',
-  'Ierland': '8123456789',
-  'Oostenrijk': '612345678',
-  'Zwitserland': '7123456789',
-  'Australië': '4123456789',
-  'Canada': '5512345678',
-  'Brazilië': '9123456789',
-  'India': '91234567890',
-  'China': '11234567890',
-  'Japan': '91234567890',
-  'Zuid-Afrika': '7123456789',
-  'Anders': '12345678',
-};
+const NeighborhoodMap = dynamic(() => import('../components/map/NeighborhoodMap'), { ssr: false });
 
 const NEIGHBORHOODS = {
   amsterdam: ['Centrum', 'Jordaan', 'De Pijp', 'Oud Zuid', 'Oost', 'West', 'Noord', 'Zuidas'],
@@ -472,6 +413,11 @@ const BuyLead = () => {
                 <div className={styles.sectionGroup}>
                   <div>
                     <label className={styles.sectionLabel}>{isNl ? 'Voorkeurswijken in Amsterdam' : 'Preferred neighborhoods in Amsterdam'}</label>
+                    <NeighborhoodMap
+                      selectedNeighborhoods={data.neighborhoods}
+                      onSelect={(n) => toggleArr('neighborhoods', n)}
+                      city={cityKey}
+                    />
                     <div className={styles.neighborhoodGrid}>
                       {neighborhoods.map((n) => (
                         <NeighborhoodCard key={n} name={n} active={data.neighborhoods.includes(n)} onClick={() => toggleArr('neighborhoods', n)} />

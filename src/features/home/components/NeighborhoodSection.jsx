@@ -1,220 +1,166 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useSelector } from 'react-redux';
-import { ArrowRight } from 'lucide-react';
+import { TrendingUp, ChevronRight, Calculator } from 'lucide-react';
 import styles from './NeighborhoodSection.module.css';
-import { translations } from '../../../data/translations';
+import { NEIGHBORHOOD_PRICES, formatEUR } from '../../../lib/valuation';
 
-const NeighborhoodSection = ({ title }) => {
-    const scrollWrapperRef = useRef(null);
-    const scrollContentRef = useRef(null);
-    const animationFrameId = useRef(null);
-    const scrollSpeed = useRef(0);
+const YOY_TREND = { amsterdam: '+4,7%', utrecht: '+5,0%' };
 
+const NEIGHBORHOOD_META = {
+    amsterdam: [
+        { slug: 'oud-zuid', key: 'Oud Zuid', img: '/images/oud-zuid-neighborhood-B-g-rFNe.jpg' },
+        { slug: 'zuidas', key: 'Zuidas', img: '/images/zuidas-neighborhood-BS6cve9Y.jpg' },
+        { slug: 'centrum', key: 'Centrum', img: '/images/centrum-neighborhood-8xGBhlo4.jpg' },
+        { slug: 'jordaan', key: 'Jordaan', img: '/images/jordaan-neighborhood-D10TAM1c.jpg' },
+        { slug: 'de-pijp', key: 'De Pijp', img: '/images/de-pijp-neighborhood-CerLEEUD.jpg' },
+        { slug: 'oost', key: 'Oost', img: '/images/oost-neighborhood-D0P6YpX3.jpg' },
+        { slug: 'noord', key: 'Noord', img: '/images/noord-neighborhood-C3afdJ-w.jpg' },
+        { slug: 'west', key: 'West', img: '/images/nieuw-west-neighborhood-DhzrAv7H.jpg' },
+    ],
+    utrecht: [
+        { slug: 'wilhelminapark', key: 'Wilhelminapark', img: '' },
+        { slug: 'wittevrouwen', key: 'Wittevrouwen', img: '' },
+        { slug: 'binnenstad', key: 'Binnenstad', img: '' },
+        { slug: 'lombok', key: 'Lombok', img: '' },
+        { slug: 'oog-in-al', key: 'Oog in Al', img: '' },
+        { slug: 'tuinwijk', key: 'Tuinwijk', img: '' },
+        { slug: 'voordorp', key: 'Voordorp', img: '' },
+        { slug: 'leidsche-rijn', key: 'Leidsche Rijn', img: '' },
+    ],
+};
+
+const descKeyMapNl = {
+    'Oud Zuid': 'Prestigieus met musea en het Vondelpark',
+    'Zuidas': 'Modern zakendistrict met internationale uitstraling',
+    'Centrum': 'Het historische hart van Amsterdam met iconische grachten en monumenten',
+    'Jordaan': 'Charmante wijk met smalle straatjes, authentieke bruine cafés en kunstgalerijen',
+    'De Pijp': 'Levendige buurt bekend om de Albert Cuyp Markt en bruisend nachtleven',
+    'Oost': 'Multiculturele wijk met parken en opkomende foodscene',
+    'Noord': 'Creatieve hub met industriële charme en groene ruimtes',
+    'West': 'Divers en groen met moderne voorzieningen',
+};
+
+const descKeyMapEn = {
+    'Oud Zuid': 'Prestigious with museums and the Vondelpark',
+    'Zuidas': 'Modern business district with international flair',
+    'Centrum': 'The historic heart of Amsterdam with iconic canals and monuments',
+    'Jordaan': 'Charming neighborhood with narrow streets, authentic brown cafes and art galleries',
+    'De Pijp': 'Vibrant area known for the Albert Cuyp Market and bustling nightlife',
+    'Oost': 'Multicultural neighborhood with parks and emerging food scene',
+    'Noord': 'Creative hub with industrial charm and green spaces',
+    'West': 'Diverse and green with modern amenities',
+};
+
+const MOBILE_VISIBLE = 3;
+
+const NeighborhoodSection = ({ title, variant = 'verkoop' }) => {
     const currentLang = useSelector((state) => state.ui.language);
-    const t = translations.home[currentLang] || translations.home.en;
+    const isNl = currentLang === 'nl';
+    const [showAll, setShowAll] = useState(false);
 
-    const neighborhoods = [
-        {
-            id: '01',
-            name: 'Centrum',
-            desc: t.descCentrum,
-            link: `/${currentLang}/neighborhood/centrum`,
-            img: '/images/centrum-neighborhood-8xGBhlo4.jpg'
-        },
-        {
-            id: '02',
-            name: 'Jordaan',
-            desc: t.descJordaan,
-            link: `/${currentLang}/neighborhood/jordaan`,
-            img: '/images/jordaan-neighborhood-D10TAM1c.jpg'
-        },
-        {
-            id: '03',
-            name: 'De Pijp',
-            desc: t.descDePijp,
-            link: `/${currentLang}/neighborhood/de-pijp`,
-            img: '/images/de-pijp-neighborhood-CerLEEUD.jpg'
-        },
-        {
-            id: '04',
-            name: 'Oost',
-            desc: t.descOost,
-            link: `/${currentLang}/neighborhood/oost`,
-            img: '/images/oost-neighborhood-D0P6YpX3.jpg'
-        },
-        {
-            id: '05',
-            name: 'Noord',
-            desc: t.descNoord,
-            link: `/${currentLang}/neighborhood/noord`,
-            img: '/images/noord-neighborhood-C3afdJ-w.jpg'
-        },
-        {
-            id: '06',
-            name: 'Oud-Zuid',
-            desc: t.descOudZuid,
-            link: `/${currentLang}/neighborhood/oud-zuid`,
-            img: '/images/oud-zuid-neighborhood-B-g-rFNe.jpg'
-        },
-        {
-            id: '07',
-            name: 'Zuidas',
-            desc: t.descZuidas,
-            link: `/${currentLang}/neighborhood/zuidas`,
-            img: '/images/zuidas-neighborhood-BS6cve9Y.jpg'
-        },
-        {
-            id: '08',
-            name: 'Zeeburg',
-            desc: t.descZeeburg,
-            link: `/${currentLang}/neighborhood/zeeburg`,
-            img: '/images/zeeburg-neighborhood-BtRlc8ql.jpg'
-        },
-        {
-            id: '09',
-            name: 'Nieuw-West',
-            desc: t.descNieuwWest,
-            link: `/${currentLang}/neighborhood/nieuw-west`,
-            img: '/images/nieuw-west-neighborhood-DhzrAv7H.jpg'
-        }
-    ];
+    const city = 'amsterdam';
+    const prices = NEIGHBORHOOD_PRICES[city] || {};
+    const meta = NEIGHBORHOOD_META[city] || [];
+    const trend = YOY_TREND[city] || '+4,7%';
 
-    const handleMouseMove = (e) => {
-        if (!scrollWrapperRef.current) return;
+    const sorted = meta
+        .map((m) => ({
+            ...m,
+            pricePerM2: prices[m.key] || 7500,
+        }))
+        .sort((a, b) => b.pricePerM2 - a.pricePerM2);
 
-        const rect = scrollWrapperRef.current.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const width = rect.width;
+    const ctaLink = variant === 'verkoop'
+        ? (isNl ? '/waardebepaling' : '/en/valuation')
+        : (isNl ? '/nl/koop/koopkracht' : '/en/buy/buying-power');
 
-        // Hover zones: Left 20% and Right 20%
-        const zoneWidth = width * 0.2;
+    const ctaTitle = variant === 'verkoop'
+        ? (isNl ? 'Bereken je verkoopwaarde' : 'Calculate your sale value')
+        : (isNl ? 'Bereken je koopkracht' : 'Calculate your buying power');
 
-        if (x < zoneWidth) {
-            // Scroll Left - Speed increases closer to edge
-            const intensity = 1 - (x / zoneWidth);
-            scrollSpeed.current = -5 * intensity; // Max speed 5
-        } else if (x > width - zoneWidth) {
-            // Scroll Right
-            const intensity = (x - (width - zoneWidth)) / zoneWidth;
-            scrollSpeed.current = 5 * intensity;
-        } else {
-            scrollSpeed.current = 0;
-        }
+    const ctaSubtitle = variant === 'verkoop'
+        ? (isNl ? 'Ontdek in 2 minuten wat je woning waard is' : 'Discover what your home is worth in 2 minutes')
+        : (isNl ? 'Bereken je maximale hypotheek en koopprijs' : 'Calculate your maximum mortgage and purchase price');
+
+    const sectionTitle = title || (isNl ? 'Wijken in Amsterdam' : 'Neighborhoods in Amsterdam');
+    const viewLabel = isNl ? 'Bekijk wijk' : 'View neighborhood';
+    const avgPerM2Label = isNl ? 'Gem. EUR' : 'Avg. EUR';
+    const perM2Suffix = '/m²';
+    const perHomeLabel = isNl ? 'Gem. woning ca. EUR' : 'Avg. home approx. EUR';
+    const showMoreLabel = isNl ? `${sorted.length - MOBILE_VISIBLE} wijken meer tonen` : `Show ${sorted.length - MOBILE_VISIBLE} more neighborhoods`;
+    const showLessLabel = isNl ? 'Toon minder' : 'Show less';
+
+    const getDesc = (key) => {
+        const map = isNl ? descKeyMapNl : descKeyMapEn;
+        return map[key] || '';
     };
-
-    const handleMouseLeave = () => {
-        scrollSpeed.current = 0;
-    };
-
-    useEffect(() => {
-        const scrollLoop = () => {
-            if (scrollWrapperRef.current && scrollContentRef.current && scrollSpeed.current !== 0) {
-                scrollWrapperRef.current.scrollLeft += scrollSpeed.current;
-
-                // Infinite Scroll Logic
-                const maxScroll = scrollContentRef.current.scrollWidth / 2; // Half because duplicated
-
-                if (scrollWrapperRef.current.scrollLeft >= maxScroll) {
-                    scrollWrapperRef.current.scrollLeft -= maxScroll;
-                } else if (scrollWrapperRef.current.scrollLeft <= 0) {
-                    scrollWrapperRef.current.scrollLeft += maxScroll;
-                }
-            }
-            animationFrameId.current = requestAnimationFrame(scrollLoop);
-        };
-
-        animationFrameId.current = requestAnimationFrame(scrollLoop);
-
-        return () => {
-            if (animationFrameId.current) {
-                cancelAnimationFrame(animationFrameId.current);
-            }
-        };
-    }, []);
 
     return (
         <section className={styles.section}>
             <div className={styles.container}>
-                <div className={styles.header}>
-                    <h2 className={styles.title}>{title || t.neighborhoodsTitle}</h2>
+                <h2 className={styles.title}>{sectionTitle}</h2>
+                <div className={styles.grid}>
+                    {sorted.map((n, idx) => (
+                        <div
+                            key={n.slug}
+                            className={`${styles.cardWrapper} ${idx >= MOBILE_VISIBLE && !showAll ? styles.cardHiddenMobile : ''}`}
+                        >
+                            <Link href={`/${currentLang}/neighborhood/${n.slug}`} className={styles.card}>
+                                <div className={styles.cardImageWrap}>
+                                    {n.img ? (
+                                        <img src={n.img} alt={`${n.key} Amsterdam`} className={styles.cardImage} loading="lazy" />
+                                    ) : (
+                                        <div className={styles.cardImageGradient}></div>
+                                    )}
+                                    <div className={styles.cardImageOverlay}></div>
+                                    <span className={styles.cardNumber}>{String(idx + 1).padStart(2, '0')}</span>
+                                    <span className={styles.cardTrend}>
+                                        <TrendingUp size={12} /> {trend}
+                                    </span>
+                                </div>
+                                <div className={styles.cardBody}>
+                                    <h3 className={styles.cardTitle}>{n.key}</h3>
+                                    <p className={styles.cardDesc}>{getDesc(n.key)}</p>
+                                    <div className={styles.cardDivider}></div>
+                                    <div className={styles.cardPrices}>
+                                        <span className={styles.cardPriceM2}>{avgPerM2Label} {formatEUR(n.pricePerM2)}{perM2Suffix}</span>
+                                        <span className={styles.cardPriceHome}>{perHomeLabel} {formatEUR(Math.round(n.pricePerM2 * 85 / 1000) * 1000)}</span>
+                                    </div>
+                                    <span className={styles.cardLink}>
+                                        {viewLabel} <ChevronRight size={14} className={styles.cardLinkIcon} />
+                                    </span>
+                                </div>
+                            </Link>
+                        </div>
+                    ))}
                 </div>
-                <div
-                    className={styles.scrollWrapper}
-                    ref={scrollWrapperRef}
-                    onMouseMove={handleMouseMove}
-                    onMouseLeave={handleMouseLeave}
-                >
-                    <div className={styles.scrollContainer} ref={scrollContentRef}>
-                        {/* First set of items */}
-                        {neighborhoods.map((item) => (
-                            <div key={`set1-${item.id}`} className={styles.cardWrapper}>
-                                <Link href={item.link} className={styles.card}>
-                                    <div className={styles.cardInner}>
-                                        <div className={styles.imageContainer}>
-                                            <div className={styles.imageWrapper}>
-                                                <img
-                                                    src={item.img}
-                                                    alt={`${item.name} Amsterdam neighborhood`}
-                                                    className={styles.image}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className={styles.content}>
-                                            <div>
-                                                <div className={styles.number}>{item.id}.</div>
-                                                <h3 className={styles.cardTitle}>{item.name}</h3>
-                                                <p className={styles.cardDesc}>{item.desc}</p>
-                                            </div>
-                                            <div className={styles.action}>
-                                                <span className={styles.actionText}>
-                                                    {t.neighborhoodsAction}
-                                                    <ArrowRight className={styles.actionIcon} />
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Link>
-                            </div>
-                        ))}
-                        {/* Duplicate set for infinite scroll */}
-                        {neighborhoods.map((item) => (
-                            <div key={`set2-${item.id}`} className={styles.cardWrapper}>
-                                <Link href={item.link} className={styles.card}>
-                                    <div className={styles.cardInner}>
-                                        <div className={styles.imageContainer}>
-                                            <div className={styles.imageWrapper}>
-                                                <img
-                                                    src={item.img}
-                                                    alt={`${item.name} Amsterdam neighborhood`}
-                                                    className={styles.image}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className={styles.content}>
-                                            <div>
-                                                <div className={styles.number}>{item.id}.</div>
-                                                <h3 className={styles.cardTitle}>{item.name}</h3>
-                                                <p className={styles.cardDesc}>{item.desc}</p>
-                                            </div>
-                                            <div className={styles.action}>
-                                                <span className={styles.actionText}>
-                                                    {t.neighborhoodsAction}
-                                                    <ArrowRight className={styles.actionIcon} />
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Link>
-                            </div>
-                        ))}
+                {sorted.length > MOBILE_VISIBLE && (
+                    <div className={styles.showMoreWrap}>
+                        <button
+                            type="button"
+                            onClick={() => setShowAll((v) => !v)}
+                            className={styles.showMoreBtn}
+                        >
+                            {showAll ? showLessLabel : showMoreLabel}
+                            <ChevronRight size={14} className={`${styles.showMoreIcon} ${showAll ? styles.showMoreIconUp : ''}`} />
+                        </button>
                     </div>
-                    <div className={styles.gradientLeft}></div>
-                    <div className={styles.gradientRight}></div>
+                )}
+                <div className={styles.ctaBanner}>
+                    <div className={styles.ctaBannerInner}>
+                        <div className={styles.ctaIconCircle}>
+                            <Calculator size={28} />
+                        </div>
+                        <h3 className={styles.ctaTitle}>{ctaTitle}</h3>
+                        <p className={styles.ctaSubtitle}>{ctaSubtitle}</p>
+                        <Link href={ctaLink} className={styles.ctaButton}>
+                            {ctaTitle}
+                        </Link>
+                    </div>
                 </div>
-
             </div>
         </section>
     );

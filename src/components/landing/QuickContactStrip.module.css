@@ -1,0 +1,33 @@
+.strip {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 2.5rem;
+}
+
+.link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    border: 1px solid hsl(var(--myrtle) / 0.2);
+    background: #fff;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #111827;
+    text-decoration: none;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.link:hover {
+    background-color: hsl(var(--myrtle) / 0.05);
+    border-color: hsl(var(--myrtle));
+}
+
+.icon {
+    color: hsl(var(--myrtle));
+    flex-shrink: 0;
+}

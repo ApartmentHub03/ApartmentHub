@@ -58,6 +58,49 @@
     }
 }
 
+.widgetTitle {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0.5rem 0 0;
+}
+
+@media (min-width: 768px) {
+    .widgetTitle {
+        font-size: 1.5rem;
+    }
+}
+
+.embeddedTitle {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 0.25rem;
+}
+
+@media (min-width: 768px) {
+    .embeddedTitle {
+        font-size: 1.5rem;
+    }
+}
+
+.embeddedSubtitle {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin: 0 0 1rem;
+    line-height: 1.5;
+}
+
+@media (min-width: 768px) {
+    .embeddedSubtitle {
+        font-size: 0.9375rem;
+    }
+}
+
+.embeddedHeader {
+    margin-bottom: 1rem;
+}
+
 .subtitle {
     color: hsl(var(--muted-foreground));
     margin-top: 0.5rem;
@@ -367,7 +410,7 @@
 
 .bagMap {
     width: 100%;
-    height: 10rem;
+    height: 14rem;
     border-radius: 0.5rem;
     margin-bottom: 0.75rem;
     border: none;
@@ -508,7 +551,8 @@
 .breakdownTag {
     font-size: 0.75rem;
     padding: 0.25rem 0.5rem;
-    background: hsl(var(--muted));
+    background: hsl(var(--myrtle) / 0.1);
+    color: hsl(var(--myrtle));
     border-radius: 9999px;
 }
 

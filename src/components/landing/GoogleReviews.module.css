@@ -1,0 +1,226 @@
+.section {
+    padding: 4rem 0;
+    background-color: #f7faf9;
+    overflow: hidden;
+}
+
+@media (min-width: 768px) {
+    .section {
+        padding: 6rem 0;
+    }
+}
+
+.headerContainer {
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+@media (min-width: 640px) {
+    .headerContainer {
+        padding: 0 1.5rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .headerContainer {
+        padding: 0 2rem;
+    }
+}
+
+.headerContent {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.badgeRow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.ratingScore {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.starsRow {
+    display: flex;
+    gap: 2px;
+}
+
+.starIcon {
+    color: #f59e0b;
+    fill: #f59e0b;
+}
+
+.heading {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 0.5rem;
+}
+
+@media (min-width: 768px) {
+    .heading {
+        font-size: 2.25rem;
+    }
+}
+
+.reviewCount {
+    color: #6b7280;
+    font-size: 0.9375rem;
+    margin: 0;
+}
+
+/* Marquee */
+.marqueeWrapper {
+    position: relative;
+    mask-image: linear-gradient(to right, transparent, #000 5%, #000 95%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 5%, #000 95%, transparent);
+}
+
+.marqueeTrack {
+    display: flex;
+    gap: 1.5rem;
+    width: max-content;
+    padding: 0.5rem 0;
+    animation: ah-reviews-marquee 60s linear infinite;
+    will-change: transform;
+}
+
+.marqueeTrack:hover {
+    animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .marqueeTrack {
+        animation: none;
+        flex-wrap: wrap;
+        width: auto;
+    }
+}
+
+@keyframes ah-reviews-marquee {
+    from { transform: translateX(-50%); }
+    to { transform: translateX(0); }
+}
+
+/* Card */
+.card {
+    width: 250px;
+    flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+    .card {
+        width: 290px;
+    }
+}
+
+.cardInner {
+    height: 100%;
+    background: #fff;
+    border-radius: 1rem;
+    border: 1px solid hsl(var(--myrtle) / 0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.cardHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.card .stars {
+    display: flex;
+    gap: 1px;
+}
+
+.card .starIcon {
+    color: #f59e0b;
+    fill: #f59e0b;
+}
+
+.cardText {
+    font-size: 0.875rem;
+    color: rgba(17, 24, 39, 0.9);
+    flex: 1;
+    margin: 0 0 1rem;
+    line-height: 1.6;
+}
+
+.cardAuthor {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: auto;
+}
+
+.cardPhoto {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    object-fit: cover;
+    background: hsl(var(--myrtle) / 0.1);
+}
+
+.cardName {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+}
+
+.cardLocation {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin: 0;
+}
+
+/* CTA */
+.ctaContainer {
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 0 1rem;
+    text-align: center;
+    margin-top: 2.5rem;
+}
+
+@media (min-width: 640px) {
+    .ctaContainer {
+        padding: 0 1.5rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .ctaContainer {
+        padding: 0 2rem;
+    }
+}
+
+.ctaButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #fff;
+    border: 1px solid hsl(var(--myrtle) / 0.3);
+    color: hsl(var(--myrtle));
+    font-weight: 600;
+    font-size: 0.9375rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 9999px;
+    text-decoration: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    transition: background-color 0.2s;
+}
+
+.ctaButton:hover {
+    background-color: hsl(var(--myrtle) / 0.05);
+}

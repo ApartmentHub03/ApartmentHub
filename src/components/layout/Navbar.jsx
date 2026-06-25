@@ -21,7 +21,7 @@ const SLUG_PAIRS = [
     ['buy', 'koop'],
     ['sell', 'verkoop'],
     ['valuation', 'waardebepaling'],
-    ['buying-power', 'koopkracht'],
+    ['buy/buying-power', 'koop/koopkracht'],
     ['buy-lead', 'koop-lead'],
     ['terms-and-conditions', 'algemene-voorwaarden'],
 ];
