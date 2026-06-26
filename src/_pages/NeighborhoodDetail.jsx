@@ -142,13 +142,14 @@ const NeighborhoodDetail = () => {
                                         </div>
                                         <div className={styles.chartContainer}>
                                             <ResponsiveContainer width="100%" height="100%">
-                                                <BarChart data={priceType === 'rent' ? neighborhood.marketData.rentalPrices : neighborhood.marketData.purchasePrices}>
+                                                <BarChart data={priceType === 'rent' ? neighborhood.marketData.rentalPrices : neighborhood.marketData.purchasePrices} margin={{ top: 10, right: 10, left: 10, bottom: 24 }}>
                                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} interval={0} angle={-45} textAnchor="end" height={60} />
+                                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} interval={0} angle={-45} textAnchor="end" height={80} tickMargin={10} />
                                                     <YAxis
                                                         axisLine={false}
                                                         tickLine={false}
                                                         tick={{ fontSize: 12, fill: '#6B7280' }}
+                                                        width={56}
                                                         ticks={priceType === 'rent' ? [0, 1500, 3000, 4500, 6000] : [0, 300000, 600000, 900000, 1200000]}
                                                         tickFormatter={(value) => `€${(value / 1000).toFixed(priceType === 'rent' ? 1 : 0)}k`}
                                                         domain={priceType === 'rent' ? [0, 6000] : [0, 1200000]}
@@ -164,10 +165,10 @@ const NeighborhoodDetail = () => {
                                         <h3 className={styles.chartTitle}>{currentLang === 'nl' ? `Prijsontwikkeling in ${neighborhood.title} (2020-2025)` : `Price Development in ${neighborhood.title} (2020-2025)`}</h3>
                                         <div className={styles.chartContainer}>
                                             <ResponsiveContainer width="100%" height="100%">
-                                                <LineChart data={neighborhood.marketData.priceTrend}>
+                                                <LineChart data={neighborhood.marketData.priceTrend} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
                                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                                     <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} />
-                                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} ticks={[0, 200000, 400000, 600000, 800000]} tickFormatter={(value) => `€${value / 1000}k`} domain={[0, 800000]} />
+                                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} width={56} ticks={[0, 200000, 400000, 600000, 800000]} tickFormatter={(value) => `€${value / 1000}k`} domain={[0, 800000]} />
                                                     <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
                                                     <Legend />
                                                     <Line type="monotone" dataKey="rent" name={currentLang === 'nl' ? "Gemiddelde Huur (€)" : "Average Rent (€)"} stroke="#F97316" strokeWidth={3} dot={{ r: 4, fill: '#F97316', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
