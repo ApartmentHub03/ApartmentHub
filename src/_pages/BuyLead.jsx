@@ -33,6 +33,12 @@ const PROPERTY_TYPES = [
   { key: 'maisonette',     nl: 'Maisonette',      en: 'Maisonette' },
   { key: 'no_preference', nl: 'Geen voorkeur',   en: 'No preference' },
 ];
+const PROPERTY_CONDITIONS = [
+  { key: 'move_in_ready',   nl: 'Instapklaar',                   en: 'Move-in ready' },
+  { key: 'light_reno',      nl: 'Beetje opknappen mag',          en: 'Could use some renovation' },
+  { key: 'fixer_upper',     nl: 'Opknapper of klusproject',      en: 'Fixer-upper or renovation project' },
+  { key: 'no_preference',   nl: 'Geen voorkeur',                 en: 'No preference' },
+];
 const BEDROOMS = ['1', '2', '3', '4+'];
 const MUST_HAVES = [
   { key: 'balcony',        nl: 'Balkon',                en: 'Balcony' },
@@ -77,7 +83,7 @@ const initialData = {
   nationality: 'Nederland', buyerType: '', livesInNL: '', household: '',
   mortgageStatus: '', budget: '', ownCapital: '',
   neighborhoods: [], otherNeighborhood: '', minBedrooms: '',
-  propertyType: '', minSqm: '', mustHaves: [], timeline: '',
+  propertyType: '', propertyCondition: '', minSqm: '', mustHaves: [], timeline: '',
   agreed: false, marketingOptIn: true,
 };
 
@@ -128,6 +134,7 @@ const BuyLead = () => {
   const [loading, setLoading] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
   const [error, setError] = useState('');
+  const [neighborhoodInput, setNeighborhoodInput] = useState('');
   const router = useRouter();
 
   const update = (key, value) => setData((d) => ({ ...d, [key]: value }));
@@ -136,12 +143,25 @@ const BuyLead = () => {
   }));
   const goToStep = (next) => { setTransitioning(true); setTimeout(() => { setStep(next); setTransitioning(false); }, 250); };
 
+  const addCustomNeighborhood = () => {
+    const val = neighborhoodInput.trim();
+    if (val && !data.neighborhoods.includes(val)) {
+      toggleArr('neighborhoods', val);
+    }
+    setNeighborhoodInput('');
+  };
+
+  const removeNeighborhood = (name) => setData((d) => ({
+    ...d, neighborhoods: d.neighborhoods.filter((v) => v !== name),
+  }));
+
   const label = (arr, keyVal) => {
     const item = arr.find((x) => x.key === keyVal);
     return item ? (isNl ? item.nl : item.en) : keyVal;
   };
   const steps = isNl ? ['Start', 'Gegevens', 'Profiel', 'Financiering', 'Wensen', 'Planning', 'Akkoord'] : ['Start', 'Details', 'Profile', 'Financing', 'Preferences', 'Timeline', 'Agree'];
   const neighborhoods = NEIGHBORHOODS[cityKey];
+  const customNeighborhoods = data.neighborhoods.filter((n) => !neighborhoods.includes(n));
   const termsLink = isNl ? '/nl/algemene-voorwaarden' : '/en/terms-and-conditions';
   const privacyLink = isNl ? '/nl/privacyverklaring' : '/en/privacy-policy';
 
@@ -176,7 +196,7 @@ const BuyLead = () => {
       buyer_type: data.buyerType, lives_in_nl: data.livesInNL, household: data.household,
       mortgage_status: data.mortgageStatus, budget: data.budget, own_capital: data.ownCapital,
       neighborhoods: data.neighborhoods, other_neighborhood: data.otherNeighborhood,
-      min_bedrooms: data.minBedrooms, property_type: data.propertyType,
+      min_bedrooms: data.minBedrooms, property_type: data.propertyType, property_condition: data.propertyCondition,
       min_sqm: data.minSqm, must_haves: data.mustHaves, timeline: data.timeline,
       city: cityKey, marketing_opt_in: data.marketingOptIn,
     };
@@ -430,7 +450,23 @@ const BuyLead = () => {
                   </div>
                   <div className={styles.formGroup}>
                     <label className={styles.label}>{t.otherNeighborhoodLabel}</label>
-                    <input className={styles.input} value={data.otherNeighborhood} onChange={(e) => update('otherNeighborhood', e.target.value)} />
+                    <div className={styles.addNeighborhoodRow}>
+                      <input className={styles.input} value={neighborhoodInput}
+                        onChange={(e) => setNeighborhoodInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') addCustomNeighborhood(); }}
+                        placeholder={isNl ? 'bv. Watergraafsmeer' : 'e.g. Watergraafsmeer'} />
+                      <button type="button" className={styles.addNeighborhoodBtn} onClick={addCustomNeighborhood}>{t.addBtn || (isNl ? 'Toevoegen' : 'Add')}</button>
+                    </div>
+                    {customNeighborhoods.length > 0 && (
+                      <div className={styles.neighborhoodTags}>
+                        {customNeighborhoods.map((n) => (
+                          <span key={n} className={styles.neighborhoodTag}>
+                            {n}
+                            <button type="button" className={styles.neighborhoodTagRemove} onClick={() => removeNeighborhood(n)} aria-label={isNl ? `Verwijder ${n}` : `Remove ${n}`}>&times;</button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className={styles.sectionLabel}>{t.bedroomsLabel}</label>
@@ -442,6 +478,12 @@ const BuyLead = () => {
                     <label className={styles.sectionLabel}>{t.propertyTypeLabel}</label>
                     <div className={styles.pillGroup}>
                       {PROPERTY_TYPES.map((pt) => <Pill key={pt.key} active={data.propertyType === pt.key} onClick={() => update('propertyType', pt.key)}>{isNl ? pt.nl : pt.en}</Pill>)}
+                    </div>
+                  </div>
+                  <div>
+                    <label className={styles.sectionLabel}>{t.propertyConditionLabel}</label>
+                    <div className={styles.pillGroup}>
+                      {PROPERTY_CONDITIONS.map((pc) => <Pill key={pc.key} active={data.propertyCondition === pc.key} onClick={() => update('propertyCondition', pc.key)}>{isNl ? pc.nl : pc.en}</Pill>)}
                     </div>
                   </div>
                   <div className={styles.formGroup}>
@@ -483,7 +525,7 @@ const BuyLead = () => {
                   <div><span className={styles.summaryLabel}>{t.summaryProfile}:</span> {label(BUYER_TYPES, data.buyerType)} · {label(HOUSEHOLD, data.household)} · {t.livesInNLLabel} {label(LIVES_IN_NL, data.livesInNL)}</div>
                   <div><span className={styles.summaryLabel}>{t.summaryFinancing}:</span> {label(MORTGAGE, data.mortgageStatus)} · {label(BUDGETS, data.budget)} · {isNl ? 'eigen geld' : 'own funds'} € {data.ownCapital || (isNl ? 'n.v.t.' : 'n/a')}</div>
                   <div><span className={styles.summaryLabel}>{t.summaryNeighborhoods}:</span> {[...data.neighborhoods, data.otherNeighborhood].filter(Boolean).join(', ') || (isNl ? 'n.v.t.' : 'n/a')}</div>
-                  <div><span className={styles.summaryLabel}>{t.summaryProperty}:</span> {label(PROPERTY_TYPES, data.propertyType)} · {data.minBedrooms} {isNl ? 'slpk' : 'br'} · {isNl ? 'min' : 'min'} {data.minSqm || (isNl ? 'n.v.t.' : 'n/a')} m²</div>
+                  <div><span className={styles.summaryLabel}>{t.summaryProperty}:</span> {label(PROPERTY_TYPES, data.propertyType)} · {label(PROPERTY_CONDITIONS, data.propertyCondition)} · {data.minBedrooms} {isNl ? 'slpk' : 'br'} · {isNl ? 'min' : 'min'} {data.minSqm || (isNl ? 'n.v.t.' : 'n/a')} m²</div>
                   <div><span className={styles.summaryLabel}>{t.mustHavesLabel}:</span> {data.mustHaves.map((k) => label(MUST_HAVES, k)).join(', ') || (isNl ? 'n.v.t.' : 'n/a')}</div>
                   <div><span className={styles.summaryLabel}>{t.summaryTimeline}:</span> {label(TIMELINES, data.timeline)}</div>
                 </div>

@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import { translations } from '../data/translations';
 import styles from './RentIn.module.css';
 import { trackWhatsAppClick } from '../utils/analytics';
+import { WHATSAPP_API_LINKS } from '../hooks/useServiceContacts';
 
 // Import new components
 import HeroSection from '../components/rent-in/HeroSection';
@@ -21,6 +22,7 @@ const WhatsAppIcon = ({ className }) => (
 
 const RentIn = () => {
     const currentLang = useSelector((state) => state.ui.language);
+    const city = useSelector((state) => state.ui.city || 'amsterdam');
     const t = translations.rentIn[currentLang] || translations.rentIn.en;
 
     // State for phone mockup interactions
@@ -93,7 +95,7 @@ const RentIn = () => {
 
             {/* Floating WhatsApp Button */}
             <a
-                href="https://api.whatsapp.com/send/?phone=31658975449&text&type=phone_number&app_absent=0"
+                href={WHATSAPP_API_LINKS[city] || WHATSAPP_API_LINKS.amsterdam}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={styles.floatingWhatsapp}

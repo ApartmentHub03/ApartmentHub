@@ -1,7 +1,9 @@
 import React from 'react';
+import { useSelector } from 'react-redux';
 import { Clock } from 'lucide-react';
 import styles from '../../_pages/RentIn.module.css';
 import { trackWhatsAppClick } from '../../utils/analytics';
+import { WHATSAPP_API_LINKS } from '../../hooks/useServiceContacts';
 
 const WhatsAppIcon = ({ className }) => (
     <svg className={className} fill="currentColor" viewBox="0 0 24 24">
@@ -10,6 +12,8 @@ const WhatsAppIcon = ({ className }) => (
 );
 
 const HeroSection = ({ title, subtitle, translations }) => {
+    const city = useSelector((state) => state.ui.city || 'amsterdam');
+
     // Use translations for hero text, with fallbacks
     const heroTitle = translations?.rentInHeroTitle || title || "Looking for a rental property?";
     const heroSubtitle = translations?.rentInHeroSubtitle || subtitle || "Send us a WhatsApp message and we'll gladly help you";
@@ -30,7 +34,7 @@ const HeroSection = ({ title, subtitle, translations }) => {
 
                 {/* WhatsApp Button */}
                 <a
-                    href="https://api.whatsapp.com/send/?phone=31658975449&text&type=phone_number&app_absent=0"
+                    href={WHATSAPP_API_LINKS[city] || WHATSAPP_API_LINKS.amsterdam}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={styles.whatsappHeroBtn}

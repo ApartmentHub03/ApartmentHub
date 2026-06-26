@@ -1,7 +1,9 @@
 import React from 'react';
+import { useSelector } from 'react-redux';
 import { CheckCircle, QrCode } from 'lucide-react';
 import styles from '../../_pages/RentIn.module.css';
 import { trackWhatsAppClick } from '../../utils/analytics';
+import { WHATSAPP_API_LINKS } from '../../hooks/useServiceContacts';
 
 const WhatsAppIcon = ({ className }) => (
     <svg className={className} fill="currentColor" viewBox="0 0 24 24">
@@ -10,6 +12,7 @@ const WhatsAppIcon = ({ className }) => (
 );
 
 const WhatsAppMockupSection = ({ translations, onWhatsAppClick }) => {
+    const city = useSelector((state) => state.ui.city || 'amsterdam');
     const t = translations;
 
     return (
@@ -137,7 +140,7 @@ const WhatsAppMockupSection = ({ translations, onWhatsAppClick }) => {
                         </div>
 
                         <a
-                            href="https://api.whatsapp.com/send/?phone=31658975449&text&type=phone_number&app_absent=0"
+                            href={WHATSAPP_API_LINKS[city] || WHATSAPP_API_LINKS.amsterdam}
                             target="_blank"
                             rel="noopener noreferrer"
                             className={styles.whatsappBtn}
