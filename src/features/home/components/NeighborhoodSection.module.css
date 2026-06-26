@@ -240,6 +240,68 @@
     transform: rotate(-90deg);
 }
 
+/* Carousel styles — responsive: touch-swipe on mobile, auto-scroll on desktop */
+.carouselSection {
+    position: relative;
+    max-width: 72rem;
+    margin: 0 auto;
+}
+
+.carouselTrack {
+    display: flex;
+    gap: 1.25rem;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scroll-behavior: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 0 1rem;
+    margin-bottom: 1rem;
+}
+
+.carouselTrack::-webkit-scrollbar { display: none; }
+
+.carouselCard {
+    flex: 0 0 80%;
+    min-height: 0;
+    scroll-snap-align: start;
+}
+
+@media (min-width: 768px) {
+    .carouselTrack {
+        overflow-x: hidden;
+        scroll-snap-type: none;
+    }
+
+    .carouselCard {
+        flex: 0 0 18rem;
+        height: 28rem;
+    }
+}
+
+/* Directional scroll zones — desktop only */
+.carouselScrollLeft,
+.carouselScrollRight {
+    position: absolute;
+    top: 0;
+    width: 3rem;
+    height: 100%;
+    z-index: 10;
+    cursor: pointer;
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .carouselScrollLeft,
+    .carouselScrollRight {
+        display: block;
+    }
+}
+
+.carouselScrollLeft { left: 0; }
+.carouselScrollRight { right: 0; }
+
 /* CTA banner */
 .ctaBanner {
     margin-top: 3rem;

@@ -17,7 +17,7 @@ const Home = () => {
             <HeroSection />
             <ServiceSection />
             <WhyChooseUsSection />
-            <NeighborhoodSection />
+            <NeighborhoodSection layout="carousel" showCta={false} />
             <TestimonialSection />
         </div>
     );

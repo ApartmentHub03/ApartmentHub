@@ -209,7 +209,7 @@ const Sell = () => {
                 </div>
             </section>
 
-            <NeighborhoodSection title={isNl ? 'Ontdek wijken' : 'Discover Neighborhoods'} />
+            <NeighborhoodSection title={isNl ? 'Ontdek wijken' : 'Discover Neighborhoods'} variant="verkoop" />
 
             <GoogleReviews />
 

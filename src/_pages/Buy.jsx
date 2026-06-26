@@ -287,7 +287,7 @@ const Buy = () => {
                 </div>
             </section>
 
-            <NeighborhoodSection title={isNl ? 'Ontdek wijken' : 'Discover Neighborhoods'} />
+            <NeighborhoodSection title={isNl ? 'Ontdek wijken' : 'Discover Neighborhoods'} variant="koop" />
 
             {/* What we do for you */}
             <section className={styles.section}>
