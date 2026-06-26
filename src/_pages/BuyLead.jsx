@@ -62,7 +62,7 @@ const HOUSEHOLD = [
   { key: 'with_family',  nl: 'Met familie', en: 'With family' },
 ];
 const MORTGAGE = [
-  { key: 'pre_approval',       nl: 'Pre-approval',              en: 'Pre-approval' },
+  { key: 'pre_approval',       nl: 'Pre approval',              en: 'Pre approval' },
   { key: 'talking_to_advisor', nl: 'In gesprek met adviseur',   en: 'Talking to advisor' },
   { key: 'own_funds',          nl: 'Volledig eigen geld',       en: 'Fully own funds' },
   { key: 'not_started',        nl: 'Nog niet gestart',          en: 'Not started yet' },
@@ -208,10 +208,9 @@ const BuyLead = () => {
           <h1 className={styles.successTitle}>{t.thankYou}, {data.firstName}!</h1>
           <p className={styles.successMessage}>{t.successMessage}</p>
           <div className={styles.successButtons}>
-            <Link href={isNl ? '/nl' : '/en'} className={styles.ctaOutline}>
+            <Link href={isNl ? '/nl' : '/en'} className={styles.ctaPrimary}>
               <Home style={{ width: '1rem', height: '1rem', marginRight: '0.5rem' }} />{t.backHome}
             </Link>
-            <Link href={isNl ? '/nl/koop' : '/en/buy'} className={styles.ctaPrimary}>{t.viewMarketData}</Link>
           </div>
         </div>
       </div>
@@ -388,7 +387,7 @@ const BuyLead = () => {
                         <button
                           key={o.key}
                           type="button"
-                          onClick={() => { update('mortgageStatus', o.key); if (data.budget) setTimeout(() => goToStep(5), 300); }}
+                          onClick={() => update('mortgageStatus', o.key)}
                           className={`${styles.radioButton} ${data.mortgageStatus === o.key ? styles.radioButtonActive : ''}`}
                         >
                           {isNl ? o.nl : o.en}
@@ -400,7 +399,7 @@ const BuyLead = () => {
                     <label className={styles.sectionLabel}>{t.budgetLabel}</label>
                     <div className={styles.pillGroup}>
                       {BUDGETS.map((b) => (
-                        <Pill key={b.key} active={data.budget === b.key} onClick={() => { update('budget', b.key); if (data.mortgageStatus) setTimeout(() => goToStep(5), 300); }}>{isNl ? b.nl : b.en}</Pill>
+                        <Pill key={b.key} active={data.budget === b.key} onClick={() => update('budget', b.key)}>{isNl ? b.nl : b.en}</Pill>
                       ))}
                     </div>
                   </div>
@@ -466,7 +465,7 @@ const BuyLead = () => {
                   <div>
                     <label className={styles.sectionLabel}>{t.timelineLabel}</label>
                     <div className={styles.pillGroup}>
-                      {TIMELINES.map((tl) => <Pill key={tl.key} active={data.timeline === tl.key} onClick={() => { update('timeline', tl.key); setTimeout(() => goToStep(7), 300); }}>{isNl ? tl.nl : tl.en}</Pill>)}
+                      {TIMELINES.map((tl) => <Pill key={tl.key} active={data.timeline === tl.key} onClick={() => update('timeline', tl.key)}>{isNl ? tl.nl : tl.en}</Pill>)}
                     </div>
                   </div>
                 </div>
