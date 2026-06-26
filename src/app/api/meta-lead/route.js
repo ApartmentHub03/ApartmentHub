@@ -202,41 +202,89 @@ export async function POST(request) {
     if (supabase) {
         try {
             const externalId = await sha256(normalizedPhone);
-            const { data, error } = await supabase
-                .from('meta_leads')
-                .upsert({
-                    phone: normalizedPhone,
-                    full_name: fullName,
-                    email: email || null,
-                    bedrooms,
-                    budget,
-                    language: language || 'nl',
-                    source: source || 'meta_ads',
-                    source_url: sourceUrl,
-                    consent: true,
-                    event_id: eventId,
-                    external_id: externalId,
-                    tracking_fbp: tracking?.fbp || null,
-                    tracking_fbc: tracking?.fbc || null,
-                    tracking_fbclid: tracking?.fbclid || null,
-                    utm_source: tracking?.utm?.utm_source || null,
-                    utm_medium: tracking?.utm?.utm_medium || null,
-                    utm_campaign: tracking?.utm?.utm_campaign || null,
-                    utm_content: tracking?.utm?.utm_content || null,
-                    utm_term: tracking?.utm?.utm_term || null,
-                    referrer: tracking?.referrer || null,
-                    tags: tags || [],
-                    submitted_at: submittedAt,
-                    variant: variant || 'A',
-                    second_tenant_name: fullName2 || null,
-                    second_tenant_phone: phone2 || null,
-                }, { onConflict: 'phone' });
 
-            if (error) {
-                console.error('[meta-lead] Supabase insert error:', error);
-                results.supabase = { success: false, error: error.message };
+            const leadData = {
+                phone: normalizedPhone,
+                full_name: fullName,
+                email: email || null,
+                bedrooms,
+                budget,
+                language: language || 'nl',
+                source: source || 'meta_ads',
+                source_url: sourceUrl,
+                consent: true,
+                event_id: eventId,
+                external_id: externalId,
+                tracking_fbp: tracking?.fbp || null,
+                tracking_fbc: tracking?.fbc || null,
+                tracking_fbclid: tracking?.fbclid || null,
+                utm_source: tracking?.utm?.utm_source || null,
+                utm_medium: tracking?.utm?.utm_medium || null,
+                utm_campaign: tracking?.utm?.utm_campaign || null,
+                utm_content: tracking?.utm?.utm_content || null,
+                utm_term: tracking?.utm?.utm_term || null,
+                referrer: tracking?.referrer || null,
+                tags: tags || [],
+                submitted_at: submittedAt,
+                variant: variant || 'A',
+                second_tenant_name: fullName2 || null,
+                second_tenant_phone: phone2 || null,
+            };
+
+            const { data: existing } = await supabase
+                .from('meta_leads')
+                .select('id')
+                .eq('phone', normalizedPhone)
+                .maybeSingle();
+
+            if (existing) {
+                const { error } = await supabase
+                    .from('meta_leads')
+                    .update({
+                        full_name: leadData.full_name,
+                        email: leadData.email,
+                        bedrooms: leadData.bedrooms,
+                        budget: leadData.budget,
+                        language: leadData.language,
+                        source: leadData.source,
+                        source_url: leadData.source_url,
+                        consent: leadData.consent,
+                        event_id: leadData.event_id,
+                        external_id: leadData.external_id,
+                        tracking_fbp: leadData.tracking_fbp,
+                        tracking_fbc: leadData.tracking_fbc,
+                        tracking_fbclid: leadData.tracking_fbclid,
+                        utm_source: leadData.utm_source,
+                        utm_medium: leadData.utm_medium,
+                        utm_campaign: leadData.utm_campaign,
+                        utm_content: leadData.utm_content,
+                        utm_term: leadData.utm_term,
+                        referrer: leadData.referrer,
+                        tags: leadData.tags,
+                        submitted_at: leadData.submitted_at,
+                        variant: leadData.variant,
+                        second_tenant_name: leadData.second_tenant_name,
+                        second_tenant_phone: leadData.second_tenant_phone,
+                    })
+                    .eq('phone', normalizedPhone);
+
+                if (error) {
+                    console.error('[meta-lead] Supabase update error:', error);
+                    results.supabase = { success: false, error: error.message };
+                } else {
+                    results.supabase = { success: true, isDuplicate: true };
+                }
             } else {
-                results.supabase = { success: true };
+                const { error } = await supabase
+                    .from('meta_leads')
+                    .insert(leadData);
+
+                if (error) {
+                    console.error('[meta-lead] Supabase insert error:', error);
+                    results.supabase = { success: false, error: error.message };
+                } else {
+                    results.supabase = { success: true, isDuplicate: false };
+                }
             }
         } catch (err) {
             console.error('[meta-lead] Supabase error:', err);
@@ -349,5 +397,6 @@ export async function POST(request) {
         }
     }
 
-    return NextResponse.json({ success: true, results });
+    const isDuplicate = results.supabase?.isDuplicate || false;
+    return NextResponse.json({ success: true, isDuplicate, results });
 }
