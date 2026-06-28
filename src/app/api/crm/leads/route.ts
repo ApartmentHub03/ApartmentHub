@@ -98,15 +98,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: stagesError.message }, { status: 500 });
   }
 
-  // Fetch team members for assignee display
-  const { data: teamMembers } = await sb
-    .from("team_members")
-    .select("user_id, display_name, role");
+  // Fetch staff users for assignee display (replaces former team_members read)
+  const { data: staffUsers } = await sb
+    .from("verkoop_staff_users")
+    .select("phone_e164, display_name, role");
 
   return NextResponse.json({
     leads: leads ?? [],
     sourceData,
     stages: stages ?? [],
-    teamMembers: teamMembers ?? [],
+    teamMembers: staffUsers ?? [],
   });
 }

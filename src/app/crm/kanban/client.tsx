@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   DndContext,
@@ -16,17 +16,33 @@ import {
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useLeads, useUpdateLead, fullName, relativeTime, LEAD_TYPE_LABELS, PIPELINE_FOR_TYPE } from "@/hooks/useKanbanQueries";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import {
+  useLeads,
+  useUpdateLead,
+  fullName,
+  relativeTime,
+  LEAD_TYPE_LABELS,
+  PIPELINE_FOR_TYPE,
+  TYPE_ORDER,
+} from "@/hooks/useKanbanQueries";
 import type { Lead, PipelineStage, TeamMember, PipelineKey, LeadType } from "@/hooks/useKanbanQueries";
 import type { StaffUser } from "@/app/lib/auth";
 import styles from "./kanban.module.css";
 
-const TYPE_ORDER: LeadType[] = ["sale", "buyer_intake", "meta_ads"];
-
 export function KanbanClient({ staff }: { staff: StaffUser }) {
   const [activeType, setActiveType] = useState<LeadType>("sale");
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [assignee, setAssignee] = useState("");
+  const [syncing, setSyncing] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
   const filters = useMemo<Record<string, string>>(() => {
     const f: Record<string, string> = { type: activeType };
     if (search) f.search = search;
@@ -34,6 +50,7 @@ export function KanbanClient({ staff }: { staff: StaffUser }) {
     return f;
   }, [activeType, search, assignee]);
 
+  const queryClient = useQueryClient();
   const { data, isLoading, error } = useLeads(filters);
   const updateLead = useUpdateLead();
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -53,6 +70,10 @@ export function KanbanClient({ staff }: { staff: StaffUser }) {
   );
 
   const activeStages = pipelines[activePipeline] ?? [];
+  const activeStageSet = useMemo(
+    () => new Set(activeStages.map((s) => s.stage)),
+    [activeStages]
+  );
 
   const leadsByStage = useMemo(() => {
     const map: Record<string, Lead[]> = {};
@@ -98,6 +119,26 @@ export function KanbanClient({ staff }: { staff: StaffUser }) {
     [leads, updateLead, activeStages]
   );
 
+  const handleSync = useCallback(async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/crm/leads/sync", { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Sync failed");
+      }
+      const result = await res.json();
+      toast.success(
+        `Synced ${result.total ?? 0} lead${result.total === 1 ? "" : "s"}`
+      );
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Sync failed");
+    } finally {
+      setSyncing(false);
+    }
+  }, [queryClient]);
+
   if (isLoading) {
     return (
       <div className={styles.loading}>
@@ -120,11 +161,14 @@ export function KanbanClient({ staff }: { staff: StaffUser }) {
       <Toolbar
         activeType={activeType}
         onTypeChange={setActiveType}
-        search={search}
-        onSearchChange={setSearch}
+        searchInput={searchInput}
+        onSearchInputChange={setSearchInput}
         assignee={assignee}
         onAssigneeChange={setAssignee}
         teamMembers={teamMembers}
+        isAdmin={staff.role === "admin"}
+        syncing={syncing}
+        onSync={handleSync}
       />
       <DndContext
         sensors={sensors}
@@ -140,16 +184,13 @@ export function KanbanClient({ staff }: { staff: StaffUser }) {
               leads={leadsByStage[stage.stage] ?? []}
               sourceData={sourceData}
               teamMembers={teamMembers}
+              activeStageSet={activeStageSet}
             />
           ))}
         </div>
         <DragOverlay>
           {activeLead ? (
-            <LeadCardOverlay
-              lead={activeLead}
-              sourceData={sourceData[String(activeLead.source_type) + ":" + String(activeLead.source_id)]}
-              teamMembers={teamMembers}
-            />
+            <LeadCardOverlay lead={activeLead} />
           ) : null}
         </DragOverlay>
       </DndContext>
@@ -160,19 +201,25 @@ export function KanbanClient({ staff }: { staff: StaffUser }) {
 function Toolbar({
   activeType,
   onTypeChange,
-  search,
-  onSearchChange,
+  searchInput,
+  onSearchInputChange,
   assignee,
   onAssigneeChange,
   teamMembers,
+  isAdmin,
+  syncing,
+  onSync,
 }: {
   activeType: LeadType;
   onTypeChange: (type: LeadType) => void;
-  search: string;
-  onSearchChange: (value: string) => void;
+  searchInput: string;
+  onSearchInputChange: (value: string) => void;
   assignee: string;
   onAssigneeChange: (value: string) => void;
   teamMembers: TeamMember[];
+  isAdmin: boolean;
+  syncing: boolean;
+  onSync: () => void;
 }) {
   return (
     <div className={styles.toolbar}>
@@ -184,10 +231,22 @@ function Toolbar({
           className={styles.searchInput}
           type="text"
           placeholder="Search leads..."
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
+          value={searchInput}
+          onChange={(e) => onSearchInputChange(e.target.value)}
         />
       </div>
+      <select
+        className={styles.assigneeSelect}
+        value={assignee}
+        onChange={(e) => onAssigneeChange(e.target.value)}
+      >
+        <option value="">All assignees</option>
+        {teamMembers.map((m) => (
+          <option key={m.phone_e164} value={m.phone_e164}>
+            {m.display_name || m.phone_e164}
+          </option>
+        ))}
+      </select>
       <div className={styles.filterChips}>
         {TYPE_ORDER.map((value) => (
           <button
@@ -199,6 +258,15 @@ function Toolbar({
           </button>
         ))}
       </div>
+      {isAdmin && (
+        <button
+          className={styles.syncBtn}
+          onClick={onSync}
+          disabled={syncing}
+        >
+          {syncing ? "Syncing\u2026" : "Sync leads"}
+        </button>
+      )}
     </div>
   );
 }
@@ -208,11 +276,13 @@ function KanbanColumn({
   leads,
   sourceData,
   teamMembers,
+  activeStageSet,
 }: {
   stage: PipelineStage;
   leads: Lead[];
   sourceData: Record<string, Record<string, unknown>>;
   teamMembers: TeamMember[];
+  activeStageSet: Set<string>;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: stage.stage,
@@ -237,6 +307,7 @@ function KanbanColumn({
               lead={lead}
               sourceData={sourceData[String(lead.source_type) + ":" + String(lead.source_id)]}
               teamMembers={teamMembers}
+              isBucketed={!activeStageSet.has(lead.stage)}
             />
           ))}
           {leads.length === 0 && (
@@ -252,10 +323,12 @@ function LeadCard({
   lead,
   sourceData,
   teamMembers,
+  isBucketed,
 }: {
   lead: Lead;
   sourceData?: Record<string, unknown>;
   teamMembers: TeamMember[];
+  isBucketed: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: lead.id,
@@ -269,7 +342,7 @@ function LeadCard({
   };
 
   const assignee = lead.assignee_id
-    ? teamMembers.find((m) => m.user_id === lead.assignee_id)
+    ? teamMembers.find((m) => m.phone_e164 === lead.assignee_id)
     : null;
 
   return (
@@ -282,6 +355,14 @@ function LeadCard({
     >
       <div className={styles.cardTop}>
         <span className={styles.cardTime}>{relativeTime(lead.stage_changed_at)}</span>
+        {isBucketed && (
+          <span
+            className={styles.bucketBadge}
+            title={`Stage "${lead.stage}" is not in this pipeline; shown in the first column`}
+          >
+            ?
+          </span>
+        )}
       </div>
       <div className={styles.cardName}>{fullName(lead)}</div>
       {(lead.email || lead.phone) && (
@@ -299,7 +380,12 @@ function LeadCard({
             {assignee.display_name?.split(" ").map((w) => w[0]).join("").slice(0, 2) || "?"}
           </span>
         )}
-        <Link href={`/crm/kanban/${lead.id}`} className={styles.cardLink} onClick={(e) => e.stopPropagation()}>
+        <Link
+          href={`/crm/kanban/${lead.id}`}
+          className={styles.cardLink}
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           View
         </Link>
       </div>
@@ -307,15 +393,7 @@ function LeadCard({
   );
 }
 
-function LeadCardOverlay({
-  lead,
-  sourceData,
-  teamMembers,
-}: {
-  lead: Lead;
-  sourceData?: Record<string, unknown>;
-  teamMembers: TeamMember[];
-}) {
+function LeadCardOverlay({ lead }: { lead: Lead }) {
   return (
     <div className={`${styles.card} ${styles.cardOverlay}`}>
       <div className={styles.cardName}>{fullName(lead)}</div>
@@ -323,4 +401,3 @@ function LeadCardOverlay({
     </div>
   );
 }
-

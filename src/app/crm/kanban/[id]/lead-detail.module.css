@@ -275,6 +275,12 @@ a.fieldValue:hover {
   line-height: 1.4;
 }
 
+.timelineActor {
+  color: var(--teal);
+  font-weight: 600;
+  margin-right: 4px;
+}
+
 .timelineTime {
   font-size: 11px;
   color: var(--grey-soft);

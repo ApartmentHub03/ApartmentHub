@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getStaffUser } from "@/app/lib/auth";
 import type { StaffUser } from "@/app/lib/auth";
 import { supabaseAdmin } from "@/app/lib/supabase-admin";
+import { pipelineForType } from "@/app/lib/crm-pipeline";
 import { LeadDetailClient } from "./client";
 
 export const runtime = "nodejs";
@@ -24,12 +25,6 @@ const SOURCE_QUERIES: Record<string, { table: string; select: string }> = {
     table: "valuation_leads",
     select: "id,first_name,last_name,email,phone,address,postcode,city,neighborhood,surface_area,property_type,condition,energy_label,estimated_value_low,estimated_value_high,status,created_at",
   },
-};
-
-const PIPELINE_FOR_TYPE: Record<string, string> = {
-  sale: "sale",
-  buyer_intake: "buyer",
-  meta_ads: "meta",
 };
 
 export default async function LeadDetailPage({
@@ -70,7 +65,7 @@ export default async function LeadDetailPage({
     .eq("lead_id", id)
     .order("created_at", { ascending: false });
 
-  const pipeline = PIPELINE_FOR_TYPE[lead.type] || "sale";
+  const pipeline = pipelineForType(lead.type);
   const { data: stages } = await sb
     .from("pipeline_stages")
     .select("*")
@@ -78,8 +73,8 @@ export default async function LeadDetailPage({
     .order("position", { ascending: true });
 
   const { data: teamMembers } = await sb
-    .from("team_members")
-    .select("user_id, display_name, role");
+    .from("verkoop_staff_users")
+    .select("phone_e164, display_name, role");
 
   return (
     <LeadDetailClient

@@ -1,21 +1,19 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import {
+  PIPELINE_FOR_TYPE,
+  LEAD_TYPE_LABELS,
+  TYPE_ORDER,
+  type LeadType,
+  type PipelineKey,
+} from "@/app/lib/crm-pipeline";
+
+export { PIPELINE_FOR_TYPE, LEAD_TYPE_LABELS, TYPE_ORDER };
+export type { LeadType, PipelineKey };
 
 export type LeadStage = string;
-
-export type PipelineKey = "sale" | "buyer" | "meta";
-
-export const PIPELINE_FOR_TYPE: Record<LeadType, PipelineKey> = {
-  sale: "sale",
-  buyer_intake: "buyer",
-  meta_ads: "meta",
-};
-
-export type LeadType =
-  | "sale"
-  | "buyer_intake"
-  | "meta_ads";
 
 export interface Lead {
   id: string;
@@ -49,7 +47,7 @@ export interface PipelineStage {
 }
 
 export interface TeamMember {
-  user_id: string;
+  phone_e164: string;
   display_name: string | null;
   role: string;
 }
@@ -143,6 +141,19 @@ export function usePipelineStages() {
   });
 }
 
+export function useLead(leadId: string, initialData?: Lead) {
+  return useQuery<Lead>({
+    queryKey: ["lead", leadId],
+    initialData,
+    enabled: !!leadId,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const data = await fetchJson<{ lead: Lead }>(`/api/crm/leads/${leadId}`);
+      return data.lead;
+    },
+  });
+}
+
 export function useUpdateLead() {
   const queryClient = useQueryClient();
 
@@ -169,7 +180,17 @@ export function useUpdateLead() {
     },
     onMutate: async (variables) => {
       await queryClient.cancelQueries({ queryKey: ["leads"] });
-      const previousData = queryClient.getQueryData(["leads"]);
+      const previousLeadsData = queryClient.getQueryData(["leads"]);
+      const previousLeadData = queryClient.getQueryData(["lead", variables.id]);
+
+      const optimisticPatch = (lead: Lead): Lead => ({
+        ...lead,
+        ...variables,
+        stage: (variables.stage ?? lead.stage) as LeadStage,
+        ...(variables.stage !== undefined && lead.stage !== variables.stage
+          ? { stage_changed_at: new Date().toISOString() }
+          : {}),
+      });
 
       queryClient.setQueriesData({ queryKey: ["leads"] }, (old: unknown) => {
         if (!old) return old;
@@ -177,31 +198,44 @@ export function useUpdateLead() {
         return {
           ...typedOld,
           leads: typedOld.leads.map((lead) =>
-            lead.id === variables.id
-              ? { ...lead, ...variables, stage: (variables.stage ?? lead.stage) as LeadStage }
-              : lead
+            lead.id === variables.id ? optimisticPatch(lead) : lead
           ),
         };
       });
 
-      return { previousData };
-    },
-    onError: (_err, _variables, context) => {
-      if (context?.previousData) {
-        queryClient.setQueriesData({ queryKey: ["leads"] }, context.previousData);
+      if (previousLeadData) {
+        queryClient.setQueryData(["lead", variables.id], (old: unknown) => {
+          if (!old) return old;
+          return optimisticPatch(old as Lead);
+        });
       }
+
+      return { previousLeadsData, previousLeadData };
     },
-    onSettled: () => {
+    onError: (_err, variables, context) => {
+      if (context?.previousLeadsData) {
+        queryClient.setQueriesData({ queryKey: ["leads"] }, context.previousLeadsData);
+      }
+      if (context?.previousLeadData) {
+        queryClient.setQueryData(["lead", variables.id], context.previousLeadData);
+      }
+      toast.error("Failed to update lead. Changes reverted.");
+    },
+    onSettled: (_data, _error, variables) => {
       queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["lead", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["lead-events", variables.id] });
     },
   });
 }
 
-export function useLeadEvents(leadId: string | null) {
+export function useLeadEvents(leadId: string | null, initialData?: LeadEvent[]) {
   return useQuery<{ events: LeadEvent[] }>({
     queryKey: ["lead-events", leadId],
-    queryFn: () => fetchJson(`/api/crm/leads/${leadId}/events`),
+    initialData: initialData ? { events: initialData } : undefined,
     enabled: !!leadId,
+    staleTime: 30_000,
+    queryFn: () => fetchJson(`/api/crm/leads/${leadId}/events`),
   });
 }
 
@@ -227,18 +261,17 @@ export function useAddNote() {
       }
       return res.json();
     },
+    onError: () => {
+      toast.error("Failed to add note.");
+    },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["lead-events", variables.leadId] });
       queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["lead", variables.leadId] });
+      toast.success("Note added");
     },
   });
 }
-
-export const LEAD_TYPE_LABELS: Record<LeadType, string> = {
-  sale: "Sale",
-  buyer_intake: "Buyer",
-  meta_ads: "Meta Ads",
-};
 
 export function relativeTime(iso: string | null): string {
   if (!iso) return "\u2014";

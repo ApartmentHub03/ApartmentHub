@@ -45,13 +45,12 @@ export async function POST(
     return NextResponse.json({ error: "lead_not_found" }, { status: 404 });
   }
 
-  // Look up the staff user's auth.users id from verkoop_staff_users
-  // We store the phone as actor identifier; for now we use the phone_e164
   const { data: event, error } = await sb
     .from("lead_events")
     .insert({
       lead_id: id,
       type: "note_added",
+      actor_id: staff.phone_e164,
       description: body.description,
       meta: body.meta ?? {},
       client_visible: false,
