@@ -4,9 +4,10 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSelector, useDispatch } from 'react-redux';
-import { Menu, X, ChevronDown } from 'lucide-react';
+import { Menu, X, LogIn, ChevronDown } from 'lucide-react';
 import { toggleMobileMenu, closeMobileMenu, setLanguage, setCity, openCityModal, closeCityModal } from '@/features/ui/uiSlice';
 import { AmsterdamFlag, UtrechtFlag } from './CityFlags';
+import { useAuth } from '@/contexts/AuthContext';
 import styles from './Navbar.module.css';
 import { translations } from '@/data/translations';
 
@@ -98,8 +99,22 @@ const Navbar = () => {
     const currentLang = useSelector((state) => state.ui.language);
     const pathname = usePathname();
     const router = useRouter();
+    const { isAuthenticated, firstName } = useAuth();
 
     const t = translations.nav[currentLang] || translations.nav.en;
+    const loginPath = '/login';
+    const aanvraagPath = currentLang === 'nl' ? '/nl/aanvraag' : '/en/application';
+    const authedLabel = firstName
+        ? (currentLang === 'en' ? `Hi, ${firstName}` : `Hoi, ${firstName}`)
+        : (currentLang === 'en' ? 'My Account' : 'Mijn Account');
+
+    const lowerPath = (pathname || '').toLowerCase();
+    const isInsideAccountFlow =
+        lowerPath.includes('/aanvraag') ||
+        lowerPath.includes('/application') ||
+        lowerPath.includes('/letter-of-intent') ||
+        lowerPath.includes('/intentieverklaring');
+    const showLoginButton = !isInsideAccountFlow;
 
     const city = useSelector((state) => state.ui.city);
     const showCityModal = useSelector((state) => state.ui.showCityModal);
@@ -144,12 +159,10 @@ const Navbar = () => {
     ];
 
     const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
-    const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
 
     const handleLinkClick = () => {
         dispatch(closeMobileMenu());
         setIsSideMenuOpen(false);
-        setIsMobileMoreOpen(false);
         window.scrollTo(0, 0);
     };
 
@@ -232,10 +245,20 @@ const Navbar = () => {
                             onClick={() => dispatch(openCityModal())}
                             aria-label={t.selectCity}
                         >
-                            <span className={styles.cityIcon}>{city === 'utrecht' ? '📍' : '🎈'}</span>
+<span className={styles.cityIcon}>{'📍'}</span>
                             {cityReady && <span>{cityLabel}</span>}
                             <span className={styles.cityChevron}><ChevronDown size={13} /></span>
                         </button>
+                        {showLoginButton && (
+                            <Link
+                                href={isAuthenticated ? aanvraagPath : loginPath}
+                                className={styles.loginButton}
+                                onClick={() => window.scrollTo(0, 0)}
+                            >
+                                <LogIn size={16} />
+                                {isAuthenticated ? authedLabel : t.login}
+                            </Link>
+                        )}
                         <button
                             className={`${styles.moreButton} ${isSideMenuOpen ? styles.moreButtonActive : ''}`}
                             onClick={() => setIsSideMenuOpen(!isSideMenuOpen)}
@@ -271,35 +294,34 @@ const Navbar = () => {
                             {link.name}
                         </Link>
                     ))}
-                    <div className={styles.mobileMoreSection}>
-                        <button
-                            className={styles.mobileMoreToggle}
-                            onClick={() => setIsMobileMoreOpen(!isMobileMoreOpen)}
+                    {sideLinks.map((link) => (
+                        <Link
+                            key={link.name}
+                            href={link.path}
+                            className={`${styles.mobileNavLink} ${pathname === link.path ? styles.active : ''}`}
+                            onClick={handleLinkClick}
                         >
-                            {t.more}
-                            <ChevronDown size={16} className={`${styles.moreChevron} ${isMobileMoreOpen ? styles.moreChevronOpen : ''}`} />
-                        </button>
-                        <div className={`${styles.mobileMoreContent} ${isMobileMoreOpen ? styles.mobileMoreContentOpen : ''}`}>
-                            {sideLinks.map((link) => (
-                                <Link
-                                    key={link.name}
-                                    href={link.path}
-                                    className={`${styles.mobileNavLink} ${pathname === link.path ? styles.active : ''}`}
-                                    onClick={handleLinkClick}
-                                >
-                                    {link.name}
-                                </Link>
-                            ))}
-                        </div>
-                    </div>
+                            {link.name}
+                        </Link>
+                    ))}
                     <button
                         className={styles.mobileCityButton}
                         onClick={() => { dispatch(openCityModal()); handleLinkClick(); }}
                     >
-                        <span className={styles.cityIcon}>{city === 'utrecht' ? '📍' : '🎈'}</span>
+                        <span className={styles.cityIcon}>{'📍'}</span>
                         {cityReady && <span>{cityLabel}</span>}
                         <span className={styles.cityChevron}><ChevronDown size={13} /></span>
                     </button>
+                    {showLoginButton && (
+                        <Link
+                            href={isAuthenticated ? aanvraagPath : loginPath}
+                            className={styles.mobileLoginButton}
+                            onClick={handleLinkClick}
+                        >
+                            <LogIn size={16} />
+                            {isAuthenticated ? authedLabel : t.login}
+                        </Link>
+                    )}
                 </div>
             </div>
 
