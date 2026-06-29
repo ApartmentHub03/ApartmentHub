@@ -81,10 +81,9 @@ export async function POST(req: NextRequest) {
   const signedAt = new Date().toISOString();
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "";
 
-  // The PDF template lives at <repo-root>/otd/template.pdf — outside src/
-  // so it's not bundled by the webpack pipeline. process.cwd() resolves to
+  // The PDF template lives at public/OTD_NL.pdf. process.cwd() resolves to
   // the project root both on `next dev` and on Vercel's runtime.
-  const templatePath = path.join(process.cwd(), "otd", "template.pdf");
+  const templatePath = path.join(process.cwd(), "public", "OTD_NL.pdf");
   let templateBytes: Buffer;
   try {
     templateBytes = await fs.readFile(templatePath);
