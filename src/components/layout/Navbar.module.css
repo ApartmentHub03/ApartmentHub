@@ -53,7 +53,7 @@
   text-decoration: none;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1020px) {
   .logoWrapper {
     gap: 0.75rem;
     /* md:space-x-3 */
@@ -87,7 +87,7 @@
   /* hover:scale-110 */
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1020px) {
   .logoIconWrapper {
     width: 2.5rem;
     /* md:w-10 */
@@ -112,7 +112,7 @@
   transform: scale(1.1);
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1020px) {
   .logoIcon {
     width: 1.75rem;
     /* md:w-7 */
@@ -137,7 +137,7 @@
   }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1020px) {
   .logoText {
     font-size: 1.25rem;
     /* md:text-xl */
@@ -152,7 +152,7 @@
   justify-content: center;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1020px) {
   .desktopMenu {
     display: flex;
   }
@@ -164,7 +164,7 @@
   gap: 0.75rem;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1020px) {
   .desktopActions {
     display: flex;
   }
@@ -326,7 +326,7 @@
   /* space-x-2 */
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1020px) {
   .mobileActions {
     display: none;
   }
