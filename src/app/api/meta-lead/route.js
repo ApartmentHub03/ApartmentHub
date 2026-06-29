@@ -161,7 +161,7 @@ export async function POST(request) {
         return NextResponse.json({ success: false, message: 'Invalid JSON body' }, { status: 400 });
     }
 
-    const { fullName, phone, email, bedrooms, budget, language, consent, source, sourceUrl, submittedAt, eventId, tracking, tags, variant, fullName2, phone2, websiteUrl } = body;
+    const { fullName, phone, email, bedrooms, budget, language, consent, sourceUrl, submittedAt, eventId, tracking, tags, variant, fullName2, phone2, websiteUrl } = body;
 
     if (websiteUrl) {
         return NextResponse.json({ success: true }, { status: 200 });
@@ -210,7 +210,7 @@ export async function POST(request) {
                 bedrooms,
                 budget,
                 language: language || 'nl',
-                source: source || 'meta_ads',
+                source: 'meta_ads',
                 source_url: sourceUrl,
                 consent: true,
                 event_id: eventId,
