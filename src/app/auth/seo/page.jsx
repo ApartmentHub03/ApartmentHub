@@ -9,7 +9,7 @@ import styles from './auth-seo.module.css';
 
 export default function SEOLogin() {
     const router = useRouter();
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -28,13 +28,17 @@ export default function SEOLogin() {
             const res = await fetch('/api/admin/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password }),
+                body: JSON.stringify({ email, password }),
             });
 
             const data = await res.json();
 
             if (res.ok && data.success) {
                 sessionStorage.setItem('admin_token', data.token);
+                if (data.refreshToken) sessionStorage.setItem('admin_refresh', data.refreshToken);
+                sessionStorage.setItem('crm_role', data.role || '');
+                sessionStorage.setItem('crm_name', data.name || '');
+                sessionStorage.setItem('crm_permissions', JSON.stringify(data.permissions || {}));
                 router.push('/seo');
             } else {
                 setError(data.message || 'Invalid credentials');
@@ -59,12 +63,13 @@ export default function SEOLogin() {
                 <CardContent>
                     <form onSubmit={handleLogin} className={styles.form}>
                         <Input
-                            label="Username"
+                            label="Email"
                             required
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            placeholder="Enter username"
-                            autoComplete="username"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="you@apartmenthub.nl"
+                            autoComplete="email"
                         />
                         <Input
                             label="Password"
