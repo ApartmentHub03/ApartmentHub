@@ -7,7 +7,7 @@ import { setLanguage } from '../features/ui/uiSlice';
 import { LogOut, CheckCircle, Plus, AlertCircle } from 'lucide-react';
 import { translations } from '../data/translations';
 import { useAuth } from '../contexts/AuthContext';
-import { loadAanvraagDataFromSalesforce, deletePersonFromSupabase } from '../services/aanvraagDataService';
+import { loadAanvraagDataFromSupabase, deletePersonFromSupabase } from '../services/aanvraagDataService';
 import { saveAanvraagDraft, loadAanvraagDraft, mergePersonenWithDraft } from '../services/aanvraagDraft';
 import { uploadDocument, deleteDocument } from '../services/documentStorageService';
 import { getRequiredDocuments } from '../utils/documentRequirements';
@@ -119,22 +119,19 @@ const Aanvraag = () => {
                 return;
             }
 
-            // Salesforce is the only source for personen + dossier data.
-            // When SF has no record for this phone the loader hands back an
-            // empty form. When SF is genuinely unreachable we surface that
-            // rather than reading stale Supabase metadata — the dossiers /
-            // personen / documenten tables are no longer the source of truth
-            // for the form; only the storage bucket is.
+            // Supabase is the system of record for dossier data (bid / motivation
+            // / personen / document metadata), written by /api/dossier/save on
+            // submit. Read it back from dossiers -> personen -> documenten.
             let result = null;
             if (phoneNumber) {
-                result = await loadAanvraagDataFromSalesforce(phoneNumber);
+                result = await loadAanvraagDataFromSupabase(phoneNumber);
                 if (result?.ok) {
                     console.log(
-                        `[Aanvraag] ✓ Loaded ${result.empty ? 'EMPTY ' : ''}dossier from Salesforce for`,
+                        `[Aanvraag] ✓ Loaded ${result.empty ? 'EMPTY ' : ''}dossier from Supabase for`,
                         phoneNumber
                     );
                 } else {
-                    console.warn('[Aanvraag] Salesforce unreachable; rendering empty form:', result?.error);
+                    console.warn('[Aanvraag] Supabase unreachable; rendering empty form:', result?.error);
                 }
             }
             if (!result?.ok) {
@@ -1313,12 +1310,11 @@ const Aanvraag = () => {
         setIsSubmitting(true);
         setSaveStatus('saving');
 
-        await updateAccountDocumentationStatus('Complete');
-
-        // Fire the Salesforce documents-complete webhook (fire-and-forget so it never blocks navigation).
-        // accountId may be null in useAuth() when the user signed up (Signup.jsx never sets it) or
-        // logged in before the matching accounts row existed — the edge function
-        // resolves it from the phone, so we just need to ship phone_number.
+        // Persist the full dossier to Supabase (dossiers/personen/documenten).
+        // Writing the documenten rows fires the DB trigger that recomputes
+        // accounts.documentation_status -> 'Complete', which in turn fires the
+        // n8n `document-status-completed` WhatsApp. This replaces the old direct
+        // documentation_status write and the Salesforce forward.
         const mainTenant = data.personen.find(p => p.rol === 'Hoofdhuurder');
         const firstPand = selectedPanden[0];
         const bidAmount =
@@ -1326,97 +1322,47 @@ const Aanvraag = () => {
             Object.values(bidAmounts).find(b => b > 0) ||
             0;
 
-        // Translate the form's personen + their attached documents into the
-        // shape forward-docs-to-salesforce expects. Only docs with a stored
-        // bucket path are forwarded — partial uploads in flight are ignored.
-        const personenPayload = (data.personen || []).map(p => {
-            const docs = [];
-            for (const d of p.documenten || []) {
-                if (Array.isArray(d.files)) {
-                    for (const f of d.files) {
-                        if (f?.filePath) {
-                            docs.push({
-                                type: d.type,
-                                file_path: f.filePath,
-                                file_name: f.fileName || f.name || null,
-                                status: f.status || 'ontvangen',
-                            });
-                        }
-                    }
+        let dossierSaved = false;
+        if (phoneNumber) {
+            try {
+                const saveRes = await fetch('/api/dossier/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: phoneNumber,
+                        dossier: {
+                            tenantName: mainTenant?.naam || '',
+                            email: mainTenant?.email || '',
+                            bidAmount,
+                            startDate: startDate || '',
+                            motivation: motivation || '',
+                            monthsAdvance: monthsAdvance || 0,
+                            propertyAddress: firstPand?.adres || firstPand?.name || '',
+                        },
+                        // The form's personen already carry their grouped
+                        // documenten ({ type, files:[{ filePath, fileName }] }).
+                        personen: data.personen || [],
+                    }),
+                });
+                const saveJson = await saveRes.json();
+                dossierSaved = !!saveJson.success;
+                if (dossierSaved) {
+                    console.log('[Aanvraag] ✓ Dossier saved to Supabase:', saveJson.dossierId, '→ documentation_status', saveJson.documentation_status);
                 } else {
-                    const f = d.file || d;
-                    if (f?.filePath) {
-                        docs.push({
-                            type: d.type,
-                            file_path: f.filePath,
-                            file_name: f.fileName || f.name || null,
-                            status: d.status || f.status || 'ontvangen',
-                        });
-                    }
+                    console.error('[Aanvraag] ✗ Dossier save failed:', saveJson.message);
                 }
+            } catch (err) {
+                console.error('[Aanvraag] ✗ Dossier save error:', err);
             }
-            return {
-                name: p.naam || '',
-                rol: p.rol || '',
-                phone_number: p.telefoon || null,
-                email: p.email || '',
-                werkstatus: p.werkstatus || '',
-                inkomen: p.inkomen ? Number(p.inkomen) : 0,
-                adres: p.adres || '',
-                postcode: p.postcode || '',
-                woonplaats: p.woonplaats || '',
-                documenten: docs,
-            };
-        });
-
-        const sfPayload = {
-            account_id: accountId,
-            tenant_name: mainTenant?.naam || '',
-            phone_number: phoneNumber,
-            email: mainTenant?.email || '',
-            salesforce_account_id: '',
-            apartment_id: firstPand?.apartmentId || '',
-            apartment_name: firstPand?.name || firstPand?.adres || '',
-            property_address: firstPand?.adres || '',
-            bid_amount: bidAmount,
-            start_date: startDate || '',
-            motivation: motivation || '',
-            months_advance: monthsAdvance || 0,
-            trigger_source: 'aanvraag',
-            personen: personenPayload,
-        };
-
-        // Account resolution (look up by phone, lazy-create if missing) happens
-        // server-side in /api/salesforce/documents-complete using the service-role
-        // key, so RLS doesn't block it. Frontend just needs phone_number.
-
-        // Call the forward-docs-to-salesforce edge function directly from
-        // the browser (verify_jwt: false). Account resolve-or-create lives
-        // inside the edge function, so we don't need a Next.js relay — and
-        // local Node fetch quirks don't affect us.
-        if (sfPayload.phone_number) {
-            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-            const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-            fetch(`${supabaseUrl}/functions/v1/forward-docs-to-salesforce`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': publishableKey,
-                    'Authorization': `Bearer ${publishableKey}`,
-                },
-                body: JSON.stringify(sfPayload),
-            })
-                .then(res => res.json())
-                .then(result => {
-                    if (result.success) {
-                        console.log('[Aanvraag] ✓ Salesforce webhook triggered:', result.batch_id, `(${result.docs_with_files} files)`);
-                    } else {
-                        console.error('[Aanvraag] ✗ Salesforce webhook failed:', result.error);
-                    }
-                })
-                .catch(err => console.error('[Aanvraag] ✗ Salesforce webhook error:', err));
         } else {
-            console.warn('[Aanvraag] Skipping Salesforce webhook – missing phone_number');
+            console.warn('[Aanvraag] Skipping dossier save – missing phone_number');
+        }
+
+        // Safety net: if the Supabase write didn't go through, fall back to the
+        // direct documentation_status flip so the completion WhatsApp still
+        // fires (single fire — the save path didn't set it).
+        if (!dossierSaved) {
+            await updateAccountDocumentationStatus('Complete');
         }
 
         // Store LOI data in sessionStorage for the next page

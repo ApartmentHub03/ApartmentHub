@@ -2,13 +2,13 @@
 // localStorage and keyed by the applicant's phone number.
 //
 // Why this exists: the form's personen + typed fields live in React state only,
-// and on reload `loadAanvraagDataFromSalesforce` rebuilds the personen list from
-// Salesforce *document rows only*. So anyone without an uploaded document yet —
-// typically a freshly-added guarantor — disappears on refresh, and the
-// tenant<->guarantor link is lost. This draft is the immediate durability layer:
-// Salesforce stays canonical for everything it returns; the draft only ADDS back
-// what SF doesn't (missing people, empty fields, the link) so nothing the user
-// entered silently vanishes.
+// and on reload `loadAanvraagDataFromSupabase` rebuilds the personen list from
+// the dossiers/personen/documenten tables. A freshly-added person whose row
+// hasn't been persisted yet — typically a just-added guarantor — would
+// disappear on refresh, and the tenant<->guarantor link is lost. This draft is
+// the immediate durability layer: Supabase stays canonical for everything it
+// returns; the draft only ADDS back what isn't persisted yet (missing people,
+// empty fields, the link) so nothing the user entered silently vanishes.
 
 const KEY_PREFIX = 'aanvraag_draft_v1:';
 const digits = (s) => String(s || '').replace(/\D/g, '');

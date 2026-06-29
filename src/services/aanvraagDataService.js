@@ -1,11 +1,14 @@
 import { supabase } from '../integrations/supabase/client';
 import { documentsByWorkStatus } from '../config/documentRequirements';
 
-const ROLE_BY_SF_ROLE = {
+// Supabase personen.type -> Dutch role label, and display ordering (tenant first).
+const ROLE_BY_TYPE = {
+    tenant: 'Hoofdhuurder',
     main_tenant: 'Hoofdhuurder',
     co_tenant: 'Medehuurder',
     guarantor: 'Garantsteller',
 };
+const TYPE_ORDER = { tenant: 0, main_tenant: 0, co_tenant: 1, guarantor: 2 };
 
 // Salesforce returns file paths with the bucket prefix (`dossier-documents/...`)
 // because the edge function prepends it. The rest of the app stores/uses
@@ -42,13 +45,93 @@ function groupDocumentsForPerson(docs) {
 }
 
 /**
- * Load Aanvraag form data from Salesforce (apexrest/apthub/dossier).
- * Lookup id is the phone number (digits only — `+` is stripped).
- *
- * Salesforce is the only source. There is no Supabase fallback: when SF is
- * reachable but has no record, we hand back an empty form; only a real
- * network/route 5xx returns ok:false.
+ * Load Aanvraag form data from SUPABASE (dossiers -> personen -> documenten).
+ * This is the system of record (Salesforce has been removed). Lookup is by
+ * phone number, matched with or without a leading `+`. Returns the same shape
+ * as the legacy Salesforce loader so the form consumes it unchanged.
  */
+export const loadAanvraagDataFromSupabase = async (phoneNumber) => {
+    try {
+        const digits = String(phoneNumber || '').replace(/\D/g, '');
+        if (!digits) return { ok: true, data: buildEmptyAanvraagForm(phoneNumber), source: 'supabase', empty: true };
+        const candidates = [...new Set([phoneNumber, `+${digits}`, digits])].filter(Boolean);
+
+        const { data: dossiers, error: dErr } = await supabase
+            .from('dossiers')
+            .select('*')
+            .in('phone_number', candidates)
+            .order('created_at', { ascending: false })
+            .limit(1);
+        if (dErr) return { ok: false, error: dErr.message };
+
+        const dossier = dossiers?.[0];
+        if (!dossier) return { ok: true, data: buildEmptyAanvraagForm(phoneNumber), source: 'supabase', empty: true };
+
+        const { data: personen } = await supabase
+            .from('personen')
+            .select('*')
+            .eq('dossier_id', dossier.id);
+
+        const ordered = (personen || []).slice().sort(
+            (a, b) => (TYPE_ORDER[a.type] ?? 9) - (TYPE_ORDER[b.type] ?? 9)
+        );
+
+        const mapped = await Promise.all(ordered.map(async (p, idx) => {
+            const { data: docs } = await supabase
+                .from('documenten')
+                .select('*')
+                .eq('persoon_id', p.id);
+            // Adapt Supabase column names to what groupDocumentsForPerson expects.
+            const adapted = (docs || []).map((d) => ({
+                id: d.id, type: d.type, file_name: d.bestandsnaam, file_path: d.bestandspad, status: d.status,
+            }));
+            const naam = `${p.voornaam || ''} ${p.achternaam || ''}`.trim();
+            return {
+                persoonId: `p${idx + 1}`,
+                naam,
+                email: p.email || '',
+                telefoon: p.telefoon || '',
+                rol: p.rol || ROLE_BY_TYPE[p.type] || 'Hoofdhuurder',
+                werkstatus: p.werk_status || '',
+                inkomen: p.bruto_maandinkomen == null || p.bruto_maandinkomen === '' ? '' : String(p.bruto_maandinkomen),
+                adres: p.huidige_adres || '',
+                postcode: p.postcode || '',
+                woonplaats: p.woonplaats || '',
+                linkedToPersoonId: null,
+                documenten: groupDocumentsForPerson(adapted),
+                docsCompleet: (docs || []).length > 0,
+            };
+        }));
+
+        // Always guarantee a main tenant bucket.
+        if (!mapped.some((m) => m.rol === 'Hoofdhuurder')) {
+            mapped.unshift({
+                persoonId: 'p0', naam: '', email: dossier.email || '', telefoon: dossier.phone_number || phoneNumber || '',
+                rol: 'Hoofdhuurder', werkstatus: '', inkomen: '', adres: '', postcode: '', woonplaats: '',
+                linkedToPersoonId: null, documenten: [], docsCompleet: false,
+            });
+        }
+
+        return {
+            ok: true,
+            source: 'supabase',
+            data: {
+                bidAmount: dossier.bid_amount || 0,
+                startDate: dossier.start_date || '',
+                motivation: dossier.motivation || '',
+                monthsAdvance: dossier.months_advance || 0,
+                propertyAddress: dossier.property_address || '',
+                personen: mapped,
+            },
+        };
+    } catch (error) {
+        console.error('Error in loadAanvraagDataFromSupabase:', error);
+        return { ok: false, error: error.message || 'Failed to load from Supabase' };
+    }
+};
+
+// Empty form scaffold (one blank main-tenant bucket) returned when no dossier
+// exists yet for a phone number.
 const buildEmptyAanvraagForm = (phoneNumber) => ({
     bidAmount: 0,
     startDate: '',
@@ -73,124 +156,6 @@ const buildEmptyAanvraagForm = (phoneNumber) => ({
         },
     ],
 });
-
-export const loadAanvraagDataFromSalesforce = async (phoneNumber) => {
-    const digits = String(phoneNumber || '').replace(/\D/g, '');
-    if (!digits) return { ok: false, error: 'Missing phone number' };
-
-    let res;
-    let payload;
-    try {
-        res = await fetch(`/api/salesforce/dossier?phone=${encodeURIComponent(digits)}`);
-        payload = await res.json();
-    } catch (error) {
-        console.error('Error in loadAanvraagDataFromSalesforce (unreachable):', error);
-        return { ok: false, error: error.message || 'Failed to load from Salesforce' };
-    }
-
-    try {
-        // Distinguish "SF reached, no record for this phone" from "SF / route
-        // unreachable". The /api/salesforce/dossier route returns 502 with
-        // `details.success === false` when SF itself responds "no dossier" —
-        // we treat that as a reachable-empty response so the form renders
-        // blank. Genuine HTTP/network errors still return `ok: false`.
-        const sfRespondedEmpty =
-            payload?.details?.success === false ||
-            (res.ok && payload?.success !== false && !payload?.dossier) ||
-            (res.ok && payload?.dossier?.success === false);
-
-        if (!res.ok && !sfRespondedEmpty) {
-            return { ok: false, error: payload?.error || `Salesforce ${res.status}` };
-        }
-        if (payload?.success === false && !sfRespondedEmpty) {
-            return { ok: false, error: payload?.error || 'Salesforce error' };
-        }
-
-        const sf = payload?.dossier;
-        if (sfRespondedEmpty || !sf || sf.success === false) {
-            return {
-                ok: true,
-                data: buildEmptyAanvraagForm(phoneNumber),
-                source: 'salesforce',
-                empty: true,
-            };
-        }
-
-        // Group documents by person. Salesforce sends one document row per file,
-        // each with an inline `person`. Dedup by role + phone (guarantors often
-        // have a null phone and empty name, so we still treat them as one
-        // person per role in that case).
-        const personBuckets = new Map();
-        const orderedKeys = [];
-        for (const d of sf.documents || []) {
-            const p = d.person || {};
-            const role = p.role || 'main_tenant';
-            const phoneKey = (p.phone_number || '').replace(/\D/g, '');
-            const key = `${role}|${phoneKey || (p.name || '')}`;
-            if (!personBuckets.has(key)) {
-                personBuckets.set(key, { person: p, docs: [] });
-                orderedKeys.push(key);
-            }
-            personBuckets.get(key).docs.push(d);
-        }
-
-        // Always ensure a main tenant bucket exists, even if SF returned no
-        // documents at all (fresh dossier with form values only).
-        const mainKey = `main_tenant|${(sf.phone_number || '').replace(/\D/g, '')}`;
-        if (!personBuckets.has(mainKey)) {
-            personBuckets.set(mainKey, {
-                person: {
-                    role: 'main_tenant',
-                    name: sf.tenant_name || '',
-                    phone_number: sf.phone_number || '',
-                    email: sf.email || '',
-                },
-                docs: [],
-            });
-            orderedKeys.unshift(mainKey);
-        }
-
-        const personen = orderedKeys.map((key, idx) => {
-            const { person, docs } = personBuckets.get(key);
-            const role = person.role || 'main_tenant';
-            const rolNL = ROLE_BY_SF_ROLE[role] || 'Hoofdhuurder';
-            const isMain = role === 'main_tenant';
-            const inkomenRaw = person.inkomen;
-            const inkomen = inkomenRaw == null || inkomenRaw === '' ? '' : String(inkomenRaw);
-            return {
-                persoonId: `p${idx + 1}`,
-                naam: isMain ? (person.name || sf.tenant_name || '') : (person.name || ''),
-                email: (person.email || (isMain ? sf.email : '') || ''),
-                telefoon: person.phone_number || (isMain ? sf.phone_number : '') || '',
-                rol: rolNL,
-                werkstatus: person.werkstatus || '',
-                inkomen,
-                adres: person.adres || '',
-                postcode: person.postcode || '',
-                woonplaats: person.woonplaats || '',
-                linkedToPersoonId: null,
-                documenten: groupDocumentsForPerson(docs),
-                docsCompleet: docs.length > 0,
-            };
-        });
-
-        return {
-            ok: true,
-            data: {
-                bidAmount: sf.bid_amount || 0,
-                startDate: sf.start_date || '',
-                motivation: sf.motivation || '',
-                monthsAdvance: sf.months_advance || 0,
-                propertyAddress: sf.property_address || '',
-                personen,
-            },
-            source: 'salesforce',
-        };
-    } catch (error) {
-        console.error('Error in loadAanvraagDataFromSalesforce:', error);
-        return { ok: false, error: error.message || 'Failed to load from Salesforce' };
-    }
-};
 
 /**
  * Collect every storage path attached to a person across both single-file
