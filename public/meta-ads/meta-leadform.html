@@ -706,7 +706,6 @@ form.addEventListener('submit',async(e)=>{
   try{
     const res=await fetch(CONFIG.leadEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     if(!res.ok) throw new Error('Bad response '+res.status);
-    if(window.fbq) fbq('track','Lead',{content_name:'meta_leadform',language:LANG,variant:(CONFIG.variant||'A')},{eventID:eventId});
     clearState();
     window.location.assign(CONFIG.thankYou[LANG]||CONFIG.thankYou.nl);
   }catch(err){

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
 import { getSupabaseServer } from '@/lib/supabaseServer';
 
 const ZOKO_API_BASE = 'https://chat.zoko.io/v2';
@@ -146,10 +147,160 @@ async function sendZokoTemplateMessage(apiKey, phone, templateId, templateType, 
             console.error('[meta-lead] Zoko send message error:', res.status, data);
             return { success: false, status: res.status, details: data };
         }
+
+        // Check for body-level errors (Zoko may return 200 OK with error in the body)
+        if (data && typeof data === 'object') {
+            const bodyStr = JSON.stringify(data).toLowerCase();
+            const hasError =
+                data.success === false ||
+                data.status === 'failed' ||
+                data.status === 'error' ||
+                bodyStr.includes('invalid number') ||
+                bodyStr.includes('cannot be messaged') ||
+                bodyStr.includes('message failed');
+            if (hasError) {
+                console.error('[meta-lead] Zoko send message body error:', data);
+                return { success: false, status: res.status, details: data };
+            }
+        }
+
+        console.log('[meta-lead] Zoko send message success:', data);
         return { success: true, data };
     } catch (err) {
         console.error('[meta-lead] Zoko send message error:', err);
         return { success: false, error: err.message };
+    }
+}
+
+const POLL_MAX_WAIT_MS = 15000;
+const POLL_INTERVAL_MS = 2000;
+
+async function pollZokoMessageStatus(apiKey, messageId) {
+    const startTime = Date.now();
+    while (Date.now() - startTime < POLL_MAX_WAIT_MS) {
+        try {
+            const res = await fetch(`${ZOKO_API_BASE}/message/${encodeURIComponent(messageId)}`, {
+                method: 'GET',
+                headers: zokoHeaders(apiKey),
+            });
+            if (res.ok) {
+                const data = await res.json().catch(() => null);
+                if (data) {
+                    const status = String(data.deliveryStatus || data.status || '').toLowerCase();
+                    console.log('[meta-lead] Zoko poll status:', status, 'for message:', messageId);
+
+                    if (status === 'sent' || status === 'delivered' || status === 'received' || status === 'read') {
+                        return 'sent';
+                    }
+                    if (status === 'failed' || status === 'error' || status === 'undelivered' || status === 'rejected') {
+                        return 'failed';
+                    }
+                    const bodyStr = JSON.stringify(data).toLowerCase();
+                    if (bodyStr.includes('invalid number') || bodyStr.includes('cannot be messaged') || bodyStr.includes('message failed')) {
+                        return 'failed';
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('[meta-lead] Zoko poll error:', err);
+        }
+        await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
+    }
+    return null;
+}
+
+async function sendCapiEvent({ normalizedPhone, email, fullName, tracking, eventId, sourceUrl, language, variant }) {
+    const metaPixelId = process.env.META_PIXEL_ID;
+    const metaCapiToken = process.env.META_CAPI_ACCESS_TOKEN;
+    if (!metaPixelId || !metaCapiToken) {
+        console.error('[meta-lead] CAPI skipped — missing META_PIXEL_ID or META_CAPI_ACCESS_TOKEN');
+        return { success: false, error: 'Missing Meta config' };
+    }
+
+    try {
+        const userData = {};
+        userData.ph = await sha256(normalizedPhone);
+        if (email) userData.em = await sha256(email);
+        if (fullName) {
+            const parts = fullName.trim().split(/\s+/);
+            if (parts[0]) userData.fn = await sha256(parts[0]);
+            if (parts.length > 1) userData.ln = await sha256(parts.slice(1).join(' '));
+        }
+        if (tracking?.fbp) userData.fbp = tracking.fbp;
+        if (tracking?.fbc) userData.fbc = tracking.fbc;
+
+        const capiPayload = {
+            data: [{
+                event_name: 'Lead',
+                event_time: Math.floor(Date.now() / 1000),
+                event_id: eventId,
+                event_source_url: sourceUrl,
+                action_source: 'website',
+                user_data: userData,
+                custom_data: { content_name: 'meta_leadform', language: language || 'nl', variant: variant || 'A' },
+            }],
+        };
+
+        const capiRes = await fetch(
+            `https://graph.facebook.com/v19.0/${metaPixelId}/events`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...capiPayload, access_token: metaCapiToken }),
+            }
+        );
+
+        if (!capiRes.ok) {
+            const errText = await capiRes.text();
+            console.error('[meta-lead] CAPI error:', capiRes.status, errText);
+            return { success: false, status: capiRes.status };
+        }
+        console.log('[meta-lead] CAPI success');
+        return { success: true };
+    } catch (err) {
+        console.error('[meta-lead] CAPI error:', err);
+        return { success: false, error: err.message };
+    }
+}
+
+async function updateTemplateStatus(supabase, phone, status, error) {
+    if (!supabase) return;
+    try {
+        const { error: tplError } = await supabase
+            .from('meta_leads')
+            .update({
+                welcome_template_status: status,
+                welcome_template_error: error || null,
+            })
+            .eq('phone', phone);
+        if (tplError) {
+            console.error('[meta-lead] Failed to update welcome_template_status:', tplError);
+        }
+    } catch (err) {
+        console.error('[meta-lead] Failed to update welcome_template_status:', err);
+    }
+}
+
+async function processZokoDelivery({ apiKey, messageId, normalizedPhone, email, fullName, tracking, eventId, sourceUrl, language, variant, supabase }) {
+    try {
+        const status = await pollZokoMessageStatus(apiKey, messageId);
+
+        if (status === 'failed') {
+            console.error('[meta-lead] Bad lead — Zoko delivery failed for message:', messageId);
+            await updateTemplateStatus(supabase, normalizedPhone, 'failed', 'Delivery failed (invalid number or rejected)');
+            return;
+        }
+
+        if (status === null) {
+            console.log('[meta-lead] Zoko delivery timeout, firing CAPI optimistically');
+        } else {
+            console.log('[meta-lead] Zoko delivery confirmed, firing CAPI');
+        }
+
+        await updateTemplateStatus(supabase, normalizedPhone, 'sent', null);
+        await sendCapiEvent({ normalizedPhone, email, fullName, tracking, eventId, sourceUrl, language, variant });
+    } catch (err) {
+        console.error('[meta-lead] processZokoDelivery error:', err);
     }
 }
 
@@ -348,53 +499,40 @@ export async function POST(request) {
         }
     }
 
-    const metaPixelId = process.env.META_PIXEL_ID;
-    const metaCapiToken = process.env.META_CAPI_ACCESS_TOKEN;
-    if (metaPixelId && metaCapiToken) {
-        try {
-            const userData = {};
-            userData.ph = await sha256(normalizedPhone);
-            if (email) userData.em = await sha256(email);
-            if (fullName) {
-                const parts = fullName.trim().split(/\s+/);
-                if (parts[0]) userData.fn = await sha256(parts[0]);
-                if (parts.length > 1) userData.ln = await sha256(parts.slice(1).join(' '));
-            }
-            if (tracking?.fbp) userData.fbp = tracking.fbp;
-            if (tracking?.fbc) userData.fbc = tracking.fbc;
+    // Determine next steps based on Zoko outcome
+    const zokoMessageId = results.zoko?.success && results.zoko.data?.messageId;
 
-            const capiPayload = {
-                data: [{
-                    event_name: 'Lead',
-                    event_time: Math.floor(Date.now() / 1000),
-                    event_id: eventId,
-                    event_source_url: sourceUrl,
-                    action_source: 'website',
-                    user_data: userData,
-                    custom_data: { content_name: 'meta_leadform', language: language || 'nl', variant: variant || 'A' },
-                }],
-            };
-
-            const capiRes = await fetch(
-                `https://graph.facebook.com/v19.0/${metaPixelId}/events`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ...capiPayload, access_token: metaCapiToken }),
-                }
-            );
-
-            if (!capiRes.ok) {
-                const errText = await capiRes.text();
-                console.error('[meta-lead] CAPI error:', capiRes.status, errText);
-                results.capi = { success: false, status: capiRes.status };
-            } else {
-                results.capi = { success: true };
-            }
-        } catch (err) {
-            console.error('[meta-lead] CAPI error:', err);
-            results.capi = { success: false, error: err.message };
+    if (zokoMessageId) {
+        // Zoko accepted the message (202) — poll delivery status in the background
+        // and only fire CAPI if the template was actually delivered (or timeout = optimistic).
+        waitUntil(
+            processZokoDelivery({
+                apiKey: zokoApiKey,
+                messageId: zokoMessageId,
+                normalizedPhone,
+                email,
+                fullName,
+                tracking,
+                eventId,
+                sourceUrl,
+                language,
+                variant,
+                supabase,
+            }).catch(err => {
+                console.error('[meta-lead] processZokoDelivery unhandled error:', err);
+            })
+        );
+    } else if (results.zoko && !results.zoko.success) {
+        // Zoko failed synchronously (HTTP error, body error, or exception) — skip CAPI
+        console.error('[meta-lead] Bad lead — Zoko template failed synchronously, skipping CAPI:', JSON.stringify(results.zoko));
+        const templateError = results.zoko.error || results.zoko.details || JSON.stringify(results.zoko);
+        await updateTemplateStatus(supabase, normalizedPhone, 'failed', templateError);
+    } else {
+        // Zoko not configured (no API key) or no template ID — fire CAPI synchronously
+        if (results.zoko && results.zoko.success) {
+            await updateTemplateStatus(supabase, normalizedPhone, 'sent', null);
         }
+        results.capi = await sendCapiEvent({ normalizedPhone, email, fullName, tracking, eventId, sourceUrl, language, variant });
     }
 
     const isDuplicate = results.supabase?.isDuplicate || false;

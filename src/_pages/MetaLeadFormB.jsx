@@ -396,9 +396,6 @@ const MetaLeadFormB = () => {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Bad response ' + res.status);
-      if (typeof window !== 'undefined' && window.fbq) {
-        window.fbq('track', 'Lead', { content_name: 'meta_leadform', language: lang, variant: 'B' }, { eventID: eventId });
-      }
       try { localStorage.removeItem(LS_KEY); } catch {}
       window.location.href = THANK_YOU[lang] || THANK_YOU.nl;
     } catch (err) {
