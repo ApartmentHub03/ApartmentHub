@@ -11,6 +11,7 @@ import { DeleteDossier } from "./delete";
 import { StaffUploadDropzone } from "./upload-dropzone";
 import { MagicLinksSection } from "./magic-links";
 import { NotesSection } from "./notes";
+import { RenameDocKeyButton } from "./rename-doc-key";
 import { DOC_DESCRIPTIONS } from "@/app/lib/doc-descriptions";
 import { Logo } from "@/app/lib/components/Logo";
 import Image from "next/image";
@@ -259,9 +260,13 @@ type MagicLinkForStatus = {
 function DocumentStatusPanel({
   files,
   magicLinks,
+  dossierId,
+  canEdit,
 }: {
   files: DocStatusFile[];
   magicLinks: MagicLinkForStatus[];
+  dossierId: string;
+  canEdit: boolean;
 }) {
   const uploadedByDocKey = new Map<string, DocStatusFile>();
   for (const f of files) uploadedByDocKey.set(f.doc_key, f);
@@ -328,7 +333,12 @@ function DocumentStatusPanel({
               }}
             >
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{label}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>
+                  {label}
+                  {status === "uploaded" && file && (
+                    <RenameDocKeyButton key={`${file.id}-${key}`} dossierId={dossierId} fileId={file.id} currentKey={key} canEdit={canEdit} />
+                  )}
+                </div>
                 {status === "uploaded" && file && (
                   <div style={{ fontSize: 12, color: "var(--grey-soft)" }}>
                     {file.filename} · {bytes(file.size_bytes)}
@@ -365,7 +375,7 @@ function DocumentStatusPanel({
               </div>
               <div>
                 {status === "uploaded" && (
-                  <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 9px", borderRadius: 999, background: "var(--ok-soft)", color: "var(--ok)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 9px", borderRadius: 999, background: "var(--ok-soft)", color: "var(--ok)", textTransform: "uppercase", letterSpacing: "0.04em", textWrap: "nowrap" }}>
                     ✓ Uploaded
                   </span>
                 )}
@@ -706,7 +716,7 @@ export default async function DossierPage({ params }: Params) {
           </div>
 
           <div>
-            <DocumentStatusPanel files={files} magicLinks={magicLinks} />
+            <DocumentStatusPanel files={files} magicLinks={magicLinks} dossierId={d.id} canEdit={staff.role !== "viewer"} />
 
             {staff.role !== "viewer" && (
               <StaffUploadDropzone dossierId={d.id} />

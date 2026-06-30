@@ -1,14 +1,35 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { supabaseAdmin } from "./supabase-admin";
 import { downloadFile } from "./storage";
-import { DOC_DESCRIPTIONS } from "./doc-descriptions";
+import { DOC_DESCRIPTIONS, DOC_KEYS } from "./doc-descriptions";
 
-// Per-doc extraction is a structured-output, single-PDF task — Haiku handles
-// it at ~half the latency of Sonnet (8-10s vs 17-20s on the typical 100-160KB
-// dossier PDF) with no measurable quality loss for the fact-extraction schema.
-// Synthesis stays on Sonnet via VERKOOP_MODEL because it has to reason over
-// many extracts at once. Override here via VERKOOP_EXTRACT_MODEL if needed.
 const MODEL = process.env.VERKOOP_EXTRACT_MODEL || "claude-haiku-4-5";
+
+export type ClassificationResult = {
+  doc_key: string;
+  confidence: "high" | "medium" | "low";
+  reason: string;
+};
+
+const CLASSIFICATION_PROMPT = `You are a document classifier for a Dutch apartment-sale platform.
+Given a document, determine which of the following document types it is most likely to be.
+
+Document types:
+${DOC_KEYS.map((k) => `- ${k}: ${DOC_DESCRIPTIONS[k].en}`).join("\n")}
+
+Respond with JSON only, no prose, no code fences. Schema:
+{
+  "doc_key": string,
+  "confidence": "high" | "medium" | "low",
+  "reason": string
+}
+
+Rules:
+- Pick the single best matching doc_key from the list above.
+- Use "high" confidence only if you are very sure.
+- Use "medium" if it seems likely but could be something else.
+- Use "low" if you are unsure or the document doesn't clearly match any type.
+- The reason should be a brief one-sentence explanation of why you chose this type.`;
 
 export type DocExtract = {
   doc_key: string;
@@ -134,6 +155,53 @@ function safeParse(raw: string, docKey?: string): DocExtract | null {
     return base;
   } catch {
     return null;
+  }
+}
+
+export async function classifyDocument(opts: {
+  bytes: Buffer;
+  mime: string;
+  filename: string;
+}): Promise<ClassificationResult> {
+  const anthropicKey =
+    process.env.VERKOOP_ANTHROPIC_API_KEY ?? process.env.ANTHROPIC_API_KEY;
+  if (!anthropicKey) {
+    return { doc_key: "passport", confidence: "low", reason: "No API key configured — defaulting to passport" };
+  }
+
+  const client = new Anthropic({ apiKey: anthropicKey });
+  try {
+    const msg = await client.messages.create({
+      model: MODEL,
+      max_tokens: 200,
+      system: CLASSIFICATION_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: buildContent(opts),
+        },
+      ],
+    });
+    const tb = msg.content.find(
+      (b): b is Extract<typeof b, { type: "text" }> => b.type === "text"
+    );
+    if (!tb) throw new Error("no_text_response");
+    const raw = tb.text.trim().replace(/^```(?:json)?\s*|\s*```$/g, "");
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const docKey =
+      typeof parsed.doc_key === "string" && DOC_KEYS.includes(parsed.doc_key)
+        ? parsed.doc_key
+        : "passport";
+    const confidence =
+      parsed.confidence === "high" || parsed.confidence === "medium"
+        ? parsed.confidence
+        : "low";
+    const reason =
+      typeof parsed.reason === "string" ? parsed.reason : "";
+    return { doc_key: docKey, confidence, reason };
+  } catch (err) {
+    console.error("[classifyDocument] failed:", err instanceof Error ? err.message : String(err));
+    return { doc_key: "passport", confidence: "low", reason: "Classification failed — defaulting to passport" };
   }
 }
 

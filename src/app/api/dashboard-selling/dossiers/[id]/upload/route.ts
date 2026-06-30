@@ -3,7 +3,7 @@ import { waitUntil } from "@vercel/functions";
 import { supabaseAdmin } from "@/app/lib/supabase-admin";
 import { getStaffUser } from "@/app/lib/auth";
 import { buildObjectPath, uploadFile, deleteFile, signedUrl } from "@/app/lib/storage";
-import { extractSingleDocument } from "@/app/lib/extract-doc";
+import { extractSingleDocument, classifyDocument } from "@/app/lib/extract-doc";
 import { DOC_KEYS } from "@/app/lib/doc-descriptions";
 
 export const runtime = "nodejs";
@@ -25,17 +25,29 @@ export async function POST(req: NextRequest, { params }: Params) {
   const form = await req.formData().catch(() => null);
   if (!form) return NextResponse.json({ error: "invalid_form" }, { status: 400 });
 
-  const docKey = (form.get("doc_key") as string | null)?.trim() ?? "";
+  const rawDocKey = (form.get("doc_key") as string | null)?.trim() ?? "";
   const file = form.get("file");
-  if (!docKey || !DOC_KEYS.includes(docKey)) {
-    return NextResponse.json({ error: "invalid_doc_key" }, { status: 400 });
-  }
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "missing_file" }, { status: 400 });
   }
   if (file.size === 0) return NextResponse.json({ error: "empty_file" }, { status: 400 });
   if (file.size > MAX_FILE_BYTES) {
     return NextResponse.json({ error: "too_large", limit: MAX_FILE_BYTES }, { status: 413 });
+  }
+
+  let docKey = rawDocKey;
+  let classification: { doc_key: string; confidence: string; reason: string } | null = null;
+
+  if (!docKey || !DOC_KEYS.includes(docKey)) {
+    const mime = file.type || "application/octet-stream";
+    if (mime === "application/pdf" || mime.startsWith("image/")) {
+      const buf = Buffer.from(await file.arrayBuffer());
+      classification = await classifyDocument({ bytes: buf, mime, filename: file.name });
+      docKey = classification.doc_key;
+    } else {
+      docKey = "passport";
+      classification = { doc_key: "passport", confidence: "low", reason: `Unsupported mime type: ${mime}` };
+    }
   }
 
   const sb = supabaseAdmin();
@@ -84,7 +96,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       filename: file.name,
       mime_type: file.type || null,
       size_bytes: file.size,
-      blob_url: path, // storage path — preview goes via signedUrl()
+      blob_url: path,
       version: newVersion,
       is_current: true,
       uploaded_by: `staff:${staff.phone_e164}`,
@@ -106,7 +118,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     dossier_id: dossierId,
     actor: `staff:${staff.phone_e164}`,
     action: prior ? "file_replaced" : "file_uploaded",
-    meta: { doc_key: docKey, version: newVersion, size: file.size, filename: file.name },
+    meta: { doc_key: docKey, version: newVersion, size: file.size, filename: file.name, classified: classification !== null },
   });
 
   const preview = await signedUrl(path);
@@ -128,5 +140,6 @@ export async function POST(req: NextRequest, { params }: Params) {
     version: newVersion,
     uploaded_at: inserted.uploaded_at,
     preview_url: preview,
+    classification: classification ? { doc_key: classification.doc_key, confidence: classification.confidence, reason: classification.reason } : null,
   });
 }
