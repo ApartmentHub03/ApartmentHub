@@ -1,15 +1,11 @@
 import { NextResponse } from 'next/server';
+import { ZOKO_TEMPLATES } from '@/services/zokoTemplates';
 
 const ZOKO_API_URL = 'https://chat.zoko.io/v2/message';
 
-// Known templates and their expected variable counts (for basic validation).
-// All three templates in ApartmentHub's Zoko account are "buttonTemplate" type
-// — i.e. they have a button with a dynamic URL as the last variable.
-const TEMPLATES = {
-    co_tenant_invite: { language: 'en', variableCount: 3, type: 'buttonTemplate' },
-    guarantor_invite: { language: 'en', variableCount: 3, type: 'buttonTemplate' },
-    you_can_now_start_applying_to_apartments: { language: 'en', variableCount: 2, type: 'buttonTemplate' },
-};
+// Templates + expected variable counts come from the shared catalog
+// (src/services/zokoTemplates.js) so the CRM UI and this sender stay in sync.
+const TEMPLATES = ZOKO_TEMPLATES;
 
 // Zoko expects recipients as digits only with country code, no leading "+".
 function normalizeRecipient(phone) {
@@ -54,6 +50,20 @@ export async function POST(request) {
     }
 
     const template = TEMPLATES[templateId];
+
+    // Block templates whose exact Zoko templateId / type isn't confirmed yet —
+    // sending to a wrong ID fails silently on Zoko's side.
+    if (!template.verified || !template.zokoId) {
+        return NextResponse.json(
+            {
+                success: false,
+                message: `Template "${templateId}" is not yet connected — its exact Zoko templateId and type still need to be confirmed before it can be sent.`,
+                needsZokoId: true,
+            },
+            { status: 422 }
+        );
+    }
+
     const args = Array.isArray(templateArgs) ? templateArgs.map(v => String(v ?? '')) : [];
     if (args.length !== template.variableCount) {
         return NextResponse.json(
@@ -69,7 +79,7 @@ export async function POST(request) {
         channel: 'whatsapp',
         recipient: normalized,
         type: template.type,
-        templateId,
+        templateId: template.zokoId,
         templateLanguage: template.language,
         templateArgs: args,
     };
