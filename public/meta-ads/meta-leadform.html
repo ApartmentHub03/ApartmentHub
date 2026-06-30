@@ -681,7 +681,7 @@ form.addEventListener('submit',async(e)=>{
   if(honeypotVal){ console.warn('[leadform-a] honeypot filled, blocking submission'); return; }
   const eventId=makeEventId();
   const tracking=getTracking();
-  var source=(tracking.utm.utm_source==='facebook'||tracking.utm.utm_source==='meta'||tracking.fbclid)?'meta_ads':tracking.utm.utm_source==='instagram'?'instagram':tracking.utm.utm_source==='google'?'google_ads':tracking.referrer.includes('instagram')?'instagram':tracking.referrer.includes('google')?'google_ads':'organic';
+  var source='meta_ads';
   const payload={
     fullName:form.fullName.value.trim(),
     phone:buildE164(form.phone.value,selectedCountry.code),
@@ -696,7 +696,7 @@ form.addEventListener('submit',async(e)=>{
     eventId:eventId,
     tracking:tracking,
     tags:[
-          source==='google_ads'?'Google Ads':source==='instagram'?'Instagram':source==='organic'?'Organic':'Meta Ads',
+          'Meta Ads',
           'variant_'+(CONFIG.variant||'A').toLowerCase(),
           ...state.bedrooms.map(v=>v==='4+'?'4+ Bedrooms':v==='1'?'1 Bedroom':v+' Bedrooms'),
           ...state.budget.map(v=>'\u20AC'+v.replace('-',' - \u20AC'))
