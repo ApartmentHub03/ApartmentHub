@@ -11,7 +11,7 @@ const CITIES = ['Amsterdam · 06 5897 5449', 'Utrecht · 06 2372 0769'];
 // Verified templates the CRM can actually send, for the picker.
 const SENDABLE = Object.entries(ZOKO_TEMPLATES)
     .filter(([, t]) => t.verified && t.zokoId)
-    .map(([key, t]) => ({ key, label: t.label, stage: t.stage, variableCount: t.variableCount }));
+    .map(([key, t]) => ({ key, label: t.label, stage: t.stage, variableCount: t.variableCount, vars: t.vars }));
 
 const isDeal = (s) => !!s && /deal|won|closed/i.test(s);
 
@@ -603,12 +603,15 @@ function SendTemplateModal({ ctx, onClose, onAuthFail }) {
                             {SENDABLE.map((t) => <option key={t.key} value={t.key}>{t.stage} — {t.label}</option>)}
                         </select>
                     </div>
-                    {Array.from({ length: tpl?.variableCount || 0 }).map((_, i) => (
-                        <div className={styles.field} style={{ marginBottom: 10 }} key={i}>
-                            <label>{`Variable {{${i + 1}}}`}</label>
-                            <input value={args[i] ?? ''} onChange={(e) => setArgs((a) => { const n = [...a]; n[i] = e.target.value; return n; })} placeholder={`{{${i + 1}}}`} />
-                        </div>
-                    ))}
+                    {Array.from({ length: tpl?.variableCount || 0 }).map((_, i) => {
+                        const varName = tpl?.vars?.[i];
+                        return (
+                            <div className={styles.field} style={{ marginBottom: 10 }} key={i}>
+                                <label>{varName ? `${varName} · {{${i + 1}}}` : `Variable {{${i + 1}}}`}</label>
+                                <input value={args[i] ?? ''} onChange={(e) => setArgs((a) => { const n = [...a]; n[i] = e.target.value; return n; })} placeholder={varName || `{{${i + 1}}}`} />
+                            </div>
+                        );
+                    })}
                     {SENDABLE.length === 0 && <p className={styles.hint}>No verified templates are available to send yet.</p>}
                 </div>
                 <div className={styles.modalFoot}>
