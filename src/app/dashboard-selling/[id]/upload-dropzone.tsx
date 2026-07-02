@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { DOC_KEYS, DOC_DESCRIPTIONS } from "@/app/lib/doc-descriptions";
+import styles from "../dashboard-selling.module.css";
 
 type ClassificationResult = {
   doc_key: string;
@@ -33,7 +34,23 @@ export function StaffUploadDropzone({
   const [renaming, setRenaming] = useState(false);
   const [renameKey, setRenameKey] = useState("");
   const [renameLoading, setRenameLoading] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!deleteModalOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape" && !deleting) setDeleteModalOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [deleteModalOpen, deleting]);
 
   const doUpload = useCallback(
     async (file: File) => {
@@ -108,6 +125,33 @@ export function StaffUploadDropzone({
       setRenameLoading(false);
     }
   }, [dossierId, uploadResult, renameKey, router]);
+
+  const handleDelete = useCallback(async () => {
+    if (!uploadResult) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/dashboard-selling/dossiers/${dossierId}/files/${uploadResult.id}`,
+        { method: "DELETE" }
+      );
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error || "Delete failed");
+        setDeleteModalOpen(false);
+        return;
+      }
+      setUploadResult(null);
+      setRenameKey("");
+      setDeleteModalOpen(false);
+      router.refresh();
+    } catch {
+      setError("Network error deleting document");
+      setDeleteModalOpen(false);
+    } finally {
+      setDeleting(false);
+    }
+  }, [dossierId, uploadResult, router]);
 
   const handleFileInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -211,7 +255,6 @@ export function StaffUploadDropzone({
                 setRenaming(true);
               }}
               style={{
-                marginLeft: "auto",
                 fontSize: 11,
                 fontWeight: 600,
                 padding: "4px 10px",
@@ -224,6 +267,22 @@ export function StaffUploadDropzone({
               }}
             >
               Change type
+            </button>
+            <button
+              onClick={() => setDeleteModalOpen(true)}
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                padding: "4px 10px",
+                borderRadius: 6,
+                border: "1px solid var(--danger)",
+                background: "#fff",
+                color: "var(--danger)",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Delete
             </button>
           </div>
           <button
@@ -352,6 +411,55 @@ export function StaffUploadDropzone({
 
       {error && (
         <div style={{ marginTop: 8, fontSize: 12, color: "var(--danger)" }}>{error}</div>
+      )}
+
+      {deleteModalOpen && (
+        <div
+          className={styles.modalOverlay}
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget && !deleting) setDeleteModalOpen(false);
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-upload-doc-title"
+        >
+          <div className={styles.modalCard}>
+            <div className={styles.modalIcon} aria-hidden>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                <line x1="10" y1="11" x2="10" y2="17" />
+                <line x1="14" y1="11" x2="14" y2="17" />
+              </svg>
+            </div>
+            <h3 id="delete-upload-doc-title" className={styles.modalTitle}>
+              Delete this document?
+            </h3>
+            <p className={styles.modalBody}>
+              This will permanently remove the uploaded document. This action <strong>cannot be undone</strong>.
+            </p>
+            <div className={styles.modalActions}>
+              <button
+                type="button"
+                className={styles.btnSecondary}
+                style={{ padding: "9px 16px" }}
+                onClick={() => setDeleteModalOpen(false)}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={`${styles.btnPrimary} ${styles.btnDangerSolid}`}
+                style={{ padding: "9px 18px" }}
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Deleting\u2026" : "Delete permanently"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

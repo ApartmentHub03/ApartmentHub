@@ -12,6 +12,7 @@ import { StaffUploadDropzone } from "./upload-dropzone";
 import { MagicLinksSection } from "./magic-links";
 import { NotesSection } from "./notes";
 import { RenameDocKeyButton } from "./rename-doc-key";
+import { DeleteDocButton } from "./delete-doc";
 import { DOC_DESCRIPTIONS } from "@/app/lib/doc-descriptions";
 import { Logo } from "@/app/lib/components/Logo";
 import Image from "next/image";
@@ -337,6 +338,9 @@ function DocumentStatusPanel({
                   {label}
                   {status === "uploaded" && file && (
                     <RenameDocKeyButton key={`${file.id}-${key}`} dossierId={dossierId} fileId={file.id} currentKey={key} canEdit={canEdit} />
+                  )}
+                  {status === "uploaded" && file && (
+                    <DeleteDocButton dossierId={dossierId} fileId={file.id} filename={file.filename} canEdit={canEdit} />
                   )}
                 </div>
                 {status === "uploaded" && file && (

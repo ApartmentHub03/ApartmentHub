@@ -163,3 +163,50 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     preview_url: preview,
   });
 }
+
+export async function DELETE(_req: NextRequest, { params }: Params) {
+  const { id: dossierId, fileId } = await params;
+  const staff = await getStaffUser();
+  if (!staff) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (staff.role === "viewer") {
+    return NextResponse.json({ error: "forbidden_role" }, { status: 403 });
+  }
+
+  const sb = supabaseAdmin();
+
+  const { data: file, error: findErr } = await sb
+    .from("verkoop_files")
+    .select("id, doc_key, filename, blob_url")
+    .eq("id", fileId)
+    .eq("dossier_id", dossierId)
+    .maybeSingle();
+
+  if (findErr || !file) {
+    return NextResponse.json({ error: "file_not_found" }, { status: 404 });
+  }
+
+  await deleteFile(file.blob_url).catch(() => {});
+
+  const { error: delErr } = await sb
+    .from("verkoop_files")
+    .delete()
+    .eq("id", fileId);
+
+  if (delErr) {
+    return NextResponse.json({ error: "db_error", detail: delErr.message }, { status: 500 });
+  }
+
+  await sb
+    .from("verkoop_dossiers")
+    .update({ last_activity_at: new Date().toISOString() })
+    .eq("id", dossierId);
+
+  await sb.from("verkoop_audit").insert({
+    dossier_id: dossierId,
+    actor: `staff:${staff.phone_e164}`,
+    action: "file_removed",
+    meta: { file_id: fileId, doc_key: file.doc_key, filename: file.filename },
+  });
+
+  return NextResponse.json({ ok: true });
+}
