@@ -17,6 +17,7 @@ export const DOC_DESCRIPTIONS: Record<string, { en: string; nl: string }> = {
   bouwtekeningen:   { en: "Construction drawings",                               nl: "Bouwtekeningen" },
   asbest:           { en: "Asbestos report",                                    nl: "Asbestinventarisatie" },
   fundering:        { en: "Foundation report",                                  nl: "Funderingsrapport" },
+  energielabel:     { en: "Energy label (Energielabel)",                          nl: "Energielabel" },
   seller_id_masked: { en: "Masked ID (KopieID)",                                nl: "Gemaskerd ID (KopieID)" },
   passport:         { en: "Passport or ID card",                                nl: "Paspoort of identiteitsbewijs" },
 };
