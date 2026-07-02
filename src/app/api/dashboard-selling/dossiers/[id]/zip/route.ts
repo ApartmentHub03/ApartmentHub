@@ -71,6 +71,39 @@ export async function GET(req: NextRequest, { params }: Params) {
       | Record<string, unknown>
       | undefined) ?? null;
 
+  type SellerQ = { id: string; question: string; if_yes?: string | null };
+  const sellerQuestions: SellerQ[] = Array.isArray(
+    (followups as { seller_questions?: unknown[] } | null)?.seller_questions
+  )
+    ? ((followups as { seller_questions: unknown[] }).seller_questions as SellerQ[])
+    : [];
+
+  const sellerAnswers = answers ?? {};
+  const flags: string[] = Array.isArray((followups as { flags?: unknown })?.flags)
+    ? ((followups as { flags: unknown[] }).flags as string[])
+    : [];
+  const gaps: string[] = Array.isArray((followups as { gaps?: unknown })?.gaps)
+    ? ((followups as { gaps: unknown[] }).gaps as string[])
+    : [];
+  const nextActions: string[] = Array.isArray((followups as { next_actions?: unknown })?.next_actions)
+    ? ((followups as { next_actions: unknown[] }).next_actions as string[])
+    : [];
+
+  function formatAnswer(raw: unknown): { yn: string | null; note: string; label: string } {
+    if (raw == null) return { yn: null, note: "", label: "Awaiting seller response" };
+    if (typeof raw === "object" && raw !== null) {
+      const obj = raw as Record<string, unknown>;
+      const yn = typeof obj.yn === "string" ? obj.yn : null;
+      const note = typeof obj.note === "string" ? obj.note : "";
+      if (yn === "ja") return { yn, note, label: "Yes" };
+      if (yn === "nee") return { yn, note, label: "No" };
+      if (yn === "notes") return { yn, note, label: note ? "Notes" : "Notes" };
+      return { yn, note, label: yn };
+    }
+    if (typeof raw === "string") return { yn: raw, note: "", label: raw };
+    return { yn: null, note: "", label: String(raw) };
+  }
+
   const md: string[] = [
     `# Dossier — ${d.naam}`,
     "",
@@ -90,18 +123,86 @@ export async function GET(req: NextRequest, { params }: Params) {
     "## Seller motivation",
     d.motivatie ?? "_None provided_",
     "",
-    "## Follow-up answers",
   ];
-  if (followups && Object.keys(followups).length) {
-    Object.entries(followups).forEach(([qid, qtext]) => {
-      md.push(`- **${String(qtext)}**`);
-      md.push(`  - ${String(answers?.[qid] ?? "—")}`);
+
+  if (flags.length > 0) {
+    md.push("## Flags");
+    flags.forEach((f) => md.push(`- ⚠️ ${f}`));
+    md.push("");
+  }
+  if (gaps.length > 0) {
+    md.push("## Gaps");
+    gaps.forEach((g) => md.push(`- ❌ ${g}`));
+    md.push("");
+  }
+  if (nextActions.length > 0) {
+    md.push("## Next actions");
+    nextActions.forEach((a) => md.push(`- → ${a}`));
+    md.push("");
+  }
+
+  md.push("## Seller follow-up Q&A");
+  if (sellerQuestions.length > 0) {
+    sellerQuestions.forEach((q) => {
+      const a = formatAnswer(sellerAnswers[q.id]);
+      const icon = a.yn === "ja" ? "✅" : a.yn === "nee" ? "❌" : a.yn === "notes" ? "📝" : "⏳";
+      md.push("");
+      md.push(`**Q: ${q.question}**`);
+      md.push(`${icon} **${a.label}**`);
+      if (a.note) md.push(`> ${a.note}`);
     });
   } else {
     md.push("_No follow-up questions generated yet._");
   }
   md.push("", "## Direct answers (raw)", "```json", JSON.stringify(d.antwoorden ?? {}, null, 2), "```");
   zip.file("ai_summary.md", md.join("\n"));
+
+  // 1b. seller_qa.md — dedicated Q&A document
+  if (sellerQuestions.length > 0) {
+    const qaLines: string[] = [
+      "# Seller Follow-up Q&A",
+      "",
+      `**Seller:** ${d.naam}`,
+      `**Address:** ${d.straat}${d.woonplaats ? `, ${d.woonplaats}` : ""}`,
+      `**Postcode:** ${d.postcode}`,
+      `**Generated:** ${new Date().toLocaleString()}`,
+      "",
+      "---",
+      "",
+    ];
+
+    let answeredCount = 0;
+    let yesCount = 0;
+    let noCount = 0;
+
+    sellerQuestions.forEach((q, i) => {
+      const a = formatAnswer(sellerAnswers[q.id]);
+      const isAnswered = a.yn === "ja" || a.yn === "nee" || a.yn === "notes";
+      if (isAnswered) answeredCount++;
+      if (a.yn === "ja") yesCount++;
+      if (a.yn === "nee") noCount++;
+
+      const icon = a.yn === "ja" ? "✅" : a.yn === "nee" ? "❌" : a.yn === "notes" ? "📝" : "⏳";
+      const heading = isAnswered ? `${icon} ${a.label}` : "⏳ Awaiting seller response";
+
+      qaLines.push(`### ${i + 1}. ${q.question}`);
+      qaLines.push(heading);
+      if (a.note) qaLines.push(`> ${a.note}`);
+      qaLines.push("");
+    });
+
+    qaLines.push("---");
+    qaLines.push("");
+    qaLines.push(`*${answeredCount} of ${sellerQuestions.length} questions answered*`);
+    if (yesCount > 0) qaLines.push(`- ✅ Yes: ${yesCount}`);
+    if (noCount > 0) qaLines.push(`- ❌ No: ${noCount}`);
+    const notesCount = answeredCount - yesCount - noCount;
+    if (notesCount > 0) qaLines.push(`- 📝 Notes: ${notesCount}`);
+    const awaiting = sellerQuestions.length - answeredCount;
+    if (awaiting > 0) qaLines.push(`- ⏳ Awaiting: ${awaiting}`);
+
+    zip.file("seller_qa.md", qaLines.join("\n"));
+  }
 
   // 2. each original file. `blob_url` is either:
   //    - a Supabase Storage path like "<dossier_id>/<doc_key>/<ts>_<name>" (new Block B uploads)
@@ -191,6 +292,21 @@ export async function GET(req: NextRequest, { params }: Params) {
   }
 
   // 4. manifest.json
+  const sellerQaStats = sellerQuestions.length > 0
+    ? (() => {
+        let answered = 0; let yes = 0; let no = 0;
+        sellerQuestions.forEach((q) => {
+          const a = formatAnswer(sellerAnswers[q.id]);
+          if (a.yn === "ja" || a.yn === "nee" || a.yn === "notes") answered++;
+          if (a.yn === "ja") yes++;
+          if (a.yn === "nee") no++;
+        });
+        const notes = answered - yes - no;
+        const awaiting = sellerQuestions.length - answered;
+        return { total_questions: sellerQuestions.length, answered, yes, no, notes, awaiting };
+      })()
+    : { total_questions: 0, answered: 0, yes: 0, no: 0, notes: 0, awaiting: 0 };
+
   zip.file(
     "manifest.json",
     JSON.stringify(
@@ -201,6 +317,7 @@ export async function GET(req: NextRequest, { params }: Params) {
         generated_at: new Date().toISOString(),
         generated_by: staff.phone_e164,
         files: fileList,
+        seller_qa: sellerQaStats,
       },
       null,
       2
