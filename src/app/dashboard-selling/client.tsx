@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import styles from "./dashboard-selling.module.css";
 
@@ -118,13 +119,10 @@ export function DashboardClient({
           filtered.map((d) => {
             const status = d.status ?? "in_progress";
             return (
-              <button
+              <Link
                 key={d.id}
-                type="button"
+                href={`/dashboard-selling/${d.id}`}
                 className={styles.dossierCard}
-                onClick={() => {
-                  window.location.href = `/dashboard-selling/${d.id}`;
-                }}
               >
                 <div className={styles.cardTop}>
                   <div style={{ minWidth: 0 }}>
@@ -193,7 +191,7 @@ export function DashboardClient({
                     {(d.taal ?? "nl").toUpperCase()}
                   </span>
                 </div>
-              </button>
+              </Link>
             );
           })
         )}

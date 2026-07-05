@@ -415,19 +415,41 @@ export default async function DossierPage({ params }: Params) {
     .maybeSingle();
   if (!d) notFound();
 
+  const actor = `staff:${staff.phone_e164}`;
+
+  const [filesRes, magicLinksRes, notesRes, auditRes] = await Promise.all([
+    sb.from("verkoop_files")
+      .select("id, doc_key, filename, mime_type, size_bytes, blob_url, uploaded_at, version, ai_extract")
+      .eq("dossier_id", d.id)
+      .eq("is_current", true)
+      .order("uploaded_at", { ascending: true }),
+    sb.from("verkoop_magic_links")
+      .select("id, token, role, required_documents, recipient_email, recipient_name, expires_at, revoked_at, used_count, created_at")
+      .eq("dossier_id", d.id)
+      .order("created_at", { ascending: false }),
+    sb.from("verkoop_notes")
+      .select("id, author, content, pinned, created_at, updated_at")
+      .eq("dossier_id", d.id)
+      .order("pinned", { ascending: false })
+      .order("created_at", { ascending: false }),
+    sb.from("verkoop_audit")
+      .select("id, created_at, actor, action, meta")
+      .eq("dossier_id", d.id)
+      .order("created_at", { ascending: false })
+      .limit(40),
+  ]);
+
   await sb.from("verkoop_audit").insert({
     dossier_id: d.id,
-    actor: `staff:${staff.phone_e164}`,
+    actor,
     action: "viewed",
     meta: { role: staff.role },
   });
 
-  const { data: filesRaw } = await sb
-    .from("verkoop_files")
-    .select("id, doc_key, filename, mime_type, size_bytes, blob_url, uploaded_at, version, ai_extract")
-    .eq("dossier_id", d.id)
-    .eq("is_current", true)
-    .order("uploaded_at", { ascending: true });
+  const filesRaw = filesRes.data;
+  const magicLinksRaw = magicLinksRes.data;
+  const notesRaw = notesRes.data;
+  const audit = auditRes.data;
 
   const files = await Promise.all(
     (filesRaw ?? []).map(async (f) => ({
@@ -437,20 +459,7 @@ export default async function DossierPage({ params }: Params) {
     }))
   );
 
-  const { data: magicLinksRaw } = await sb
-    .from("verkoop_magic_links")
-    .select("id, token, role, required_documents, recipient_email, recipient_name, expires_at, revoked_at, used_count, created_at")
-    .eq("dossier_id", d.id)
-    .order("created_at", { ascending: false });
-
   const magicLinks = (magicLinksRaw ?? []) as MagicLinkForStatus[];
-
-  const { data: notesRaw } = await sb
-    .from("verkoop_notes")
-    .select("id, author, content, pinned, created_at, updated_at")
-    .eq("dossier_id", d.id)
-    .order("pinned", { ascending: false })
-    .order("created_at", { ascending: false });
 
   const dossierNotes = (notesRaw ?? []) as Array<{
     id: string;
@@ -460,13 +469,6 @@ export default async function DossierPage({ params }: Params) {
     created_at: string;
     updated_at: string | null;
   }>;
-
-  const { data: audit } = await sb
-    .from("verkoop_audit")
-    .select("id, created_at, actor, action, meta")
-    .eq("dossier_id", d.id)
-    .order("created_at", { ascending: false })
-    .limit(40);
 
   const aiSummary: string[] = Array.isArray((d as { ai_summary?: unknown }).ai_summary)
     ? ((d as { ai_summary?: unknown[] }).ai_summary as string[])
