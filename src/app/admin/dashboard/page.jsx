@@ -7,8 +7,9 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import { Plus, Copy, Check, Link, LogOut, Building2, Trash2, ClipboardList, X, BarChart3, Home, Users } from 'lucide-react';
+import { Plus, Copy, Check, Link as LinkIcon, LogOut, Building2, Trash2, ClipboardList, X, BarChart3, Home, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import Link from 'next/link';
 import styles from './dashboard.module.css';
 
 // Treat a datetime-local value (e.g. "2026-03-25T14:30") as Europe/Amsterdam time
@@ -333,30 +334,18 @@ export default function AdminDashboard() {
                         <span className={styles.rentalBadge}>Rental</span>
                     </div>
                     <div className={styles.headerActions}>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => router.push('/dashboard-selling')}
-                        >
+                        <Link href="/dashboard-selling" className={styles.navLink}>
                             <Home size={16} />
                             Selling
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => router.push('/admin/lead-dashboard')}
-                        >
+                        </Link>
+                        <Link href="/admin/lead-dashboard" className={styles.navLink}>
                             <Users size={16} />
                             Leads
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => router.push('/admin/seo')}
-                        >
+                        </Link>
+                        <Link href="/seo" className={styles.navLink}>
                             <BarChart3 size={16} />
                             SEO
-                        </Button>
+                        </Link>
                         <Button
                             variant={showLogs ? 'default' : 'outline'}
                             size="sm"
@@ -527,7 +516,7 @@ export default function AdminDashboard() {
                                                     onClick={() => handleGenerateLink(apt)}
                                                     loading={generatingLink === apt.id}
                                                 >
-                                                    <Link size={14} />
+                                                    <LinkIcon size={14} />
                                                     Create Link
                                                 </Button>
                                             )}
