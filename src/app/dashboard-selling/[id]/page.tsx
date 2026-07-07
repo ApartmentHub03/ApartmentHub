@@ -5,6 +5,7 @@ import { getStaffUser } from "@/app/lib/auth";
 import { supabaseAdmin } from "@/app/lib/supabase-admin";
 import { signedUrl } from "@/app/lib/storage";
 import { AnalyseSection } from "./analyse";
+import { RegenerateAnalysisButton } from "./regenerate-analysis";
 import { ContactActions } from "./contact";
 import { EditableDossier } from "./edit";
 import { DeleteDossier } from "./delete";
@@ -576,6 +577,9 @@ export default async function DossierPage({ params }: Params) {
               sellerEmail={d.email ?? null}
               sellerPhone={d.telefoon ?? d.phone_e164 ?? null}
             />
+            <span style={{ position: "relative", display: "inline-flex" }}>
+              <RegenerateAnalysisButton dossierId={d.id} hasAnalysis={aiSummary.length > 0} />
+            </span>
 
             {staff.role === "admin" && (
               <DeleteDossier dossierId={d.id} sellerName={d.naam ?? ""} />
@@ -789,8 +793,8 @@ export default async function DossierPage({ params }: Params) {
               )}
             </div>
           </div>
-        </div>
-      </main>
+         </div>
+       </main>
     </div>
   );
 }

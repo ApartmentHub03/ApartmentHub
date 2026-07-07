@@ -81,7 +81,6 @@ export function AnalyseSection({
     );
   }
 
-  // No analysis yet AND not open — show only the trigger button (no section)
   if (!open) {
     return (
       <div style={{ margin: "16px 0" }}>
@@ -131,7 +130,6 @@ export function AnalyseSection({
     );
   }
 
-  // Analysed — show the rich section
   return (
     <>
       <div className={styles.section}>
@@ -201,24 +199,6 @@ export function AnalyseSection({
           color: "#718096",
         }}
       >
-        <button
-          type="button"
-          onClick={run}
-          disabled={busy}
-          style={{
-            background: "#fff",
-            color: "#007A6D",
-            border: "1px solid #E2E8F0",
-            padding: "8px 14px",
-            borderRadius: 999,
-            fontWeight: 600,
-            fontSize: 13,
-            cursor: busy ? "wait" : "pointer",
-            font: "inherit",
-          }}
-        >
-          {busy ? "Regenerating…" : "↻ Regenerate analysis"}
-        </button>
         {data?.analysed_at && (
           <span>last run {new Date(data.analysed_at).toLocaleString()}</span>
         )}
