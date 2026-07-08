@@ -12,295 +12,681 @@ const TermsAndConditions = () => {
         <div className={styles.page}>
             <div className={styles.container}>
                 <h1 className={styles.title}>
-                    {isNL ? 'Algemene Voorwaarden' : 'Terms and Conditions'}
+                    {isNL ? 'Algemene Voorwaarden ApartmentHub' : 'ApartmentHub Terms and Conditions'}
                 </h1>
 
-                {/* Artikel 1 */}
+                {/* Artikel 1 - Definities */}
                 <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 1 Toepasselijkheid' : 'Article 1 Applicability'}</h2>
+                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 1. Definities' : 'Article 1. Definitions'}</h2>
                     <p className={styles.paragraph}>
-                        {isNL
-                            ? 'Deze Bemiddelingsvoorwaarden zijn van toepassing op alle aanbiedingen en op alle bemiddelingsopdrachten, alsmede de daaruit voortvloeiende aanvullende bemiddelingsovereenkomst(en) en afspraken tussen Apartmenthub en de woningzoekende, hierna te nemen \'Opdrachtgever\'.'
-                            : 'These Mediation Conditions apply to all offers and to all mediation assignments, as well as the resulting additional mediation agreement(s) and agreements between Apartmenthub and the house seeker, hereinafter referred to as \'Client\'.'}
+                        <strong>1.1</strong> {isNL
+                            ? 'In deze algemene voorwaarden zijn de volgende definities van toepassing.'
+                            : 'In these Terms and Conditions, the following definitions apply.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>1.2</strong> {isNL
+                            ? 'ApartmentHub means ApartmentHub, optreedend als huurbemiddelaar voor de Opdrachtgever, tenzij uitdrukkelijk schriftelijk anders is overeengekomen voor een specifieke Woning.'
+                            : 'ApartmentHub means ApartmentHub, acting as a rental agent for the Client, unless expressly agreed otherwise in writing for a specific Property.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>1.3</strong> {isNL
+                            ? 'Client means de woningzoekende, kandidaat-huurder of persoon die ApartmentHub opdracht geeft om te helpen bij het vinden, bezichtigen, solliciteren, bieden, onderhandelen of verkrijgen van een huurwoning.'
+                            : 'Client means the house seeker, tenant candidate or person who instructs ApartmentHub to assist with finding, viewing, applying for, offering on, negotiating or securing a rental property.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>1.4</strong> {isNL
+                            ? 'Listing Side means de verhuurder, eigenaar, aanbiedende makelaar, vastgoedmanager, relocatiebureau of enige andere partij die optreedt aan de zijde van de eigenaar van de woning.'
+                            : 'Listing Side means the landlord, owner, listing agent, property manager, relocation agency or any other party acting on the side of the property owner.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>1.5</strong> {isNL
+                            ? 'Property means een huurwoning waarvoor ApartmentHub diensten verleent aan de Opdrachtgever.'
+                            : 'Property means a rental property for which ApartmentHub provides services to the Client.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>1.6</strong> {isNL
+                            ? 'Offer Instruction means enige instructie van de Opdrachtgever aan ApartmentHub om door te gaan met een bod, aanvraag, huurvoorstel of Letter of Intent voor een specifieke Woning.'
+                            : 'Offer Instruction means any instruction from the Client to ApartmentHub to proceed with an offer, application, rental proposal or Letter of Intent for a specific Property.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>1.7</strong> {isNL
+                            ? 'Confirmation means bevestiging dat het bod, de aanvraag of het huurvoorstel van de Opdrachtgever is geaccepteerd of goedgekeurd, of dat de Woning voor de Opdrachtgever is verkregen. Bevestiging kan afkomstig zijn van de verhuurder, eigenaar, aanbiedende makelaar, vastgoedmanager, relocatiebureau, een andere bevoegde partij aan de Listing Side, of van ApartmentHub nadat ApartmentHub een dergelijke bevestiging heeft ontvangen.'
+                            : 'Confirmation means confirmation that the Client\u2019s offer, application or rental proposal has been accepted or approved, or that the Property has been secured for the Client. Confirmation may come from the landlord, owner, listing agent, property manager, relocation agency, another authorised party on the Listing Side, or from ApartmentHub after ApartmentHub has received such confirmation.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>1.8</strong> {isNL
+                            ? 'Success Fee means de vergoeding die verschuldigd is door de Opdrachtgever wanneer een Woning is verkregen of een huurovereenkomst is gesloten met tussenkomst van ApartmentHub.'
+                            : 'Success Fee means the fee payable by the Client when a Property is secured or a rental agreement is concluded through ApartmentHub\u2019s involvement.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>1.9</strong> {isNL
+                            ? 'Cancellation Fee means de vergoeding die verschuldigd is door de Opdrachtgever indien de Opdrachtgever annuleert, intrekt, weigert door te gaan zonder geldige juridische of contractuele reden, niet meewerkt, weigert een huurovereenkomst te tekenen zonder geldige juridische of contractuele reden, of een andere woning kiest na Bevestiging.'
+                            : 'Cancellation Fee means the fee payable by the Client if the Client cancels, withdraws, refuses to proceed without a valid legal or contractual reason, fails to cooperate, refuses to sign a rental agreement without a valid legal or contractual reason, or chooses another property after Confirmation.'}
                     </p>
                 </section>
 
-                {/* Artikel 2 */}
+                {/* Artikel 2 - Toepasselijkheid */}
                 <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 2 Definities' : 'Article 2 Definitions'}</h2>
+                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 2. Toepasselijkheid' : 'Article 2. Applicability'}</h2>
                     <p className={styles.paragraph}>
-                        <strong>2.1.</strong> {isNL
-                            ? 'Apartmenthub: Een woningbemiddelingsbureau ingeschreven bij de Kamer van Koophandel Amsterdam onder nummer: 74255142 te noemen onder webadres: https://apartmenthub.nl, hierna te noemen \'Makelaar\'.'
-                            : 'Apartmenthub: A housing mediation agency registered with the Chamber of Commerce Amsterdam under number: 74255142, accessible at web address: https://apartmenthub.nl, hereinafter referred to as \'Broker\'.'}
+                        <strong>2.1</strong> {isNL
+                            ? 'Deze algemene voorwaarden zijn van toepassing op alle diensten die ApartmentHub aan de Opdrachtgever verleent.'
+                            : 'These Terms and Conditions apply to all services provided by ApartmentHub to the Client.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>2.2.</strong> {isNL
-                            ? 'Woningzoekende: Iedere natuurlijke of rechtspersoon, die de Makelaar opdracht geeft om te bemiddelen bij het zoeken van woonruimte die niet tot de portefeuille van de Makelaar behoort.'
-                            : 'House seeker: Any natural or legal person who commissions the Broker to mediate in finding living space that does not belong to the Broker\'s portfolio.'}
+                        <strong>2.2</strong> {isNL
+                            ? 'Deze algemene voorwaarden zijn van toepassing op zoekdiensten, bezichtigingen, videogezichtingen, documentcontroles, huuraanvragen, biedingen, Letters of Intent, huurvoorstellen, onderhandelingen, communicatie met de Listing Side en ondersteuning tijdens het aanvraagproces.'
+                            : 'These Terms and Conditions apply to search services, viewings, video viewings, document checks, rental applications, offers, Letters of Intent, rental proposals, negotiations, communication with the Listing Side and support during the application process.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>2.3.</strong> {isNL
-                            ? 'Onder bemiddeling wordt verstaan: de inspanningsverplichting van Makelaar gericht op het tegen betaling van een bemiddelingsvergoeding (courtage) door Opdrachtgever in contact brengen van Opdrachtgever met potentiële verhuurder(s), opdat Opdrachtgever met een verhuurder van een woonruimte een huurovereenkomst sluit, waaronder is begrepen de begeleiding door Makelaar bij bezichtiging(en) van een of meer woonruimte(n) als bedoeld in artikel 7:425 BW.'
-                            : 'Mediation means: the obligation of effort by the Broker aimed at bringing the Client into contact with potential landlord(s) against payment of a mediation fee (commission) by the Client, so that the Client concludes a rental agreement with a landlord of a living space, including guidance by the Broker during viewing(s) of one or more living space(s) as referred to in Article 7:425 of the Dutch Civil Code.'}
+                        <strong>2.3</strong> {isNL
+                            ? 'Deze algemene voorwaarden zijn van toepassing op alle communicatie en instructies gegeven via WhatsApp, e-mail, online formulier, website, digitale handtekening, platformbericht of enige andere schriftelijke of elektronische communicatie.'
+                            : 'These Terms and Conditions apply to all communication and instructions given by WhatsApp, email, online form, website, digital signature, platform message or any other written or electronic communication.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>2.4.</strong> {isNL
-                            ? 'Onder bemiddelingsvergoeding of courtage wordt verstaan de door Opdrachtgever aan Makelaar verschuldigde tegenprestatie voor diens bemiddelingswerkzaamheden.'
-                            : 'Mediation fee or commission means the consideration owed by the Client to the Broker for their mediation activities.'}
+                        <strong>2.4</strong> {isNL
+                            ? 'Indien een Letter of Intent of een ander woning-specifiek document wordt ondertekend voor een specifieke Woning, is dat document van toepassing naast deze algemene voorwaarden.'
+                            : 'If a Letter of Intent or another property specific document is signed for a specific Property, that document applies in addition to these Terms and Conditions.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>2.5.</strong> {isNL
-                            ? 'Bepalingen die afwijken van deze algemene bemiddelingsvoorwaarden maken alleen deel uit van de tussen partijen gesloten overeenkomst indien en voor zover partijen dat uitdrukkelijk schriftelijk zijn overeengekomen.'
-                            : 'Provisions deviating from these general mediation conditions only form part of the agreement concluded between the parties if and insofar as the parties have expressly agreed this in writing.'}
+                        <strong>2.5</strong> {isNL
+                            ? 'Indien er een verschil bestaat tussen deze algemene voorwaarden en een woning-specifieke Letter of Intent, is de woning-specifieke Letter of Intent van toepassing voor die specifieke Woning, tenzij dit in strijd zou zijn met dwingend Nederlands recht.'
+                            : 'If there is a difference between these Terms and Conditions and a property specific Letter of Intent, the property specific Letter of Intent applies for that specific Property, unless this would be contrary to mandatory Dutch law.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>2.6.</strong> {isNL
-                            ? 'Onder \'schriftelijk\' wordt in deze algemene bemiddelingsvoorwaarden tevens verstaan: per email, per fax of enige andere wijze van communicatie die met het oog op de stand der techniek en de in het maatschappelijk verkeer geldende opvattingen hiermee gelijk kan worden gesteld.'
-                            : 'In these general mediation conditions, \'in writing\' also means: by email, by fax or any other mode of communication that can be equated with this in view of the state of the art and prevailing views in society.'}
-                    </p>
-                    <p className={styles.paragraphMt}>
-                        <strong>2.7.</strong> {isNL
-                            ? 'De door Makelaar te vervaardigen c.q. door Opdrachtgever verstrekte schriftelijke adviezen, documenten, (taxatie)rapporten, onderzoeken, e.d. zullen in het navolgende worden aangeduid als \'de bescheiden\'. Onder \'de bescheiden\' worden verstaan schriftelijke stukken en op andere media vastgelegde werken, zoals op computerschijven, op usb-sticks of welke andere gegevensdragers ook. Een en ander, tenzij partijen uitdrukkelijk schriftelijk anders zijn overeengekomen.'
-                            : 'The written advice, documents, (valuation) reports, investigations, etc. to be produced by the Broker or provided by the Client will hereinafter be referred to as \'the documents\'. \'The documents\' means written documents and works recorded on other media, such as on computer disks, on USB sticks or any other data carriers. All this, unless the parties have expressly agreed otherwise in writing.'}
-                    </p>
-                    <p className={styles.paragraphMt}>
-                        <strong>2.8.</strong> {isNL
-                            ? 'Makelaar behoudt zich het recht voor om bij gewijzigde regelgeving de algemene bemiddelingsvoorwaarden van Makelaar te wijzigen.'
-                            : 'The Broker reserves the right to amend the Broker\'s general mediation conditions in the event of changed regulations.'}
-                    </p>
-                    <p className={styles.paragraphMt}>
-                        <strong>2.9.</strong> {isNL
-                            ? 'Het om welke reden dan ook niet van toepassing zijn van een (deel van een) bepaling van deze algemene bemiddelingsvoorwaarden laat de toepasselijkheid van de overige bepalingen onverlet.'
-                            : 'The inapplicability of (part of) a provision of these general mediation conditions for whatever reason does not affect the applicability of the other provisions.'}
+                        <strong>2.6</strong> {isNL
+                            ? 'Elke afwijking van deze algemene voorwaarden is alleen geldig indien schriftelijk bevestigd door ApartmentHub.'
+                            : 'Any deviation from these Terms and Conditions is only valid if confirmed in writing by ApartmentHub.'}
                     </p>
                 </section>
 
-                {/* Artikel 3 */}
+                {/* Artikel 3 - Rol van ApartmentHub */}
                 <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 3 Overeenkomsten, opdrachten' : 'Article 3 Agreements, Assignments'}</h2>
+                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 3. Rol van ApartmentHub' : 'Article 3. Role of ApartmentHub'}</h2>
                     <p className={styles.paragraph}>
-                        <strong>3.1.</strong> {isNL
-                            ? 'Mondelinge afspraken binden Makelaar eerst nadat deze schriftelijk door Makelaar zijn bevestigd dan wel zodra Makelaar met instemming van Opdrachtgever een aanvang met de uitvoeringshandelingen heeft gemaakt.'
-                            : 'Verbal agreements only bind the Broker after they have been confirmed in writing by the Broker or as soon as the Broker has commenced execution of the activities with the Client\'s consent.'}
+                        <strong>3.1</strong> {isNL
+                            ? 'ApartmentHub biedt een huurzoek- en bemiddelingsdienst aan de Opdrachtgever.'
+                            : 'ApartmentHub provides a rental search and mediation service for the Client.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>3.2.</strong> {isNL
-                            ? 'Aanvullingen of wijzigingen op de algemene bemiddelingsvoorwaarden of anderszins wijzigingen of aanvullingen op de overeenkomst worden eerst na schriftelijke bevestiging door Makelaar bindend.'
-                            : 'Additions or changes to the general mediation conditions or other changes or additions to the agreement only become binding after written confirmation by the Broker.'}
+                        <strong>3.2</strong> {isNL
+                            ? 'ApartmentHub helpt de Opdrachtgever bij het vinden, beoordelen, bezichtigen, solliciteren, bieden, onderhandelen en verkrijgen van huurwoningen.'
+                            : 'ApartmentHub assists the Client with finding, reviewing, viewing, applying for, offering on, negotiating and securing rental properties.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>3.3</strong> {isNL
+                            ? 'ApartmentHub treedt op aan de zijde van de Opdrachtgever, tenzij uitdrukkelijk schriftelijk anders is overeengekomen voor een specifieke Woning.'
+                            : 'ApartmentHub acts on the side of the Client, unless expressly agreed otherwise in writing for a specific Property.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>3.4</strong> {isNL
+                            ? 'ApartmentHub is niet de verhuurder, eigenaar of Listing Side. ApartmentHub is geen partij bij enige huurovereenkomst tussen de Opdrachtgever en de verhuurder.'
+                            : 'ApartmentHub is not the landlord, owner or Listing Side. ApartmentHub is not a party to any rental agreement between the Client and the landlord.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>3.5</strong> {isNL
+                            ? 'Professionele communicatie met verhuurders, eigenaren, aanbiedende makelaars, vastgoedmanagers, relocatiebureaus of andere marktpartijen betekent niet dat ApartmentHub optreedt voor de Listing Side.'
+                            : 'Professional communication with landlords, owners, listing agents, property managers, relocation agencies or other market parties does not mean that ApartmentHub acts for the Listing Side.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>3.6</strong> {isNL
+                            ? 'ApartmentHub kan regelmatig zaken doen met dezelfde aanbiedende makelaars, vastgoedmanagers, relocatiebureaus of verhuurders op de Amsterdamse huurmarkt. Dit creëert geen opdracht van de Listing Side aan ApartmentHub en betekent niet dat ApartmentHub optreedt voor de Listing Side.'
+                            : 'ApartmentHub may regularly deal with the same listing agents, property managers, relocation agencies or landlords in the Amsterdam rental market. This does not create an instruction from the Listing Side to ApartmentHub and does not mean that ApartmentHub acts for the Listing Side.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>3.7</strong> {isNL
+                            ? 'Indien ApartmentHub met de Opdrachtgever communiceert via een ApartmentHub WhatsApp-nummer, e-mailadres, online account of teamlid in het kader van de huisvestingszoektocht van de Opdrachtgever, is deze communicatie onderdeel van de aan de Opdrachtgever verleende dienst. In die situatie wordt ApartmentHub niet betaald door de eigenaar of Listing Side voor diezelfde huurderszijde dienst, tenzij uitdrukkelijk schriftelijk anders vermeld.'
+                            : 'If ApartmentHub communicates with the Client through an ApartmentHub WhatsApp number, email address, online account or team member in relation to the Client\u2019s housing search, this communication is part of the service provided to the Client. In that situation, ApartmentHub is not paid by the owner or Listing Side for that same tenant side service, unless expressly stated otherwise in writing.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>3.8</strong> {isNL
+                            ? 'ApartmentHub brengt geen dubbele commissie in rekening voor dezelfde Woning. ApartmentHub brengt de Opdrachtgever geen huurderszijde bemiddelingsvergoeding, Success Fee of Cancellation Fee in rekening voor een specifieke Woning indien ApartmentHub ook door de verhuurder, eigenaar of Listing Side is ingeschakeld en betaald voor de bemiddeling van diezelfde Woning, tenzij dit uitdrukkelijk is toegestaan onder dwingend Nederlands recht.'
+                            : 'ApartmentHub does not charge double commission for the same Property. ApartmentHub will not charge the Client a tenant side mediation fee, Success Fee or Cancellation Fee for a specific Property if ApartmentHub is also instructed and paid by the landlord, owner or Listing Side for the mediation of that same Property, unless this is expressly permitted under mandatory Dutch law.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>3.9</strong> {isNL
+                            ? 'Indien een onafhankelijke aanbiedende makelaar, makelaar aan verhuurderszijde, vastgoedmanager of relocatiebureau betaling ontvangt van de verhuurder of eigenaar, is dit geen betaling aan ApartmentHub en betekent dit niet dat ApartmentHub dubbele commissie in rekening brengt.'
+                            : 'If an independent listing agent, landlord side broker, property manager or relocation agency receives payment from the landlord or owner, this is not a payment to ApartmentHub and does not mean that ApartmentHub charges double commission.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>3.10</strong> {isNL
+                            ? 'Indien ApartmentHub verhuurderszijde diensten verleent voor een andere woning of in een aparte opdracht, heeft dit geen invloed op de rol van ApartmentHub voor de Opdrachtgever met betrekking tot een andere Woning.'
+                            : 'If ApartmentHub provides landlord side services for another property or in a separate assignment, this does not affect ApartmentHub\u2019s role for the Client in relation to a different Property.'}
                     </p>
                 </section>
 
-                {/* Artikel 4 */}
+                {/* Artikel 4 - Start van de opdracht */}
                 <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 4 Verplichtingen van Opdrachtgever & verschuldigdheid van courtage' : 'Article 4 Obligations of Client & Commission Fees'}</h2>
+                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 4. Start van de opdracht' : 'Article 4. Start of the Assignment'}</h2>
                     <p className={styles.paragraph}>
-                        <strong>4.1.</strong> {isNL
-                            ? 'Opdrachtgever dient ervoor te zorgen dat alle voor de uitvoering van de overeenkomst benodigde gegevens tijdig en in de door Makelaar gewenste vorm ter beschikking worden gesteld.'
-                            : 'The Client must ensure that all data required for the execution of the agreement is made available in time and in the form desired by the Broker.'}
+                        <strong>4.1</strong> {isNL
+                            ? 'De opdracht start wanneer de Opdrachtgever bevestigt dat de Opdrachtgever de dienst van ApartmentHub wil gebruiken, deze algemene voorwaarden accepteert, ApartmentHub vraagt werkzaamheden uit te voeren, een bezichtiging boekt of bijwoont via ApartmentHub, ApartmentHub vraagt door te gaan met een woning, of anderszins ApartmentHub een instructie geeft.'
+                            : 'The assignment starts when the Client confirms that the Client wants to use ApartmentHub\u2019s service, accepts these Terms and Conditions, asks ApartmentHub to perform work, books or attends a viewing through ApartmentHub, asks ApartmentHub to proceed with a property, or otherwise gives ApartmentHub an instruction.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>4.2.</strong> {isNL
-                            ? 'Opdrachtgever verleent volledige medewerking aan een deugdelijke uitvoering van de bemiddelingsovereenkomst en onthoudt zich van handelingen die dit zouden kunnen belemmeren.'
-                            : 'The Client shall provide full cooperation for the proper execution of the mediation agreement and refrain from actions that could hinder this.'}
+                        <strong>4.2</strong> {isNL
+                            ? 'Een instructie kan worden gegeven via WhatsApp, e-mail, online formulier, website, digitale handtekening, platformbericht of enige andere schriftelijke of elektronische communicatie.'
+                            : 'An instruction can be given by WhatsApp, email, online form, website, digital signature, platform message or any other written or electronic communication.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>4.3.</strong> {isNL
-                            ? 'Indien Opdrachtgever of diens relaties gaan wonen in een woonruimte waarvan de gegevens via de Makelaar zijn verkregen, is Opdrachtgever courtage verschuldigd, ongeacht of de huurovereenkomst door bemiddeling van de Makelaar tot stand is gekomen.'
-                            : 'If the Client or their relations move into a living space of which the details were obtained via the Broker, the Client owes commission, regardless of whether the rental agreement was concluded through the Broker\'s mediation.'}
+                        <strong>4.3</strong> {isNL
+                            ? 'Woorden zoals ik ga akkoord, ik ga akkoord met de algemene voorwaarden, ga verder, ga door, ik wil een bod uitbrengen, ik wil doorgaan, ik wil deze woning, of vergelijkbare bewoordingen worden beschouwd als een schriftelijke instructie.'
+                            : 'Words such as I agree, I agree to the Terms and Conditions, please proceed, go ahead, I want to make an offer, I want to continue, I want this property, or similar wording are considered a written instruction.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>4.4.</strong> {isNL
-                            ? 'Indien om welke reden dan ook Opdrachtgever niet gaat wonen in de woning waarvoor door bemiddeling van Makelaar een huurovereenkomst tot stand is gekomen, of indien deze huurovereenkomst wordt beëindigd, vernietigd of ontbonden, is Opdrachtgever een bedrag verschuldigd van'
-                            : 'If for any reason the Client does not move into the property for which a rental agreement was concluded through the Broker\'s mediation, or if this rental agreement is terminated, annulled or dissolved, the Client owes an amount of'} <strong>{isNL ? '1 maand huur exclusief btw' : '1 month rent exclusive of VAT'}</strong>{isNL ? ', zonder recht op gehele of gedeeltelijke restitutie.' : ', without right to full or partial refund.'}
+                        <strong>4.4</strong> {isNL
+                            ? 'Door een instructie te geven, machtigt de Opdrachtgever ApartmentHub om onmiddellijk met het uitvoeren van de dienst te beginnen.'
+                            : 'By giving an instruction, the Client authorises ApartmentHub to start performing the service immediately.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>4.5.</strong> {isNL
-                            ? 'Indien Opdrachtgever na akkoord voor het huren van een woonruimte afziet van de huur om redenen die niet aan Makelaar zijn toe te rekenen, is Opdrachtgever de courtage verschuldigd die zou gelden indien de huurovereenkomst wél tot stand zou zijn gekomen. Daarnaast dient Opdrachtgever Makelaar te vrijwaren voor mogelijke schadeclaims van de verhuurder.'
-                            : 'If the Client, after agreeing to rent a living space, abandons the rent for reasons not attributable to the Broker, the Client owes the commission that would apply if the rental agreement had been concluded. In addition, the Client must indemnify the Broker against possible damage claims from the landlord.'}
-                    </p>
-                    <p className={styles.paragraphMt}>
-                        <strong>4.6.</strong> {isNL
-                            ? 'Indien Opdrachtgever verplichtingen niet nakomt, mag Makelaar de uitvoering van de overeenkomst opschorten. Kosten en gevolgen hiervan komen volledig voor rekening van Opdrachtgever.'
-                            : 'If the Client fails to meet obligations, the Broker may suspend the execution of the agreement. Costs and consequences of this are entirely for the account of the Client.'}
-                    </p>
-                    <p className={styles.paragraphMt}>
-                        <strong>4.7.</strong> {isNL
-                            ? 'Indien Opdrachtgever de Makelaar verzoekt een huurvoorstel in te dienen bij een derde en vervolgens, om redenen die niet aan Makelaar zijn toe te rekenen, afziet van het object, is Opdrachtgever een bedrag verschuldigd van'
-                            : 'If the Client requests the Broker to submit a rental proposal to a third party and subsequently, for reasons not attributable to the Broker, abandons the object, the Client owes an amount of'} <strong>{isNL ? '1 maand huur exclusief btw' : '1 month rent exclusive of VAT'}</strong>.
+                        <strong>4.5</strong> {isNL
+                            ? 'De Opdrachtgever moet ApartmentHub onmiddellijk schriftelijk informeren indien de Opdrachtgever niet langer wil dat ApartmentHub doorgaat met een woning, bezichtiging, aanvraag, bod, huurvoorstel of Letter of Intent.'
+                            : 'The Client must immediately inform ApartmentHub in writing if the Client no longer wants ApartmentHub to continue with a property, viewing, application, offer, rental proposal or Letter of Intent.'}
                     </p>
                 </section>
 
-                {/* Artikel 5 */}
+                {/* Artikel 5 - No Cure No Pay en Success Fee */}
                 <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 5 Persoonsgegevens' : 'Article 5 Personal Data'}</h2>
+                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 5. No Cure No Pay en Success Fee' : 'Article 5. No Cure No Pay and Success Fee'}</h2>
                     <p className={styles.paragraph}>
-                        {isNL
-                            ? 'De persoonsgegevens van Opdrachtgever worden opgenomen in de administratie van Makelaar. Makelaar verstrekt zonder toestemming van Opdrachtgever geen gegevens aan derden. De geregistreerde gegevens worden uitsluitend door Makelaar gebruikt ten behoeve van de uitvoering van door haar met Opdrachtgever gesloten overeenkomsten.'
-                            : 'The Client\'s personal data is included in the Broker\'s administration. The Broker does not provide data to third parties without the Client\'s permission. The registered data is used exclusively by the Broker for the execution of agreements concluded with the Client.'}
+                        <strong>5.1</strong> {isNL
+                            ? 'ApartmentHub werkt op basis van No Cure No Pay, tenzij uitdrukkelijk schriftelijk anders is overeengekomen.'
+                            : 'ApartmentHub works on a No Cure No Pay basis, unless expressly agreed otherwise in writing.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>5.2</strong> {isNL
+                            ? 'De Success Fee wordt verschuldigd indien de Opdrachtgever door tussenkomst van ApartmentHub de mogelijkheid krijgt om een Woning te huren, is geaccepteerd of goedgekeurd voor een Woning, een huurovereenkomst of concept-huurovereenkomst voor een Woning ontvangt, een huurovereenkomst tekent, of anderszins een Woning heeft verkregen.'
+                            : 'The Success Fee becomes payable if, through ApartmentHub\u2019s involvement, the Client obtains the possibility to rent a Property, is accepted or approved for a Property, receives a rental agreement or draft rental agreement for a Property, signs a rental agreement, or otherwise has a Property secured.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>5.3</strong> {isNL
+                            ? 'Tenzij schriftelijk anders is overeengekomen, is de standaard Success Fee \u00e9\u00e9n maand huur exclusief btw.'
+                            : 'Unless agreed otherwise in writing, the standard Success Fee is one month\u2019s rent excluding VAT.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>5.4</strong> {isNL
+                            ? 'Voor Woningen met een maandhuur lager dan \u20ac 2000 kan ApartmentHub een Success Fee in rekening brengen gelijk aan twee maanden huur exclusief btw, maar alleen indien dit duidelijk is gecommuniceerd en geaccepteerd door de Opdrachtgever voordat de Opdrachtgever door gaat met die specifieke Woning.'
+                            : 'For Properties with a monthly rent below EUR 2000, ApartmentHub may charge a Success Fee equal to two months\u2019 rent excluding VAT, but only if this has been clearly communicated and accepted by the Client before the Client proceeds with that specific Property.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>5.5</strong> {isNL
+                            ? 'De toepasselijke Success Fee voor een specifieke Woning kan worden bevestigd in de Letter of Intent, WhatsApp, e-mail, factuur, online formulier of een andere schriftelijke bevestiging.'
+                            : 'The applicable Success Fee for a specific Property may be confirmed in the Letter of Intent, WhatsApp, email, invoice, online form or another written confirmation.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>5.6</strong> {isNL
+                            ? 'De Success Fee is verschuldigd v\u00f3\u00f3r de sleuteloverdracht, tenzij ApartmentHub schriftelijk anders overeenkomt.'
+                            : 'The Success Fee is payable before the key transfer, unless ApartmentHub agrees otherwise in writing.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>5.7</strong> {isNL
+                            ? 'De Success Fee is separaat van enige huur, borg, servicekosten, nutsvoorzieningskosten of andere bedragen die verschuldigd zijn aan de verhuurder of Listing Side.'
+                            : 'The Success Fee is separate from any rent, deposit, service costs, utility costs or other amounts payable to the landlord or Listing Side.'}
                     </p>
                 </section>
 
-                {/* Artikel 6 */}
+                {/* Artikel 6 - Biedinstructies en actieve biedingen */}
                 <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 6 Voortgang, uitvoering opdracht/overeenkomst' : 'Article 6 Progress, Execution of Assignment/Agreement'}</h2>
+                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 6. Biedinstructies en actieve biedingen' : 'Article 6. Offer Instructions and Active Offers'}</h2>
                     <p className={styles.paragraph}>
-                        <strong>6.1.</strong> {isNL
-                            ? 'Makelaar is gehouden de opdracht/overeenkomst op deskundige, zorgvuldige wijze en conform de hiervoor in haar branche geldende maatstaven uit te voeren.'
-                            : 'The Broker is bound to execute the assignment/agreement in a professional, careful manner and in accordance with the standards applicable in its branch.'}
+                        <strong>6.1</strong> {isNL
+                            ? 'Indien de Opdrachtgever ApartmentHub opdracht geeft door te gaan met een bod, aanvraag, huurvoorstel of Letter of Intent voor een specifieke Woning, geeft de Opdrachtgever ApartmentHub toestemming om de noodzakelijke stappen te nemen om die Woning voor de Opdrachtgever te proberen te verkrijgen.'
+                            : 'If the Client instructs ApartmentHub to proceed with an offer, application, rental proposal or Letter of Intent for a specific Property, the Client gives ApartmentHub permission to take the necessary steps to try to secure that Property for the Client.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>6.2.</strong> {isNL
-                            ? 'Makelaar kan niet eerder verplicht worden met de uitvoering van de werkzaamheden te beginnen, dan nadat alle daarvoor noodzakelijk gegevens in haar bezit zijn.'
-                            : 'The Broker cannot be obliged to commence execution of the activities until all necessary data for this is in its possession.'}
+                        <strong>6.2</strong> {isNL
+                            ? 'Een Biedinstructie blijft actief totdat de Opdrachtgever deze schriftelijk intrekt v\u00f3\u00f3r Bevestiging.'
+                            : 'An Offer Instruction remains active until the Client withdraws it in writing before Confirmation.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>6.3</strong> {isNL
+                            ? 'Een intrekking is alleen geldig indien deze duidelijk, schriftelijk en door ApartmentHub ontvangen is v\u00f3\u00f3r Bevestiging. De Opdrachtgever moet duidelijk vermelden dat de Opdrachtgever het bod, de aanvraag, het huurvoorstel of de instructie voor de specifieke Woning intrekt.'
+                            : 'A withdrawal is only valid if it is clear, written and received by ApartmentHub before Confirmation. The Client must clearly state that the Client withdraws the offer, application, rental proposal or instruction for the specific Property.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>6.4</strong> {isNL
+                            ? 'ApartmentHub is niet verplicht om opnieuw te controleren of de Opdrachtgever nog interesse heeft v\u00f3\u00f3r het communiceren van Bevestiging, indien de Opdrachtgever ApartmentHub opdracht heeft gegeven door te gaan en ApartmentHub geen schriftelijke intrekking heeft ontvangen v\u00f3\u00f3r Bevestiging.'
+                            : 'ApartmentHub is not required to check again whether the Client is still interested before communicating Confirmation, if the Client has instructed ApartmentHub to proceed and ApartmentHub has not received a written withdrawal before Confirmation.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>6.5</strong> {isNL
+                            ? 'Indien Bevestiging wordt ontvangen v\u00f3\u00f3rdat ApartmentHub een schriftelijke intrekking van de Opdrachtgever heeft ontvangen, wordt de Woning beschouwd als verkregen voor de Opdrachtgever voor de toepassing van deze algemene voorwaarden en enige Letter of Intent.'
+                            : 'If Confirmation is received before ApartmentHub has received a written withdrawal from the Client, the Property is considered secured for the Client for the purpose of these Terms and Conditions and any Letter of Intent.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>6.6</strong> {isNL
+                            ? 'De Opdrachtgever blijft verantwoordelijk voor het ApartmentHub op de hoogte houden. Indien de Opdrachtgever overweegt, onderhandelt, accepteert of tekent voor een andere woning elders, moet de Opdrachtgever ApartmentHub onmiddellijk informeren indien ApartmentHub moet stoppen met werken aan een actieve Woning.'
+                            : 'The Client remains responsible for keeping ApartmentHub informed. If the Client is considering, negotiating, accepting or signing for another property elsewhere, the Client must immediately inform ApartmentHub if ApartmentHub should stop working on an active Property.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>6.7</strong> {isNL
+                            ? 'Het accepteren, tekenen of kiezen van een andere woning elders trekt een actieve Biedinstructie niet automatisch in. De Opdrachtgever moet de actieve Biedinstructie schriftelijk intrekken v\u00f3\u00f3r Bevestiging.'
+                            : 'Accepting, signing or choosing another property elsewhere does not automatically withdraw an active Offer Instruction. The Client must withdraw the active Offer Instruction in writing before Confirmation.'}
                     </p>
                 </section>
 
-                {/* Artikel 7 */}
+                {/* Artikel 7 - Letter of Intent */}
                 <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 7 Duur overeenkomst, inspanningsverplichting makelaar' : 'Article 7 Duration of Agreement, Obligation of Effort'}</h2>
+                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 7. Letter of Intent' : 'Article 7. Letter of Intent'}</h2>
                     <p className={styles.paragraph}>
-                        <strong>7.1.</strong> {isNL
-                            ? 'Een overeenkomst tot bemiddeling loopt voor onbepaalde tijd, tenzij schriftelijk anders is overeengekomen.'
-                            : 'A mediation agreement runs for an indefinite period, unless agreed otherwise in writing.'}
+                        <strong>7.1</strong> {isNL
+                            ? 'Een Letter of Intent is een woning-specifiek document waarin de Opdrachtgever de intentie bevestigt om een specifieke Woning te huren onder de in dat document vermelde voorwaarden, onder voorbehoud van acceptatie of Bevestiging.'
+                            : 'A Letter of Intent is a property specific document in which the Client confirms the intention to rent a specific Property under the conditions stated in that document, subject to acceptance or Confirmation.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>7.2.</strong> {isNL
-                            ? 'Makelaar zal zich naar beste kunnen en weten inspannen om het door Opdrachtgever gewenste c.q. beoogde resultaat te bereiken. Dit is te allen tijde een inspanningsverplichting van Makelaar en geen resultaatsverplichting. Indien voornoemd resultaat uitblijft, ontslaat dit Opdrachtgever derhalve niet van zijn verplichtingen jegens Makelaar, met uitzondering van eventuele verplichtingen die door partijen uitdrukkelijk gekoppeld zijn aan het bereiken van het beoogde resultaat.'
-                            : 'The Broker will endeavor to the best of its ability and knowledge to achieve the result desired or intended by the Client. This is at all times an obligation of effort by the Broker and not an obligation of result. If the aforementioned result is not achieved, this therefore does not release the Client from its obligations towards the Broker, with the exception of any obligations that the parties have expressly linked to achieving the intended result.'}
+                        <strong>7.2</strong> {isNL
+                            ? 'Door een Letter of Intent te tekenen, bevestigt de Opdrachtgever dat de Opdrachtgever wil dat ApartmentHub door gaat met de specifieke Woning.'
+                            : 'By signing a Letter of Intent, the Client confirms that the Client wants ApartmentHub to proceed with the specific Property.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>7.3</strong> {isNL
+                            ? 'Door een Letter of Intent te tekenen, machtigt de Opdrachtgever ApartmentHub om het bod, de aanvraag of het huurvoorstel af te handelen.'
+                            : 'By signing a Letter of Intent, the Client authorises ApartmentHub to handle the offer, application or rental proposal.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>7.4</strong> {isNL
+                            ? 'Door een Letter of Intent te tekenen, begrijpt de Opdrachtgever dat de instructie actief blijft totdat deze schriftelijk is ingetrokken v\u00f3\u00f3r Bevestiging.'
+                            : 'By signing a Letter of Intent, the Client understands that the instruction remains active until withdrawn in writing before Confirmation.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>7.5</strong> {isNL
+                            ? 'Door een Letter of Intent te tekenen, begrijpt de Opdrachtgever dat annulering na Bevestiging kan leiden tot een Cancellation Fee.'
+                            : 'By signing a Letter of Intent, the Client understands that cancellation after Confirmation may result in a Cancellation Fee.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>7.6</strong> {isNL
+                            ? 'Door een Letter of Intent te tekenen, bevestigt de Opdrachtgever dat de Opdrachtgever deze algemene voorwaarden heeft gelezen en geaccepteerd.'
+                            : 'By signing a Letter of Intent, the Client confirms that the Client has read and accepted these Terms and Conditions.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>7.7</strong> {isNL
+                            ? 'De Letter of Intent kan de huur, borg, startdatum, bemiddelingsvergoeding, annuleringsvergoeding en andere relevante voorwaarden voor de specifieke Woning vermelden.'
+                            : 'The Letter of Intent may state the rent, deposit, start date, agency fee, cancellation fee and other relevant conditions for the specific Property.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>7.8</strong> {isNL
+                            ? 'Indien de Opdrachtgever de Letter of Intent tekent en de Woning vervolgens wordt geaccepteerd of bevestigd v\u00f3\u00f3rdat ApartmentHub een schriftelijke intrekking heeft ontvangen, is de Cancellation Fee van toepassing indien de Opdrachtgever later annuleert, intrekt, weigert door te gaan zonder geldige juridische of contractuele reden, niet meewerkt, weigert de huurovereenkomst te tekenen zonder geldige juridische of contractuele reden, of een andere woning kiest.'
+                            : 'If the Client signs the Letter of Intent and the Property is subsequently accepted or confirmed before ApartmentHub receives a written withdrawal, the Cancellation Fee applies if the Client later cancels, withdraws, refuses to proceed without a valid legal or contractual reason, fails to cooperate, refuses to sign the rental agreement without a valid legal or contractual reason, or chooses another property.'}
                     </p>
                 </section>
 
-                {/* Artikel 8 */}
+                {/* Artikel 8 - Annuleringsvergoeding */}
                 <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 8 Einde en opzegging van de bemiddelingsovereenkomst' : 'Article 8 Termination and Cancellation of the Mediation Agreement'}</h2>
+                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 8. Annuleringsvergoeding' : 'Article 8. Cancellation Fee'}</h2>
                     <p className={styles.paragraph}>
-                        <strong>8.1.</strong> {isNL
-                            ? 'Tenzij anders overeengekomen en onverminderd het overigens bepaalde in deze algemene bemiddelingsvoorwaarden, eindigt de bemiddelingsovereenkomst onder meer door:'
-                            : 'Unless agreed otherwise and without prejudice to the other provisions of these general mediation conditions, the mediation agreement ends inter alia by:'}
-                    </p>
-                    <ul className={styles.list}>
-                        <li>{isNL ? 'a. vervulling van de overeenkomst door Makelaar;' : 'a. fulfillment of the agreement by the Broker;'}</li>
-                        <li>{isNL ? 'b. opzegging door Opdrachtgever;' : 'b. cancellation by the Client;'}</li>
-                        <li>{isNL ? 'c. opzegging door Makelaar.' : 'c. cancellation by the Broker.'}</li>
-                    </ul>
-                    <p className={styles.paragraphMt}>
-                        <strong>8.2.</strong> {isNL
-                            ? 'De overeenkomst is vervuld zodra het beoogde resultaat is bereikt.'
-                            : 'The agreement is fulfilled as soon as the intended result is achieved.'}
+                        <strong>8.1</strong> {isNL
+                            ? 'Indien de Opdrachtgever annuleert, intrekt, weigert door te gaan zonder geldige juridische of contractuele reden, niet meewerkt, weigert de huurovereenkomst te tekenen zonder geldige juridische of contractuele reden, of een andere woning kiest na Bevestiging, is de Opdrachtgever een Cancellation Fee verschuldigd aan ApartmentHub.'
+                            : 'If the Client cancels, withdraws, refuses to proceed without a valid legal or contractual reason, fails to cooperate, refuses to sign the rental agreement without a valid legal or contractual reason, or chooses another property after Confirmation, the Client owes ApartmentHub a Cancellation Fee.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>8.3.</strong> {isNL
-                            ? 'Opdrachtgever en Makelaar zijn bevoegd om deze overeenkomst op ieder moment op te zeggen.'
-                            : 'Client and Broker are entitled to cancel this agreement at any time.'}
+                        <strong>8.2</strong> {isNL
+                            ? 'Tenzij schriftelijk anders is overeengekomen, is de Cancellation Fee gelijk aan de toepasselijke Success Fee voor die specifieke Woning.'
+                            : 'Unless agreed otherwise in writing, the Cancellation Fee is equal to the applicable Success Fee for that specific Property.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>8.4.</strong> {isNL
-                            ? 'Partijen kunnen aan de beëindiging van de overeenkomst door opzegging geen recht op schadevergoeding ontlenen, tenzij wordt opgezegd vanwege het tekortschieten in de nakoming van een of meer verplichtingen door de andere partij.'
-                            : 'Parties cannot derive any right to compensation from the termination of the agreement by cancellation, unless cancellation is due to failure to comply with one or more obligations by the other party.'}
+                        <strong>8.3</strong> {isNL
+                            ? 'Dit betekent dat indien de toepasselijke Success Fee \u00e9\u00e9n maand huur exclusief btw is, de Cancellation Fee \u00e9\u00e9n maand huur exclusief btw is.'
+                            : 'This means that if the applicable Success Fee is one month\u2019s rent excluding VAT, the Cancellation Fee is one month\u2019s rent excluding VAT.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>8.4</strong> {isNL
+                            ? 'Indien de toepasselijke Success Fee twee maanden huur exclusief btw is, bijvoorbeeld omdat de maandhuur lager is dan \u20ac 2000 en dit duidelijk is bevestigd v\u00f3\u00f3r het door gaan, kan de Cancellation Fee ook twee maanden huur exclusief btw zijn.'
+                            : 'If the applicable Success Fee is two months\u2019 rent excluding VAT, for example because the monthly rent is below EUR 2000 and this was clearly confirmed before proceeding, the Cancellation Fee may also be two months\u2019 rent excluding VAT.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>8.5</strong> {isNL
+                            ? 'De Cancellation Fee is verschuldigd ongeacht of de Opdrachtgever uiteindelijk de huurovereenkomst tekent, indien de Woning was bevestigd v\u00f3\u00f3rdat ApartmentHub een schriftelijke intrekking had ontvangen en de Opdrachtgever vervolgens annuleert, intrekt, weigert door te gaan zonder geldige juridische of contractuele reden, niet meewerkt, weigert te tekenen zonder geldige juridische of contractuele reden, of een andere woning kiest.'
+                            : 'The Cancellation Fee is due regardless of whether the Client ultimately signs the rental agreement, if the Property was confirmed before ApartmentHub received a written withdrawal and the Client then cancels, withdraws, refuses to proceed without a valid legal or contractual reason, fails to cooperate, refuses to sign without a valid legal or contractual reason, or chooses another property.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>8.6</strong> {isNL
+                            ? 'De Cancellation Fee is niet bedoeld als straf. Het is een redelijke vaste compensatie voor reeds verrichte werkzaamheden en de gevolgen veroorzaakt door annulering na Bevestiging.'
+                            : 'The Cancellation Fee is not intended as a punishment. It is a reasonable fixed compensation for work already performed and the consequences caused by cancellation after Confirmation.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>8.7</strong> {isNL
+                            ? 'De Cancellation Fee kan onder meer dekken: de zoekwerkzaamheden verricht voor de Opdrachtgever, communicatie met de Opdrachtgever, communicatie met de Listing Side, het regelen, co\u00f6rdineren of bijwonen van bezichtigingen of videogezichtingen, het controleren of voorbereiden van documenten, het voorbereiden, indienen of afhandelen van het bod, de aanvraag, het huurvoorstel of de Letter of Intent, het onderhandelen of co\u00f6rdineren van het huurvoorstel, interne administratieve en operationele werkzaamheden, bestede tijd aan het verkrijgen van de Woning, het pauzeren, reserveren of verwijderen van de Woning uit het proces voor andere kandidaten, het herstarten van het proces en zoeken naar nieuwe kandidaten door de Listing Side, reeds gemaakte kosten voor het voorbereiden van de huurovereenkomst of gerelateerde documentatie, mogelijk verlies van huurinkomsten, vertraging of andere gevolgen voor de eigenaar of Listing Side, en verlies van tijd en opportuniteit voor ApartmentHub en andere betrokken partijen.'
+                            : 'The Cancellation Fee may cover, among other things, search work performed for the Client, communication with the Client, communication with the Listing Side, arranging, coordinating or attending viewings or video viewings, checking or preparing documents, preparing, submitting or handling the offer, application, rental proposal or Letter of Intent, negotiating or coordinating the rental proposal, internal administrative and operational work, time spent securing the Property, the Property being paused, reserved or removed from the process for other candidates, the Listing Side having to restart the process and search for new candidates, costs already incurred for preparing the rental agreement or related documentation, potential vacancy loss, delay or other consequences for the owner or Listing Side, and loss of time and opportunity for ApartmentHub and other parties involved.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>8.8</strong> {isNL
+                            ? 'De Cancellation Fee is overeengekomen als een vaste en redelijke compensatie. ApartmentHub kan, waar nodig, het type verrichte werkzaamheden en de gevolgen van de annulering toelichten, maar partijen zijn overeengekomen dat het exacte bedrag van elk afzonderlijk kostenpost niet apart berekend hoeft te worden, tenzij dwingend recht anders vereist.'
+                            : 'The Cancellation Fee is agreed as a fixed and reasonable compensation. ApartmentHub may, where necessary, explain the type of work performed and the consequences caused by the cancellation, but the parties agree that the exact amount of each individual cost item does not need to be calculated separately, unless mandatory law requires otherwise.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>8.9</strong> {isNL
+                            ? 'De Opdrachtgever erkent dat annulering na Bevestiging schade, vertraging, administratief werk en verlies van opportuniteit kan veroorzaken voor ApartmentHub, de Listing Side, de eigenaar en andere kandidaten.'
+                            : 'The Client acknowledges that cancellation after Confirmation can cause damage, delay, administrative work and loss of opportunity for ApartmentHub, the Listing Side, the owner and other candidates.'}
                     </p>
                 </section>
 
-                {/* Artikel 9 */}
+                {/* Artikel 9 - Weigering om de huurovereenkomst te tekenen */}
                 <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 9 Bemiddelingscourtage' : 'Article 9 Mediation Commission'}</h2>
+                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 9. Weigering om de huurovereenkomst te tekenen' : 'Article 9. Refusal to Sign the Rental Agreement'}</h2>
                     <p className={styles.paragraph}>
-                        <strong>9.1.</strong> {isNL
-                            ? 'De woningzoekende geeft de Makelaar opdracht tot het zoeken van woonruimte die aansluit bij de opgegeven woonwensen. De Makelaar werkt volgens het'
-                            : 'The house seeker commissions the Broker to search for living space that matches the specified housing wishes. The Broker works according to the'} <em>No Cure No Pay</em>-{isNL ? 'principe. Wanneer door bemiddeling van de Makelaar een huurovereenkomst tot stand komt, is Opdrachtgever een bemiddelingscourtage verschuldigd gelijk aan' : 'principle. When a rental agreement is concluded through mediation by the Broker, the Client owes a mediation commission equal to'} <strong>{isNL ? 'één maand huur exclusief btw' : 'one month rent exclusive of VAT'}</strong>.
+                        <strong>9.1</strong> {isNL
+                            ? 'Indien de Woning is geaccepteerd of bevestigd en de Opdrachtgever vervolgens weigert de huurovereenkomst te tekenen, wordt dit behandeld als een annulering indien de huurovereenkomst materieel in lijn is met de Letter of Intent, het geaccepteerde bod of huurvoorstel, de overeengekomen huur, borg, startdatum en huurperiode, dwingend Nederlands huurrecht, en algemeen aanvaarde standaarden voor huurovereenkomsten voor woningen in Nederland.'
+                            : 'If the Property has been accepted or confirmed and the Client later refuses to sign the rental agreement, this will be treated as a cancellation if the rental agreement is materially in line with the Letter of Intent, the accepted offer or rental proposal, the agreed rent, deposit, start date and rental period, mandatory Dutch rental law, and generally accepted standards for residential tenancy agreements in the Netherlands.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>{isNL ? 'Aanvullende regeling:' : 'Additional regulation:'}</strong><br />
-                        {isNL
-                            ? 'Indien de maandhuur'
-                            : 'If the monthly rent is'} <strong>{isNL ? 'lager dan € 2.000' : 'lower than € 2.000'}</strong> {isNL ? 'bedraagt én de huurovereenkomst een looptijd heeft van' : 'and the rental agreement has a duration of'} <strong>{isNL ? 'meer dan 12 maanden' : 'more than 12 months'}</strong>{isNL ? ', bedraagt de courtage' : ', the commission is'} <strong>{isNL ? 'twee maanden huur exclusief btw' : 'two months rent exclusive of VAT'}</strong>.
+                        <strong>9.2</strong> {isNL
+                            ? 'In die situatie kan de Opdrachtgever de Cancellation Fee niet vermijden door de huurovereenkomst te weigeren te tekenen zonder geldige juridische of contractuele reden.'
+                            : 'In that situation, the Client cannot avoid the Cancellation Fee by refusing to sign the rental agreement without a valid legal or contractual reason.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        {isNL
-                            ? 'De courtage dient volledig te zijn voldaan voordat de sleutels worden overgedragen.'
-                            : 'The commission must be fully paid before the keys are handed over.'}
+                        <strong>9.3</strong> {isNL
+                            ? 'Geen Cancellation Fee is verschuldigd indien de Opdrachtgever weigert te tekenen omdat de definitieve huurovereenkomst een materiële afwijking bevat van de overeengekomen voorwaarden, een onrechtmatige of duidelijk onredelijke clausule bevat, of niet voldoet aan dwingend Nederlands huurrecht, mits de Opdrachtgever ApartmentHub hierover onverwijld en schriftelijk informeert.'
+                            : 'No Cancellation Fee is due if the Client refuses to sign because the final rental agreement contains a material deviation from the agreed conditions, contains an unlawful or clearly unreasonable clause, or does not meet mandatory Dutch rental law, provided that the Client notifies ApartmentHub of this objection promptly and in writing.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>9.2.</strong> {isNL
-                            ? 'Indien de betalingstermijn wordt overschreden, volgt een aanmaningsprocedure. Na de tweede aanmaning is wettelijke rente verschuldigd en worden buitengerechtelijke incassokosten in rekening gebracht van 15% van het factuurbedrag (minimaal € 250).'
-                            : 'If the payment term is exceeded, a reminder procedure follows. After the second reminder, statutory interest is owed and extrajudicial collection costs of 15% of the invoice amount (minimum € 250) are charged.'}
+                        <strong>9.4</strong> {isNL
+                            ? 'Indien het probleem redelijkerwijs kan worden gecorrigeerd, moet de Opdrachtgever ApartmentHub en de Listing Side een redelijke gelegenheid geven om het probleem te corrigeren v\u00f3\u00f3r annulering zonder betaling.'
+                            : 'If the issue can reasonably be corrected, the Client must give ApartmentHub and the Listing Side a reasonable opportunity to correct the issue before cancelling without payment.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>9.3.</strong> {isNL
-                            ? 'Indien blijkt dat de woningzoekende een eerder door Makelaar aangeboden woonruimte alsnog accepteert zonder medeweten van Makelaar, is de volledige courtage verschuldigd.'
-                            : 'If it appears that the house seeker accepts a living space previously offered by the Broker without the Broker\'s knowledge, the full commission is owed.'}
-                    </p>
-                    <p className={styles.paragraphMt}>
-                        <strong>9.4.</strong> {isNL
-                            ? 'Indien de huurovereenkomst op andere wijze tot stand komt terwijl de Makelaar een bemiddelingsopdracht had, is Opdrachtgever een boete verschuldigd van'
-                            : 'If the rental agreement is concluded in another way while the Broker had a mediation assignment, the Client owes a penalty of'} <strong>{isNL ? 'één maand huur exclusief btw' : 'one month rent exclusive of VAT'}</strong>.
-                    </p>
-                    <p className={styles.paragraphMt}>
-                        <strong>9.5.</strong> {isNL ? 'Een woonruimte wordt pas aan de woningzoekende beschikbaar gesteld nadat:' : 'A living space is only made available to the house seeker after:'}
-                    </p>
-                    <ul className={styles.list}>
-                        <li>{isNL ? 'de huurovereenkomst door alle partijen is ondertekend;' : 'the rental agreement has been signed by all parties;'}</li>
-                        <li>{isNL ? 'huur en borg zijn voldaan;' : 'rent and deposit have been paid;'}</li>
-                        <li>{isNL ? 'de courtage' : 'the commission'} <strong>{isNL ? 'exclusief btw' : 'exclusive of VAT'}</strong> {isNL ? 'volledig is betaald.' : 'has been fully paid.'}</li>
-                    </ul>
-                    <p className={styles.paragraphMt}>
-                        <strong>9.6.</strong> {isNL
-                            ? 'Aan de beëindiging van de overeenkomst door opzegging kunnen geen rechten op schadevergoeding worden ontleend, tenzij de opzegging het gevolg is van tekortschieten van de andere partij.'
-                            : 'No rights to compensation can be derived from the termination of the agreement by cancellation, unless the cancellation is the result of failure by the other party.'}
+                        <strong>9.5</strong> {isNL
+                            ? 'Kleine woordkeuzeverschillen, standaard huurclausules, administratieve details, wettelijk vereiste clausules, of clausules die gebruikelijk zijn in Nederlandse huurovereenkomsten voor woningen geven de Opdrachtgever niet automatisch het recht om zonder Cancellation Fee te annuleren.'
+                            : 'Minor wording differences, standard rental clauses, administrative details, legally required clauses, or clauses that are customary in Dutch residential rental agreements do not automatically give the Client the right to cancel without a Cancellation Fee.'}
                     </p>
                 </section>
 
-                {/* Artikel 10 */}
+                {/* Artikel 10 - Wanneer geen annuleringsvergoeding verschuldigd is */}
                 <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 10 Aansprakelijkheid' : 'Article 10 Liability'}</h2>
+                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 10. Wanneer geen annuleringsvergoeding verschuldigd is' : 'Article 10. When No Cancellation Fee Is Due'}</h2>
                     <p className={styles.paragraph}>
-                        <strong>10.1.</strong> {isNL
-                            ? 'Indien Makelaar bemiddelt bij het tot stand brengen van een huurovereenkomst tussen verhuurder en huurder is Makelaar nimmer partij bij de huurovereenkomst en hij is niet aansprakelijk voor de inhoud en de uitvoering van de huurovereenkomst. Makelaar is in geen geval aansprakelijk voor de schade van Opdrachtgever die het gevolg is van de situatie dat de huurprijs en/of de overeengekomen service(kosten) en/of de bijkomende al dan niet eenmalige vergoedingen niet in overeenstemming zijn met de wet.'
-                            : 'If the Broker mediates in the CONCLUSION of a rental agreement between landlord and tenant, the Broker is never a party to the rental agreement and he is not liable for the content and execution of the rental agreement. The Broker is in no case liable for damage of the Client resulting from the situation that the rent and/or the agreed service (costs) and/or the additional whether or not one-off fees are not in accordance with the law.'}
+                        <strong>10.1</strong> {isNL
+                            ? 'Geen Cancellation Fee is verschuldigd indien de Opdrachtgever de Biedinstructie schriftelijk intrekt v\u00f3\u00f3r Bevestiging.'
+                            : 'No Cancellation Fee is due if the Client withdraws the Offer Instruction in writing before Confirmation.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>10.2.</strong> {isNL
-                            ? 'Makelaar kwijt zich van haar taak zoals van een bedrijf in haar branche mag worden verwacht, maar aanvaardt geen enkele aansprakelijkheid voor schade, met inbegrip van gevolgschade, bedrijfsschade, winstdervingen en/of stagnatieschade, die het gevolg is van handelen of nalaten van Makelaar, haar personeel dan wel door haar ingeschakelde derden.'
-                            : 'The Broker acquits itself of its task as may be expected of a company in its branch, but accepts no liability whatsoever for damage, including consequential damage, trading loss, loss of profit and/or stagnation damage, which is the result of acts or omissions of the Broker, its personnel or third parties engaged by it.'}
+                        <strong>10.2</strong> {isNL
+                            ? 'Geen Cancellation Fee is verschuldigd indien de verhuurder of Listing Side het bod of de aanvraag van de Opdrachtgever afwijst.'
+                            : 'No Cancellation Fee is due if the landlord or Listing Side rejects the Client\u2019s offer or application.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>10.3.</strong> {isNL
-                            ? 'Makelaar is niet aansprakelijk voor schade die Opdrachtgever lijdt ten gevolge van handelingen of het nalaten hiervan door de andere partij bij de door bemiddeling van Makelaar tot stand gekomen huurovereenkomst.'
-                            : 'The Broker is not liable for damage suffered by the Client as a result of acts or omissions by the other party to the rental agreement concluded through the Broker\'s mediation.'}
+                        <strong>10.3</strong> {isNL
+                            ? 'Geen Cancellation Fee is verschuldigd indien de annulering direct wordt veroorzaakt door een materiële tekortkoming door ApartmentHub in het nakomen van haar verplichtingen, mits aan alle volgende voorwaarden is voldaan.'
+                            : 'No Cancellation Fee is due if the cancellation is directly caused by a material failure by ApartmentHub to perform its obligations, provided that all of the following conditions are met.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>10.4.</strong> {isNL
-                            ? 'De in dit artikel opgenomen beperkingen van de aansprakelijkheid gelden niet indien de schade te wijten is aan opzet en/of bewuste roekeloosheid van Makelaar.'
-                            : 'The limitations of liability included in this article do not apply if the damage is due to intent and/or conscious recklessness of the Broker.'}
+                        <strong>10.4</strong> {isNL
+                            ? 'De Opdrachtgever moet ApartmentHub zo spoedig mogelijk schriftelijk op de hoogte hebben gesteld van de vermeende tekortkoming.'
+                            : 'The Client must have notified ApartmentHub of the alleged failure in writing as soon as possible.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>10.5.</strong> {isNL
-                            ? 'Onverminderd het bepaalde in de overige leden van dit artikel is de aansprakelijkheid te allen tijde beperkt tot het bedrag van de door de assuradeur van Makelaar in het voorkomende geval te verstrekken uitkering, voor zover Makelaar hiervoor verzekerd is.'
-                            : 'Without prejudice to the provisions of the other paragraphs of this article, liability is at all times limited to the amount of the payment to be provided by the Broker\'s insurer in the event in question, insofar as the Broker is insured for this.'}
+                        <strong>10.5</strong> {isNL
+                            ? 'ApartmentHub moet een redelijke gelegenheid hebben gekregen om het probleem te verhelpen, waar verhelping mogelijk is.'
+                            : 'ApartmentHub must have been given a reasonable opportunity to remedy the issue, where remedy is possible.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>10.6.</strong> {isNL
-                            ? 'Indien Makelaar niet verzekerd is als bedoeld in het vorige lid is de aansprakelijkheid van Makelaar te allen tijde beperkt tot twee maal de hoogte van de door Makelaar aan Opdrachtgever voor haar werkzaamheden en/of diensten in rekening gebrachte en/of te brengen courtage.'
-                            : 'If the Broker is not insured as referred to in the previous paragraph, the Broker\'s liability is at all times limited to twice the amount of the commission charged and/or to be charged by the Broker to the Client for its activities and/or services.'}
+                        <strong>10.6</strong> {isNL
+                            ? 'De vermeende tekortkoming moet ernstig genoeg zijn om annulering zonder betaling te rechtvaardigen.'
+                            : 'The alleged failure must be serious enough to justify cancellation without payment.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>10.7.</strong> {isNL
-                            ? 'Makelaar is niet aansprakelijk voor de gevolgen van eventuele schade en/of gebreken aan de woning die bij de aanvaarding door Opdrachtgever van de woning aanwezig is. Het is aan Opdrachtgever zelf de woning te controleren op eventuele schade en/of gebreken en zo nodig de verhuurder daarop aan te spreken.'
-                            : 'The Broker is not liable for the consequences of any damage and/or defects to the home present upon acceptance of the home by the Client. It is up to the Client to check the home for any damage and/or defects and if necessary to hold the landlord accountable for this.'}
+                        <strong>10.7</strong> {isNL
+                            ? 'De vermeende tekortkoming moet direct de annulering hebben veroorzaakt.'
+                            : 'The alleged failure must have directly caused the cancellation.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>10.8</strong> {isNL
+                            ? 'Geen Cancellation Fee is verschuldigd indien de definitieve huurovereenkomst een materiële wijziging bevat van een essenti\u00eble voorwaarde in vergelijking met de door de Opdrachtgever geaccepteerde voorwaarden, en de Opdrachtgever die materi\u00eble wijziging onverwijld en schriftelijk afwijst.'
+                            : 'No Cancellation Fee is due if the final rental agreement contains a material change to an essential condition compared with the conditions accepted by the Client, and the Client rejects that material change promptly and in writing.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>10.9</strong> {isNL
+                            ? 'Essenti\u00eble voorwaarden omvatten het adres van de Woning, de maandhuur, borg, startdatum, huurperiode, aantal toegestane bewoners, registratiemogelijkheid en enige andere voorwaarde uitdrukkelijk vermeld als essentieel in de Letter of Intent.'
+                            : 'Essential conditions include the Property address, monthly rent, deposit, start date, rental period, number of permitted occupants, registration possibility and any other condition expressly stated as essential in the Letter of Intent.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>10.10</strong> {isNL
+                            ? 'Een wijziging is niet materieel indien deze klein, gebruikelijk, wettelijk vereist, administratief van aard, of redelijkerwijs corrigeerbaar is.'
+                            : 'A change is not material if it is minor, customary, legally required, administrative in nature, or reasonably capable of being corrected.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>10.11</strong> {isNL
+                            ? 'Kleine vertragingen, marktonzekerheid, ontevredenheid met timing, verandering van persoonlijke voorkeur, het kiezen van een andere woning, of het besluit om niet te verhuizen kwalificeren niet automatisch als een materi\u00eble tekortkoming door ApartmentHub.'
+                            : 'Minor delays, market uncertainty, dissatisfaction with timing, a change of personal preference, choosing another property, or deciding not to move do not automatically qualify as a material failure by ApartmentHub.'}
                     </p>
                 </section>
 
-                {/* Artikel 11 */}
+                {/* Artikel 11 - Elders gevonden woningen */}
                 <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 11 Bevoegde rechter, toepasselijk recht' : 'Article 11 Competent Court, Applicable Law'}</h2>
+                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 11. Elders gevonden woningen' : 'Article 11. Properties Found Elsewhere'}</h2>
                     <p className={styles.paragraph}>
-                        <strong>11.1.</strong> {isNL
-                            ? 'Op de tussen Makelaar en Opdrachtgever gesloten overeenkomst is uitsluitend Nederlands recht van toepassing. De geschillen die uit deze overeenkomst voortvloeien zullen eveneens naar Nederlands recht worden beslecht.'
-                            : 'Dutch law applies exclusively to the agreement concluded between Broker and Client. Disputes arising from this agreement will also be settled in accordance with Dutch law.'}
+                        <strong>11.1</strong> {isNL
+                            ? 'De Opdrachtgever blijft vrij om onafhankelijk of via een andere partij een andere woning te zoeken en te accepteren.'
+                            : 'The Client remains free to search for and accept another property independently or through another party.'}
                     </p>
                     <p className={styles.paragraphMt}>
-                        <strong>11.2.</strong> {isNL
-                            ? 'Eventuele geschillen zullen worden beslecht door de bevoegde Nederlandse rechter, zij het dat Makelaar, voor zover de wet zich daar niet dwingendrechtelijk tegen verzet, de bevoegdheid toekomt een zaak aanhangig te maken voor de bevoegde rechter in de plaats waar Makelaar is gevestigd.'
-                            : 'Any disputes will be settled by the competent Dutch court, albeit that the Broker, insofar as the law does not forcibly oppose this, is entitled to bring a case before the competent court in the place where the Broker is established.'}
+                        <strong>11.2</strong> {isNL
+                            ? 'De Opdrachtgever is ApartmentHub geen Success Fee verschuldigd louter omdat de Opdrachtgever onafhankelijk een andere woning huurt die niet via ApartmentHub is ge\u00efntroduceerd, geregeld, afgehandeld, aangevraagd, waarop geboden is of verkregen.'
+                            : 'The Client does not owe ApartmentHub a Success Fee merely because the Client independently rents another property that was not introduced, arranged, handled, applied for, offered on or secured through ApartmentHub.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>11.3</strong> {isNL
+                            ? 'Echter, indien ApartmentHub al opdracht heeft gegeven om door te gaan met een specifieke Woning en die Woning wordt bevestigd v\u00f3\u00f3rdat ApartmentHub een schriftelijke intrekking heeft ontvangen, blijft de Cancellation Fee verschuldigd indien de Opdrachtgever later annuleert, intrekt, weigert door te gaan zonder geldige juridische of contractuele reden, niet meewerkt, weigert te tekenen zonder geldige juridische of contractuele reden, of een andere woning kiest.'
+                            : 'However, if ApartmentHub has already been instructed to proceed with a specific Property and that Property is confirmed before ApartmentHub receives a written withdrawal, the Cancellation Fee remains due if the Client later cancels, withdraws, refuses to proceed without a valid legal or contractual reason, fails to cooperate, refuses to sign without a valid legal or contractual reason, or chooses another property.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>11.4</strong> {isNL
+                            ? 'De Opdrachtgever kan een Cancellation Fee niet vermijden door elders een andere woning te accepteren zonder eerst de actieve Biedinstructie schriftelijk in te trekken v\u00f3\u00f3r Bevestiging.'
+                            : 'The Client cannot avoid a Cancellation Fee by accepting another property elsewhere without first withdrawing the active Offer Instruction in writing before Confirmation.'}
+                    </p>
+                </section>
+
+                {/* Artikel 12 - Consumentenherroepingsrecht */}
+                <section className={styles.section}>
+                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 12. Consumentenherroepingsrecht' : 'Article 12. Consumer Right of Withdrawal'}</h2>
+                    <p className={styles.paragraph}>
+                        <strong>12.1</strong> {isNL
+                            ? 'Indien de Opdrachtgever een consument is en de overeenkomst met ApartmentHub op afstand is gesloten, kan de Opdrachtgever een wettelijk herroepingsrecht hebben tijdens de bedenktijd, tenzij een uitzondering van toepassing is.'
+                            : 'If the Client is a consumer and the agreement with ApartmentHub is concluded at a distance, the Client may have a statutory right of withdrawal during the cooling off period, unless an exception applies.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>12.2</strong> {isNL
+                            ? 'De Opdrachtgever kan ApartmentHub verzoeken om onmiddellijk met het uitvoeren van de dienst te beginnen tijdens de bedenktijd.'
+                            : 'The Client may request ApartmentHub to start performing the service immediately during the cooling off period.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>12.3</strong> {isNL
+                            ? 'Indien de Opdrachtgever ApartmentHub opdracht geeft om onmiddellijk met het uitvoeren van de dienst te beginnen, kan ApartmentHub onmiddellijk met de werkzaamheden beginnen.'
+                            : 'If the Client instructs ApartmentHub to start performing the service immediately, ApartmentHub may start work immediately.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>12.4</strong> {isNL
+                            ? 'Indien de Opdrachtgever tijdens de bedenktijd intrekt na verzoek tot onmiddellijke uitvoering, moet de Opdrachtgever een redelijk bedrag betalen voor de reeds verrichte diensten tot het moment van intrekking, tenzij dwingend recht anders bepaalt.'
+                            : 'If the Client withdraws during the cooling off period after requesting immediate performance, the Client must pay a reasonable amount for the services already performed up to the moment of withdrawal, unless mandatory law provides otherwise.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>12.5</strong> {isNL
+                            ? 'Indien de dienst volledig is uitgevoerd binnen de bedenktijd op uitdrukkelijk verzoek van de Opdrachtgever en met erkenning door de Opdrachtgever van de gevolgen, kan het herroepingsrecht mogelijk niet meer van toepassing zijn, voor zover toegestaan door dwingend recht.'
+                            : 'If the service has been fully performed within the cooling off period at the Client\u2019s express request and with the Client\u2019s acknowledgement of the consequences, the right of withdrawal may no longer apply, to the extent permitted by mandatory law.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>12.6</strong> {isNL
+                            ? 'De annuleringsregels in deze algemene voorwaarden beperken geen dwingende consumentenrechten die wettelijk niet kunnen worden uitgesloten.'
+                            : 'The cancellation rules in these Terms and Conditions do not limit any mandatory consumer rights that cannot legally be excluded.'}
+                    </p>
+                </section>
+
+                {/* Artikel 13 - Verplichtingen van de Opdrachtgever */}
+                <section className={styles.section}>
+                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 13. Verplichtingen van de Opdrachtgever' : 'Article 13. Client Obligations'}</h2>
+                    <p className={styles.paragraph}>
+                        <strong>13.1</strong> {isNL
+                            ? 'De Opdrachtgever moet complete, juiste en tijdige informatie verstrekken.'
+                            : 'The Client must provide complete, correct and timely information.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>13.2</strong> {isNL
+                            ? 'De Opdrachtgever moet meewerken aan de aanvraag, het bod en het huurproces.'
+                            : 'The Client must cooperate with the application, offer and rental process.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>13.3</strong> {isNL
+                            ? 'De Opdrachtgever moet ApartmentHub onmiddellijk schriftelijk informeren indien de Opdrachtgever niet langer door wil gaan met een Woning, een bod, aanvraag of Letter of Intent wil intrekken, een andere woning heeft geaccepteerd, niet langer beschikbaar is voor de voorgestelde startdatum, of als het inkomen, de werkzaamheden, de verblijfsstatus, het huishouden of de persoonlijke situatie van de Opdrachtgever verandert op een manier die van invloed kan zijn op de aanvraag.'
+                            : 'The Client must immediately inform ApartmentHub in writing if the Client no longer wants to proceed with a Property, wants to withdraw an offer, application or Letter of Intent, has accepted another property, is no longer available for the proposed start date, or if the Client\u2019s income, employment, residence, household or personal situation changes in a way that may affect the application.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>13.4</strong> {isNL
+                            ? 'Indien de Opdrachtgever niet tijdig informatie of medewerking verstrekt, kan ApartmentHub haar diensten opschorten.'
+                            : 'If the Client fails to provide information or cooperation in time, ApartmentHub may suspend its services.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>13.5</strong> {isNL
+                            ? 'Enige vertraging of gevolg veroorzaakt door ontbrekende, onjuiste of late informatie van de Opdrachtgever is voor rekening van de Opdrachtgever.'
+                            : 'Any delay or consequence caused by missing, incorrect or late information from the Client is for the Client\u2019s account.'}
+                    </p>
+                </section>
+
+                {/* Artikel 14 - Betaling en incasso */}
+                <section className={styles.section}>
+                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 14. Betaling en incasso' : 'Article 14. Payment and Collection'}</h2>
+                    <p className={styles.paragraph}>
+                        <strong>14.1</strong> {isNL
+                            ? 'Facturen moeten worden betaald binnen de op de factuur vermelde betalingstermijn.'
+                            : 'Invoices must be paid within the payment term stated on the invoice.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>14.2</strong> {isNL
+                            ? 'Indien betaling niet op tijd wordt ontvangen, kan ApartmentHub \u00e9\u00e9n of meer betalingsherinneringen sturen.'
+                            : 'If payment is not received on time, ApartmentHub may send one or more payment reminders.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>14.3</strong> {isNL
+                            ? 'Indien de Opdrachtgever een consument is, brengt ApartmentHub alleen wettelijke buitengerechtelijke incassokosten in rekening na het sturen van de wettelijk vereiste betalingsherinnering waarbij de Opdrachtgever minstens 14 dagen krijgt om te betalen en waarbij het bedrag aan incassokosten dat verschuldigd kan worden, wordt vermeld.'
+                            : 'If the Client is a consumer, ApartmentHub will only charge statutory extrajudicial collection costs after sending the legally required payment reminder giving the Client at least 14 days to pay and stating the amount of collection costs that may become due.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>14.4</strong> {isNL
+                            ? 'Indien betaling niet wordt ontvangen na de vereiste herinneringsperiode, kan ApartmentHub de zaak overdragen aan een incassobureau, advocaat of rechtbank.'
+                            : 'If payment is not received after the required reminder period, ApartmentHub may transfer the matter to a collection agency, lawyer or court.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>14.5</strong> {isNL
+                            ? 'Wettelijke rente en incassokosten kunnen in rekening worden gebracht in overeenstemming met de toepasselijke Nederlandse wetgeving.'
+                            : 'Statutory interest and collection costs may be charged in accordance with applicable Dutch law.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>14.6</strong> {isNL
+                            ? 'Een geschil over een factuur schort de betalingsverplichting niet automatisch op, tenzij ApartmentHub schriftelijk overeenkomt of dwingend recht anders bepaalt.'
+                            : 'A dispute regarding an invoice does not automatically suspend the payment obligation, unless ApartmentHub agrees in writing or mandatory law provides otherwise.'}
+                    </p>
+                </section>
+
+                {/* Artikel 15 - Persoonsgegevens */}
+                <section className={styles.section}>
+                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 15. Persoonsgegevens' : 'Article 15. Personal Data'}</h2>
+                    <p className={styles.paragraph}>
+                        <strong>15.1</strong> {isNL
+                            ? 'ApartmentHub verwerkt persoonsgegevens voor zover noodzakelijk voor het uitvoeren van de dienst, administratie, communicatie, aanvragen, biedingen, facturering, geschilafhandeling, wettelijke verplichtingen en het vaststellen, uitoefenen of verdedigen van juridische claims.'
+                            : 'ApartmentHub processes personal data insofar as necessary for the performance of the service, administration, communication, applications, offers, invoicing, dispute handling, legal obligations and the establishment, exercise or defence of legal claims.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>15.2</strong> {isNL
+                            ? 'ApartmentHub kan relevante informatie delen met de Listing Side of andere derden indien dit noodzakelijk is voor de huisvestingsaanvraag van de Opdrachtgever of indien de Opdrachtgever toestemming heeft gegeven.'
+                            : 'ApartmentHub may share relevant information with the Listing Side or other third parties if this is necessary for the Client\u2019s housing application or if the Client has given permission.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>15.3</strong> {isNL
+                            ? 'Indien een Woning-aanvraag niet doorgaat, voert ApartmentHub geen onnodige kredietcontroles, werkgeverscontroles of derden-delingen uit met betrekking tot die specifieke huurovereenkomst.'
+                            : 'If a Property application will not proceed, ApartmentHub will not perform unnecessary credit checks, employer checks or third party sharing related to that specific tenancy.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>15.4</strong> {isNL
+                            ? 'Intrekking van toestemming heeft geen invloed op verwerking die al wettig heeft plaatsgevonden v\u00f3\u00f3r intrekking.'
+                            : 'Withdrawal of consent does not affect processing that has already lawfully taken place before withdrawal.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>15.5</strong> {isNL
+                            ? 'ApartmentHub kan relevante persoonsgegevens, documenten en communicatie bewaren zolang als noodzakelijk is voor administratie, facturering, geschilafhandeling, wettelijke verplichtingen en juridische claims.'
+                            : 'ApartmentHub may retain relevant personal data, documents and communication for as long as necessary for administration, invoicing, dispute handling, legal obligations and legal claims.'}
+                    </p>
+                </section>
+
+                {/* Artikel 16 - Aansprakelijkheid */}
+                <section className={styles.section}>
+                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 16. Aansprakelijkheid' : 'Article 16. Liability'}</h2>
+                    <p className={styles.paragraph}>
+                        <strong>16.1</strong> {isNL
+                            ? 'ApartmentHub voert haar diensten uit met redelijke zorg en professionaliteit.'
+                            : 'ApartmentHub performs its services with reasonable care and professionalism.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>16.2</strong> {isNL
+                            ? 'ApartmentHub heeft een inspanningsverplichting en garandeert niet dat een verhuurder of Listing Side de Opdrachtgever zal accepteren.'
+                            : 'ApartmentHub has an obligation of effort and does not guarantee that a landlord or Listing Side will accept the Client.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>16.3</strong> {isNL
+                            ? 'ApartmentHub is niet verantwoordelijk voor beslissingen, vertragingen, vereisten, voorwaarden of gedrag van verhuurders, aanbiedende makelaars, vastgoedmanagers, relocatiebureaus of andere derden.'
+                            : 'ApartmentHub is not responsible for decisions, delays, requirements, conditions or conduct of landlords, listing agents, property managers, relocation agencies or other third parties.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>16.4</strong> {isNL
+                            ? 'ApartmentHub kan afgaan op informatie verstrekt door de Opdrachtgever, de Listing Side en openbare bronnen, tenzij ApartmentHub wist of redelijkerwijs had moeten weten dat de informatie onjuist was.'
+                            : 'ApartmentHub may rely on information provided by the Client, the Listing Side and public sources, unless ApartmentHub knew or reasonably should have known that the information was incorrect.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>16.5</strong> {isNL
+                            ? 'ApartmentHub is niet aansprakelijk voor de beslissing van de Opdrachtgever om een Woning af te wijzen, te annuleren of in te trekken, of voor de beslissing van de Opdrachtgever om door te gaan met een andere woning.'
+                            : 'ApartmentHub is not liable for the Client\u2019s decision to reject, cancel or withdraw from a Property, or for the Client\u2019s decision to proceed with another property.'}
+                    </p>
+                </section>
+
+                {/* Artikel 17 - Klachten */}
+                <section className={styles.section}>
+                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 17. Klachten' : 'Article 17. Complaints'}</h2>
+                    <p className={styles.paragraph}>
+                        <strong>17.1</strong> {isNL
+                            ? 'Indien de Opdrachtgever ontevreden is met de dienst van ApartmentHub, moet de Opdrachtgever ApartmentHub zo spoedig mogelijk schriftelijk informeren en de klacht duidelijk beschrijven.'
+                            : 'If the Client is dissatisfied with ApartmentHub\u2019s service, the Client must inform ApartmentHub in writing as soon as possible and clearly describe the complaint.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>17.2</strong> {isNL
+                            ? 'ApartmentHub zal de klacht beoordelen en binnen een redelijke termijn reageren.'
+                            : 'ApartmentHub will review the complaint and respond within a reasonable period.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>17.3</strong> {isNL
+                            ? 'De Opdrachtgever moet ApartmentHub een redelijke gelegenheid geven om de klacht te verhelpen, waar verhelping mogelijk is.'
+                            : 'The Client must give ApartmentHub a reasonable opportunity to remedy the complaint, where remedy is possible.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>17.4</strong> {isNL
+                            ? 'Een klacht schort geen betalingsverplichting automatisch op, tenzij ApartmentHub schriftelijk overeenkomt of dwingend recht anders bepaalt.'
+                            : 'A complaint does not automatically suspend any payment obligation, unless ApartmentHub agrees in writing or mandatory law provides otherwise.'}
+                    </p>
+                </section>
+
+                {/* Artikel 18 - Toepasselijk recht en geschillen */}
+                <section className={styles.section}>
+                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 18. Toepasselijk recht en geschillen' : 'Article 18. Governing Law and Disputes'}</h2>
+                    <p className={styles.paragraph}>
+                        <strong>18.1</strong> {isNL
+                            ? 'Op deze algemene voorwaarden en alle overeenkomsten tussen ApartmentHub en de Opdrachtgever is Nederlands recht van toepassing.'
+                            : 'These Terms and Conditions and all agreements between ApartmentHub and the Client are governed by Dutch law.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>18.2</strong> {isNL
+                            ? 'Geschillen zullen worden voorgelegd aan de bevoegde rechter in Nederland, tenzij dwingend recht anders bepaalt.'
+                            : 'Disputes will be submitted to the competent court in the Netherlands, unless mandatory law provides otherwise.'}
+                    </p>
+                </section>
+
+                {/* Artikel 19 - Splitsbaarheid */}
+                <section className={styles.section}>
+                    <h2 className={styles.sectionTitle}>{isNL ? 'Artikel 19. Splitsbaarheid' : 'Article 19. Severability'}</h2>
+                    <p className={styles.paragraph}>
+                        <strong>19.1</strong> {isNL
+                            ? 'Indien enige bepaling van deze algemene voorwaarden ongeldig, vernietigbaar of niet-handhaafbaar is, blijven de overige bepalingen geldig.'
+                            : 'If any provision of these Terms and Conditions is invalid, voidable or unenforceable, the remaining provisions remain valid.'}
+                    </p>
+                    <p className={styles.paragraphMt}>
+                        <strong>19.2</strong> {isNL
+                            ? 'De ongeldige, vernietigbare of niet-handhaafbare bepaling zal worden vervangen door een geldige bepaling die het doel van de oorspronkelijke bepaling zo nauwkeurig als wettelijk mogelijk weerspiegelt.'
+                            : 'The invalid, voidable or unenforceable provision will be replaced by a valid provision that reflects the purpose of the original provision as closely as legally possible.'}
                     </p>
                 </section>
             </div>
