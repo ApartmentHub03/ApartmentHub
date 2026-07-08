@@ -280,3 +280,31 @@
 .confirmCancel:hover { background: #e2e8f0; }
 .confirmYes { background: var(--orange); border: 0; color: #fff; }
 .confirmYes:hover { background: var(--orange-dark); }
+
+/* ===== Pagination ===== */
+.pageBtn {
+    background: var(--soft);
+    border: 1px solid var(--line);
+    color: var(--teal-dark);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s ease;
+}
+.pageBtn:hover:not(:disabled) {
+    background: var(--teal);
+    border-color: var(--teal);
+    color: #fff;
+}
+.pageBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}

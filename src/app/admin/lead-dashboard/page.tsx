@@ -45,6 +45,7 @@ interface ApiStats {
   bySourceWon: Record<string, number>;
   bySourceRevenue: Record<string, number>;
   byVariant?: { A: { leads: number; won: number; revenue: number }; B: { leads: number; won: number; revenue: number } };
+  byMonthAll?: Record<string, number>;
 }
 
 interface StageDef { key: Stage; rank: number; labelNl: string; labelEn: string; badge?: string; bar?: string; }
@@ -371,6 +372,7 @@ export default function AanhuurLeadsDashboard() {
       if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
       if (channelFilter !== 'all') params.set('source', channelFilter);
       if (variantFilter !== 'all') params.set('variant', variantFilter);
+      if (monthFilter !== 'all') params.set('month', monthFilter);
       const res = await fetch(`/api/admin/lead-dashboard?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -414,7 +416,7 @@ export default function AanhuurLeadsDashboard() {
       setLoading(false);
       initialLoadRef.current = false;
     }
-  }, [page, limit, debouncedSearch, channelFilter, variantFilter, router, lang]);
+  }, [page, limit, debouncedSearch, channelFilter, variantFilter, monthFilter, router, lang]);
 
   useEffect(() => {
     const token = sessionStorage.getItem('admin_token');
@@ -426,9 +428,9 @@ export default function AanhuurLeadsDashboard() {
   }, [router, fetchLeads]);
 
   const months = useMemo(() => {
-    const src = serverStats?.byMonth ?? {};
-    const keys = Object.keys(src).sort().reverse();
-    const totalAll = serverStats?.total ?? 0;
+    const src = serverStats?.byMonthAll ?? {};
+    const keys = Object.keys(src).sort().reverse().slice(0, 3);
+    const totalAll = Object.values(src).reduce((a, b) => a + b, 0);
     return [
       { key: 'all', label: s.all, count: totalAll },
       ...keys.map((k) => ({ key: k, label: monthLabel(k, lang), count: src[k] })),
@@ -586,7 +588,7 @@ export default function AanhuurLeadsDashboard() {
             <span className={styles.lbl}>{s.month}</span>
             <div className={styles.chips}>
               {months.map((m) => (
-                <button key={m.key} className={cx(styles.pill, monthFilter === m.key && styles.active)} onClick={() => setMonthFilter(m.key)}>
+                <button key={m.key} className={cx(styles.pill, monthFilter === m.key && styles.active)} onClick={() => { setMonthFilter(m.key); setPage(1); }}>
                   {m.label}
                   <span className={styles.mc}>{m.count}</span>
                 </button>
@@ -862,11 +864,11 @@ export default function AanhuurLeadsDashboard() {
                   <option value={100}>100</option>
                   <option value={500}>500</option>
                 </select>
-                <button className={styles.refresh} onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} style={{ opacity: page <= 1 ? 0.5 : 1 }}>
+                <button className={styles.pageBtn} onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>
                   ‹
                 </button>
                 <span style={{ fontSize: 13, fontWeight: 600 }}>{page} / {totalPages}</span>
-                <button className={styles.refresh} onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} style={{ opacity: page >= totalPages ? 0.5 : 1 }}>
+                <button className={styles.pageBtn} onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
                   ›
                 </button>
               </div>

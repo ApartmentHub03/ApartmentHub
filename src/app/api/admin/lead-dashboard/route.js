@@ -5,7 +5,7 @@ function escapeIlike(str) {
     return str.replace(/[%_]/g, (m) => `\\${m}`);
 }
 
-function applyFilters(query, { search, source, language, bedrooms, budget, stage, variant }) {
+function applyFilters(query, { search, source, language, bedrooms, budget, stage, variant, month }) {
     if (search) {
         const escaped = escapeIlike(search);
         query = query.or(`full_name.ilike.%${escaped}%,phone.ilike.%${escaped}%,email.ilike.%${escaped}%`);
@@ -27,6 +27,18 @@ function applyFilters(query, { search, source, language, bedrooms, budget, stage
     }
     if (variant && ['A', 'B'].includes(variant)) {
         query = query.eq('variant', variant);
+    }
+    if (month && /^\d{4}-\d{2}$/.test(month)) {
+        const [yStr, mStr] = month.split('-');
+        const year = parseInt(yStr, 10);
+        const mon = parseInt(mStr, 10);
+        if (year >= 1900 && mon >= 1 && mon <= 12) {
+            const start = `${month}-01T00:00:00.000Z`;
+            const endMonth = mon === 12 ? 1 : mon + 1;
+            const endYear = mon === 12 ? year + 1 : year;
+            const end = `${String(endYear).padStart(4, '0')}-${String(endMonth).padStart(2, '0')}-01T00:00:00.000Z`;
+            query = query.gte('created_at', start).lt('created_at', end);
+        }
     }
     return query;
 }
@@ -57,13 +69,14 @@ export async function GET(request) {
     const budget = searchParams.get('budget') || '';
     const stage = searchParams.get('stage') || '';
     const variant = searchParams.get('variant') || '';
+    const month = searchParams.get('month') || '';
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const limitParam = parseInt(searchParams.get('limit') || '50', 10);
     const limit = [50, 100, 500].includes(limitParam) ? limitParam : 50;
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    const filters = { search, source, language, bedrooms, budget, stage, variant };
+    const filters = { search, source, language, bedrooms, budget, stage, variant, month };
 
     const pagedQuery = applyFilters(
         supabase.from('meta_leads').select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(from, to),
@@ -75,9 +88,15 @@ export async function GET(request) {
         filters
     );
 
-    const [pagedResult, allResult] = await Promise.all([
+    const monthQuery = applyFilters(
+        supabase.from('meta_leads').select('created_at'),
+        { ...filters, month: '' }
+    );
+
+    const [pagedResult, allResult, monthResult] = await Promise.all([
         pagedQuery,
         allQuery,
+        monthQuery,
     ]);
 
     if (pagedResult.error) {
@@ -85,6 +104,9 @@ export async function GET(request) {
     }
     if (allResult.error) {
         return NextResponse.json({ success: false, message: allResult.error.message }, { status: 500 });
+    }
+    if (monthResult.error) {
+        return NextResponse.json({ success: false, message: monthResult.error.message }, { status: 500 });
     }
 
     const leads = pagedResult.data || [];
@@ -102,6 +124,7 @@ export async function GET(request) {
         byLanguage: {},
         bySource: {},
         byMonth: {},
+        byMonthAll: {},
         byStage: { lead: 0, scheduled: 0, offer: 0, won: 0 },
         totalRevenue: 0,
         bySourceWon: {},
@@ -134,6 +157,13 @@ export async function GET(request) {
         }
     }
 
+    const monthLeads = monthResult.data || [];
+    const byMonthAll = {};
+    for (const l of monthLeads) {
+        const mk = (l.created_at || '').slice(0, 7);
+        if (mk) byMonthAll[mk] = (byMonthAll[mk] || 0) + 1;
+    }
+
     return NextResponse.json({
         success: true,
         leads,
@@ -143,6 +173,7 @@ export async function GET(request) {
         stats: {
             ...stats,
             total: allLeads.length,
+            byMonthAll,
         },
     });
 }
