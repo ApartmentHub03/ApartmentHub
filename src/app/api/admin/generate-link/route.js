@@ -35,7 +35,7 @@ function getAmsterdamDate(date) {
 }
 
 export async function POST(request) {
-    const { address, slotStartDatetime, slotEndDatetime, slotLengthMinutes } = await request.json();
+    const { address, slotStartDatetime, slotEndDatetime, slotLengthMinutes, viewingType = 'inPerson' } = await request.json();
 
     const apiKey = process.env.CAL_COM_API_KEY;
     if (!apiKey) {
@@ -104,7 +104,7 @@ export async function POST(request) {
         };
 
         // Step 2: Create In-Person event type
-        const inPersonEvent = await calFetch('/event-types', apiKey, '2024-06-14', {
+        const inPersonEvent = viewingType === 'inPerson' ? await calFetch('/event-types', apiKey, '2024-06-14', {
             method: 'POST',
             body: JSON.stringify({
                 title: `${address} (In-Person)`,
@@ -114,11 +114,12 @@ export async function POST(request) {
                 bookingFields,
                 bookingWindow,
                 scheduleId,
+                color: { lightThemeHex: '#8B4513', darkThemeHex: '#F5DEB3' },
             }),
-        });
+        }) : null;
 
         // Step 3: Create Video event type
-        const videoEvent = await calFetch('/event-types', apiKey, '2024-06-14', {
+        const videoEvent = viewingType === 'video' ? await calFetch('/event-types', apiKey, '2024-06-14', {
             method: 'POST',
             body: JSON.stringify({
                 title: `${address} (Video)`,
@@ -128,20 +129,21 @@ export async function POST(request) {
                 bookingFields,
                 bookingWindow,
                 scheduleId,
+                color: { lightThemeHex: '#2563EB', darkThemeHex: '#93C5FD' },
             }),
-        });
+        }) : null;
 
         const results = {};
 
         // Build in-person link
-        if (inPersonEvent.status === 'success' && inPersonEvent.data) {
+        if (inPersonEvent?.status === 'success' && inPersonEvent.data) {
             const params = new URLSearchParams({ date: slotDate });
             results.eventlink = `${inPersonEvent.data.bookingUrl}?${params.toString()}`;
             results.calEventTypeId = inPersonEvent.data.id;
         }
 
         // Build video link
-        if (videoEvent.status === 'success' && videoEvent.data) {
+        if (videoEvent?.status === 'success' && videoEvent.data) {
             const params = new URLSearchParams({ date: slotDate });
             results.eventlinkVideo = `${videoEvent.data.bookingUrl}?${params.toString()}`;
             results.calEventTypeIdVideo = videoEvent.data.id;

@@ -13,7 +13,7 @@ export async function POST(request, { params }) {
     }
     const { id } = await params;
     try {
-        const { start, end, slotLengthMinutes } = await request.json();
+        const { start, end, slotLengthMinutes, viewingType } = await request.json();
         if (!start || !end || !slotLengthMinutes) {
             return NextResponse.json({ success: false, message: 'start, end and slotLengthMinutes are required' }, { status: 400 });
         }
@@ -42,6 +42,7 @@ export async function POST(request, { params }) {
                 slotStartDatetime: start,
                 slotEndDatetime: end,
                 slotLengthMinutes: Number(slotLengthMinutes),
+                viewingType: viewingType || 'inPerson',
             }),
         });
         const cal = await calRes.json();
@@ -65,7 +66,7 @@ export async function POST(request, { params }) {
         const { data: updated, error: upErr } = await supabase
             .from('apartments')
             .update({
-                event_link: cal.eventlink || cal.eventlinkVideo,
+                event_link: cal.eventlink || null,
                 slot_dates: [...slotDates, slot],
                 booking_details: { ...bookingDetails, latest_slot: slot },
                 status: apt.status === 'Null' || !apt.status ? 'CreateLink' : apt.status,
