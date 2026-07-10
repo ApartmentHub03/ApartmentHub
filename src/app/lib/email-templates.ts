@@ -299,6 +299,64 @@ export function documentRequestEmail(args: {
 }
 
 /* ====================================================================
+ * Inventory request email — "Lijst van zaken" sent to the seller with
+ * a tokenized link to fill in the fixtures & fittings form.
+ * ==================================================================== */
+export function inventoryRequestEmail(args: {
+  lang: "nl" | "en";
+  recipient_name: string;
+  object_adres: string;
+  inventory_url: string;
+  valid_days: number;
+  custom_message?: string;
+}): { subject: string; html: string; text: string } {
+  const adres = escapeHtml(args.object_adres);
+  const name = escapeHtml(args.recipient_name);
+  const nl = args.lang === "nl";
+
+  const customBlock = args.custom_message
+    ? `<p style="background:${SOFT};padding:12px;border-radius:8px;margin:18px 0;">${escapeHtml(args.custom_message)}</p>`
+    : "";
+
+  const cardHtml = `
+    <div style="background:${SOFT};border:1px solid rgba(0,155,138,0.2);border-radius:12px;padding:24px;text-align:center;margin:24px 0;">
+      <p style="margin:0 0 18px;color:${INK};font-size:14px;">
+        ${nl ? "Vul de lijst van zaken veilig online in via onze beveiligde portal." : "Fill in the list of fixtures & fittings safely via our secure portal."}
+      </p>
+      <a href="${escapeHtml(args.inventory_url)}" style="display:inline-block;background:${TEAL};color:#fff;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px;">${nl ? "Lijst invullen" : "Fill in list"} \u2192</a>
+      <p style="margin:12px 0 0;font-size:12px;color:${GREY};">
+        ${nl ? "Link verloopt over" : "Link expires in"} ${args.valid_days} ${nl ? "dagen" : "days"}
+      </p>
+    </div>
+  `;
+
+  const body = `
+    <h2 style="margin:0 0 8px;color:${TEAL};font-size:20px;">${nl ? "Lijst van zaken" : "List of fixtures & fittings"}</h2>
+    <p style="margin:0 0 8px;">${nl ? `Beste ${name},` : `Hi ${name},`}</p>
+    <p style="margin:0 0 14px;">
+      ${nl
+        ? `Voor de verkoop van <strong>${adres}</strong> vragen wij u de lijst van zaken in te vullen. Geef per item aan of het in de woning blijft, meegaat, of ter overname is.`
+        : `For the sale of <strong>${adres}</strong> we ask you to fill in the list of fixtures & fittings. For each item indicate whether it stays in the property, goes with you, or is available for takeover.`}
+    </p>
+    ${customBlock}
+    ${cardHtml}
+    <p style="margin:14px 0 0;font-size:13px;color:${GREY};">
+      ${nl ? "Vragen? david@apartmenthub.nl \u00b7 +31 6 83221189" : "Questions? david@apartmenthub.nl \u00b7 +31 6 83221189"}
+    </p>
+    <p style="margin:8px 0 0;font-size:12px;color:#A0AEC0;font-style:italic;">
+      ${nl ? "Dit verzoek is gestart via het ApartmentHub verkoopportaal." : "This request was initiated via the ApartmentHub seller portal."}
+    </p>`;
+
+  const subject = nl
+    ? `Lijst van zaken \u2014 ${args.object_adres}`
+    : `List of fixtures & fittings \u2014 ${args.object_adres}`;
+
+  const text = `${nl ? "Lijst van zaken" : "List of fixtures & fittings"}\n\n${nl ? `Beste ${args.recipient_name},` : `Hi ${args.recipient_name},`}\n\n${nl ? `Voor de verkoop van ${args.object_adres} vragen wij u de lijst van zaken in te vullen.` : `For the sale of ${args.object_adres} we ask you to fill in the list of fixtures & fittings.`}\n\n${nl ? "Vul in via:" : "Fill in at:"} ${args.inventory_url}\n\n${nl ? `Link verloopt over ${args.valid_days} dagen.` : `Link expires in ${args.valid_days} days.`}\n\n${nl ? "Vragen? david@apartmenthub.nl" : "Questions? david@apartmenthub.nl"}`;
+
+  return { subject, html: shell(nl ? "Lijst van zaken" : "List of fixtures & fittings", body), text };
+}
+
+/* ====================================================================
  * Valuation confirmation — sent to the seller after submitting the
  * valuation form with their estimated value range.
  * ==================================================================== */

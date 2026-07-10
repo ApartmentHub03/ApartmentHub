@@ -14,6 +14,8 @@ import { MagicLinksSection } from "./magic-links";
 import { NotesSection } from "./notes";
 import { RenameDocKeyButton } from "./rename-doc-key";
 import { DeleteDocButton } from "./delete-doc";
+import { SendInventoryButton } from "./send-inventory-button";
+import { InventoryResponseSection } from "./inventory-response";
 import { DOC_DESCRIPTIONS } from "@/app/lib/doc-descriptions";
 import { Logo } from "@/app/lib/components/Logo";
 import Image from "next/image";
@@ -40,6 +42,9 @@ const ACTION_LABEL: Record<string, string> = {
   note_added: "Note added",
   note_edited: "Note edited",
   note_deleted: "Note deleted",
+  inventory_link_created: "Inventory link created",
+  inventory_link_email_sent: "Inventory link email sent",
+  inventory_link_submitted: "Inventory form submitted",
 };
 
 function bytes(n: number | null): string {
@@ -577,6 +582,11 @@ export default async function DossierPage({ params }: Params) {
               sellerEmail={d.email ?? null}
               sellerPhone={d.telefoon ?? d.phone_e164 ?? null}
             />
+            <SendInventoryButton
+              dossierId={d.id}
+              sellerEmail={d.email ?? null}
+              sellerName={d.naam ?? ""}
+            />
             <span style={{ position: "relative", display: "inline-flex" }}>
               <RegenerateAnalysisButton dossierId={d.id} hasAnalysis={aiSummary.length > 0} />
             </span>
@@ -771,6 +781,8 @@ export default async function DossierPage({ params }: Params) {
               initialNotes={dossierNotes}
               canEdit={staff.role !== "viewer"}
             />
+
+            <InventoryResponseSection dossierId={d.id} />
 
             <div className={styles.section}>
               <h2>Activity log</h2>

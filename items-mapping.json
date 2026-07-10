@@ -1,0 +1,432 @@
+{
+  "mergeFields": [
+    "{{ADRES}}",
+    "{{VERKOPER}}",
+    "{{DATUM}}"
+  ],
+  "radioValues": {
+    "blijft": "Blijft achter",
+    "mee": "Gaat mee",
+    "overname": "Ter overname",
+    "nvt": "N.v.t."
+  },
+  "dynamicExtraItems": {
+    "description": "Every category has a '+ Extra onderdeel toevoegen' button. Each added row posts extra_label_N (text, with data-cat = category name) and extra_N (radio, same values). N increments globally and is unlimited.",
+    "labelField": "extra_label_N",
+    "radioField": "extra_N"
+  },
+  "items": {
+    "item_1": {
+      "label": "Deurbel",
+      "category": "Woning · interieur"
+    },
+    "item_2": {
+      "label": "Videofoon / intercom",
+      "category": "Woning · interieur"
+    },
+    "item_3": {
+      "label": "Rookmelders / brandmelders",
+      "category": "Woning · interieur"
+    },
+    "item_4": {
+      "label": "(Klok)thermostaat",
+      "category": "Woning · interieur"
+    },
+    "item_5": {
+      "label": "Alarminstallatie",
+      "category": "Woning · interieur"
+    },
+    "item_6": {
+      "label": "Gordijnrails",
+      "category": "Woning · interieur"
+    },
+    "item_7": {
+      "label": "Gordijnen",
+      "category": "Woning · interieur"
+    },
+    "item_8": {
+      "label": "Rolgordijnen",
+      "category": "Woning · interieur"
+    },
+    "item_9": {
+      "label": "Vitrages",
+      "category": "Woning · interieur"
+    },
+    "item_10": {
+      "label": "Jaloezieen / lamellen",
+      "category": "Woning · interieur"
+    },
+    "item_11": {
+      "label": "Rolluiken",
+      "category": "Woning · interieur"
+    },
+    "item_12": {
+      "label": "Zonwering binnen",
+      "category": "Woning · interieur"
+    },
+    "item_13": {
+      "label": "Vloerbedekking / vinyl",
+      "category": "Woning · interieur"
+    },
+    "item_14": {
+      "label": "Parket / laminaat",
+      "category": "Woning · interieur"
+    },
+    "item_15": {
+      "label": "Losliggende (vloer)delen",
+      "category": "Woning · interieur"
+    },
+    "item_16": {
+      "label": "Wandtegels / lambrisering",
+      "category": "Woning · interieur"
+    },
+    "item_17": {
+      "label": "Trapbekleding",
+      "category": "Woning · interieur"
+    },
+    "item_18": {
+      "label": "Voorzetramen / radiatorfolie",
+      "category": "Woning · interieur"
+    },
+    "item_19": {
+      "label": "(Inbouw)spiegels",
+      "category": "Woning · interieur"
+    },
+    "item_20": {
+      "label": "Schilderij-ophangsysteem",
+      "category": "Woning · interieur"
+    },
+    "item_21": {
+      "label": "Losse en inbouwkasten",
+      "category": "Woning · interieur"
+    },
+    "item_22": {
+      "label": "Traphekje",
+      "category": "Woning · interieur"
+    },
+    "item_23": {
+      "label": "Keukenblok met bovenkasten",
+      "category": "Keuken"
+    },
+    "item_24": {
+      "label": "Werkblad",
+      "category": "Keuken"
+    },
+    "item_25": {
+      "label": "Spoelbak / kraan",
+      "category": "Keuken"
+    },
+    "item_26": {
+      "label": "Afzuigkap",
+      "category": "Keuken"
+    },
+    "item_27": {
+      "label": "Kookplaat (gas / inductie / keramisch)",
+      "category": "Keuken"
+    },
+    "item_28": {
+      "label": "Fornuis",
+      "category": "Keuken"
+    },
+    "item_29": {
+      "label": "Oven",
+      "category": "Keuken"
+    },
+    "item_30": {
+      "label": "Combi-oven / stoomoven",
+      "category": "Keuken"
+    },
+    "item_31": {
+      "label": "Magnetron",
+      "category": "Keuken"
+    },
+    "item_32": {
+      "label": "Koelkast",
+      "category": "Keuken"
+    },
+    "item_33": {
+      "label": "Vriezer",
+      "category": "Keuken"
+    },
+    "item_34": {
+      "label": "Koel-vriescombinatie",
+      "category": "Keuken"
+    },
+    "item_35": {
+      "label": "Vaatwasser",
+      "category": "Keuken"
+    },
+    "item_36": {
+      "label": "Kokendwaterkraan (Quooker)",
+      "category": "Keuken"
+    },
+    "item_37": {
+      "label": "Koffiezetsysteem (inbouw)",
+      "category": "Keuken"
+    },
+    "item_38": {
+      "label": "Wijnkoeler",
+      "category": "Keuken"
+    },
+    "item_39": {
+      "label": "Warmhoudlade",
+      "category": "Keuken"
+    },
+    "item_40": {
+      "label": "Afvalscheiding (inbouw)",
+      "category": "Keuken"
+    },
+    "item_41": {
+      "label": "Keukenverlichting",
+      "category": "Keuken"
+    },
+    "item_42": {
+      "label": "Keukenaccessoires",
+      "category": "Keuken"
+    },
+    "item_43": {
+      "label": "Wastafel(s)",
+      "category": "Sanitair en badkamer"
+    },
+    "item_44": {
+      "label": "Wastafelmeubel",
+      "category": "Sanitair en badkamer"
+    },
+    "item_45": {
+      "label": "Spiegel(s)",
+      "category": "Sanitair en badkamer"
+    },
+    "item_46": {
+      "label": "Douche(deur) / douchescherm",
+      "category": "Sanitair en badkamer"
+    },
+    "item_47": {
+      "label": "Douchegarnituur",
+      "category": "Sanitair en badkamer"
+    },
+    "item_48": {
+      "label": "Bad",
+      "category": "Sanitair en badkamer"
+    },
+    "item_49": {
+      "label": "2e toilet / fontein",
+      "category": "Sanitair en badkamer"
+    },
+    "item_50": {
+      "label": "Toiletkast / planchet",
+      "category": "Sanitair en badkamer"
+    },
+    "item_51": {
+      "label": "Handdoekradiator",
+      "category": "Sanitair en badkamer"
+    },
+    "item_52": {
+      "label": "Ventilator badkamer",
+      "category": "Sanitair en badkamer"
+    },
+    "item_53": {
+      "label": "Closetrolhouder / handdoekhaken",
+      "category": "Sanitair en badkamer"
+    },
+    "item_54": {
+      "label": "Badkameraccessoires",
+      "category": "Sanitair en badkamer"
+    },
+    "item_55": {
+      "label": "Toiletaccessoires",
+      "category": "Sanitair en badkamer"
+    },
+    "item_56": {
+      "label": "CV-ketel met toebehoren",
+      "category": "Verwarming, ventilatie en energie"
+    },
+    "item_57": {
+      "label": "Radiatoren / convectoren",
+      "category": "Verwarming, ventilatie en energie"
+    },
+    "item_58": {
+      "label": "Radiatorknoppen / thermostaatkranen",
+      "category": "Verwarming, ventilatie en energie"
+    },
+    "item_59": {
+      "label": "Vloerverwarming",
+      "category": "Verwarming, ventilatie en energie"
+    },
+    "item_60": {
+      "label": "Vloerverwarmingsverdeler",
+      "category": "Verwarming, ventilatie en energie"
+    },
+    "item_61": {
+      "label": "(Mechanische) ventilatie / WTW",
+      "category": "Verwarming, ventilatie en energie"
+    },
+    "item_62": {
+      "label": "Airconditioning",
+      "category": "Verwarming, ventilatie en energie"
+    },
+    "item_63": {
+      "label": "(Warmwater)boiler / geiser",
+      "category": "Verwarming, ventilatie en energie"
+    },
+    "item_64": {
+      "label": "Waterontharder",
+      "category": "Verwarming, ventilatie en energie"
+    },
+    "item_65": {
+      "label": "Zonnepanelen",
+      "category": "Verwarming, ventilatie en energie"
+    },
+    "item_66": {
+      "label": "Zonneboiler",
+      "category": "Verwarming, ventilatie en energie"
+    },
+    "item_67": {
+      "label": "Warmtepomp",
+      "category": "Verwarming, ventilatie en energie"
+    },
+    "item_68": {
+      "label": "Thuisbatterij",
+      "category": "Verwarming, ventilatie en energie"
+    },
+    "item_69": {
+      "label": "Laadpunt elektrische auto",
+      "category": "Verwarming, ventilatie en energie"
+    },
+    "item_70": {
+      "label": "Open haard / houtkachel / allesbrander",
+      "category": "Verwarming, ventilatie en energie"
+    },
+    "item_71": {
+      "label": "Rookgasafvoer / schoorsteen",
+      "category": "Verwarming, ventilatie en energie"
+    },
+    "item_72": {
+      "label": "Isolatievoorzieningen",
+      "category": "Verwarming, ventilatie en energie"
+    },
+    "item_73": {
+      "label": "Buitenverlichting",
+      "category": "Woning · exterieur"
+    },
+    "item_74": {
+      "label": "Tijd- / schemerschakelaar / bewegingsmelder",
+      "category": "Woning · exterieur"
+    },
+    "item_75": {
+      "label": "Huisnummer / naambordje",
+      "category": "Woning · exterieur"
+    },
+    "item_76": {
+      "label": "Brievenbus",
+      "category": "Woning · exterieur"
+    },
+    "item_77": {
+      "label": "(Veiligheids)sloten en inbraakpreventie",
+      "category": "Woning · exterieur"
+    },
+    "item_78": {
+      "label": "Camerabewaking / deurbelcamera",
+      "category": "Woning · exterieur"
+    },
+    "item_79": {
+      "label": "Screens / rolluiken buiten",
+      "category": "Woning · exterieur"
+    },
+    "item_80": {
+      "label": "Zonwering buiten",
+      "category": "Woning · exterieur"
+    },
+    "item_81": {
+      "label": "Luifel / markies",
+      "category": "Woning · exterieur"
+    },
+    "item_82": {
+      "label": "Schotel / antenne",
+      "category": "Woning · exterieur"
+    },
+    "item_83": {
+      "label": "Vlaggenmast(houder)",
+      "category": "Woning · exterieur"
+    },
+    "item_84": {
+      "label": "Tuinaanleg / beplanting",
+      "category": "Tuin en berging"
+    },
+    "item_85": {
+      "label": "Tuinverlichting",
+      "category": "Tuin en berging"
+    },
+    "item_86": {
+      "label": "Buitenkraan",
+      "category": "Tuin en berging"
+    },
+    "item_87": {
+      "label": "Beregeningsinstallatie",
+      "category": "Tuin en berging"
+    },
+    "item_88": {
+      "label": "Tuinhuis / blokhut / schuur",
+      "category": "Tuin en berging"
+    },
+    "item_89": {
+      "label": "Inventaris tuinhuis / schuur",
+      "category": "Tuin en berging"
+    },
+    "item_90": {
+      "label": "Vijver (met pomp)",
+      "category": "Tuin en berging"
+    },
+    "item_91": {
+      "label": "Broeikas",
+      "category": "Tuin en berging"
+    },
+    "item_92": {
+      "label": "Pergola / overkapping",
+      "category": "Tuin en berging"
+    },
+    "item_93": {
+      "label": "(Sier)hekwerk / schutting",
+      "category": "Tuin en berging"
+    },
+    "item_94": {
+      "label": "Tuinmeubilair (los)",
+      "category": "Tuin en berging"
+    },
+    "item_95": {
+      "label": "Barbecue (inbouw)",
+      "category": "Tuin en berging"
+    },
+    "item_96": {
+      "label": "Wasmachine",
+      "category": "Overige zaken"
+    },
+    "item_97": {
+      "label": "Wasdroger",
+      "category": "Overige zaken"
+    },
+    "item_98": {
+      "label": "(Elektrische) garagedeur + afstandsbediening",
+      "category": "Overige zaken"
+    },
+    "item_99": {
+      "label": "Garagestelling",
+      "category": "Overige zaken"
+    },
+    "item_100": {
+      "label": "Vlizotrap / zoldertrap",
+      "category": "Overige zaken"
+    },
+    "item_101": {
+      "label": "Dakraam(rolgordijn)",
+      "category": "Overige zaken"
+    },
+    "item_102": {
+      "label": "(Ingebouwde) kluis",
+      "category": "Overige zaken"
+    },
+    "item_103": {
+      "label": "Brandblusser",
+      "category": "Overige zaken"
+    }
+  }
+}
