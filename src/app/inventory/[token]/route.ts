@@ -658,7 +658,7 @@ function INJECTED_SCRIPT(submitUrl: string, token: string): string {
         var done = document.createElement('div');
         done.style.cssText = 'text-align:center;padding:60px 20px;';
         done.innerHTML =
-          '<div style="width:60px;height:60px;border-radius:50%;background:var(--teal);color:#fff;display:grid;place-items:center;font-size:28px;margin:0 auto 14px;">\\u2713</div>' +
+          '<div style="width:60px;height:60px;border-radius:50%;background:var(--teal);color:#fff;display:grid;place-items:center;font-size:28px;margin:0 auto 14px;">\u2713</div>' +
           '<h2 style="margin:0 0 4px;font-size:20px;color:var(--dark);">' + (lang === 'en' ? 'Thank you!' : 'Bedankt!') + '</h2>' +
           '<p style="color:var(--muted);margin:0;font-size:14px;">' + (lang === 'en' ? 'Your list of fixtures & fittings has been sent to ApartmentHub.' : 'Uw lijst van zaken is verzonden naar ApartmentHub.') + '</p>';
         var bodyEl = document.querySelector('.body');
@@ -685,4 +685,4 @@ const SUBMITTED_HTML = `<!doctype html><html lang="nl"><head><meta charset="utf-
 <style>body{font-family:'Inter',-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#eef1f1;color:#12332f}
 .box{text-align:center;padding:40px}.check{width:60px;height:60px;border-radius:50%;background:#009B8A;color:#fff;display:grid;place-items:center;font-size:28px;margin:0 auto 14px}
 h2{margin:0 0 4px;font-size:20px}p{color:#6f807c;margin:0;font-size:14px}</style></head>
-<body><div class="box"><div class="check">\\u2713</div><h2>Al ingevuld</h2><p>Deze lijst van zaken is al ingevuld en verzonden.</p></div></body></html>`;
+<body><div class="box"><div class="check">\u2713</div><h2>Al ingevuld</h2><p>Deze lijst van zaken is al ingevuld en verzonden.</p></div></body></html>`;
