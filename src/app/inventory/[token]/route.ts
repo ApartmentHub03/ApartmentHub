@@ -11,6 +11,10 @@ type SubmittedData = {
   items: { key: string; choice: string }[];
   extras: { label: string; category: string; choice: string }[];
   notes: string;
+  signature_name: string;
+  signature_place: string;
+  signature_date: string;
+  signature_image: string | null;
 };
 
 export async function GET(
@@ -111,8 +115,22 @@ export async function POST(
     .filter((e) => e.label && validChoices.includes(e.choice))
     .map((e) => ({ label: e.label, category: e.category || "Overige zaken", choice: e.choice }));
   const notes = (body.notes || "").slice(0, 5000);
+  const signatureName = (body.signature_name || "").slice(0, 200);
+  const signaturePlace = (body.signature_place || "").slice(0, 200);
+  const signatureDate = (body.signature_date || "").slice(0, 200);
+  const signatureImage = typeof body.signature_image === "string" && body.signature_image.startsWith("data:image/png;base64,")
+    ? body.signature_image
+    : null;
 
-  const submittedData: SubmittedData = { items, extras, notes };
+  const submittedData: SubmittedData = {
+    items,
+    extras,
+    notes,
+    signature_name: signatureName,
+    signature_place: signaturePlace,
+    signature_date: signatureDate,
+    signature_image: signatureImage,
+  };
 
   const { error } = await sb
     .from("verkoop_inventory_links")
@@ -199,7 +217,15 @@ function INJECTED_SCRIPT(submitUrl: string, token: string): string {
     '+ Extra onderdeel toevoegen': '+ Add extra item',
     'Omschrijf het onderdeel...': 'Describe the item...',
     'Deze lijst van zaken maakt onderdeel uit van de koopovereenkomst. Aan onjuistheden kunnen geen rechten worden ontleend.':
-      'This list of fixtures & fittings forms part of the purchase agreement. No rights can be derived from inaccuracies.'
+      'This list of fixtures & fittings forms part of the purchase agreement. No rights can be derived from inaccuracies.',
+    'Ondertekening': 'Signing',
+    'Ondergetekende (verkoper) verklaart deze lijst van zaken volledig en naar waarheid te hebben ingevuld.':
+      'The undersigned (seller) declares that this list of fixtures & fittings has been filled in completely and truthfully.',
+    'Naam verkoper': 'Seller name',
+    'Plaats': 'Place',
+    'Handtekening': 'Signature',
+    'Wissen': 'Clear',
+    'Amsterdam': 'Amsterdam'
   };
 
   function tr(nlText){
@@ -317,6 +343,19 @@ function INJECTED_SCRIPT(submitUrl: string, token: string): string {
     /* footer */
     document.querySelectorAll('footer').forEach(function(f){ tagElement(f); });
 
+    /* ondertekening section */
+    document.querySelectorAll('.ondertitle, .onderdecl, .ofldlbl').forEach(function(el){ tagElement(el); });
+    var plaatsInput = document.getElementById('onderplaats');
+    if(plaatsInput && !plaatsInput.dataset.nlPh){
+      var pph = plaatsInput.getAttribute('placeholder');
+      if(pph && T[pph]){ plaatsInput.dataset.nlPh = pph; plaatsInput.dataset.enPh = T[pph]; }
+    }
+    var sigClear = document.getElementById('sigpad-clear');
+    if(sigClear && !sigClear.dataset.nl){
+      sigClear.dataset.nl = 'Wissen';
+      sigClear.dataset.en = 'Clear';
+    }
+
     /* submit button */
     var sb = document.getElementById('inv-submit');
     if(sb && !sb.dataset.nl){
@@ -329,6 +368,7 @@ function INJECTED_SCRIPT(submitUrl: string, token: string): string {
   function applyLang(l){
     lang = l;
     localStorage.setItem('inv-lang', l);
+    document.body.dataset.lang = l;
 
     document.querySelectorAll('[data-nl][data-en]').forEach(function(el){
       var text = l === 'en' ? el.dataset.en : el.dataset.nl;
@@ -442,9 +482,92 @@ function INJECTED_SCRIPT(submitUrl: string, token: string): string {
     });
   }
 
-  /* ---- inject submit button ---- */
-  var notesDiv = document.querySelector('.notes');
-  if(notesDiv){
+  /* ---- canvas signature pad ---- */
+  var canvas = document.getElementById('sigpad');
+  var sigCtx = null;
+  var drawing = false;
+  var hasSigned = false;
+  if(canvas){
+    function resizeCanvas(){
+      var w = canvas.offsetWidth;
+      var h = window.innerWidth <= 640 ? 140 : 160;
+      var dpr = window.devicePixelRatio || 1;
+      var oldData = null;
+      if(hasSigned){
+        try { oldData = canvas.toDataURL('image/png'); } catch(e){}
+      }
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      canvas.style.height = h + 'px';
+      sigCtx = canvas.getContext('2d');
+      sigCtx.scale(dpr, dpr);
+      sigCtx.strokeStyle = '#12332f';
+      sigCtx.lineWidth = 2;
+      sigCtx.lineCap = 'round';
+      sigCtx.lineJoin = 'round';
+      if(oldData){
+        var img = new Image();
+        img.onload = function(){ sigCtx.drawImage(img, 0, 0, w, h); };
+        img.src = oldData;
+      }
+    }
+    resizeCanvas();
+    window.addEventListener('resize', function(){ resizeCanvas(); });
+
+    function getPos(e){
+      var rect = canvas.getBoundingClientRect();
+      var x, y;
+      if(e.touches && e.touches.length){
+        x = e.touches[0].clientX - rect.left;
+        y = e.touches[0].clientY - rect.top;
+      } else {
+        x = e.clientX - rect.left;
+        y = e.clientY - rect.top;
+      }
+      return { x: x, y: y };
+    }
+
+    function startDraw(e){
+      e.preventDefault();
+      drawing = true;
+      hasSigned = true;
+      var p = getPos(e);
+      sigCtx.beginPath();
+      sigCtx.moveTo(p.x, p.y);
+    }
+    function doDraw(e){
+      if(!drawing) return;
+      e.preventDefault();
+      var p = getPos(e);
+      sigCtx.lineTo(p.x, p.y);
+      sigCtx.stroke();
+    }
+    function endDraw(e){
+      if(!drawing) return;
+      e.preventDefault();
+      drawing = false;
+    }
+
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', doDraw);
+    canvas.addEventListener('mouseup', endDraw);
+    canvas.addEventListener('mouseleave', endDraw);
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove', doDraw, { passive: false });
+    canvas.addEventListener('touchend', endDraw, { passive: false });
+
+    var clearBtn = document.getElementById('sigpad-clear');
+    if(clearBtn){
+      clearBtn.addEventListener('click', function(){
+        sigCtx.clearRect(0, 0, canvas.width, canvas.height);
+        hasSigned = false;
+      });
+    }
+  }
+
+  /* ---- inject submit button after ondertekening ---- */
+  var onderGrid = document.querySelector('.ondergrid');
+  if(onderGrid){
     var submitBtn = document.createElement('button');
     submitBtn.type = 'button';
     submitBtn.id = 'inv-submit';
@@ -454,7 +577,7 @@ function INJECTED_SCRIPT(submitUrl: string, token: string): string {
     submitBtn.style.cssText = 'width:100%;margin-top:16px;padding:14px;background:var(--teal);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;transition:.15s;';
     submitBtn.onmouseover = function(){ submitBtn.style.background = 'var(--teal-d)'; };
     submitBtn.onmouseout = function(){ submitBtn.style.background = 'var(--teal)'; };
-    notesDiv.appendChild(submitBtn);
+    onderGrid.parentNode.insertBefore(submitBtn, onderGrid.nextSibling);
     submitBtn.addEventListener('click', submitForm);
   }
 
@@ -484,13 +607,36 @@ function INJECTED_SCRIPT(submitUrl: string, token: string): string {
     var notesEl = document.querySelector('textarea[name="bijzonderheden"]');
     var notes = notesEl ? notesEl.value.trim() : '';
 
+    /* signature data */
+    var sigName = '';
+    var naamEl = document.getElementById('ondernaam');
+    if(naamEl) sigName = naamEl.textContent.trim();
+    var sigPlace = '';
+    var plaatsEl = document.getElementById('onderplaats');
+    if(plaatsEl) sigPlace = plaatsEl.value.trim();
+    var sigDate = '';
+    var datumEl = document.getElementById('onderdatum');
+    if(datumEl) sigDate = datumEl.textContent.trim();
+    var sigImage = null;
+    if(canvas && hasSigned){
+      try { sigImage = canvas.toDataURL('image/png'); } catch(e){}
+    }
+
     var btn = document.getElementById('inv-submit');
     if(btn){ btn.disabled = true; btn.textContent = lang === 'en' ? 'Sending...' : 'Verzenden...'; }
 
     fetch(SUBMIT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items: items, extras: extras, notes: notes })
+      body: JSON.stringify({
+        items: items,
+        extras: extras,
+        notes: notes,
+        signature_name: sigName,
+        signature_place: sigPlace,
+        signature_date: sigDate,
+        signature_image: sigImage
+      })
     }).then(function(res){
       if(res.ok){
         document.querySelector('.formview').style.display = 'none';
@@ -499,8 +645,16 @@ function INJECTED_SCRIPT(submitUrl: string, token: string): string {
         if(summary) summary.style.display = 'none';
         var notesSection = document.querySelector('.notes');
         if(notesSection) notesSection.style.display = 'none';
+        var onder = document.querySelector('.ondertitle');
+        if(onder) onder.style.display = 'none';
+        var decl = document.querySelector('.onderdecl');
+        if(decl) decl.style.display = 'none';
+        var grid = document.querySelector('.ondergrid');
+        if(grid) grid.style.display = 'none';
         var sign = document.querySelector('.sign');
         if(sign) sign.style.display = 'none';
+        var submitBtnEl = document.getElementById('inv-submit');
+        if(submitBtnEl) submitBtnEl.style.display = 'none';
         var done = document.createElement('div');
         done.style.cssText = 'text-align:center;padding:60px 20px;';
         done.innerHTML =

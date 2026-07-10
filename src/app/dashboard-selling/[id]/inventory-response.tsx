@@ -7,6 +7,10 @@ type SubmittedData = {
   items: { key: string; choice: string }[];
   extras: { label: string; category: string; choice: string }[];
   notes: string;
+  signature_name?: string;
+  signature_place?: string;
+  signature_date?: string;
+  signature_image?: string | null;
 };
 
 type InventoryLink = {
@@ -246,6 +250,46 @@ function SubmittedSummary({ data }: { data: SubmittedData }) {
           </div>
           <div style={{ fontSize: 13, color: "var(--ink)", background: "var(--soft)", padding: 10, borderRadius: 8 }}>
             {data.notes}
+          </div>
+        </div>
+      )}
+
+      {(data.signature_name || data.signature_image) && (
+        <div style={{ marginTop: 14, borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "var(--teal-dark)", marginBottom: 8 }}>
+            Ondertekening
+          </div>
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
+            <div style={{ fontSize: 12, color: "var(--ink)", lineHeight: 1.6 }}>
+              {data.signature_name && (
+                <div><span style={{ color: "var(--grey)" }}>Naam:</span> <strong>{data.signature_name}</strong></div>
+              )}
+              {data.signature_place && (
+                <div><span style={{ color: "var(--grey)" }}>Plaats:</span> {data.signature_place}</div>
+              )}
+              {data.signature_date && (
+                <div><span style={{ color: "var(--grey)" }}>Datum:</span> {data.signature_date}</div>
+              )}
+              {!data.signature_image && (
+                <div style={{ fontStyle: "italic", color: "var(--grey-soft)", marginTop: 4 }}>
+                  No drawn signature (typed name is legally binding under BW 3:15a).
+                </div>
+              )}
+            </div>
+            {data.signature_image && (
+              <img
+                src={data.signature_image}
+                alt="Seller signature"
+                style={{
+                  maxHeight: 80,
+                  maxWidth: 220,
+                  background: "#fff",
+                  border: "1px solid var(--line)",
+                  borderRadius: 6,
+                  padding: 4,
+                }}
+              />
+            )}
           </div>
         </div>
       )}

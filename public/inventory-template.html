@@ -66,9 +66,83 @@ tr.extra td.it .xwrap{display:flex;align-items:center;gap:8px}
 .notes textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-family:inherit;font-size:13.5px;resize:vertical}
 .sign{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:26px}
 .sign .fld{border-top:1.5px solid #dbe6e4;padding-top:8px;font-size:12px;font-weight:600;color:var(--muted)}
+/* Ondertekening section */
+.ondertitle{font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--teal-d);margin:24px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--soft)}
+.onderdecl{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:0 0 18px;font-size:14px;line-height:1.55;color:var(--ink)}
+.ondergrid{display:grid;grid-template-columns:1fr 1fr;gap:16px 20px;margin-bottom:18px}
+.onderfield{display:flex;flex-direction:column;gap:4px}
+.onderfield .ofldlbl{font-size:10.5px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:var(--teal-d)}
+.onderfield .ofldval{font-size:15px;font-weight:600;border-bottom:1.5px solid #dbe6e4;padding:4px 2px 6px;color:var(--ink)}
+.onderfield input.ofldinput{font-size:15px;font-weight:600;border:none;border-bottom:1.5px solid #dbe6e4;padding:4px 2px 6px;color:var(--ink);background:transparent;font-family:inherit;outline:none}
+.onderfield input.ofldinput:focus{border-color:var(--teal)}
+.sigpad-wrap{display:flex;flex-direction:column;gap:8px}
+.sigpad-wrap .ofldlbl{font-size:10.5px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:var(--teal-d)}
+.sigpad{border:2px solid var(--line);border-radius:10px;background:#fff;cursor:crosshair;touch-action:none;width:100%;display:block}
+.sigpad-btns{display:flex;gap:8px}
+.sigpad-clear{border:1px solid var(--line);background:#fff;color:var(--muted);font-weight:700;font-size:12px;border-radius:8px;padding:6px 14px;cursor:pointer;font-family:inherit}
+.sigpad-clear:hover{border-color:var(--teal);color:var(--teal-d)}
 footer{padding:18px 40px 30px;border-top:1px solid #eef1f0;font-size:11.5px;color:var(--muted)}
 footer a{color:var(--teal);text-decoration:none;font-weight:600}
-@media(max-width:640px){header{flex-direction:column;text-align:center}.htitle{text-align:center}.meta,.totals{grid-template-columns:1fr 1fr}.sumblock ul{columns:1}td.it{width:auto}}
+@media(max-width:640px){
+  .wrap{margin:12px auto}
+  header{flex-direction:column;text-align:center;gap:12px;padding:18px 16px 14px}
+  .htitle{text-align:center}
+  .htitle h1{font-size:20px}
+  .body{padding:6px 16px 24px}
+  footer{padding:14px 16px 20px}
+  .meta{grid-template-columns:1fr 1fr;gap:10px 16px;padding:14px 16px}
+  .val{font-size:13px}
+  .legend{gap:6px 10px;font-size:11px;margin:0 0 14px}
+  .sectitle{font-size:11px;margin:18px 0 8px}
+  /* table → card layout */
+  table{border:none;border-radius:0}
+  thead{display:none}
+  tbody tr:not(.cat):not(.addrow){display:flex;flex-wrap:wrap;align-items:center;border:1px solid var(--line);border-radius:10px;margin-bottom:6px;background:#fff}
+  tr.cat{margin:12px 0 6px}
+  tr.cat td{padding:8px 14px;font-size:11px;border-radius:8px}
+  tr.addrow{border:1px dashed #cfdad8;border-radius:10px;margin-bottom:6px}
+  tr.addrow td{padding:8px 14px}
+  td.it{width:auto;flex:1 1 100%;padding:10px 14px 4px;font-weight:700;font-size:14px}
+  td.c{width:auto;flex:1 1 25%;padding:4px 0 10px;text-align:center}
+  .opt{min-height:38px}
+  .opt .dot{width:22px;height:22px}
+  .col-blijft:has(input:checked),.col-mee:has(input:checked),.col-overname:has(input:checked),.col-nvt:has(input:checked){border-radius:6px}
+  .addbtn{width:100%;text-align:center;padding:10px}
+  /* totals 2×2 */
+  .totals{grid-template-columns:1fr 1fr;gap:10px;margin:18px 0 4px}
+  .tot{padding:12px}
+  .tot .num{font-size:22px}
+  /* summary blocks */
+  .sumblock{padding:12px 14px 6px;margin-bottom:10px}
+  .sumblock ul{columns:1}
+  .sumblock li{font-size:12.5px}
+  /* notes */
+  .notes textarea{min-height:80px;font-size:13px}
+  /* signature stacked */
+  .sign{grid-template-columns:1fr;gap:16px;margin-top:20px}
+  /* ondertekening mobile */
+  .ondergrid{grid-template-columns:1fr;gap:12px}
+  .onderdecl{padding:12px 14px;font-size:13px}
+  .sigpad{height:140px}
+  /* extra item rows */
+  tr.extra td.it{flex:1 1 100%;padding:8px 14px}
+  tr.extra .xwrap{gap:6px}
+  .xin{font-size:13px}
+  /* lang toggle */
+  #lang-toggle{margin-top:4px}
+  /* dot + label stacked vertically for clarity */
+  .opt{flex-direction:column;gap:3px;min-height:48px}
+  .opt .dot{width:20px;height:20px}
+  .opt-blijft::after,.opt-mee::after,.opt-overname::after,.opt-nvt::after{content:"";display:block;font-size:9px;font-weight:700;color:var(--muted);line-height:1.2}
+  .opt-blijft::after{content:"Blijft"}
+  .opt-mee::after{content:"Mee"}
+  .opt-overname::after{content:"Overname"}
+  .opt-nvt::after{content:"N.v.t."}
+  body[data-lang="en"] .opt-blijft::after{content:"Stays"}
+  body[data-lang="en"] .opt-mee::after{content:"Goes"}
+  body[data-lang="en"] .opt-overname::after{content:"Takeover"}
+  body[data-lang="en"] .opt-nvt::after{content:"N/A"}
+}
 @media print{body{background:#fff}.wrap{margin:0;padding:0;max-width:none}.sheet{box-shadow:none;border-radius:0}.formview,.legend{display:none !important}.summary{display:block !important}.sumblock{break-inside:avoid}}
 </style></head>
 <body><div class="wrap"><div class="sheet">
@@ -218,7 +292,29 @@ footer a{color:var(--teal);text-decoration:none;font-weight:600}
     <div class="sumblock overname"><h3><span class="sw"></span>Ter overname <span class="cnt" id="c-overname">0</span></h3><ul id="list-overname"></ul></div>
   </div>
   <div class="notes"><div class="fieldlbl">Bijzonderheden / toelichting</div><textarea name="bijzonderheden" placeholder="Bijvoorbeeld welke goederen ter overname zijn, prijsafspraken of uitzonderingen."></textarea></div>
-  <div class="sign"><div class="fld">Handtekening verkoper</div><div class="fld">Plaats en datum</div></div>
+  <div class="ondertitle">Ondertekening</div>
+  <div class="onderdecl" id="onderdecl">Ondergetekende (verkoper) verklaart deze lijst van zaken volledig en naar waarheid te hebben ingevuld.</div>
+  <div class="ondergrid">
+    <div class="onderfield">
+      <div class="ofldlbl" id="lbl-naam">Naam verkoper</div>
+      <div class="ofldval" id="ondernaam">{{VERKOPER}}</div>
+    </div>
+    <div class="onderfield">
+      <div class="ofldlbl" id="lbl-plaats">Plaats</div>
+      <input type="text" class="ofldinput" id="onderplaats" name="onderplaats" placeholder="Amsterdam">
+    </div>
+    <div class="onderfield">
+      <div class="ofldlbl" id="lbl-datum">Datum</div>
+      <div class="ofldval" id="onderdatum">{{DATUM}}</div>
+    </div>
+    <div class="onderfield sigpad-wrap">
+      <div class="ofldlbl" id="lbl-handtekening">Handtekening</div>
+      <canvas class="sigpad" id="sigpad" height="160"></canvas>
+      <div class="sigpad-btns">
+        <button type="button" class="sigpad-clear" id="sigpad-clear">Wissen</button>
+      </div>
+    </div>
+  </div>
 </div>
 <footer>Deze lijst van zaken maakt onderdeel uit van de koopovereenkomst. Aan onjuistheden kunnen geen rechten worden ontleend. &nbsp;ApartmentHub &middot; <a href="https://www.apartmenthub.nl">www.apartmenthub.nl</a> &middot; david@apartmenthub.nl</footer>
 </div></div>
