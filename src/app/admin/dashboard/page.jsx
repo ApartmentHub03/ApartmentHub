@@ -163,7 +163,7 @@ export default function AdminDashboard() {
         fetchApartments();
     };
 
-    const handleGenerateLink = async (apartment, viewingType) => {
+    const handleGenerateLink = async (apartment) => {
         setGeneratingLink(apartment.id);
 
         try {
@@ -175,7 +175,6 @@ export default function AdminDashboard() {
                     slotStartDatetime: apartment.slot_datetime,
                     slotEndDatetime: apartment.slot_end_datetime,
                     slotLengthMinutes: apartment.slot_length_minutes,
-                    viewingType,
                 }),
             });
 
@@ -512,26 +511,14 @@ export default function AdminDashboard() {
                                                 {apt.status}
                                             </Badge>
                                             {apt.status === 'Draft' && (
-                                                <>
-                                                    <Button
-                                                        size="sm"
-                                                        style={{ background: '#8B4513' }}
-                                                        onClick={() => handleGenerateLink(apt, 'inPerson')}
-                                                        loading={generatingLink === apt.id}
-                                                    >
-                                                        <LinkIcon size={14} />
-                                                        In Person
-                                                    </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        style={{ background: '#2563EB' }}
-                                                        onClick={() => handleGenerateLink(apt, 'video')}
-                                                        loading={generatingLink === apt.id}
-                                                    >
-                                                        <LinkIcon size={14} />
-                                                        Video Call
-                                                    </Button>
-                                                </>
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => handleGenerateLink(apt)}
+                                                    loading={generatingLink === apt.id}
+                                                >
+                                                    <LinkIcon size={14} />
+                                                    Create Link
+                                                </Button>
                                             )}
                                             {apt.status === 'LinkCreated' && (
                                                 <Button
@@ -596,7 +583,7 @@ export default function AdminDashboard() {
                                     {/* In-Person Event Link */}
                                     {apt.eventlink && (
                                         <div className={styles.eventLinkSection}>
-                                            <span className={styles.detailLabel} style={{ color: '#8B4513' }}>In-Person Link</span>
+                                            <span className={styles.detailLabel}>In-Person Link</span>
                                             <div className={styles.eventLinkRow}>
                                                 <code className={styles.eventLink}>{apt.eventlink}</code>
                                                 <Button
@@ -619,7 +606,7 @@ export default function AdminDashboard() {
                                     {/* Video Event Link */}
                                     {apt.eventlink_video && (
                                         <div className={styles.eventLinkSection}>
-                                            <span className={styles.detailLabel} style={{ color: '#2563EB' }}>Video Link</span>
+                                            <span className={styles.detailLabel}>Video Link</span>
                                             <div className={styles.eventLinkRow}>
                                                 <code className={styles.eventLink}>{apt.eventlink_video}</code>
                                                 <Button

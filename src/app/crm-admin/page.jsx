@@ -829,13 +829,13 @@ function SlotManager({ apt, onUpdated, onAuthFail }) {
     const [busy, setBusy] = useState(false);
     const latest = apt.booking_details?.latest_slot || (Array.isArray(apt.slot_dates) && apt.slot_dates.length ? apt.slot_dates[apt.slot_dates.length - 1] : null);
 
-    const generate = async (viewingType) => {
+    const generate = async () => {
         if (!start || !end) { toast.error('Pick a start and end time'); return; }
         setBusy(true);
         try {
             const res = await api(`/api/admin/crm/apartment/${apt.id}/generate-slot`, {
                 method: 'POST',
-                body: JSON.stringify({ start: new Date(start).toISOString(), end: new Date(end).toISOString(), slotLengthMinutes: Number(len), viewingType }),
+                body: JSON.stringify({ start: new Date(start).toISOString(), end: new Date(end).toISOString(), slotLengthMinutes: Number(len) }),
             });
             if (onAuthFail(res)) return;
             const data = await res.json();
@@ -855,14 +855,13 @@ function SlotManager({ apt, onUpdated, onAuthFail }) {
                 </div>
                 <div className={styles.formRow}>
                     <div className={styles.field}><label>Slot length (min)</label><input type="number" value={len} onChange={(e) => setLen(e.target.value)} /></div>
-                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                        <button className={styles.btn} style={{ background: '#8B4513' }} onClick={() => generate('inPerson')} disabled={busy}>{busy ? 'In-person…' : 'In Person'}</button>
-                        <button className={styles.btn} style={{ background: '#2563EB' }} onClick={() => generate('video')} disabled={busy}>{busy ? 'Video…' : 'Video Call'}</button>
+                    <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                        <button className={styles.btn} onClick={generate} disabled={busy}>{busy ? 'Generating…' : 'Generate Nieuwe Slot'}</button>
                     </div>
                 </div>
                 {latest && (
                     <div style={{ marginTop: 12, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
-                        <LinkRow label="In-person bookable link" url={latest.eventlink} />
+                        <LinkRow label="In-person bookable link" url={latest.eventlink || apt.event_link} />
                         <LinkRow label="Video (Facetime) link" url={latest.eventlink_video} />
                         {Array.isArray(apt.slot_dates) && apt.slot_dates.length > 1 && <div className={styles.hint}>{apt.slot_dates.length} slots generated for this apartment.</div>}
                     </div>
