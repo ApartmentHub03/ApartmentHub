@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ZOKO_TEMPLATES } from '@/services/zokoTemplates';
-import { requireCrmUser } from '@/services/crmAuth';
+import { requirePermission } from '@/services/crmAuth';
 
 // CRM-authed WhatsApp template sender. Gated to active team members, validates
 // against the shared catalog, and refuses unverified templates (same rules as
@@ -14,7 +14,7 @@ function normalizeRecipient(phone) {
 }
 
 export async function POST(request) {
-    const auth = await requireCrmUser(request);
+    const auth = await requirePermission(request, 'candidates');
     if (auth.response) {
         return NextResponse.json(auth.response.body, { status: auth.response.status });
     }
@@ -81,6 +81,6 @@ export async function POST(request) {
         return NextResponse.json({ success: true, data });
     } catch (err) {
         console.error('[crm/send-template] Network error:', err);
-        return NextResponse.json({ success: false, message: err.message || 'Network error calling Zoko API' }, { status: 500 });
+        return NextResponse.json({ success: false, message: 'Could not reach WhatsApp. Please try again.' }, { status: 500 });
     }
 }

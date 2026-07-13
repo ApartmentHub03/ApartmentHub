@@ -1,16 +1,20 @@
 import { NextResponse } from 'next/server';
-import { serviceClient, requireCrmUser } from '@/services/crmAuth';
+import { serviceClient, requireAdmin } from '@/services/crmAuth';
+import { isUuid, invalidId, failed } from '@/services/crmHttp';
 
-// Update / delete a CRM invoice. CRM-authed.
+// Update / delete a CRM invoice. Admin-only: re-pricing an invoice, marking it
+// paid, or deleting it are all money operations, and there is no audit trail.
 
 const EDITABLE = ['invoice_number', 'amount', 'currency', 'description', 'status', 'due_date', 'issued_at', 'pdf_path'];
 
 export async function PATCH(request, { params }) {
-    const auth = await requireCrmUser(request);
+    const auth = await requireAdmin(request);
     if (auth.response) {
         return NextResponse.json(auth.response.body, { status: auth.response.status });
     }
     const { id } = await params;
+    if (!isUuid(id)) return invalidId();
+
     try {
         const body = await request.json();
         const update = {};
@@ -23,27 +27,31 @@ export async function PATCH(request, { params }) {
         if (Object.keys(update).length === 0) {
             return NextResponse.json({ success: false, message: 'Nothing to update' }, { status: 400 });
         }
+        if (update.amount != null && !Number.isFinite(update.amount)) {
+            return NextResponse.json({ success: false, message: 'Amount must be a number' }, { status: 400 });
+        }
+
         const { data, error } = await serviceClient().from('invoices').update(update).eq('id', id).select().single();
         if (error) throw error;
         return NextResponse.json({ success: true, invoice: data });
     } catch (err) {
-        console.error('[crm/invoices PATCH]', err);
-        return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+        return failed('crm/invoices PATCH', err, 'Failed to update invoice');
     }
 }
 
 export async function DELETE(request, { params }) {
-    const auth = await requireCrmUser(request);
+    const auth = await requireAdmin(request);
     if (auth.response) {
         return NextResponse.json(auth.response.body, { status: auth.response.status });
     }
     const { id } = await params;
+    if (!isUuid(id)) return invalidId();
+
     try {
         const { error } = await serviceClient().from('invoices').delete().eq('id', id);
         if (error) throw error;
         return NextResponse.json({ success: true });
     } catch (err) {
-        console.error('[crm/invoices DELETE]', err);
-        return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+        return failed('crm/invoices DELETE', err, 'Failed to delete invoice');
     }
 }

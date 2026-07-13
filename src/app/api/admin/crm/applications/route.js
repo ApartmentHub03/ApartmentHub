@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { serviceClient, requireCrmUser } from '@/services/crmAuth';
+import { failed } from '@/services/crmHttp';
 
 // Applications list — accounts that have started/submitted an application
 // (mirrors the website /aanvraag form). CRM-authed.
@@ -35,7 +36,6 @@ export async function GET(request) {
 
         return NextResponse.json({ success: true, applications });
     } catch (err) {
-        console.error('[crm/applications GET]', err);
-        return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+        return failed('crm/applications GET', err, 'Failed to load applications');
     }
 }

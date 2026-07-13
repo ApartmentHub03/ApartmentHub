@@ -41,8 +41,14 @@ export async function getCrmUserFromRequest(request) {
         .eq('is_active', true)
         .maybeSingle();
 
-    if (crmErr) return { error: crmErr.message, status: 500 };
-    if (!crm) return { error: 'Not an active team member', status: 403 };
+    if (crmErr) {
+        console.error('[crmAuth] crm_users lookup', crmErr);
+        return { error: 'Request failed', status: 500 };
+    }
+    // 401, not 403: a deactivated member has a dead session, which is what the
+    // client's sign-out-and-retry path keys on. 403 is reserved for "you are
+    // signed in, but this action is not yours" — which must NOT sign you out.
+    if (!crm) return { error: 'This account is no longer active.', status: 401 };
 
     return { user: userData.user, crm };
 }
@@ -62,8 +68,37 @@ export async function requireAdmin(request) {
     if (result.error) {
         return { response: { body: { success: false, message: result.error }, status: result.status } };
     }
-    if (!['admin', 'super_admin'].includes(result.crm.role)) {
+    if (!isAdminRole(result.crm.role)) {
         return { response: { body: { success: false, message: 'Admin access required' }, status: 403 } };
     }
+    return { crm: result.crm };
+}
+
+export function isAdminRole(role) {
+    return ['admin', 'super_admin'].includes(role);
+}
+
+// Guard requiring an active team member who holds a specific permission.
+//
+// `permissions` is the jsonb the admin sets when adding an employee
+// (apartments / candidates / offers / team). A key that is explicitly false
+// denies access; a key that is absent allows it, so members created before
+// permissions were enforced keep working. Admins bypass the check.
+export async function requirePermission(request, key) {
+    const result = await getCrmUserFromRequest(request);
+    if (result.error) {
+        return { response: { body: { success: false, message: result.error }, status: result.status } };
+    }
+
+    const { role, permissions } = result.crm;
+    if (!isAdminRole(role) && permissions && permissions[key] === false) {
+        return {
+            response: {
+                body: { success: false, message: `You do not have access to ${key}.` },
+                status: 403,
+            },
+        };
+    }
+
     return { crm: result.crm };
 }

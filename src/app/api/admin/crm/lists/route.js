@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { serviceClient, requireCrmUser } from '@/services/crmAuth';
+import { failed } from '@/services/crmHttp';
 
 // Read API backing the CRM tabs (Apartments, Candidates, Agents, Bookings) +
 // dashboard KPIs. Service-role for data access, gated to active team members.
@@ -77,7 +78,6 @@ export async function GET(request) {
             bookings,
         });
     } catch (err) {
-        console.error('[crm/lists GET]', err);
-        return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+        return failed('crm/lists GET', err, 'Failed to load CRM data');
     }
 }

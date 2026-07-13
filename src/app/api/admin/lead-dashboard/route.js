@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseServer } from '@/lib/supabaseServer';
+import { requireCrmUser } from '@/services/crmAuth';
 
 function escapeIlike(str) {
     return str.replace(/[%_]/g, (m) => `\\${m}`);
@@ -44,16 +45,11 @@ function applyFilters(query, { search, source, language, bedrooms, budget, stage
 }
 
 export async function GET(request) {
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-    if (!token) {
-        return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    }
-
-    const validUsername = process.env.NEXT_PUBLIC_ADMIN_USERNAME;
-    const validPassword = process.env.ADMIN_PASSWORD;
-    if (!validUsername || !validPassword) {
-        return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+    // Was: "a Bearer token is present" — which never checked the token, so any
+    // string returned the whole meta_leads table (names, phones, emails).
+    const auth = await requireCrmUser(request);
+    if (auth.response) {
+        return NextResponse.json(auth.response.body, { status: auth.response.status });
     }
 
     const supabase = getSupabaseServer();

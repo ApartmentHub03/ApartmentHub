@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { serviceClient, requireCrmUser } from '@/services/crmAuth';
+import { serviceClient, requirePermission } from '@/services/crmAuth';
 import { ZOKO_TEMPLATES } from '@/services/zokoTemplates';
+import { isUuid, invalidId, failed } from '@/services/crmHttp';
 
 // Drive a booking's cancel / reschedule from the CRM: move the participant
 // between the apartment's viewing JSON buckets and fire the matching Zoko
@@ -40,7 +41,7 @@ async function tryFireTemplate(key, recipient, name) {
 }
 
 export async function POST(request) {
-    const auth = await requireCrmUser(request);
+    const auth = await requirePermission(request, 'candidates');
     if (auth.response) {
         return NextResponse.json(auth.response.body, { status: auth.response.status });
     }
@@ -51,6 +52,7 @@ export async function POST(request) {
         if (!apartmentId || !phone) {
             return NextResponse.json({ success: false, message: 'apartmentId and phone are required' }, { status: 400 });
         }
+        if (!isUuid(apartmentId)) return invalidId();
 
         const supabase = serviceClient();
         const { data: apt, error } = await supabase
@@ -65,9 +67,20 @@ export async function POST(request) {
         const toList = Array.isArray(apt[cfg.to]) ? apt[cfg.to] : [];
         const target = digits(phone);
 
+        // The participant must actually be booked on this apartment. Previously
+        // a non-matching phone was invented as a new participant, appended to
+        // the apartment's booking JSON, and WhatsApped — so a typo messaged a
+        // stranger and corrupted the record.
         const idx = fromList.findIndex((p) => digits(p?.whatsapp_number) === target);
-        const moved = idx >= 0 ? fromList[idx] : { name: name || null, whatsapp_number: phone };
-        const newFrom = idx >= 0 ? fromList.filter((_, i) => i !== idx) : fromList;
+        if (idx === -1) {
+            return NextResponse.json(
+                { success: false, message: 'That person is not booked on this apartment.' },
+                { status: 404 }
+            );
+        }
+
+        const moved = fromList[idx];
+        const newFrom = fromList.filter((_, i) => i !== idx);
         const stamp = { ...moved, cancelled_by: action === 'cancel' ? 'apartmenthub-team' : moved.cancelled_by };
 
         const { error: upErr } = await supabase
@@ -76,11 +89,11 @@ export async function POST(request) {
             .eq('id', apartmentId);
         if (upErr) throw upErr;
 
-        const whatsapp = await tryFireTemplate(cfg.template, phone, moved.name || name);
+        // Message the number on the booking record, never the one in the request.
+        const whatsapp = await tryFireTemplate(cfg.template, moved.whatsapp_number, moved.name || name);
 
         return NextResponse.json({ success: true, action, whatsapp });
     } catch (err) {
-        console.error('[crm/booking-action POST]', err);
-        return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+        return failed('crm/booking-action POST', err, 'Could not update this booking');
     }
 }

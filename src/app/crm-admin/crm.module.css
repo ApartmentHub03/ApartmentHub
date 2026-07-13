@@ -172,6 +172,13 @@
 .kv dt { color: var(--muted); }
 .kv dd { margin: 0; font-weight: 500; }
 
+/* One-time temp password for a newly added employee */
+.credentials { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: #f5faf9; }
+.credentialsHead { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+.credentialsHead b { flex: 1; font-size: 13.5px; }
+.credentials .kv { grid-template-columns: 110px 1fr; margin: 10px 0; }
+.credentials code { background: #fff; border: 1px solid var(--line); border-radius: 4px; padding: 2px 6px; font-size: 13px; user-select: all; }
+
 /* States */
 .empty { padding: 34px 18px; text-align: center; color: var(--muted); font-size: 13.5px; }
 .loading { padding: 30px; text-align: center; color: var(--muted); }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { serviceClient, requireCrmUser } from '@/services/crmAuth';
+import { serviceClient, requirePermission } from '@/services/crmAuth';
+import { isUuid, invalidId, failed } from '@/services/crmHttp';
 
 // Full application detail for one account — tenant info, offer, co-tenants, and
 // signed download URLs for every uploaded document. CRM-authed.
@@ -7,11 +8,13 @@ import { serviceClient, requireCrmUser } from '@/services/crmAuth';
 const BUCKET = 'dossier-documents';
 
 export async function GET(request, { params }) {
-    const auth = await requireCrmUser(request);
+    const auth = await requirePermission(request, 'candidates');
     if (auth.response) {
         return NextResponse.json(auth.response.body, { status: auth.response.status });
     }
     const { id } = await params;
+    if (!isUuid(id)) return invalidId();
+
     try {
         const supabase = serviceClient();
         const { data: account, error } = await supabase
@@ -35,7 +38,6 @@ export async function GET(request, { params }) {
 
         return NextResponse.json({ success: true, account: { ...account, documents } });
     } catch (err) {
-        console.error('[crm/application GET]', err);
-        return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+        return failed('crm/application GET', err, 'Failed to load the application');
     }
 }

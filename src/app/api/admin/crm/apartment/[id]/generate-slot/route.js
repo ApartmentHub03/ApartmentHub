@@ -1,17 +1,20 @@
 import { NextResponse } from 'next/server';
-import { serviceClient, requireCrmUser } from '@/services/crmAuth';
+import { serviceClient, requirePermission } from '@/services/crmAuth';
+import { isUuid, invalidId, failed } from '@/services/crmHttp';
+import { createCalLinks } from '@/services/calcom';
 
 // "Generate Nieuwe Slot" — creates a Cal.com schedule + in-person/video event
-// types for this apartment (via the existing /api/admin/generate-link), then
-// saves the bookable links onto the apartment (event_link + slot_dates +
-// booking_details). CRM-authed.
+// types for this apartment, then saves the bookable links onto the apartment
+// (event_link + slot_dates + booking_details). CRM-authed.
 
 export async function POST(request, { params }) {
-    const auth = await requireCrmUser(request);
+    const auth = await requirePermission(request, 'apartments');
     if (auth.response) {
         return NextResponse.json(auth.response.body, { status: auth.response.status });
     }
     const { id } = await params;
+    if (!isUuid(id)) return invalidId();
+
     try {
         const { start, end, slotLengthMinutes, viewingType } = await request.json();
         if (!start || !end || !slotLengthMinutes) {
@@ -32,22 +35,18 @@ export async function POST(request, { params }) {
             return NextResponse.json({ success: false, message: 'Apartment has no address to build a link from' }, { status: 400 });
         }
 
-        // Reuse the existing, tested Cal.com link generator.
-        const origin = new URL(request.url).origin;
-        const calRes = await fetch(`${origin}/api/admin/generate-link`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                address,
-                slotStartDatetime: start,
-                slotEndDatetime: end,
-                slotLengthMinutes: Number(slotLengthMinutes),
-                viewingType: viewingType || 'inPerson',
-            }),
+        // Call the Cal.com generator in-process. Self-fetching our own HTTP
+        // route would rebuild the origin from the Host header (spoofable) and
+        // could not carry this request's credentials.
+        const cal = await createCalLinks({
+            address,
+            slotStartDatetime: start,
+            slotEndDatetime: end,
+            slotLengthMinutes: Number(slotLengthMinutes),
+            viewingType: viewingType || 'inPerson',
         });
-        const cal = await calRes.json();
         if (!cal.success || (!cal.eventlink && !cal.eventlinkVideo)) {
-            return NextResponse.json({ success: false, message: cal.message || 'Cal.com link generation failed', details: cal }, { status: 502 });
+            return NextResponse.json({ success: false, message: cal.message || 'Cal.com link generation failed' }, { status: 502 });
         }
 
         const slot = {
@@ -78,7 +77,6 @@ export async function POST(request, { params }) {
 
         return NextResponse.json({ success: true, slot, apartment: updated });
     } catch (err) {
-        console.error('[crm/generate-slot POST]', err);
-        return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+        return failed('crm/generate-slot POST', err, 'Failed to generate the slot');
     }
 }
