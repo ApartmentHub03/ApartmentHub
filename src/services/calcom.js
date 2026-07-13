@@ -58,7 +58,7 @@ function getAmsterdamDate(date) {
 // Creates a Cal.com schedule plus the in-person or video event type for an
 // apartment, and returns the bookable links. Resolves to { success: false }
 // rather than throwing when Cal.com rejects the request.
-export async function createCalLinks({ address, slotStartDatetime, slotEndDatetime, slotLengthMinutes, viewingType = 'inPerson' }) {
+export async function createCalLinks({ address, slotStartDatetime, slotEndDatetime, slotLengthMinutes }) {
     if (!address) return { success: false, message: 'address is required' };
 
     const slug = address.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 40);
@@ -107,7 +107,7 @@ export async function createCalLinks({ address, slotStartDatetime, slotEndDateti
         value: [slotDate, getAmsterdamDate(endTime)],
     };
 
-    const inPersonEvent = viewingType === 'inPerson' ? await calFetch('/event-types', '2024-06-14', {
+    const inPersonEvent = await calFetch('/event-types', '2024-06-14', {
         method: 'POST',
         body: JSON.stringify({
             title: `${address} (In-Person)`,
@@ -117,11 +117,10 @@ export async function createCalLinks({ address, slotStartDatetime, slotEndDateti
             bookingFields,
             bookingWindow,
             scheduleId,
-            color: { lightThemeHex: '#8B4513', darkThemeHex: '#F5DEB3' },
         }),
-    }) : null;
+    });
 
-    const videoEvent = viewingType === 'video' ? await calFetch('/event-types', '2024-06-14', {
+    const videoEvent = await calFetch('/event-types', '2024-06-14', {
         method: 'POST',
         body: JSON.stringify({
             title: `${address} (Video)`,
@@ -131,18 +130,17 @@ export async function createCalLinks({ address, slotStartDatetime, slotEndDateti
             bookingFields,
             bookingWindow,
             scheduleId,
-            color: { lightThemeHex: '#2563EB', darkThemeHex: '#93C5FD' },
         }),
-    }) : null;
+    });
 
     const results = {};
 
-    if (inPersonEvent?.status === 'success' && inPersonEvent.data) {
+    if (inPersonEvent.status === 'success' && inPersonEvent.data) {
         results.eventlink = `${inPersonEvent.data.bookingUrl}?${new URLSearchParams({ date: slotDate })}`;
         results.calEventTypeId = inPersonEvent.data.id;
     }
 
-    if (videoEvent?.status === 'success' && videoEvent.data) {
+    if (videoEvent.status === 'success' && videoEvent.data) {
         results.eventlinkVideo = `${videoEvent.data.bookingUrl}?${new URLSearchParams({ date: slotDate })}`;
         results.calEventTypeIdVideo = videoEvent.data.id;
     }

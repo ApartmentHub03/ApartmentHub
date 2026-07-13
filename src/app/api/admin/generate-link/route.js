@@ -19,7 +19,7 @@ export async function POST(request) {
         return NextResponse.json({ success: false, message: 'Invalid request' }, { status: 400 });
     }
 
-    const { address, slotStartDatetime, slotEndDatetime, slotLengthMinutes, viewingType = 'inPerson' } = body || {};
+    const { address, slotStartDatetime, slotEndDatetime, slotLengthMinutes } = body || {};
     if (!address || !slotStartDatetime || !slotEndDatetime || !slotLengthMinutes) {
         return NextResponse.json(
             { success: false, message: 'address, slotStartDatetime, slotEndDatetime and slotLengthMinutes are required' },
@@ -28,7 +28,7 @@ export async function POST(request) {
     }
 
     try {
-        const result = await createCalLinks({ address, slotStartDatetime, slotEndDatetime, slotLengthMinutes, viewingType });
+        const result = await createCalLinks({ address, slotStartDatetime, slotEndDatetime, slotLengthMinutes });
         if (!result.success) {
             return NextResponse.json({ success: false, message: result.message }, { status: 502 });
         }
