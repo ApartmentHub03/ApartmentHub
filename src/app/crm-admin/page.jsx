@@ -907,32 +907,43 @@ function ApplicationDrawer({ id, onClose, onAuthFail, onSend }) {
                                             <dl className={styles.kv}>{fields.filter(([, v]) => v != null && v !== '').map(([k, v]) => <FieldRow key={k} k={k} v={v} />)}</dl>
                                         </div>
                                     </div>
-                                    {Array.isArray(acc.co_tenants) && acc.co_tenants.length > 0 && (
-                                        <div className={styles.card}>
-                                            <div className={styles.cardHead}><h3>Co-tenants</h3><span className={styles.hint}>{acc.co_tenants.length}</span></div>
+                                    <div className={styles.card}>
+                                        <div className={styles.cardHead}><h3>Co-tenants</h3><span className={styles.hint}>{acc.coTenants?.length || 0}</span></div>
+                                        {!acc.coTenants?.length ? <div className={styles.empty}>No co-tenants or guarantors.</div> : (
                                             <div className={styles.cardBody}>
-                                                {acc.co_tenants.map((ct, i) => <div key={i} style={{ fontSize: 13.5, padding: '4px 0' }}>{ct.name || ct.tenant_name || JSON.stringify(ct)}</div>)}
+                                                {acc.coTenants.map((ct, i) => (
+                                                    <div key={i} className={styles.personRow}>
+                                                        <div>
+                                                            <div style={{ fontWeight: 600, fontSize: 13.5 }}>{ct.name}</div>
+                                                            {(ct.email || ct.phone) && <div className={styles.hint}>{[ct.phone, ct.email].filter(Boolean).join(' · ')}</div>}
+                                                        </div>
+                                                        <span className={`${styles.pill} ${styles.pillTeal}`}>{ct.role}</span>
+                                                    </div>
+                                                ))}
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                     <div className={styles.card}>
                                         <div className={styles.cardHead}><h3>Documents</h3><span className={styles.hint}>{acc.documents?.length || 0}</span></div>
                                         {(!acc.documents || acc.documents.length === 0) ? <div className={styles.empty}>No documents uploaded.</div> : (
-                                            <table className={styles.table}>
-                                                <thead><tr><th>Type</th><th>File</th><th>Status</th><th></th></tr></thead>
-                                                <tbody>
-                                                    {acc.documents.map((d, i) => (
-                                                        <tr key={i}>
-                                                            <td>{d.type || '—'}</td>
-                                                            <td>{d.file_name || '—'}</td>
-                                                            <td>{d.status || '—'}</td>
-                                                            <td style={{ textAlign: 'right' }}>
-                                                                {d.url ? <a className={styles.rowBtn} href={d.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>Download</a> : '—'}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
+                                            <div className={styles.tableScroll}>
+                                                <table className={`${styles.table} ${styles.docTable}`}>
+                                                    <thead><tr><th>Person</th><th>Type</th><th>File</th><th>Status</th><th></th></tr></thead>
+                                                    <tbody>
+                                                        {acc.documents.map((d, i) => (
+                                                            <tr key={i}>
+                                                                <td>{d.person || '—'}{d.person_role && <div className={styles.hint}>{d.person_role}</div>}</td>
+                                                                <td>{d.type || '—'}</td>
+                                                                <td className={styles.fileCell}>{d.file_name || '—'}</td>
+                                                                <td>{d.status || '—'}</td>
+                                                                <td className={styles.actionCell}>
+                                                                    {d.url ? <a className={styles.rowBtn} href={d.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>Download</a> : '—'}
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         )}
                                     </div>
                                 </>

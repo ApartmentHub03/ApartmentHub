@@ -127,6 +127,17 @@
 .table tr:last-child td { border-bottom: none; }
 .table tbody tr:hover { background: #fafcfc; }
 
+/* Horizontal scroller for tables inside a .card (which clips with overflow:hidden),
+   so a wide row can never bury its right-hand action column. */
+.tableScroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.docTable { min-width: 560px; }
+/* Long filenames wrap instead of pushing the Download button out of view. */
+.fileCell { max-width: 220px; overflow-wrap: anywhere; }
+.actionCell { text-align: right; white-space: nowrap; }
+
+.personRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.personRow:last-child { border-bottom: none; }
+
 /* Pills */
 .pill { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11.5px; font-weight: 600; }
 .pillTeal { background: #e0f3f0; color: #00665b; }
