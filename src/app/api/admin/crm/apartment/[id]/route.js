@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
-import { serviceClient, requireCrmUser } from '@/services/crmAuth';
+import { serviceClient, requireAdmin, requirePermission } from '@/services/crmAuth';
+import { isUuid, invalidId, failed } from '@/services/crmHttp';
 
-// Full apartment record + edit/delete for the CRM detail view. CRM-authed.
+// Full apartment record + edit/delete for the CRM detail view.
+// Read/edit need the "apartments" permission; DELETE is admin-only — it is a
+// hard delete that also takes the apartment's viewing_participants and
+// slot_dates (i.e. live bookings) with it.
 
 const STATUSES = ['Null', 'CreateLink', 'Active', 'Closed'];
 
@@ -24,11 +28,13 @@ const EDITABLE = {
 };
 
 export async function GET(request, { params }) {
-    const auth = await requireCrmUser(request);
+    const auth = await requirePermission(request, 'apartments');
     if (auth.response) {
         return NextResponse.json(auth.response.body, { status: auth.response.status });
     }
     const { id } = await params;
+    if (!isUuid(id)) return invalidId();
+
     try {
         const { data, error } = await serviceClient()
             .from('apartments')
@@ -39,17 +45,18 @@ export async function GET(request, { params }) {
         if (!data) return NextResponse.json({ success: false, message: 'Apartment not found' }, { status: 404 });
         return NextResponse.json({ success: true, apartment: data });
     } catch (err) {
-        console.error('[crm/apartment GET]', err);
-        return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+        return failed('crm/apartment GET', err, 'Failed to load apartment');
     }
 }
 
 export async function PATCH(request, { params }) {
-    const auth = await requireCrmUser(request);
+    const auth = await requirePermission(request, 'apartments');
     if (auth.response) {
         return NextResponse.json(auth.response.body, { status: auth.response.status });
     }
     const { id } = await params;
+    if (!isUuid(id)) return invalidId();
+
     try {
         const body = await request.json();
         const update = {};
@@ -72,23 +79,23 @@ export async function PATCH(request, { params }) {
         if (error) throw error;
         return NextResponse.json({ success: true, apartment: data });
     } catch (err) {
-        console.error('[crm/apartment PATCH]', err);
-        return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+        return failed('crm/apartment PATCH', err, 'Failed to update apartment');
     }
 }
 
 export async function DELETE(request, { params }) {
-    const auth = await requireCrmUser(request);
+    const auth = await requireAdmin(request);
     if (auth.response) {
         return NextResponse.json(auth.response.body, { status: auth.response.status });
     }
     const { id } = await params;
+    if (!isUuid(id)) return invalidId();
+
     try {
         const { error } = await serviceClient().from('apartments').delete().eq('id', id);
         if (error) throw error;
         return NextResponse.json({ success: true });
     } catch (err) {
-        console.error('[crm/apartment DELETE]', err);
-        return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+        return failed('crm/apartment DELETE', err, 'Failed to delete apartment');
     }
 }

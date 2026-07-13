@@ -11,6 +11,8 @@ export default function robots() {
           '/en/application', '/nl/aanvraag',
           '/en/letter-of-intent', '/nl/intentieverklaring',
           '/deal-response', '/en/deal-response',
+          // Internal tools — keep the team login pages out of the index.
+          '/crm', '/crm-admin', '/admin', '/api',
         ],
       },
       {
@@ -23,6 +25,8 @@ export default function robots() {
           '/en/application', '/nl/aanvraag',
           '/en/letter-of-intent', '/nl/intentieverklaring',
           '/deal-response', '/en/deal-response',
+          // Internal tools — keep the team login pages out of the index.
+          '/crm', '/crm-admin', '/admin', '/api',
         ],
       },
     ],

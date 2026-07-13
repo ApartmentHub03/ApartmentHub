@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { ZOKO_TEMPLATES } from '@/services/zokoTemplates';
@@ -21,9 +21,70 @@ function authHeaders() {
     return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+function storeSession(data) {
+    sessionStorage.setItem('crm_token', data.token);
+    if (data.refreshToken) sessionStorage.setItem('crm_refresh', data.refreshToken);
+    sessionStorage.setItem('crm_role', data.role || '');
+    sessionStorage.setItem('crm_name', data.name || '');
+    sessionStorage.setItem('crm_permissions', JSON.stringify(data.permissions || {}));
+}
+
+// Supabase access tokens last an hour. Swap the refresh token for a new one
+// rather than dumping the user back at the login screen mid-task.
+//
+// Single-flight: the dashboard fires several requests at once, and the refresh
+// token ROTATES on use — parallel refreshes would spend it more than once and
+// invalidate the session we are trying to save.
+let refreshInFlight = null;
+
+function refreshSession() {
+    if (refreshInFlight) return refreshInFlight;
+
+    refreshInFlight = (async () => {
+        const refreshToken = sessionStorage.getItem('crm_refresh');
+        if (!refreshToken) return false;
+        try {
+            const res = await fetch('/api/admin/crm/refresh', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refreshToken }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.success) return false;
+            storeSession(data);
+            return true;
+        } catch {
+            return false;
+        }
+    })().finally(() => { refreshInFlight = null; });
+
+    return refreshInFlight;
+}
+
 async function api(path, opts = {}) {
-    const res = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', ...authHeaders(), ...(opts.headers || {}) } });
-    return res;
+    const send = () => fetch(path, {
+        ...opts,
+        headers: { 'Content-Type': 'application/json', ...authHeaders(), ...(opts.headers || {}) },
+    });
+
+    const res = await send();
+    if (res.status !== 401) return res;
+
+    // Expired token: refresh once, then replay the request.
+    const refreshed = await refreshSession();
+    return refreshed ? send() : res;
+}
+
+// File uploads: same refresh-and-replay, but the browser must set its own
+// multipart Content-Type (with the boundary), so we can't go through api().
+async function apiUpload(path, formData) {
+    const send = () => fetch(path, { method: 'POST', headers: authHeaders(), body: formData });
+
+    const res = await send();
+    if (res.status !== 401) return res;
+
+    const refreshed = await refreshSession();
+    return refreshed ? send() : res;
 }
 
 function StatusPill({ status }) {
@@ -31,34 +92,45 @@ function StatusPill({ status }) {
     return <span className={`${styles.pill} ${map[status] || styles.pillGrey}`}>{status || '—'}</span>;
 }
 
+function readPermissions() {
+    try {
+        return JSON.parse(sessionStorage.getItem('crm_permissions') || '{}') || {};
+    } catch {
+        return {};
+    }
+}
+
 export default function CrmPage() {
     const [authed, setAuthed] = useState(false);
     const [ready, setReady] = useState(false);
-    const [me, setMe] = useState({ role: '', name: '' });
+    const [me, setMe] = useState({ role: '', name: '', permissions: {} });
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
         if (sessionStorage.getItem('crm_token')) {
-            setMe({ role: sessionStorage.getItem('crm_role') || '', name: sessionStorage.getItem('crm_name') || '' });
+            setMe({
+                role: sessionStorage.getItem('crm_role') || '',
+                name: sessionStorage.getItem('crm_name') || '',
+                permissions: readPermissions(),
+            });
             setAuthed(true);
         }
         setReady(true);
     }, []);
 
     const onLogin = (data) => {
-        sessionStorage.setItem('crm_token', data.token);
-        if (data.refreshToken) sessionStorage.setItem('crm_refresh', data.refreshToken);
-        sessionStorage.setItem('crm_role', data.role || '');
-        sessionStorage.setItem('crm_name', data.name || '');
-        sessionStorage.setItem('crm_permissions', JSON.stringify(data.permissions || {}));
-        setMe({ role: data.role || '', name: data.name || '' });
+        storeSession(data);
+        setMe({ role: data.role || '', name: data.name || '', permissions: data.permissions || {} });
         setAuthed(true);
     };
 
-    const onLogout = useCallback(() => {
+    // `expired` distinguishes a session we couldn't refresh from the user
+    // clicking Log out — otherwise being ejected looks like an unexplained crash.
+    const onLogout = useCallback((expired = false) => {
         ['crm_token', 'crm_refresh', 'crm_role', 'crm_name', 'crm_permissions'].forEach((k) => sessionStorage.removeItem(k));
         setAuthed(false);
-        setMe({ role: '', name: '' });
+        setMe({ role: '', name: '', permissions: {} });
+        if (expired) toast.error('Your session expired — please sign in again.');
     }, []);
 
     if (!ready) return <div className={styles.crm} />;
@@ -114,7 +186,9 @@ function CrmApp({ me, onLogout }) {
     const [loading, setLoading] = useState(true);
     const [lists, setLists] = useState({ apartments: [], candidates: [], agents: [], bookings: { current: [], cancelled: [], rescheduled: [] } });
     const [applications, setApplications] = useState([]);
+    const [appsLoading, setAppsLoading] = useState(true);
     const [team, setTeam] = useState([]);
+    const [teamLoading, setTeamLoading] = useState(true);
     const [sendCtx, setSendCtx] = useState(null);
     const [aptId, setAptId] = useState(null);
     const [appId, setAppId] = useState(null);
@@ -123,19 +197,32 @@ function CrmApp({ me, onLogout }) {
 
     const isAdmin = me.role === 'admin' || me.role === 'super_admin';
 
-    const tabs = [
-        { id: 'dashboard', label: 'Dashboard' },
-        { id: 'apartments', label: 'Apartments' },
-        { id: 'bookings', label: 'Bookings' },
-        { id: 'candidates', label: 'Candidates' },
-        { id: 'applications', label: 'Applications' },
-        { id: 'agents', label: 'Agents' },
-        { id: 'deals', label: 'Deals' },
-        ...(isAdmin ? [{ id: 'team', label: 'Team' }] : []),
-    ];
+    // The same permissions the server enforces (requirePermission). Gating the
+    // tabs here keeps the UI honest — it is not the security boundary. An admin
+    // holds every permission.
+    const can = useCallback((key) => {
+        if (isAdmin) return true;
+        return me.permissions?.[key] !== false;
+    }, [isAdmin, me.permissions]);
 
+    const tabs = useMemo(() => [
+        { id: 'dashboard', label: 'Dashboard' },
+        ...(can('apartments') ? [{ id: 'apartments', label: 'Apartments' }] : []),
+        ...(can('candidates') ? [
+            { id: 'bookings', label: 'Bookings' },
+            { id: 'candidates', label: 'Candidates' },
+            { id: 'applications', label: 'Applications' },
+        ] : []),
+        { id: 'agents', label: 'Agents' },
+        ...(can('offers') ? [{ id: 'deals', label: 'Deals' }] : []),
+        ...(isAdmin ? [{ id: 'team', label: 'Team' }] : []),
+    ], [can, isAdmin]);
+
+    // A 401 means the session is gone and the refresh in api() already failed,
+    // so sign out. A 403 ("admin only", "no access to apartments") must not sign
+    // anyone out — it flows through to the caller and is shown as a message.
     const handleAuthFail = useCallback((res) => {
-        if (res.status === 401) { onLogout(); return true; }
+        if (res.status === 401) { onLogout(true); return true; }
         return false;
     }, [onLogout]);
 
@@ -147,7 +234,7 @@ function CrmApp({ me, onLogout }) {
             const data = await res.json();
             if (data.success) {
                 setLists({
-                    apartments: data.apartments, candidates: data.candidates, agents: data.agents,
+                    apartments: data.apartments || [], candidates: data.candidates || [], agents: data.agents || [],
                     bookings: data.bookings || { current: [], cancelled: [], rescheduled: [] },
                 });
             } else toast.error(data.message || 'Failed to load CRM data');
@@ -155,25 +242,44 @@ function CrmApp({ me, onLogout }) {
         finally { setLoading(false); }
     }, [handleAuthFail]);
 
+    // These used to swallow their errors, so a failed load rendered as an empty
+    // table — "No applications yet" when the request had simply failed.
     const loadApplications = useCallback(async () => {
+        setAppsLoading(true);
         try {
             const res = await api('/api/admin/crm/applications');
             if (handleAuthFail(res)) return;
             const data = await res.json();
-            if (data.success) setApplications(data.applications);
-        } catch { /* surfaced in tab */ }
+            if (data.success) setApplications(data.applications || []);
+            else toast.error(data.message || 'Failed to load applications');
+        } catch { toast.error('Failed to load applications'); }
+        finally { setAppsLoading(false); }
     }, [handleAuthFail]);
 
     const loadTeam = useCallback(async () => {
+        setTeamLoading(true);
         try {
             const res = await api('/api/admin/crm/team');
             if (handleAuthFail(res)) return;
             const data = await res.json();
-            if (data.success) setTeam(data.members);
-        } catch { /* surfaced in Team tab */ }
+            if (data.success) setTeam(data.members || []);
+            else toast.error(data.message || 'Failed to load the team');
+        } catch { toast.error('Failed to load the team'); }
+        finally { setTeamLoading(false); }
     }, [handleAuthFail]);
 
-    useEffect(() => { loadLists(); loadApplications(); loadTeam(); }, [loadLists, loadApplications, loadTeam]);
+    useEffect(() => {
+        loadLists();
+        loadApplications();
+        // The team roster is admin-only on the server now, so only admins ask
+        // for it — a non-admin would just collect a 403 toast on every load.
+        if (isAdmin) loadTeam();
+    }, [loadLists, loadApplications, loadTeam, isAdmin]);
+
+    // Don't strand someone on a tab their permissions no longer allow.
+    useEffect(() => {
+        if (!tabs.some((t) => t.id === tab)) setTab('dashboard');
+    }, [tabs, tab]);
 
     const deals = lists.candidates.filter((c) => isDeal(c.status));
 
@@ -186,7 +292,9 @@ function CrmApp({ me, onLogout }) {
                         {CITIES.map((c) => <option key={c}>{c}</option>)}
                     </select>
                     <div className={styles.avatar}>{(me.name || 'A').slice(0, 1).toUpperCase()}</div>
-                    <button className={styles.logout} onClick={onLogout}><LogOut size={15} /> Logout</button>
+                    {/* Wrapped: passing onLogout directly hands it the click event, which
+                        would read as `expired` and claim the session died. */}
+                    <button className={styles.logout} onClick={() => onLogout()}><LogOut size={15} /> Logout</button>
                 </div>
             </div>
 
@@ -197,26 +305,26 @@ function CrmApp({ me, onLogout }) {
             </div>
 
             <div className={styles.content}>
-                {tab === 'dashboard' && <DashboardTab lists={lists} applications={applications} team={team} deals={deals} loading={loading} city={city} />}
+                {tab === 'dashboard' && <DashboardTab lists={lists} applications={applications} team={team} deals={deals} loading={loading || appsLoading} city={city} showTeam={isAdmin} />}
                 {tab === 'apartments' && <ApartmentsTab rows={lists.apartments} loading={loading} onOpen={setAptId} onNew={() => setNewApt(true)} />}
                 {tab === 'bookings' && <BookingsTab bookings={lists.bookings} loading={loading} onSend={setSendCtx} onAction={loadLists} handleAuthFail={handleAuthFail} />}
                 {tab === 'candidates' && <CandidatesTab rows={lists.candidates} loading={loading} onSend={setSendCtx} />}
-                {tab === 'applications' && <ApplicationsTab rows={applications} loading={loading} onOpen={setAppId} />}
+                {tab === 'applications' && <ApplicationsTab rows={applications} loading={appsLoading} onOpen={setAppId} />}
                 {tab === 'agents' && <AgentsTab rows={lists.agents} loading={loading} reload={loadLists} handleAuthFail={handleAuthFail} />}
                 {tab === 'deals' && <DealsTab rows={deals} loading={loading} onSend={setSendCtx} onOpen={setDealAcct} />}
-                {tab === 'team' && isAdmin && <TeamTab team={team} reload={loadTeam} />}
+                {tab === 'team' && isAdmin && <TeamTab team={team} loading={teamLoading} reload={loadTeam} handleAuthFail={handleAuthFail} />}
             </div>
 
             {sendCtx && <SendTemplateModal ctx={sendCtx} onClose={() => setSendCtx(null)} onAuthFail={handleAuthFail} />}
             {aptId && <ApartmentDrawer id={aptId} bookings={lists.bookings} onClose={() => setAptId(null)} onAuthFail={handleAuthFail} onSend={setSendCtx} reload={loadLists} />}
             {appId && <ApplicationDrawer id={appId} onClose={() => setAppId(null)} onAuthFail={handleAuthFail} onSend={setSendCtx} />}
-            {newApt && <ApartmentForm onClose={() => setNewApt(false)} onSaved={() => { setNewApt(false); loadLists(); }} />}
+            {newApt && <ApartmentForm onClose={() => setNewApt(false)} onSaved={() => { setNewApt(false); loadLists(); }} handleAuthFail={handleAuthFail} />}
             {dealAcct && <DealDrawer account={dealAcct} onClose={() => setDealAcct(null)} onAuthFail={handleAuthFail} onSend={setSendCtx} />}
         </div>
     );
 }
 
-function DashboardTab({ lists, applications, team, deals, loading, city }) {
+function DashboardTab({ lists, applications, team, deals, loading, city, showTeam }) {
     const activeApts = lists.apartments.filter((a) => a.status === 'Active').length;
     const kpis = [
         { val: lists.apartments.length, label: 'Apartments' },
@@ -225,7 +333,8 @@ function DashboardTab({ lists, applications, team, deals, loading, city }) {
         { val: lists.candidates.length, label: 'Candidates' },
         { val: applications.length, label: 'Applications' },
         { val: deals.length, label: 'Deals' },
-        { val: team.length, label: 'Team' },
+        // Only admins load the roster, so only they get a meaningful count.
+        ...(showTeam ? [{ val: team.length, label: 'Team' }] : []),
     ];
     return (
         <>
@@ -385,11 +494,13 @@ function AgentsTab({ rows, loading, reload, handleAuthFail }) {
 
     const del = async (id) => {
         if (!confirm('Delete this agent?')) return;
-        const res = await api(`/api/admin/crm/agents/${id}`, { method: 'DELETE' });
-        if (handleAuthFail(res)) return;
-        const data = await res.json();
-        if (data.success) { toast.success('Agent deleted'); reload(); }
-        else toast.error(data.message || 'Could not delete');
+        try {
+            const res = await api(`/api/admin/crm/agents/${id}`, { method: 'DELETE' });
+            if (handleAuthFail(res)) return;
+            const data = await res.json();
+            if (data.success) { toast.success('Agent deleted'); reload(); }
+            else toast.error(data.message || 'Could not delete');
+        } catch { toast.error('Could not delete the agent. Please try again.'); }
     };
 
     return (
@@ -449,11 +560,18 @@ function DealDrawer({ account, onClose, onAuthFail, onSend }) {
     const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
     const load = useCallback(async () => {
-        const res = await api(`/api/admin/crm/invoices?account_id=${account.id}`);
-        if (onAuthFail(res)) return;
-        const data = await res.json();
-        if (data.success) setInvoices(data.invoices);
-        else { toast.error(data.message || 'Could not load invoices'); setInvoices([]); }
+        try {
+            const res = await api(`/api/admin/crm/invoices?account_id=${account.id}`);
+            if (onAuthFail(res)) { setInvoices([]); return; }
+            const data = await res.json();
+            if (data.success) setInvoices(data.invoices || []);
+            else { toast.error(data.message || 'Could not load invoices'); setInvoices([]); }
+        } catch {
+            // Without this, a network blip left `invoices` null and the card
+            // spun on "Loading…" forever.
+            toast.error('Could not load invoices');
+            setInvoices([]);
+        }
     }, [account.id, onAuthFail]);
 
     useEffect(() => { load(); }, [load]);
@@ -472,10 +590,12 @@ function DealDrawer({ account, onClose, onAuthFail, onSend }) {
     };
 
     const setStatus = async (inv, status) => {
-        const res = await api(`/api/admin/crm/invoices/${inv.id}`, { method: 'PATCH', body: JSON.stringify({ status }) });
-        if (onAuthFail(res)) return;
-        const data = await res.json();
-        if (data.success) load(); else toast.error(data.message || 'Could not update');
+        try {
+            const res = await api(`/api/admin/crm/invoices/${inv.id}`, { method: 'PATCH', body: JSON.stringify({ status }) });
+            if (onAuthFail(res)) return;
+            const data = await res.json();
+            if (data.success) load(); else toast.error(data.message || 'Could not update');
+        } catch { toast.error('Could not update the invoice. Please try again.'); }
     };
 
     const statusCls = { draft: styles.pillGrey, sent: styles.pillAmber, paid: styles.pillGreen, cancelled: styles.pillRed };
@@ -636,22 +756,31 @@ function ApartmentDrawer({ id, bookings, onClose, onAuthFail, onSend, reload }) 
     const [editing, setEditing] = useState(false);
 
     const load = useCallback(async () => {
-        const res = await api(`/api/admin/crm/apartment/${id}`);
-        if (onAuthFail(res)) return;
-        const data = await res.json();
-        if (data.success) setApt(data.apartment);
-        setLoading(false);
+        try {
+            const res = await api(`/api/admin/crm/apartment/${id}`);
+            if (onAuthFail(res)) return;
+            const data = await res.json();
+            if (data.success) setApt(data.apartment);
+            else toast.error(data.message || 'Could not load this apartment');
+        } catch {
+            toast.error('Could not load this apartment');
+        } finally {
+            // In `finally`, so a thrown request can't strand the drawer on "Loading…".
+            setLoading(false);
+        }
     }, [id, onAuthFail]);
 
     useEffect(() => { load(); }, [load]);
 
     const del = async () => {
         if (!confirm('Delete this apartment? This cannot be undone.')) return;
-        const res = await api(`/api/admin/crm/apartment/${id}`, { method: 'DELETE' });
-        if (onAuthFail(res)) return;
-        const data = await res.json();
-        if (data.success) { toast.success('Apartment deleted'); reload(); onClose(); }
-        else toast.error(data.message || 'Could not delete');
+        try {
+            const res = await api(`/api/admin/crm/apartment/${id}`, { method: 'DELETE' });
+            if (onAuthFail(res)) return;
+            const data = await res.json();
+            if (data.success) { toast.success('Apartment deleted'); reload(); onClose(); }
+            else toast.error(data.message || 'Could not delete');
+        } catch { toast.error('Could not delete the apartment. Please try again.'); }
     };
 
     const aptBookings = [...(bookings.current || []), ...(bookings.cancelled || []), ...(bookings.rescheduled || [])].filter((b) => b.apartmentId === id);
@@ -679,7 +808,7 @@ function ApartmentDrawer({ id, bookings, onClose, onAuthFail, onSend, reload }) 
                     {loading ? <div className={styles.loading}>Loading…</div>
                         : !apt ? <div className={styles.empty}>Apartment not found.</div>
                             : editing ? (
-                                <ApartmentForm apt={apt} inline onClose={() => setEditing(false)} onSaved={(updated) => { setApt(updated); setEditing(false); reload(); }} />
+                                <ApartmentForm apt={apt} inline onClose={() => setEditing(false)} onSaved={(updated) => { setApt(updated); setEditing(false); reload(); }} handleAuthFail={onAuthFail} />
                             ) : (
                                 <>
                                     <div className={styles.card}>
@@ -731,11 +860,18 @@ function ApplicationDrawer({ id, onClose, onAuthFail, onSend }) {
     useEffect(() => {
         let active = true;
         (async () => {
-            const res = await api(`/api/admin/crm/application/${id}`);
-            if (onAuthFail(res)) return;
-            const data = await res.json();
-            if (active && data.success) setAcc(data.account);
-            if (active) setLoading(false);
+            try {
+                const res = await api(`/api/admin/crm/application/${id}`);
+                if (onAuthFail(res)) return;
+                const data = await res.json();
+                if (!active) return;
+                if (data.success) setAcc(data.account);
+                else toast.error(data.message || 'Could not load this application');
+            } catch {
+                if (active) toast.error('Could not load this application');
+            } finally {
+                if (active) setLoading(false);
+            }
         })();
         return () => { active = false; };
     }, [id, onAuthFail]);
@@ -884,7 +1020,7 @@ function PdfManager({ aptId, apt, onAuthFail }) {
         try {
             const fd = new FormData();
             fd.append('file', file);
-            const res = await fetch(`/api/admin/crm/apartment/${aptId}/pdf`, { method: 'POST', headers: authHeaders(), body: fd });
+            const res = await apiUpload(`/api/admin/crm/apartment/${aptId}/pdf`, fd);
             if (onAuthFail(res)) return;
             const data = await res.json();
             if (data.success) { toast.success('Brochure PDF uploaded'); setPdf(data.pdf); }
@@ -894,11 +1030,13 @@ function PdfManager({ aptId, apt, onAuthFail }) {
     };
 
     const view = async () => {
-        const res = await api(`/api/admin/crm/apartment/${aptId}/pdf`);
-        if (onAuthFail(res)) return;
-        const data = await res.json();
-        if (data.success && data.pdf?.url) window.open(data.pdf.url, '_blank');
-        else toast.error('No PDF available');
+        try {
+            const res = await api(`/api/admin/crm/apartment/${aptId}/pdf`);
+            if (onAuthFail(res)) return;
+            const data = await res.json();
+            if (data.success && data.pdf?.url) window.open(data.pdf.url, '_blank');
+            else toast.error('No PDF available');
+        } catch { toast.error('Could not open the PDF. Please try again.'); }
     };
 
     return (
@@ -927,7 +1065,7 @@ function PdfManager({ aptId, apt, onAuthFail }) {
 
 // ---------- Forms ----------
 
-function ApartmentForm({ apt, inline, onClose, onSaved }) {
+function ApartmentForm({ apt, inline, onClose, onSaved, handleAuthFail }) {
     const editing = !!apt;
     const [f, setF] = useState({
         name: apt?.name || apt?.['Full Address'] || '',
@@ -952,6 +1090,7 @@ function ApartmentForm({ apt, inline, onClose, onSaved }) {
             const res = editing
                 ? await api(`/api/admin/crm/apartment/${apt.id}`, { method: 'PATCH', body: JSON.stringify(f) })
                 : await api('/api/admin/crm/apartment', { method: 'POST', body: JSON.stringify(f) });
+            if (handleAuthFail?.(res)) return;
             const data = await res.json();
             if (data.success) { toast.success(editing ? 'Apartment updated' : 'Apartment created'); onSaved(data.apartment); }
             else toast.error(data.message || 'Could not save');
@@ -1057,10 +1196,13 @@ function AgentForm({ agent, onClose, onSaved, handleAuthFail }) {
 
 const DEFAULT_PERMS = { apartments: true, candidates: true, offers: false, team: false };
 
-function TeamTab({ team, reload }) {
+function TeamTab({ team, loading, reload, handleAuthFail }) {
     const [form, setForm] = useState({ name: '', email: '', phone: '', start_date: '', role: 'agent' });
     const [perms, setPerms] = useState(DEFAULT_PERMS);
     const [saving, setSaving] = useState(false);
+    // The temp password is shown exactly once and cannot be recovered, so it
+    // gets a dismissable panel rather than a toast that times out.
+    const [newCredentials, setNewCredentials] = useState(null);
 
     const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
     const togglePerm = (k) => setPerms((p) => ({ ...p, [k]: !p[k] }));
@@ -1070,15 +1212,29 @@ function TeamTab({ team, reload }) {
         setSaving(true);
         try {
             const res = await api('/api/admin/crm/team', { method: 'POST', body: JSON.stringify({ ...form, permissions: perms }) });
+            if (handleAuthFail?.(res)) return;
             const data = await res.json();
             if (data.success) {
-                toast.success(`${form.name} added. Temp password: ${data.tempPassword}`, { duration: 12000 });
+                toast.success(`${form.name} added.`);
+                setNewCredentials({ name: form.name, email: form.email, password: data.tempPassword });
                 setForm({ name: '', email: '', phone: '', start_date: '', role: 'agent' });
                 setPerms(DEFAULT_PERMS);
                 reload();
             } else toast.error(data.message || 'Could not add employee');
         } catch { toast.error('Could not add employee'); }
         finally { setSaving(false); }
+    };
+
+    const setActive = async (member, is_active) => {
+        const verb = is_active ? 'Reactivate' : 'Deactivate';
+        if (!confirm(`${verb} ${member.name}?`)) return;
+        try {
+            const res = await api('/api/admin/crm/team', { method: 'PATCH', body: JSON.stringify({ id: member.id, is_active }) });
+            if (handleAuthFail?.(res)) return;
+            const data = await res.json();
+            if (data.success) { toast.success(`${member.name} ${is_active ? 'reactivated' : 'deactivated'}`); reload(); }
+            else toast.error(data.message || `Could not ${verb.toLowerCase()} this member`);
+        } catch { toast.error(`Could not ${verb.toLowerCase()} this member`); }
     };
 
     return (
@@ -1108,25 +1264,54 @@ function TeamTab({ team, reload }) {
                             <label className={styles.perm} key={k}><input type="checkbox" checked={perms[k]} onChange={() => togglePerm(k)} /> {lbl}</label>
                         ))}
                         <button className={styles.btn} style={{ marginTop: 14 }} onClick={submit} disabled={saving}>{saving ? 'Adding…' : 'Add employee'}</button>
+
+                        {newCredentials && (
+                            <div className={styles.credentials}>
+                                <div className={styles.credentialsHead}>
+                                    <b>Share these with {newCredentials.name}</b>
+                                    <button className={styles.modalClose} onClick={() => setNewCredentials(null)}>×</button>
+                                </div>
+                                <div className={styles.hint}>Shown once — it cannot be retrieved later.</div>
+                                <dl className={styles.kv}>
+                                    <dt>Email</dt><dd>{newCredentials.email}</dd>
+                                    <dt>Temp password</dt><dd><code>{newCredentials.password}</code></dd>
+                                </dl>
+                                <button
+                                    className={`${styles.rowBtn} ${styles.btnGhost}`}
+                                    onClick={() => {
+                                        navigator.clipboard?.writeText(`Email: ${newCredentials.email}\nPassword: ${newCredentials.password}`)
+                                            .then(() => toast.success('Copied'))
+                                            .catch(() => toast.error('Could not copy — select the text instead'));
+                                    }}
+                                >Copy</button>
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div className={styles.card}>
                     <div className={styles.cardHead}><h3>Team members</h3></div>
-                    {team.length === 0 ? <div className={styles.empty}>No team members yet — add the first one.</div> : (
-                        <table className={styles.table}>
-                            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Since</th></tr></thead>
-                            <tbody>
-                                {team.map((m) => (
-                                    <tr key={m.id}>
-                                        <td><b>{m.name}</b></td>
-                                        <td>{m.email}</td>
-                                        <td><span className={`${styles.pill} ${m.role === 'agent' ? styles.pillGrey : styles.pillTeal}`}>{m.role.replace('_', ' ')}</span></td>
-                                        <td>{m.start_date || (m.created_at ? m.created_at.slice(0, 10) : '—')}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
+                    {loading ? <div className={styles.empty}>Loading…</div>
+                        : team.length === 0 ? <div className={styles.empty}>No team members yet — add the first one.</div> : (
+                            <table className={styles.table}>
+                                <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Since</th><th></th></tr></thead>
+                                <tbody>
+                                    {team.map((m) => (
+                                        <tr key={m.id} style={m.is_active === false ? { opacity: 0.55 } : undefined}>
+                                            <td><b>{m.name}</b>{m.is_active === false && <span className={styles.hint}> · inactive</span>}</td>
+                                            <td>{m.email}</td>
+                                            <td><span className={`${styles.pill} ${m.role === 'agent' ? styles.pillGrey : styles.pillTeal}`}>{m.role.replace('_', ' ')}</span></td>
+                                            <td>{m.start_date || (m.created_at ? m.created_at.slice(0, 10) : '—')}</td>
+                                            <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                                                <button
+                                                    className={`${styles.rowBtn} ${styles.btnGhost}`}
+                                                    onClick={() => setActive(m, m.is_active === false)}
+                                                >{m.is_active === false ? 'Reactivate' : 'Deactivate'}</button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
                 </div>
             </div>
         </>

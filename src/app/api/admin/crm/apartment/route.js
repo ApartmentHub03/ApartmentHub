@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
-import { serviceClient, requireCrmUser } from '@/services/crmAuth';
+import { serviceClient, requirePermission } from '@/services/crmAuth';
+import { failed } from '@/services/crmHttp';
 
 // Create an apartment listing. CRM-authed.
 
 const STATUSES = ['Null', 'CreateLink', 'Active', 'Closed'];
 
 export async function POST(request) {
-    const auth = await requireCrmUser(request);
+    const auth = await requirePermission(request, 'apartments');
     if (auth.response) {
         return NextResponse.json(auth.response.body, { status: auth.response.status });
     }
@@ -39,7 +40,6 @@ export async function POST(request) {
         if (error) throw error;
         return NextResponse.json({ success: true, apartment: data });
     } catch (err) {
-        console.error('[crm/apartment POST]', err);
-        return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+        return failed('crm/apartment POST', err, 'Failed to create apartment');
     }
 }

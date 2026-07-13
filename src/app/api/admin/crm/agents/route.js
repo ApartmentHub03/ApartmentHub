@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { serviceClient, requireCrmUser } from '@/services/crmAuth';
+import { failed } from '@/services/crmHttp';
 
 // Create a CRM agent (point of contact shown on offers). CRM-authed.
 
@@ -26,7 +27,6 @@ export async function POST(request) {
         if (error) throw error;
         return NextResponse.json({ success: true, agent: data });
     } catch (err) {
-        console.error('[crm/agents POST]', err);
-        return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+        return failed('crm/agents POST', err, 'Failed to create agent');
     }
 }

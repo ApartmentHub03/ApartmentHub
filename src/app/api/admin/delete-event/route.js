@@ -1,63 +1,34 @@
 import { NextResponse } from 'next/server';
+import { requireCrmUser } from '@/services/crmAuth';
+import { deleteCalEvents } from '@/services/calcom';
 
-const CAL_API_BASE = 'https://api.cal.com/v2';
-
-async function calDelete(path, apiKey, apiVersion) {
-    const res = await fetch(`${CAL_API_BASE}${path}`, {
-        method: 'DELETE',
-        headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'cal-api-version': apiVersion,
-        },
-    });
-    if (res.status === 204) return { status: 'success' };
-    return res.json();
-}
+// Deletes an apartment's Cal.com event types + schedule. Team-only: these IDs
+// are small sequential integers, so an open endpoint here means anyone can
+// destroy every live viewing link we have.
 
 export async function POST(request) {
-    const { calEventTypeId, calEventTypeIdVideo, calScheduleId } = await request.json();
-
-    const apiKey = process.env.CAL_COM_API_KEY;
-    if (!apiKey) {
-        return NextResponse.json(
-            { success: false, message: 'CAL_COM_API_KEY not configured' },
-            { status: 500 }
-        );
+    const auth = await requireCrmUser(request);
+    if (auth.response) {
+        return NextResponse.json(auth.response.body, { status: auth.response.status });
     }
 
-    const errors = [];
+    let body;
+    try {
+        body = await request.json();
+    } catch {
+        return NextResponse.json({ success: false, message: 'Invalid request' }, { status: 400 });
+    }
+
+    const { calEventTypeId, calEventTypeIdVideo, calScheduleId } = body || {};
 
     try {
-        if (calEventTypeId) {
-            const result = await calDelete(`/event-types/${calEventTypeId}`, apiKey, '2024-06-14');
-            if (result.status !== 'success') {
-                errors.push({ type: 'event-type', details: result });
-            }
+        const result = await deleteCalEvents({ calEventTypeId, calEventTypeIdVideo, calScheduleId });
+        if (!result.success) {
+            return NextResponse.json({ success: false, errors: result.errors });
         }
-
-        if (calEventTypeIdVideo) {
-            const result = await calDelete(`/event-types/${calEventTypeIdVideo}`, apiKey, '2024-06-14');
-            if (result.status !== 'success') {
-                errors.push({ type: 'event-type-video', details: result });
-            }
-        }
-
-        if (calScheduleId) {
-            const result = await calDelete(`/schedules/${calScheduleId}`, apiKey, '2024-06-11');
-            if (result.status !== 'success') {
-                errors.push({ type: 'schedule', details: result });
-            }
-        }
+        return NextResponse.json({ success: true });
     } catch (error) {
-        return NextResponse.json(
-            { success: false, message: error.message },
-            { status: 500 }
-        );
+        console.error('[admin/delete-event]', error);
+        return NextResponse.json({ success: false, message: 'Failed to delete Cal.com events' }, { status: 500 });
     }
-
-    if (errors.length > 0) {
-        return NextResponse.json({ success: false, errors });
-    }
-
-    return NextResponse.json({ success: true });
 }

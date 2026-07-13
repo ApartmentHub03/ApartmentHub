@@ -169,7 +169,10 @@ export default function AdminDashboard() {
         try {
             const res = await fetch('/api/admin/generate-link', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionStorage.getItem('admin_token') || ''}`,
+                },
                 body: JSON.stringify({
                     address: apartment.full_address,
                     slotStartDatetime: apartment.slot_datetime,
@@ -240,7 +243,10 @@ export default function AdminDashboard() {
             try {
                 const res = await fetch('/api/admin/delete-event', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionStorage.getItem('admin_token') || ''}`,
+                    },
                     body: JSON.stringify({
                         calEventTypeId: apt.cal_event_type_id,
                         calEventTypeIdVideo: apt.cal_event_type_id_video,
@@ -330,7 +336,7 @@ export default function AdminDashboard() {
             <header className={styles.header}>
                 <div className={styles.headerInner}>
                     <div className={styles.headerLeft}>
-                        <img src={"/images/site-logo.png"}  />
+                        <img src={"/images/site-logo.png"} alt="ApartmentHub" />
                         <h1 className={styles.headerTitle}>Admin Dashboard</h1>
                         <span className={styles.rentalBadge}>Rental</span>
                     </div>

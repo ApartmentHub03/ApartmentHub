@@ -1,18 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseServer } from '@/lib/supabaseServer';
+import { requireCrmUser } from '@/services/crmAuth';
 
 export async function PATCH(request: Request) {
-    const authHeader = request.headers.get('authorization') || '';
-    const validUsername = process.env.NEXT_PUBLIC_ADMIN_USERNAME;
-    const validPassword = process.env.ADMIN_PASSWORD;
-
-    if (!validUsername || !validPassword) {
-        return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
-    }
-
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
-    if (!token) {
-        return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    // Was: "a Bearer token is present" — never validated, so any string could
+    // rewrite any lead's stage.
+    const auth = await requireCrmUser(request);
+    if (auth.response) {
+        return NextResponse.json(auth.response.body, { status: auth.response.status });
     }
 
     const url = new URL(request.url);

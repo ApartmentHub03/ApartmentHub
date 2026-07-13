@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
-import { serviceClient, requireCrmUser } from '@/services/crmAuth';
+import { serviceClient, requireAdmin, requireCrmUser } from '@/services/crmAuth';
+import { isUuid, invalidId, failed } from '@/services/crmHttp';
 
-// Edit / delete a CRM agent. CRM-authed.
+// Edit / delete a CRM agent. Editing is open to any team member; deleting is
+// admin-only.
 
 const EDITABLE = ['name', 'whatsapp_number', 'email', 'employee_id', 'salesforce_agent_id', 'internal_notes'];
 
@@ -11,6 +13,8 @@ export async function PATCH(request, { params }) {
         return NextResponse.json(auth.response.body, { status: auth.response.status });
     }
     const { id } = await params;
+    if (!isUuid(id)) return invalidId();
+
     try {
         const body = await request.json();
         const update = {};
@@ -27,23 +31,23 @@ export async function PATCH(request, { params }) {
         if (error) throw error;
         return NextResponse.json({ success: true, agent: data });
     } catch (err) {
-        console.error('[crm/agents PATCH]', err);
-        return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+        return failed('crm/agents PATCH', err, 'Failed to update agent');
     }
 }
 
 export async function DELETE(request, { params }) {
-    const auth = await requireCrmUser(request);
+    const auth = await requireAdmin(request);
     if (auth.response) {
         return NextResponse.json(auth.response.body, { status: auth.response.status });
     }
     const { id } = await params;
+    if (!isUuid(id)) return invalidId();
+
     try {
         const { error } = await serviceClient().from('crm_agents').delete().eq('id', id);
         if (error) throw error;
         return NextResponse.json({ success: true });
     } catch (err) {
-        console.error('[crm/agents DELETE]', err);
-        return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+        return failed('crm/agents DELETE', err, 'Failed to delete agent');
     }
 }
