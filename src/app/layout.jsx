@@ -13,7 +13,10 @@ export const metadata = {
         google: 'WEk3DyM5hwLTLGZl6tySEgdmRfr5fd21mH53OExkkx0',
     },
     icons: {
-        icon: '/favicon.png',
+        icon: [
+            { url: '/favicon.png', sizes: '192x192', type: 'image/png' },
+        ],
+        shortcut: '/favicon.png',
     },
 };
 
