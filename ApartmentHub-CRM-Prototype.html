@@ -1,0 +1,396 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ApartmentHub CRM · Prototype</title><style>
+  :root{
+    --teal:#009B8A; --teal-d:#007d6f; --teal-l:#e6f5f3;
+    --orange:#FF7D28; --orange-l:#fff1e7;
+    --ink:#15211f; --muted:#6b7a78; --line:#e7ecec;
+    --bg:#f6f8f8; --card:#fff;
+    --green:#1faa59; --green-l:#e7f6ed; --amber:#e9a23b; --amber-l:#fdf3e3;
+    --red:#e0524b; --red-l:#fdeceb;
+    --radius:12px; --shadow:0 1px 3px rgba(16,40,37,.08),0 8px 24px rgba(16,40,37,.05);
+    font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.45}
+  button{font-family:inherit;cursor:pointer;border:none;background:none}
+  a{color:inherit;cursor:pointer}
+  code{background:#eef3f2;border-radius:4px;padding:1px 5px;font-size:.85em}
+  .hidden{display:none!important}
+
+  #login{position:fixed;inset:0;background:linear-gradient(135deg,#00b3a0,#007d6f);display:flex;align-items:center;justify-content:center;z-index:50}
+  .login-card{background:#fff;border-radius:16px;padding:34px 32px;width:360px;box-shadow:var(--shadow)}
+  .login-card h1{font-size:20px;margin:6px 0 2px}.login-card p{color:var(--muted);margin:0 0 18px;font-size:13px}
+  .login-card label{display:block;font-size:12px;font-weight:600;margin:12px 0 5px;color:#44524f}
+  .login-card input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;font-size:14px}
+  .brand-dot{width:36px;height:36px;border-radius:10px;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px}
+
+  .btn{display:inline-flex;align-items:center;gap:7px;justify-content:center;background:var(--teal);color:#fff;font-weight:600;padding:9px 14px;border-radius:9px;font-size:13.5px}
+  .btn:hover{background:var(--teal-d)}.btn.full{width:100%;margin-top:18px}
+  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}.btn.ghost:hover{background:#f3f6f6}
+  .btn.orange{background:var(--orange);color:#fff}.btn.orange:hover{filter:brightness(.95)}
+  .btn.sm{padding:6px 10px;font-size:12.5px}
+
+  .topbar{background:#0e2826;color:#fff;display:flex;align-items:center;gap:12px;padding:11px 20px}
+  .topbar .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:15px}
+  .topbar .right{margin-left:auto;display:flex;align-items:center;gap:14px}
+  .city{background:#16403b;border:1px solid #2a5d55;color:#fff;border-radius:8px;padding:6px 9px;font-size:12.5px}
+  .avatar{width:30px;height:30px;border-radius:50%;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+  .hamb{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:0 4px;line-height:1}
+  .bizitem{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:9px;color:#bdd3cf;font-weight:600;cursor:pointer}
+  .bizitem:hover{background:#16403b;color:#fff}.bizitem.active{background:var(--teal);color:#fff}
+  .tabs{background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:stretch;gap:2px;padding:0 14px;position:sticky;top:0;z-index:10;overflow-x:auto}
+  .tab{padding:13px 14px;font-weight:600;font-size:13.5px;color:#46544f;border-bottom:3px solid transparent;white-space:nowrap}
+  .tab:hover{color:var(--teal-d)}.tab.active{color:var(--teal);border-bottom-color:var(--teal)}
+
+  .content{padding:24px;max-width:1340px;margin:0 auto}
+  h2.page{font-size:21px;margin:0 0 3px}.sub{color:var(--muted);margin:0 0 18px;font-size:13px}
+  .ref{display:inline-block;background:var(--teal-l);color:var(--teal-d);font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;margin-left:8px;vertical-align:middle}
+  .ann{background:var(--orange-l);border:1px solid #ffd9bd;border-left:3px solid var(--orange);border-radius:8px;padding:9px 13px;font-size:12px;color:#8a4a17;margin-bottom:16px}.ann b{color:#6f3a12}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+  .kpi .n{font-size:25px;font-weight:800}.kpi .l{color:var(--muted);font-size:12.5px;margin-top:2px}.kpi .delta{font-size:12px;color:var(--green);font-weight:600}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:16px}
+  .card .hd{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .card .hd h3{margin:0;font-size:15px}.card .hd .sp{margin-left:auto}
+  .card .bd{padding:18px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}.grid2-wide{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
+
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);padding:10px 16px;border-bottom:1px solid var(--line)}
+  td{padding:12px 16px;border-bottom:1px solid var(--line);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover td{background:#fafcfc}
+  tr.click{cursor:pointer}
+  td.grouphd{background:#f3f6f6;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#46544f;font-weight:700;padding:7px 16px}
+
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;border-radius:20px;padding:3px 9px}
+  .pill.green{background:var(--green-l);color:#157a3f}.pill.amber{background:var(--amber-l);color:#a4691a}
+  .pill.red{background:var(--red-l);color:#b23a34}.pill.teal{background:var(--teal-l);color:var(--teal-d)}
+  .pill.grey{background:#eef1f1;color:#54635f}.pill.orange{background:var(--orange-l);color:#8a4a17}
+  .tag{display:inline-block;background:#eef1f1;color:#46544f;font-size:11px;border-radius:6px;padding:2px 7px;margin:2px 2px 0 0}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px}
+  .d-green{background:var(--green)}.d-amber{background:var(--amber)}.d-red{background:var(--red)}
+  .chat{color:var(--teal);font-weight:600}.chat:hover{text-decoration:underline}
+
+  .rechead{display:flex;align-items:center;gap:13px;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:15px 18px;box-shadow:var(--shadow);margin-bottom:16px}
+  .rechead .ico{width:42px;height:42px;border-radius:11px;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-size:19px}
+  .rechead .t{font-size:11px;color:var(--muted)}.rechead .h{font-size:19px;font-weight:700}
+  .rechead .acts{margin-left:auto;display:flex;gap:7px;flex-wrap:wrap}
+  .sections{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px;margin-bottom:16px}
+  .subtabs{display:flex;flex-wrap:nowrap;align-items:stretch;gap:4px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:6px;margin-bottom:16px}
+  .subtab{flex:1;text-align:center;display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 8px;font-weight:600;font-size:13px;color:#46544f;border-radius:8px;white-space:nowrap}
+  .subtab:hover{color:var(--teal-d);background:#f6f8f8}.subtab.active{color:var(--teal);background:var(--teal-l)}
+  .fields{display:grid;grid-template-columns:1fr 1fr;gap:0 40px;padding:14px 18px}
+  .fr{display:flex;align-items:flex-start;gap:8px;padding:9px 0;border-bottom:1px solid #f1f4f4}
+  .fr .lab{width:155px;flex:none;color:var(--muted);font-size:12.5px}.fr .val{flex:1;font-weight:500}
+  .fr .pen{opacity:0;color:#c2cccb}.fr:hover .pen{opacity:1}
+  .drop{border:2px dashed var(--line);border-radius:10px;padding:16px;display:flex;align-items:center;gap:12px;color:var(--muted);font-size:13px}
+  .grp{border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden}
+  .grp .gh{display:flex;align-items:center;gap:8px;padding:11px 14px;background:#f6f8f8;border-bottom:1px solid var(--line)}
+  .grp .gb{padding:12px 14px}
+  .role{font-size:11px;font-weight:700;text-transform:uppercase;border-radius:6px;padding:2px 8px}
+  .role.t{background:var(--teal-l);color:var(--teal-d)}.role.g{background:var(--orange-l);color:#8a4a17}
+  .potfld{width:100%;max-width:300px;border:1px solid transparent;background:#eef3f2;border-radius:8px;padding:6px 9px;font-size:13.5px;font-family:inherit;color:var(--ink)}
+  textarea.potfld{max-width:none;min-height:58px;resize:vertical}
+  #pot.editing .potfld{border-color:var(--line);background:#fff}
+  #pot:not(.editing) .editonly{display:none}
+  #pot.editing{outline:2px solid var(--teal-l);outline-offset:6px;border-radius:6px}
+
+  label.f{display:block;font-size:12px;font-weight:600;margin:13px 0 5px;color:#44524f}
+  .inp,select.inp,textarea.inp{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:13.5px;font-family:inherit}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:4px}
+  .status-strip{display:flex;align-items:center;gap:10px;background:var(--teal-l);border:1px solid #cfe9e5;border-radius:10px;padding:11px 14px;margin:16px 0;flex-wrap:wrap}
+  .step{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--teal-d)}
+  .step .num{width:20px;height:20px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px}
+  .arrow{color:#9cc;font-weight:700}
+  .perm{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:13px}.perm input{width:16px;height:16px;accent-color:var(--teal)}
+  .bars{height:110px;display:flex;align-items:flex-end;gap:10px;margin-top:12px}.bars div{flex:1;border-radius:5px 5px 0 0;background:var(--teal)}
+  .modal-bg{position:fixed;inset:0;background:rgba(16,40,37,.45);display:flex;align-items:center;justify-content:center;z-index:60;padding:20px}
+  .modal{background:#fff;border-radius:14px;max-width:520px;width:100%;max-height:88vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .modal .mh{display:flex;align-items:center;gap:10px;padding:15px 20px;border-bottom:1px solid var(--line)}.modal .mh h3{margin:0;font-size:16px}
+  .modal .mh .x{margin-left:auto;font-size:22px;color:#999;cursor:pointer;line-height:1}
+  .modal .mb{padding:18px 20px;font-size:13.5px}.modal .mb p{margin:0 0 10px}
+  .modal .mf{padding:13px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
+  .kv{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid #f1f4f4}.kv .k{color:var(--muted)}
+  .linkbox{background:#f6f8f8;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-family:monospace;font-size:12px;margin:5px 0 10px;word-break:break-all}
+  .wapreview{background:var(--teal-l);border:1px solid #cfe9e5;border-radius:10px;padding:12px;font-size:13px;white-space:pre-wrap;line-height:1.5}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0e2826;color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;z-index:70;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .2s}
+  .toast.show{opacity:1}
+</style></head><body><div id="login"><div class="login-card"><div class="brand-dot">A</div><h1>ApartmentHub CRM</h1><p>Team login · Amsterdam dashboard</p><label>Email</label><input type="text" value="david@apartmenthub.nl"><label>Password</label><input type="password" value="••••••••"><button class="btn full" onclick="document.getElementById('login').classList.add('hidden')">Sign in</button><p style="margin-top:14px;font-size:11.5px;text-align:center">Per-user login via Supabase Auth.</p></div></div><div class="topbar"><button class="hamb" onclick="toggleDrawer()" title="Business lines">☰</button><div class="logo"><div class="brand-dot">A</div> ApartmentHub CRM</div><div class="right"><select class="city" onchange="alert('Two fully separate dashboards, each with its own login and number.')"><option>Amsterdam · 06 5897 5449</option><option>Utrecht · 06 2372 0769</option></select><span>🔔</span><div class="avatar">D</div></div></div><div id="bizdrawer" class="hidden" style="position:fixed;inset:0;z-index:40"><div onclick="toggleDrawer()" style="position:absolute;inset:0;background:rgba(16,40,37,.45)"></div><div style="position:absolute;left:0;top:0;bottom:0;width:268px;background:#0e2826;padding:18px 14px;display:flex;flex-direction:column;gap:5px"><div style="display:flex;align-items:center;gap:10px;padding:4px 8px 14px;font-weight:700;color:#fff;font-size:15px"><div class="brand-dot">A</div> ApartmentHub</div><div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#7fb3ab;padding:6px 10px">Business lines</div><a class="bizitem active" data-biz="aanhuur" onclick="setBiz('aanhuur')"><span></span> Rentals (tenant)<span style="margin-left:auto;font-size:10px;background:#16403b;border:1px solid #2a5d55;color:#7fb3ab;border-radius:20px;padding:1px 7px">this CRM</span></a><a class="bizitem" data-biz="verhuur" onclick="setBiz('verhuur')"><span></span> Letting (landlord)</a><a class="bizitem" data-biz="aankoop" onclick="setBiz('aankoop')"><span></span> Buying</a><a class="bizitem" data-biz="verkoop" onclick="setBiz('verkoop')"><span></span> Selling</a></div></div><div class="tabs" id="tabs"></div><div class="content" id="content"></div><div id="modalroot"></div><div id="toast" class="toast"></div><script>
+const TABS=[
+  {id:'dashboard',label:'Dashboard'},
+  {id:'apartments',label:'Apartments'},
+  {id:'deals',label:'Deals this month'},
+  {id:'candidates',label:'Candidates'},
+  {id:'leads',label:'Marketing'},
+  {id:'seo',label:'SEO'},
+  {id:'agents',label:'Agents'},
+  {id:'collab',label:'Collaborations'},
+  {id:'team',label:'Team'},
+];
+const views={};
+
+/* DASHBOARD */
+let dashRole='admin';
+function setDashRole(r){dashRole=r;show('dashboard');}
+views.dashboard=()=>{const A=dashRole==='admin';return `
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px"><h2 class="page" style="margin:0">Dashboard</h2><span class="hint">View as</span><select class="inp" style="width:auto;padding:6px 9px" onchange="setDashRole(this.value)"><option value="admin"${A?' selected':''}>Admin (David)</option><option value="agent"${A?'':' selected'}>Agent (Lander)</option></select></div><p class="sub">Amsterdam · ${A?'admin view · full company overview':'agent view · your own work only · company financials are hidden'}.</p><div class="kpis">${A
+    ? kpi('12','Active apartments','')+kpi('128','Candidates','+9 today')+kpi('7','Viewings this week','')+kpi('3','Offers out','1 awaiting deal')
+    : kpi('3','My apartments','')+kpi('2','My viewings this week','')+kpi('2','My offers in','')+kpi('1','My offers out','')}</div><div class="grid2-wide">
+    ${A
+    ? `<div class="card"><div class="hd"><h3>Forecast &amp; earnings</h3><span class="pill teal sp">Admin only</span></div><div class="bd"><div style="display:flex;gap:24px;align-items:flex-end"><div style="flex:1"><div class="hint">Forecast (next months)</div><div class="bars"><div style="height:45%"></div><div style="height:60%"></div><div style="height:78%"></div><div style="height:92%"></div></div></div><div style="text-align:right"><div class="hint">Earned this month</div><div style="font-size:30px;font-weight:800">€ 9.400</div><div class="hint">€ 48.250 this year · 7 deals</div></div></div><div class="hint" style="margin-top:10px">Financial dashboard · <b>admins only</b>. Not part of the current build to connect (later).</div></div></div>`
+    : `<div class="card"><div class="hd"><h3>My bids &amp; offers</h3></div><div class="bd" style="padding:8px 18px">
+        ${rel('Sara &amp; Tom · Keizersgracht 12','Offers In · Bid #2','<button class="btn sm">Generate offer</button>')}
+        ${rel('A. Yilmaz · Keizersgracht 12','Offers Out · sent 2 days ago','<span class="pill amber">Awaiting</span>')}
+        <div class="hint" style="margin-top:8px">As an agent you handle the bids that come in · company financials are hidden.</div></div></div>`}
+    <div class="card"><div class="hd"><h3>Notifications</h3><span class="ref">point 19</span></div><div class="bd"><div style="display:flex;gap:9px;margin-bottom:11px"><span class="pill orange">●</span><div><b>New bid received</b><div class="hint">Lukas Norman · Keizersgracht 12</div></div></div><div style="display:flex;gap:9px;margin-bottom:11px"><span class="pill teal">●</span><div>New booking · facetime viewing<div class="hint">Today 16:00</div></div></div><div style="display:flex;gap:9px"><span class="pill green">●</span><div>Application complete · ready to generate offer<div class="hint">Sara &amp; Tom</div></div></div></div></div></div><div class="grid2"><div class="card"><div class="hd"><h3>Offers awaiting response</h3></div><div class="bd" style="padding:6px 18px 10px">
+      ${rel('A. Yilmaz · Keizersgracht 12','Sent 2 days ago · € 1.700','<span class="pill amber">Awaiting</span>')}
+      ${rel('R. Visser · Da Costakade 21','Sent 1 day ago · € 1.850','<span class="pill amber">Awaiting</span>')}</div></div><div class="card"><div class="hd"><h3>Upcoming viewings</h3></div><div class="bd" style="padding:6px 18px 10px">
+      ${rel('Lukas Norman · Keizersgracht 12','In-person','<b>Tue 14:00</b>')}
+      ${rel('Sara &amp; Tom · Prinsengracht 88','Facetime','<b>Today 16:00</b>')}</div></div></div>`;};
+const kpi=(n,l,d)=>`<div class="kpi"><div class="n">${n}</div><div class="l">${l}</div>${d?`<div class="delta">${d}</div>`:''}</div>`;
+
+/* APARTMENTS · full list, active on top, not active below. Click → record */
+views.apartments=()=>`
+  <h2 class="page">Apartments</h2><p class="sub">Grouped as a pipeline: viewing just went (past week) → waiting for offers → offers out → deals (won/failed). The <b>neighborhood</b> is auto-generated from the address, so you can quickly match an apartment to a candidate's preferred area. Apartments drop to <b>Not active</b> automatically 2 weeks after the viewing if nothing more happened, so they no longer need attention. Click an apartment for the full record.</p><div class="card"><div class="hd"><h3>Apartments</h3><span class="hint sp">12 items</span><button class="btn sm" style="margin-left:12px" onclick="show('create')">+ New apartment</button></div><div class="bd" style="padding:0"><table><tr><th>Apartment</th><th>Neighborhood</th><th>Viewing moment</th><th>Price</th><th>Realtor</th><th>Agent</th><th>Joined</th><th>Offers in</th><th>Offers out</th><th>Status</th></tr><tr><td class="grouphd" colspan="10">Active · viewing just went (past week)</td></tr>
+    ${arow('Keizersgracht 12','Grachtengordel','Tue 18 Jun, 14:00','€1.850','De Vries Makelaars','David','5','2','1','Active','green')}
+    ${arow('Govert Flinckstraat 357-H','De Pijp','Wed 19 Jun, 11:00','€2.600','·','Lander','2','2','0','Active','green')}
+    <tr><td class="grouphd" colspan="10">Waiting for offers</td></tr>
+    ${arow('Da Costakade 21','Oud-West','Thu 20 Jun, 16:30','€1.700','Grachtenhuis','Lander','4','0','0','Waiting','amber')}
+    <tr><td class="grouphd" colspan="10">Offers out</td></tr>
+    ${arow('Weteringschans 9','Centrum','Mon 17 Jun, 10:00','€1.950','De Vries Makelaars','Kaj','3','3','2','Offers out','teal')}
+    <tr><td class="grouphd" colspan="10">Deals · won / failed (mixed)</td></tr>
+    ${arow('Prinsengracht 88','Grachtengordel','Fri 14 Jun, 13:00','€2.100','·','Lander','6','4','1','Deal won','green')}
+    ${arow('Marnixstraat 220','Jordaan','Sat 15 Jun, 12:00','€1.600','Grachtenhuis','Lucas','2','1','1','Deal failed','red')}
+    <tr><td class="grouphd" colspan="10">Not active · viewing was 2+ weeks ago, nothing more to do (low priority)</td></tr>
+    ${arow('Vijzelstraat 5','Centrum','Wed 04 Jun, 10:00','€1.450','·','Lucas','2','0','0','Not active','grey')}
+    ${arow('Weteringschans 22','Centrum','Mon 02 Jun, 14:00','€1.500','·','Kaj','1','0','0','Not active','grey')}
+  </table></div></div>`;
+const arow=(n,c,v,p,realtor,agent,j,oi,oo,s,col)=>`<tr class="click" onclick="show('record')"><td><a style="color:var(--teal);font-weight:600">${n}</a></td><td>${c}</td><td>${v==='·'?'<span class="hint">·</span>':'<b>'+v+'</b>'}</td><td>${p}</td><td>${realtor==='·'?'<span class="hint">·</span>':realtor}</td><td>${agent==='·'?'<span class="hint">·</span>':'<b>'+agent+'</b>'}</td><td>${j>0?`<span class="pill green">${j}</span>`:'<span class="hint">0</span>'}</td><td>${oi}</td><td>${oo}</td><td><span class="pill ${col}">${s}</span></td></tr>`;
+
+/* DEALS THIS MONTH (won) */
+views.deals=()=>`
+  <h2 class="page">Deals this month <span class="ref">won</span></h2><p class="sub">Closed deals this month · added automatically when an offer is marked as a deal. Each one carries the closing agent, rent and contractual start date.</p><div class="kpis" style="grid-template-columns:repeat(3,1fr)">${kpi('7','Deals this month','+2 vs last month')}${kpi('€ 48.250','Earned this year','')}${kpi('2','Awaiting invoice','')}</div><div class="card"><div class="bd" style="padding:0"><table><tr><th>Apartment</th><th>Tenant</th><th>Closed by</th><th>Rent</th><th>Contractual start</th><th>Invoice</th></tr><tr><td><b>Prinsengracht 88</b></td><td>P. Janssen</td><td>Lander</td><td>€2.100</td><td>01-07-2026</td><td><button class="btn orange sm">Generate invoice</button></td></tr><tr><td><b>Singel 145</b></td><td>K. Mol</td><td>David</td><td>€1.750</td><td>15-07-2026</td><td><button class="btn orange sm">Generate invoice</button></td></tr><tr><td><b>Bilderdijkstraat 9</b></td><td>L. Smit</td><td>Kaj</td><td>€1.500</td><td>01-07-2026</td><td><span class="pill green">Invoiced</span></td></tr></table><div style="padding:12px 16px;color:var(--muted);font-size:12px">Invoice = David's template, rendered to PDF and emailed (like send-loi-email).</div></div></div>`;
+
+/* CREATE apartment (reached via New apartment) */
+views.create=()=>`
+  <div style="margin-bottom:10px"><a style="color:var(--teal);font-weight:600" onclick="show('apartments')">‹ Apartments</a></div><h2 class="page">New apartment</h2><p class="sub">Fill the fields, generate the meeting links, upload the PDF and send. After Send it appears under Active in the Apartments list.</p><div class="ann"><b>Flow (GitHub doc):</b> fill fields → <b>Generate Meeting Links</b> (<code>/api/admin/generate-link</code> · Cal.com schedule + in-person &amp; facetime) → upload one <b>brochure PDF</b> (max 20 MB → Supabase Storage) → <b>Send</b> via Zoko template <code>pdf_apartment_utility</code>. Full send automates once the Segment API is live.</div><div class="card"><div class="bd"><div class="row"><div><label class="f">Apartment Name</label><input class="inp" placeholder="Govert Flinckstraat 357-H"></div><div><label class="f">City</label><input class="inp" placeholder="Amsterdam"></div></div><div class="row3"><div><label class="f">Rental Price (€)</label><input class="inp" placeholder="2600" oninput="var d=document.getElementById('depo');if(d)d.value=(parseFloat(this.value)||0)*2"></div><div><label class="f">Deposit (€)</label><input class="inp" id="depo" placeholder="5200"><div class="hint">Auto · 2× rent · editable</div></div><div><label class="f">Bedrooms</label><input class="inp" placeholder="1"></div></div><div class="row3"><div><label class="f">Square Meters</label><input class="inp" placeholder="51"></div><div><label class="f">Zip Code</label><input class="inp" placeholder="1074 CD"></div><div><label class="f">Additional Notes</label><input class="inp"></div></div><div class="row"><div><label class="f">Collaboration (realtor)</label><div style="display:flex;gap:8px"><select class="inp"><option>None</option><option>De Vries Makelaars</option><option>Grachtenhuis</option></select><button class="btn ghost sm" style="white-space:nowrap" onclick="modalAddCollab()">+ New</button></div><div class="hint">Select one, or add a new realtor directly.</div></div><div><label class="f">Agent</label><select class="inp"><option>Lander</option><option>David</option><option>Kaj</option><option>Lucas</option></select></div></div><div class="row3"><div><label class="f">Duration (min)</label><select class="inp"><option>30</option><option>20</option></select></div><div><label class="f">Slot Duration (min)</label><select class="inp"><option>5</option><option>10</option></select><div class="hint">Sets NO. OF SLOTS</div></div><div><label class="f">Viewing date</label><input class="inp" type="datetime-local"><div class="hint">End auto-fills</div></div></div><div class="status-strip"><div class="step"><span class="num">1</span> Fill in</div><span class="arrow">›</span><div class="step"><span class="num">2</span> Generate Meeting Links</div><span class="arrow">›</span><div class="step"><span class="num">3</span> Upload PDF</div><span class="arrow">›</span><div class="step"><span class="num">4</span> Send</div></div><label class="f">Brochure PDF</label><div class="drop"><b>Upload Files</b> · one PDF with extra info <span style="margin-left:auto;color:#bbb">max 20 MB</span></div><label class="f" style="margin-top:16px">Segment to send to (Zoko audience)</label><div class="hint" style="margin-bottom:6px">Auto-matched from price + bedrooms · pick another if needed. Each segment shows how many people are in it (pulled from Zoko). Send broadcasts the apartment + PDF to the selected segment.</div>
+    ${segPicker('Customer €2500 · €3000 & 1 Bedroom')}
+    <div style="display:flex;gap:10px;margin-top:16px"><button class="btn ghost" id="mlbtn" onclick="meetingLinksBtn()">Generate Meeting Links</button><button class="btn">Save</button><button class="btn orange" title="Sends the apartment + PDF to the selected segment (live once the Segment API is connected)" onclick="toast('Sent to segment · 412 people (demo)')">Send</button></div></div></div>`;
+
+/* APARTMENT RECORD · sections on top, Information below */
+views.record=()=>`
+  <div style="margin-bottom:10px"><a style="color:var(--teal);font-weight:600" onclick="show('apartments')">‹ Apartments</a></div><div class="rechead"><div class="ico">▤</div><div><div class="t">Apartment</div><div class="h">Keizersgracht 12</div><div class="hint">Viewing · Tue 18 Jun 2026, 14:00</div></div><div class="acts"><button class="btn ghost" id="vlbtn" onclick="viewLinkBtn()">Copy viewing link</button><button class="btn orange">Send via WhatsApp</button><button class="btn ghost sm">Reschedule</button></div></div><div class="subtabs"><a class="subtab" data-t="scheduled" onclick="recTab('scheduled')">Viewing Scheduled <span class="pill grey">3</span></a><a class="subtab" data-t="canceled" onclick="recTab('canceled')">Viewing Canceled <span class="pill red">2</span></a><a class="subtab" data-t="making" onclick="recTab('making')">People Making an Offer <span class="pill amber">2</span></a><a class="subtab" data-t="offersin" onclick="recTab('offersin')">Offers In <span class="pill green">2</span></a><a class="subtab" data-t="offersout" onclick="recTab('offersout')">Offers Out <span class="pill teal">2</span></a></div><div id="recsec"></div><div class="card"><div class="hd"><h3>Information</h3></div><div class="fields"><div>${f('Apartment Name','Keizersgracht 12')}${f('Square Meters','68,00')}${f('Rental Price','€1.850')}${f('Deposit','€3.700,00')}${f('Bedrooms','2')}${f('Neighborhood','Grachtengordel (auto)')}${f('City','Amsterdam')}${f('Zip Code','1015 CW')}${f('Collaboration','De Vries Makelaars')}${f('Agents','David')}</div><div>${f('Owner','David Wachem')}${f('Status','<span class="pill teal">Active</span>')}${f('Duration (in Min)','30')}${f('Slot Duration (in Mins)','5')}${f('NO. OF SLOTS','6')}${f('Viewing date','18-06-2026 14:00')}${f('Viewing ends','18-06-2026 14:30')}${f('Sent to segment','Customer €1500 · €2000 &amp; 2 Bedroom (1.951) · sent 18 Jun')}</div></div></div><div class="card"><div class="hd"><h3>Apartment Brochure (PDF)</h3><span class="hint sp">one PDF · shared via pdf_apartment_utility</span></div><div class="bd"><div class="drop"><b>Upload Files</b> · one PDF <span style="margin-left:auto;color:#bbb">max 20 MB</span></div></div></div><div class="card"><div class="hd"><h3>System Information</h3></div><div class="fields"><div>${f('Created By','David Wachem, 15-06-2026')}</div><div>${f('Last Modified By','David Wachem, 16-06-2026')}</div></div></div>`;
+const f=(l,v)=>`<div class="fr"><div class="lab">${l}</div><div class="val">${v}</div><div class="pen"></div></div>`;
+const band=(title,count,rows)=>`<div class="card" style="margin-bottom:0"><div class="hd" style="padding:11px 14px"><h3 style="font-size:13px">${title}</h3><span class="pill grey sp">${count}</span></div><div class="bd" style="padding:6px 14px 10px">${rows.join('')}</div></div>`;
+const rel=(nm,meta,right)=>`<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #f1f4f4"><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px">${nm}</div><div class="hint">${meta}</div></div><div style="flex:none">${right}</div></div>`;
+const secCard=(title,sub,rows)=>`<div class="card"><div class="hd"><h3>${title}</h3>${sub?`<span class="hint sp">${sub}</span>`:''}</div><div class="bd" style="padding:6px 18px 10px">${rows.join('')}</div></div>`;
+const leadLink=(name,from)=>`<a onclick="recLead('${name.replace(/&amp;/g,'&')}','${from}')" style="color:var(--teal);font-weight:600;cursor:pointer">${name}</a>`;
+const RECSEC={
+  scheduled:secCard('People Joining Viewing','',[
+    rel('Lukas Norman','In-person · Tue 14:00','<span class="pill green">Joined</span>'),
+    rel('Sara &amp; Tom','Facetime · Tue 14:30','<span class="pill green">Joined</span>'),
+    rel('A. Yilmaz','In-person · Wed 11:00','<span class="pill green">Joined</span>')]),
+  canceled:secCard('Viewing Canceled / Rescheduled','',[
+    rel('J. de Vries','In-person · Mon 11:00','<span class="pill red">Canceled</span>'),
+    rel('R. Visser','Moved to Thu 10:00','<span class="pill amber">Rescheduled</span>')]),
+  making:secCard('People Making an Offer','busy · not submitted yet · open the pot via the name or Adjust Offer',[
+    rel(leadLink('Lukas Norman','making'),'Started · <span class="dot d-amber"></span><b>Missing:</b> Proof of enrollment, Bank statements','<span style="display:flex;gap:6px;align-items:center"><span class="pill amber">In progress</span><button class="btn ghost sm" onclick="recLead(\'Lukas Norman\',\'making\',true)">Adjust Offer</button></span>'),
+    rel(leadLink('M. Bakker','making'),'Started · <span class="dot d-amber"></span><b>Missing:</b> Passport, Payslips, Employment contract · most documents','<span style="display:flex;gap:6px;align-items:center"><span class="pill amber">Most missing</span><button class="btn ghost sm" onclick="recLead(\'M. Bakker\',\'making\',true)">Adjust Offer</button></span>')]),
+  offersin:secCard('Offers In','bid submitted · Generate offer opens the draft to review · Adjust Offer to edit',[
+    rel(leadLink('Sara &amp; Tom','offersin'),'Bid #2 · came in Mon 19 Jun, 10:24 · <span class="dot d-green"></span><b>All documents in</b>','<span style="display:flex;gap:6px"><button class="btn ghost sm" onclick="recLead(\'Sara &amp; Tom\',\'offersin\',true)">Adjust Offer</button><button class="btn sm" onclick="recLead(\'Sara &amp; Tom\',\'offersin\')">Generate offer</button></span>'),
+    rel(leadLink('A. de Wit','offersin'),'Bid #1 · came in Mon 19 Jun, 16:08 · <span class="dot d-green"></span><b>All documents in</b>','<span style="display:flex;gap:6px"><button class="btn ghost sm" onclick="recLead(\'A. de Wit\',\'offersin\',true)">Adjust Offer</button><button class="btn sm" onclick="recLead(\'A. de Wit\',\'offersin\')">Generate offer</button></span>')]),
+  offersout:secCard('Offers Out','offer sent · see what they bid · mark deal / no deal',[
+    rel(leadLink('A. Yilmaz','offersout'),'Sent Tue 20 Jun, 09:10 · Normal · <b>bid € 1.700</b> · start date 01-08-2026 · awaiting','<span style="display:flex;gap:5px"><button class="btn sm">Deal</button><button class="btn ghost sm">No deal</button></span>'),
+    rel(leadLink('R. Visser','offersout'),'Sent Mon 19 Jun, 15:40 · Hausing · <b>bid € 1.850</b> · start date 15-08-2026 · awaiting','<span style="display:flex;gap:5px"><button class="btn sm">Deal</button><button class="btn ghost sm">No deal</button></span>')]),
+};
+function recTab(t){document.querySelectorAll('.subtab').forEach(e=>e.classList.toggle('active', e.dataset.t===t));document.getElementById('recsec').innerHTML=RECSEC[t]||'';}
+
+/* LEAD / APPLICATION DETAIL · the "server": all people + their documents */
+const fld=(l,v)=>`<div style="display:flex;gap:10px;align-items:center;padding:5px 0"><div style="width:150px;color:var(--muted);font-size:12.5px">${l}</div><input class="potfld" readonly value="${v}"></div>`;
+const docrow=(nm,st)=> st==='missing'
+  ? `<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #f1f4f4"><span class="dot d-amber"></span><span style="flex:1;font-size:13px;color:#8a6f6c">${nm}</span><span class="pill amber">Missing</span><button class="btn ghost sm editonly" onclick="toast('Upload ${nm} (demo)')">Upload</button></div>`
+  : `<details style="border-bottom:1px solid #f1f4f4"><summary style="display:flex;align-items:center;gap:8px;padding:9px 0;cursor:pointer;list-style:none"><span class="dot d-${st}"></span><span style="flex:1;font-size:13px">${nm}</span><span class="hint">▾ preview</span><button class="btn ghost sm" onclick="event.stopPropagation();event.preventDefault();toast('Downloading ${nm}')"></button><button class="btn ghost sm editonly" style="color:var(--red)" title="Remove" onclick="event.stopPropagation();event.preventDefault();this.closest('details').remove();toast('Removed ${nm}')"></button></summary><div style="padding:6px 0 12px 17px;display:grid;grid-template-columns:1.3fr 1fr;gap:10px"><div style="background:#fff;border:1px solid var(--line);border-radius:8px;height:120px;padding:11px;font-size:10px;color:#b9c2c0;overflow:hidden;line-height:1.8">PDF preview · ${nm}<br>──────────────<br>────────<br>───────────────<br>─────────<br>────────────</div><div style="background:#f6f8f8;border:1px solid var(--line);border-radius:8px;padding:11px;font-size:12px"><b>AI read</b><div class="hint" style="margin-top:5px">Matched ✓ name, amount &amp; date against the bid. Open to verify the document yourself.</div></div></div></details>`;
+const reqdocs=(names,inc)=>names.map((n,i)=>docrow(n, inc?(i===0?'amber':'missing'):'green'));
+/* Required documents per work status (from src/config/documentRequirements.js) */
+const REQ={
+  werknemer:['ID Document (passport / ID)','Employment contract or employer statement','Salary slips (last 3)'],
+  student:['ID Document (passport / ID)','Proof of study enrollment'],
+  ondernemer:['ID Document (passport / ID)','Annual statements (last 1-2 years)'],
+  pensioen:['ID Document (passport / ID)','Pension proof','Bank statement (pension deposit)'],
+};
+const person=(nm,role,cls,fields,docs)=>`<div class="grp"><div class="gh"><b>${nm}</b><span class="role ${cls}">${role}</span><span style="margin-left:auto;display:flex;gap:6px"><button class="btn ghost sm editonly">+ Add doc</button><button class="btn ghost sm">ZIP</button></span></div><div class="gb">${fields.length?fields.map(x=>fld(x[0],x[1])).join('')+'<div class="hint" style="margin:8px 0 4px">Documents</div>':''}${docs.join('')}</div></div>`;
+const fromLabel={making:'People Making an Offer',offersin:'Offers In',offersout:'Offers Out'};
+const APPDETAIL=(name,from)=>`
+  <div style="margin-bottom:10px"><a style="color:var(--teal);font-weight:600;cursor:pointer" onclick="recTab('${from}')">‹ Back to ${fromLabel[from]||'list'}</a></div><div class="card"><div class="hd"><h3>Application · ${name}</h3><span class="ref">group / "server" · point 6</span><button class="btn ghost sm" id="adjustBtn" style="margin-left:auto" onclick="toggleAdjust()">Adjust Offer</button></div><div class="bd"><div id="pot"><div class="hint" style="margin-bottom:10px">Viewing attended · Tue 18 Jun 2026, 14:00 · read-only until you click <b>Adjust Offer</b> (top-right)</div>
+    ${from==='making'
+      ? '<div style="background:var(--amber-l);border:1px solid #f3dca6;border-radius:9px;padding:9px 12px;font-size:12.5px;color:#8a5a12;margin-bottom:14px"><span class="dot d-amber"></span><b>Several required documents are still missing</b> · see the orange "Missing" items per person below. Each person shows their full required-document checklist.</div>'
+      : '<div style="background:var(--green-l);border:1px solid #c6ecd3;border-radius:9px;padding:9px 12px;font-size:12.5px;color:#157a3f;margin-bottom:14px"><span class="dot d-green"></span><b>All required documents are in.</b></div>'}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--teal-l);border:1px solid #cfe9e5;border-radius:10px;padding:10px 13px;margin-bottom:14px"><b style="font-size:13px">Generate offer:</b><button class="btn sm">Normal</button><button class="btn ghost sm">Hausing</button><button class="btn ghost sm">Grand relocation</button><span class="hint" style="flex-basis:100%;margin-top:4px">Opens the draft for review · AI writes it in Dutch, you check it over before sending. Default type from the realtor. Later via an MCP server to Chesney · not for Abi yet.</span></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><button class="btn ghost sm">Download all (ZIP)</button><button class="btn ghost sm editonly">+ Add document</button></div><div class="grp"><div class="gh"><b>Bid details</b><span class="hint">· exactly as submitted on /aanvraag</span></div><div class="gb">
+      ${fld('Offered rent (€)','1.900')}${fld('Deposit (€)','3.800')}${fld('Start date','01-08-2026')}${fld('Candidate type','2 working people')}${fld('Total income (€/mo)','6.400')}
+      <label class="f" style="margin-top:6px">Motivation</label><textarea class="potfld" readonly>We love the location and would like to make this our home.</textarea></div></div>
+
+    ${person('Bid &amp; contract','Bid','t',[],reqdocs(['Signed Letter of Intent','Generated Offer (PDF)'],from==='making'))}
+    ${person('Sara Jansen','Main Tenant','t',[['Date of birth','12-03-1994'],['Work status','Employee'],['Employer','ING Bank'],['Income (€/mo)','3.400']],reqdocs(REQ.werknemer,from==='making'))}
+    ${person('Tom de Boer','Co-Tenant','t',[['Date of birth','05-07-1993'],['Work status','Entrepreneur'],['Income (€/mo)','3.000']],reqdocs(REQ.ondernemer,from==='making'))}
+    ${person('Kristine Hambrouck','Guarantor','g',[['Relationship','Mother'],['Work status','Employee'],['Employer','UNHCR'],['Contract','Indefinite'],['Income (€/yr)','USD 315.917']],reqdocs(REQ.werknemer,from==='making'))}
+    <div class="hint" style="margin-top:6px">Each person is a separate box (Bid &amp; contract, Main Tenant, Co-Tenant, Guarantor) with their own fields and documents. Click <b>Adjust Offer</b> (top-right) to edit fields and remove documents · otherwise it stays read-only. Each document expands for a preview to check it against what the AI read.</div></div></div></div>`;
+function recLead(name,from,edit){document.getElementById('recsec').innerHTML=APPDETAIL(name,from);if(edit)setAdjust(true);}
+function setAdjust(on){const p=document.getElementById('pot');if(!p)return;p.classList.toggle('editing',on);p.querySelectorAll('.potfld').forEach(i=>i.readOnly=!on);const b=document.getElementById('adjustBtn');if(b)b.textContent=on?'✓ Done':'Adjust Offer';}
+function toggleAdjust(){const p=document.getElementById('pot');setAdjust(!p.classList.contains('editing'));}
+
+/* LEADS · everyone in Zoko */
+views.leads=()=>`
+  <h2 class="page">Marketing <span class="ref">all leads in Zoko</span></h2><p class="sub">Everyone in the system · created from the first WhatsApp message (Zoko). This is the marketing audience; <b>Candidates</b> are the subset who booked a viewing. From here you reach people through segment broadcasts.</p><div class="card"><div class="hd"><h3>Leads in Zoko</h3><span class="hint sp">1.284 people in Zoko</span></div><div class="bd" style="padding:0"><table><tr><th>Name</th><th>Phone</th><th>Tags / segments</th><th>Stage</th><th></th></tr><tr><td><b>Lukas Norman</b></td><td>+31 6 1234 5678</td><td><span class="tag">2 bed</span><span class="tag">Centrum</span></td><td><span class="pill teal">Candidate · viewing booked</span></td><td><a class="chat">Open chat</a></td></tr><tr><td><b>Sara &amp; Tom</b></td><td>+31 6 9876 5432</td><td><span class="tag">2 bed</span><span class="tag">Oost</span></td><td><span class="pill teal">Candidate · viewing booked</span></td><td><a class="chat">Open chat</a></td></tr><tr><td><b>Emma de Groot</b></td><td>+31 6 4444 7788</td><td><span class="tag">Studio</span><span class="tag">De Pijp</span></td><td><span class="pill grey">Lead · no viewing yet</span></td><td><a class="chat">Open chat</a></td></tr><tr><td><b>Mohammed Aziz</b></td><td>+31 6 2211 3344</td><td><span class="tag">3 bed</span></td><td><span class="pill grey">Lead · no viewing yet</span></td><td><a class="chat">Open chat</a></td></tr><tr><td><b>+31 6 7788 9900</b></td><td>+31 6 7788 9900</td><td><span class="hint">no tags yet</span></td><td><span class="pill amber">New · just messaged</span></td><td><a class="chat">Open chat</a></td></tr></table></div></div>`;
+
+/* SEO */
+views.seo=()=>`
+  <h2 class="page">SEO <span class="ref">rentals website</span></h2><p class="sub">Search rankings, tracked keywords and pages for the rentals website. Placeholder for now · wired up by the developer later.</p>
+  <div class="grid2-wide">
+    <div class="card"><div class="hd"><h3>Tracked keywords</h3></div><div class="bd" style="padding:0"><table>
+      <tr><th>Keyword</th><th>Position</th><th>Trend (30d)</th></tr>
+      <tr><td>huurwoning amsterdam</td><td>4</td><td><span class="pill green">+2</span></td></tr>
+      <tr><td>apartment for rent amsterdam</td><td>7</td><td><span class="pill grey">0</span></td></tr>
+      <tr><td>woning huren de pijp</td><td>11</td><td><span class="pill green">+5</span></td></tr>
+      <tr><td>2 bedroom apartment amsterdam</td><td>14</td><td><span class="pill red">-3</span></td></tr>
+    </table></div></div>
+    <div class="card"><div class="hd"><h3>Overview</h3></div><div class="bd">
+      <div class="fr"><div class="lab">Indexed pages</div><div class="val">128</div></div>
+      <div class="fr"><div class="lab">Organic clicks (30d)</div><div class="val">3.420</div></div>
+      <div class="fr"><div class="lab">Avg. position</div><div class="val">9.2</div></div>
+      <div class="fr"><div class="lab">Top page</div><div class="val">/nl/appartementen</div></div>
+    </div></div>
+  </div>`;
+
+/* CANDIDATES */
+views.candidates=()=>`
+  <h2 class="page">Candidates <span class="ref">booked a viewing</span></h2><p class="sub">Candidates are the people who have <b>scheduled a viewing</b>. (Everyone in the system lives under <b>Marketing</b>.) Each account: phone + name from Zoko, then completed with email + all /aanvraag info, tags/segments, viewed apartments and a one-click chat link.</p><div class="card"><div class="bd" style="padding:0"><table><tr><th>Name</th><th>Contact</th><th>Tags / segments</th><th>Viewing</th><th>Documents</th><th></th></tr><tr class="click" onclick="openCandidate('Lukas Norman')"><td><a style="color:var(--teal);font-weight:600">Lukas Norman</a></td><td>+31 6 1234 5678</td><td><span class="tag">2 bed</span><span class="tag">€1500-2000</span><span class="tag">Centrum</span></td><td>Keizersgracht 12</td><td><span class="pill amber"><span class="dot d-amber"></span>Started</span></td><td><a class="chat">Open chat</a></td></tr><tr class="click" onclick="openCandidate('Sara &amp; Tom')"><td><a style="color:var(--teal);font-weight:600">Sara &amp; Tom</a></td><td>+31 6 9876 5432</td><td><span class="tag">2 bed</span><span class="tag">Oost</span></td><td>Keizersgracht 12</td><td><span class="pill green"><span class="dot d-green"></span>Finished</span></td><td><a class="chat">Open chat</a></td></tr><tr class="click" onclick="openCandidate('J. de Vries')"><td><a style="color:var(--teal);font-weight:600">J. de Vries</a></td><td>+31 6 5555 1212</td><td><span class="tag">Studio</span></td><td><span class="pill red">Canceled</span></td><td><span class="pill amber"><span class="dot d-amber"></span>Not started</span></td><td><a class="chat">Open chat</a></td></tr></table></div></div>`;
+function openCandidate(name){document.getElementById('content').innerHTML=candHtml(name);document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.view==='candidates'));window.scrollTo(0,0);}
+const candHtml=(name)=>`
+  <div style="margin-bottom:10px"><a style="color:var(--teal);font-weight:600;cursor:pointer" onclick="show('candidates')">‹ Candidates</a></div><div class="rechead"><div class="ico"></div><div><div class="t">Candidate</div><div class="h">${name}</div><div class="hint">+31 6 1234 5678 · lukas@example.com</div></div><div class="acts"><button class="btn ghost">Open chat</button></div></div><div class="grid2-wide"><div class="card"><div class="hd"><h3>Viewings signed up for</h3><span class="hint sp">the viewings they booked themselves</span></div><div class="bd" style="padding:0"><table><tr><th>Apartment</th><th>Neighborhood</th><th>Viewing moment</th><th>Type</th><th>Status</th></tr><tr><td><a style="color:var(--teal);font-weight:600" onclick="show('record')">Keizersgracht 12</a></td><td>Grachtengordel</td><td>Tue 18 Jun, 14:00</td><td>In-person</td><td><span class="pill green">Joined</span></td></tr><tr><td><a style="color:var(--teal);font-weight:600" onclick="show('record')">Govert Flinckstraat 357-H</a></td><td>De Pijp</td><td>Wed 19 Jun, 11:00</td><td>FaceTime</td><td><span class="pill teal">Upcoming</span></td></tr><tr><td><a style="color:var(--teal);font-weight:600" onclick="show('record')">Da Costakade 21</a></td><td>Oud-West</td><td>Mon 11 Jun, 10:00</td><td>In-person</td><td><span class="pill red">Canceled</span></td></tr></table></div></div><div class="card"><div class="hd"><h3>Profile</h3></div><div class="bd"><div class="fr"><div class="lab">Phone</div><div class="val">+31 6 1234 5678</div></div><div class="fr"><div class="lab">Email</div><div class="val">lukas@example.com</div></div><div class="fr"><div class="lab">Tags / segments</div><div class="val"><span class="tag">2 bed</span><span class="tag">€1500-2000</span><span class="tag">Centrum</span></div></div><div class="fr"><div class="lab">Source</div><div class="val">Zoko · WhatsApp</div></div></div></div></div>`;
+
+/* AGENTS */
+views.agents=()=>`
+  <h2 class="page">Agents <span class="ref">section 4</span></h2><p class="sub">One agent per apartment; the assigned agent's number is shared with the viewing candidate.</p><div class="card"><div class="bd" style="padding:0"><table><tr><th>Name</th><th>Phone</th><th>Email</th><th>Apartments</th></tr><tr><td><b>Lander</b></td><td>+31 6 …</td><td>lander@apartmenthub.nl</td><td>3</td></tr><tr><td><b>David</b></td><td>+31 6 8322 1189</td><td>david@apartmenthub.nl</td><td>5</td></tr><tr><td><b>Kaj</b></td><td>+31 6 …</td><td>kaj@apartmenthub.nl</td><td>2</td></tr><tr><td><b>Lucas</b></td><td>+31 6 …</td><td>lucas@apartmenthub.nl</td><td>2</td></tr></table></div></div>`;
+
+/* COLLABORATIONS */
+views.collab=()=>`
+  <h2 class="page">Collaborations <span class="ref">point 9</span></h2><p class="sub">External realtors, one per apartment. Each realtor maps to a default offer type.</p><div class="grid2"><div class="card"><div class="hd"><h3>Add collaboration</h3></div><div class="bd"><label class="f">Office</label><input class="inp"><label class="f">Contact person name</label><input class="inp"><div class="row"><div><label class="f">Phone number</label><input class="inp"></div><div><label class="f">Email</label><input class="inp"></div></div><label class="f">Default offer type</label><select class="inp"><option>Normal</option><option>Hausing</option><option>Grand relocation</option></select><button class="btn" style="margin-top:16px">Save</button></div></div><div class="card"><div class="bd" style="padding:0"><table><tr><th>Office</th><th>Contact</th><th>Offer type</th><th>Listings</th></tr><tr><td>De Vries Makelaars</td><td>Peter de Vries</td><td><span class="pill grey">Hausing</span></td><td>4</td></tr><tr><td>Grachtenhuis</td><td>Nora Smit</td><td><span class="pill grey">Normal</span></td><td>2</td></tr></table></div></div></div>`;
+
+/* TEAM */
+views.team=()=>`
+  <h2 class="page">Team <span class="ref">point 6 · admin</span></h2><p class="sub">We add employees ourselves and manage access. Roles: Super Admin (David), Admin, Agent · stored in <code>crm_users</code> (role + permissions, RLS per role). Per-user login via Supabase Auth, separate from the client WhatsApp/OTP login.</p><div class="grid2-wide"><div class="card"><div class="hd"><h3>Add employee</h3></div><div class="bd"><label class="f">Name</label><input class="inp"><div class="row"><div><label class="f">Email</label><input class="inp"></div><div><label class="f">Phone</label><input class="inp"></div></div><div class="row"><div><label class="f">Start date</label><input class="inp" type="date"></div><div><label class="f">Role</label><select class="inp"><option>Agent</option><option>Admin</option><option>Super Admin</option></select></div></div><label class="f">Access</label><div class="perm"><input type="checkbox" checked> Apartments</div><div class="perm"><input type="checkbox" checked> Candidates &amp; viewings</div><div class="perm"><input type="checkbox"> Offers</div><div class="perm"><input type="checkbox"> Team (admin)</div><button class="btn" style="margin-top:16px">Add employee</button></div></div><div class="card"><div class="bd" style="padding:0"><table><tr><th>Name</th><th>Role</th><th>Since</th></tr><tr><td><b>David</b></td><td><span class="pill teal">Super Admin</span></td><td>2025</td></tr><tr><td><b>Lander</b></td><td><span class="pill grey">Agent</span></td><td>Jun 2026</td></tr><tr><td><b>Nick</b></td><td><span class="pill grey">Agent · Utrecht</span></td><td>Jun 2026</td></tr></table></div></div></div>`;
+
+/* router */
+function show(v){
+  document.getElementById('content').innerHTML=(views[v]||views.dashboard)();
+  const activeTab = (v==='record'||v==='create') ? 'apartments' : v;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.view===activeTab));
+  if(v==='record') recTab('scheduled');
+  window.scrollTo(0,0);
+}
+const tabsEl=document.getElementById('tabs');
+TABS.forEach(t=>{const a=document.createElement('a');a.className='tab';a.dataset.view=t.id;a.textContent=t.label;a.onclick=()=>show(t.id);tabsEl.appendChild(a);});
+
+/* ---- interactive buttons: modals + toast ---- */
+function openModal(h){document.getElementById('modalroot').innerHTML=`<div class="modal-bg" onclick="if(event.target===this)closeModal()">${h}</div>`;}
+function closeModal(){document.getElementById('modalroot').innerHTML='';}
+let _toastT;function toast(m){const e=document.getElementById('toast');e.textContent=m;e.classList.add('show');clearTimeout(_toastT);_toastT=setTimeout(()=>e.classList.remove('show'),2400);}
+const modalShell=(title,body,footer)=>`<div class="modal"><div class="mh"><h3>${title}</h3><span class="x" onclick="closeModal()">×</span></div><div class="mb">${body}</div>${footer?`<div class="mf">${footer}</div>`:''}</div>`;
+
+function modalLinks(){openModal(modalShell('Generate Meeting Links',
+  `<p>Created the Cal.com schedule and event types for <b>Keizersgracht 12</b> (via <code>/api/admin/generate-link</code>).</p><div class="kv"><span class="k">Duration</span><span>30 min</span></div><div class="kv"><span class="k">Slot duration</span><span>5 min</span></div><div class="kv"><span class="k">Number of slots</span><span>6</span></div><div class="kv"><span class="k">Start</span><span>18 Jun 2026, 14:00</span></div><div class="kv"><span class="k">End</span><span>18 Jun 2026, 14:30</span></div><div class="kv"><span class="k">Slots</span><span>14:00 · 14:05 · 14:10 · 14:15 · 14:20 · 14:25</span></div><p style="margin:12px 0 4px"><b>In-Person Meet Link</b></p><div class="linkbox">cal.com/apartmenthub/keizersgracht-12-in-person</div><p style="margin:0 0 4px"><b>Facetime (Virtual) Meet Link</b></p><div class="linkbox">cal.com/apartmenthub/keizersgracht-12-facetime</div><p class="hint">Stored on the apartment in <code>slot_dates</code> / <code>booking_details</code>. Links are city-aware.</p>`,
+  `<button class="btn ghost" onclick="closeModal()">Close</button><button class="btn" onclick="closeModal();markGenerated();toast('Meeting links saved')">Save links</button>`));}
+function markGenerated(){const b=document.getElementById('mlbtn');if(b){b.textContent='Create New Meeting Link';b.dataset.gen='1';}}
+function meetingLinksBtn(){const b=document.getElementById('mlbtn');if(b&&b.dataset.gen)modalNewSlot();else modalLinks();}
+function modalNewSlot(){openModal(modalShell('Create New Meeting Link · one extra slot',
+  `<p>This adds <b>exactly one extra slot</b> to the viewing (it does not regenerate the schedule). The date and time are <b>pre-filled with the apartment's existing viewing time</b>; the new slot may <b>overlap</b> with other slots · that is fine. You can also change it manually to a new viewing date.</p><label class="f">Extra slot · date &amp; time</label><input class="inp" type="datetime-local" value="2026-06-18T14:00"><div class="hint">Auto-filled to the current viewing time · overlaps allowed · editable. Length 5 min (same as the apartment's slot length). Appended to <code>slot_dates</code>. One slot per click.</div>`,
+  `<button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn" onclick="closeModal();toast('One extra slot added at the viewing time')">Create one slot</button>`));}
+function viewLinkBtn(){ modalCopyLink(); }
+function copyLink(which){ toast(which+' viewing link copied'); }
+function modalCopyLink(){openModal(modalShell('Copy viewing link',
+  `<p>Pick which link to copy and share with the candidate · or add a new slot for the same viewing:</p><div class="grp"><div class="gh"><b>In-person viewing</b><button class="btn sm" style="margin-left:auto" onclick="copyLink('In-person')">Copy</button></div><div class="gb"><div class="linkbox">cal.com/apartmenthub/keizersgracht-12-in-person</div></div></div><div class="grp"><div class="gh"><b>FaceTime viewing</b><button class="btn sm" style="margin-left:auto" onclick="copyLink('FaceTime')">Copy</button></div><div class="gb"><div class="linkbox">cal.com/apartmenthub/keizersgracht-12-facetime</div></div></div><p class="hint"><b>2 of 6 slots free.</b> Need more room? Use <b>Create New Meeting Link</b> to add one extra slot to this same viewing · you can do that any time.</p>`,
+  `<button class="btn ghost" onclick="closeModal()">Close</button><button class="btn" onclick="closeModal();modalNewSlot()">Create New Meeting Link</button>`));}
+function modalAddCollab(){openModal(modalShell('Add new collaboration (realtor)',
+  `<p>Add a realtor on the spot · it is added to the list and selected for this apartment.</p><label class="f">Office</label><input class="inp"><label class="f">Contact person name</label><input class="inp"><div class="row"><div><label class="f">Phone number</label><input class="inp"></div><div><label class="f">Email</label><input class="inp"></div></div><label class="f">Default offer type</label><select class="inp"><option>Normal</option><option>Hausing</option><option>Grand relocation</option></select>`,
+  `<button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn" onclick="closeModal();toast('Realtor added and selected (demo)')">Add &amp; select</button>`));}
+function modalUpload(){openModal(modalShell('Upload documents',
+  `<div class="drop" style="flex-direction:column;text-align:center;padding:24px"><b>Drag &amp; drop files here</b><div class="hint">or click to browse · PDF, JPG, PNG</div></div><div style="text-align:center;margin:10px 0;color:var(--muted);font-size:12px">· or ·</div><div class="drop" style="flex-direction:column;text-align:center;padding:18px"><b>Upload a ZIP</b><div class="hint">we unpack it and sort the documents per person</div></div>`,
+  `<button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn" onclick="closeModal();toast('Documents uploaded (demo)')">Upload</button>`));}
+
+const SEGMENTS=[
+  ['Customer €1500 · €2000 & 1 Bedroom','1.204'],['Customer €1500 · €2000 & 2 Bedroom','1.951'],['Customer €1500 · €2000 & 3 Bedroom','785'],
+  ['Customer €2000 · €2500 & 1 Bedroom','608'],['Customer €2000 · €2500 & 2 Bedroom','1.377'],['Customer €2000 · €2500 & 3 Bedroom','512'],
+  ['Customer €2500 · €3000 & 1 Bedroom','412'],['Customer €2500 · €3000 & 2 Bedroom','660'],['Customer €2500 · €3000 & 3 Bedroom','624'],
+  ['Customer €3000 · €3500 & 1 Bedroom','221'],['Customer €3000 · €3500 & 2 Bedroom','340'],['Customer €3000 · €3500 & 3 Bedroom','298'],
+  ['Customer €3500 · €4000 & 2 Bedroom','176'],['Customer €3500 · €4000 & 3 Bedroom','139'],['Customer €4000 · €4500 & 3 Bedroom','86'],
+];
+const segRow=(name,count,idx,checked)=>`<label class="segrow" style="display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid #f1f4f4;cursor:pointer"><input type="checkbox" ${checked?'checked':''} data-idx="${idx}" onchange="segSync(this)" style="accent-color:var(--teal)"><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12.5px">${name}</div><div class="hint" style="font-size:11px">last updated today</div></div><span class="pill grey" style="min-width:48px;justify-content:center">${count}</span></label>`;
+const shortSeg=(name)=>name.replace('Customer ','').replace(' & ',' · ').replace(' Bedroom','BR');
+const chipHtml=(name,count,idx)=>`<span class="tag" style="background:var(--teal-l);color:var(--teal-d);display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:3px 9px;white-space:nowrap"><b>${shortSeg(name)}</b> ${count} <span class="segx" data-idx="${idx}" onclick="uncheckSeg(this)" style="cursor:pointer;font-weight:800">×</span></span>`;
+function segPicker(matchName){
+  const mi=SEGMENTS.findIndex(s=>s[0]===matchName);
+  const chipsInit=mi>=0?chipHtml(SEGMENTS[mi][0],SEGMENTS[mi][1],mi):'<span class="hint">No segments selected yet · click the search bar to add.</span>';
+  return `<div class="segpick" style="border:2px solid var(--teal);border-radius:12px;overflow:hidden;max-width:640px;box-shadow:var(--shadow)"><div style="display:flex;align-items:center;gap:8px;padding:10px 13px;background:var(--teal);color:#fff"><b style="font-size:13px">Send to segments</b><span class="segcount" style="margin-left:auto;background:#fff;color:var(--teal-d);border-radius:20px;padding:1px 10px;font-weight:700;font-size:12px">${mi>=0?1:0} selected</span></div><div style="display:flex;align-items:flex-start;gap:10px;padding:9px 12px;background:#fafcfc"><div style="display:flex;align-items:center;gap:7px;flex:none;width:230px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:7px 9px"><span style="color:var(--muted)">⌕</span><input style="border:none;outline:none;background:transparent;flex:1;min-width:0;font-size:13px;font-family:inherit" placeholder="Search segments" onfocus="segOpen(this)" oninput="filterSeg(this)"></div><div class="segchips" style="display:flex;flex-wrap:wrap;gap:6px;flex:1;align-items:center;min-height:34px">${chipsInit}</div></div><div class="segcollapse" style="display:none;border-top:1px solid var(--line)"><div class="seglist" style="max-height:200px;overflow-y:auto">${SEGMENTS.map((s,i)=>segRow(s[0],s[1],i,i===mi)).join('')}</div><div style="padding:8px 12px;border-top:1px solid var(--line);background:#fafcfc;font-size:11px;color:var(--muted)">Standard exclusions: <b>OPT_OUT · ARCHIVED · Almere · Rotterdam</b>. <label style="color:var(--ink)"><input type="checkbox" style="accent-color:var(--teal)"> exclude <b>Students</b></label>. Max 1 apartment per segment per day.</div></div></div>`;
+}
+function segOpen(inp){inp.closest('.segpick').querySelector('.segcollapse').style.display='block';}
+function filterSeg(inp){const q=inp.value.toLowerCase();inp.closest('.segpick').querySelector('.seglist').querySelectorAll('.segrow').forEach(r=>{r.style.display=r.textContent.toLowerCase().includes(q)?'':'none';});}
+function segSync(cb){const pick=cb.closest('.segpick');const checked=[...pick.querySelectorAll('.seglist input[type=checkbox]:checked')];pick.querySelector('.segcount').textContent=checked.length+' selected';const chips=pick.querySelector('.segchips');chips.innerHTML=checked.length?checked.map(c=>chipHtml(SEGMENTS[c.dataset.idx][0],SEGMENTS[c.dataset.idx][1],c.dataset.idx)).join(''):'<span class="hint">No segments selected yet · click the search bar to add.</span>';}
+function uncheckSeg(el){const pick=el.closest('.segpick');const cb=pick.querySelector('.seglist input[data-idx="'+el.dataset.idx+'"]');if(cb){cb.checked=false;segSync(cb);}}
+function modalSend(){openModal(modalShell('Send via WhatsApp · select segment',
+  `<p>Broadcast this apartment + brochure PDF (Zoko template <code>pdf_apartment_utility</code>) to a saved segment · the same way as in Zoko. The matching segment is auto-selected from the apartment's price and bedrooms, and each segment shows how many people are in it.</p><div style="margin:4px 0 12px">${segPicker('Customer €1500 · €2000 & 2 Bedroom')}</div><div class="wapreview">Keizersgracht 12, Amsterdam
+2 bedrooms · 68 m² · € 1.850 / month
+Book a viewing: cal.com/apartmenthub/keizersgracht-12-in-person
+Brochure (PDF) attached</div><p class="hint" style="margin-top:8px">Goes to the segment via the Zoko Segment API · full automation lands once the Segment API is live. The link is city-aware (Utrecht vs Amsterdam).</p>`,
+  `<button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn orange" onclick="closeModal();toast('Broadcast queued · 1.951 people in the segment (demo)')">Send to segment</button>`));}
+
+function modalReschedule(){openModal(modalShell('Reschedule viewing',
+  `<p>Pick the new moment and the new schedule. The meeting link updates and a WhatsApp goes to the candidate to book the new viewing.</p><label class="f">New date &amp; time</label><input class="inp" type="datetime-local"><div class="row3"><div><label class="f">Duration (min)</label><select class="inp"><option>30</option><option>20</option><option>45</option></select></div><div><label class="f">Slot duration (min)</label><select class="inp"><option>5</option><option>10</option></select><div class="hint">Sets the number of slots</div></div><div><label class="f">No. of slots</label><input class="inp" value="6"></div></div><p class="hint" style="margin-top:8px">Reuses <code>booking_reschedules</code> + the Cal.com webhook; fires a Zoko reschedule template carrying the new-day slots.</p>`,
+  `<button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn" onclick="closeModal();toast('Viewing rescheduled · link updated · WhatsApp sent')">Confirm reschedule</button>`));}
+
+function modalOffer(type){
+  const t=/Hausing/i.test(type)?'Hausing':(/Grand/i.test(type)?'Grand relocation':'Normal');
+  const desc={
+    'Normal':'Uses the existing email templates (the set delivered to Aniel). The AI fills them in and drafts the offer in the email · always in Dutch.',
+    'Hausing':'Generates the PDF that contains the Hausing application (via the existing <code>/hausing-offer</code> skill), bundled with the documents to enter on Hausing.',
+    'Grand relocation':'Submitted to the external website, then a PDF is sent to the candidate via WhatsApp.'
+  }[t];
+  const done={'Normal':'drafted in the email','Hausing':'Hausing PDF generated','Grand relocation':'sent to website · PDF via WhatsApp'}[t];
+  openModal(modalShell('Generate offer · '+t,
+    `<p>${desc}</p><p class="hint">The actual integration is built by the developer · the button and this popup are the placeholder for now. Later wired via an MCP server to Chesney.</p>`,
+    `<button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn" onclick="closeModal();toast('${t} offer · ${done} (demo)')">Generate ${t} offer</button>`));}
+
+function modalDeal(){openModal(modalShell('Mark as deal · closed conditions',
+  `<p>Confirm the agent and the final closed-deal conditions.</p><label class="f">Closing agent</label><select class="inp"><option>Lander</option><option>David</option><option>Kaj</option><option>Lucas</option></select><div class="row"><div><label class="f">Contractual Start Date *</label><input class="inp" type="date"></div><div><label class="f">Rent price (€) · if changed</label><input class="inp" value="1.700"></div></div><p class="hint" style="margin-top:8px">On confirm: accepted template to the winner, declined templates to the others, added to the deals-of-this-month sheet, and the invoice becomes available.</p>`,
+  `<button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn" onclick="closeModal();toast('Deal closed · conditions saved · templates sent')">Confirm deal</button>`));}
+
+document.addEventListener('click', e=>{
+  const b=e.target.closest('.btn');
+  if(!b || b.getAttribute('onclick')) return;
+  const t=b.textContent.trim();
+  if(/Generate Meeting Links/i.test(t)) return modalLinks();
+  if(/^Send( via WhatsApp)?$/i.test(t)) return modalSend();
+  if(/Reschedule/i.test(t)) return modalReschedule();
+  if(/Generate offer/i.test(t)) return modalOffer('Normal');
+  if(/^(Normal|Hausing|Grand relocation)$/i.test(t)) return modalOffer(t);
+  if(/^Deal$/i.test(t)) return modalDeal();
+  if(/Add doc|Add document/i.test(t)) return modalUpload();
+  if(/Upload$|^Upload/i.test(t)) return modalUpload();
+  toast(t.replace(/\s+/g,' ')+' · demo action');
+});
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+document.addEventListener('click', e=>{ if(!e.target.closest('.segpick')) document.querySelectorAll('.segcollapse').forEach(c=>c.style.display='none'); });
+function toggleDrawer(){document.getElementById('bizdrawer').classList.toggle('hidden');}
+function setBiz(b){
+  toggleDrawer();
+  document.querySelectorAll('.bizitem').forEach(i=>i.classList.toggle('active', i.dataset.biz===b));
+  if(b==='aanhuur'){document.getElementById('tabs').style.display='';show('dashboard');return;}
+  document.getElementById('tabs').style.display='none';
+  const names={verhuur:'Letting (landlord)',aankoop:'Buying',verkoop:'Selling'};
+  document.getElementById('content').innerHTML=`<div class="card"><div class="bd" style="text-align:center;padding:46px 24px"><div style="font-size:30px">${b==='verhuur'?'':b==='aankoop'?'':''}</div><h2 class="page" style="margin-top:8px">${names[b]}</h2><p class="sub">A separate business line with its own dashboard. Not part of this rentals (tenant) CRM build · placeholder for now.</p><button class="btn" onclick="setBiz('aanhuur')">‹ Back to Rentals CRM</button></div></div>`;
+}
+
+show('dashboard');
+</script></body></html>

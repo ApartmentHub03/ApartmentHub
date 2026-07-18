@@ -61,7 +61,8 @@ function getAmsterdamDate(date) {
 export async function createCalLinks({ address, slotStartDatetime, slotEndDatetime, slotLengthMinutes }) {
     if (!address) return { success: false, message: 'address is required' };
 
-    const slug = address.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 40);
+    const slugBase = address.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30);
+    const slug = `${slugBase}-${Math.random().toString(36).slice(2, 8)}`;
     const startTime = new Date(slotStartDatetime);
     const endTime = new Date(slotEndDatetime);
 
@@ -117,6 +118,7 @@ export async function createCalLinks({ address, slotStartDatetime, slotEndDateti
             bookingFields,
             bookingWindow,
             scheduleId,
+            color: { lightThemeHex: '#8b5e3c', darkThemeHex: '#c9a574' },
         }),
     });
 
@@ -130,6 +132,7 @@ export async function createCalLinks({ address, slotStartDatetime, slotEndDateti
             bookingFields,
             bookingWindow,
             scheduleId,
+            color: { lightThemeHex: '#1d4ed8', darkThemeHex: '#60a5fa' },
         }),
     });
 

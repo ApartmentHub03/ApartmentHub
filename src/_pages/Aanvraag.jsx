@@ -635,12 +635,16 @@ const Aanvraag = () => {
     const isAllDocsComplete = () => {
         const personen = data?.personen || [];
         if (personen.length === 0) return false;
-        // For each person, check if they have reported progress.
-        // If they haven't selected a work status yet (no progress entry),
-        // treat them as complete (no required docs to check).
         return personen.every(p => {
+            // Require at least one document entry per person. Previously the
+            // vacuous `true` branch when tenantProgress was untracked let the
+            // form submit with zero docs in state, persisting zero rows in
+            // the `documenten` table and leaving the uploaded files orphaned
+            // in the dossier-documents bucket.
+            const hasDocs = (p.documenten || []).length > 0;
+            if (!hasDocs) return false;
             const progress = tenantProgress[p.persoonId];
-            if (!progress) return true; // No progress tracked yet no work status selected
+            if (!progress) return true; // No progress tracked yet, but docs exist — accept
             return progress.isDocsComplete === true;
         });
     };
@@ -1348,6 +1352,20 @@ const Aanvraag = () => {
                 dossierSaved = !!saveJson.success;
                 if (dossierSaved) {
                     console.log('[Aanvraag] ✓ Dossier saved to Supabase:', saveJson.dossierId, '→ documentation_status', saveJson.documentation_status);
+                    // Capture the server-resolved accountId. Login.jsx's browser-side
+                    // lookup often fails for freshly-provisioned accounts (the accounts
+                    // row may not exist at login time), so accountId can be null in
+                    // AuthContext + localStorage. /api/dossier/save lazy-creates the
+                    // account and returns its id — write it back to localStorage so the
+                    // link-offers block below (and every other code path that reads
+                    // account_id) has the correct value for the rest of the session.
+                    if (saveJson.accountId && typeof window !== 'undefined') {
+                        const stored = localStorage.getItem('account_id');
+                        if (!stored || stored !== saveJson.accountId) {
+                            localStorage.setItem('account_id', saveJson.accountId);
+                            console.log('[Aanvraag] ✓ Captured accountId from save response:', saveJson.accountId);
+                        }
+                    }
                 } else {
                     console.error('[Aanvraag] ✗ Dossier save failed:', saveJson.message);
                 }
@@ -1381,55 +1399,56 @@ const Aanvraag = () => {
             }));
         }
 
-        // For main tenants, link offers to selected apartments before redirecting
-        // (this is what /appartementen used to do via the fromSubmitFlow detour)
-        if (isMainTenant && accountId) {
+        // For main tenants, link offers to selected apartments before redirecting.
+        // Routed through the server-side /api/dossier/link-offers endpoint which
+        // uses the Supabase service role — the previous browser-side
+        // `sb.from('apartments').update({ offers_in })` was silently failing
+        // under RLS (supabase-js returns { error } without throwing, so the
+        // outer try/catch never saw the denial). The service-role route also
+        // mirrors the apartment ids onto accounts.offered_apartments.
+        //
+        // Guard on phoneNumber (not accountId) because accountId can be null
+        // in fresh sessions — the route resolves the account server-side by
+        // phone, mirroring /api/dossier/save. We also pass the accountId we
+        // just captured from the save response (if any) to save the route a
+        // lookup.
+        const linkOffersAccountId = accountId
+            || (typeof window !== 'undefined' ? localStorage.getItem('account_id') : null)
+            || null;
+        if (isMainTenant && phoneNumber) {
             try {
-                const { supabase: sb } = await import('../integrations/supabase/client');
-                const { data: accData } = await sb
-                    .from('accounts')
-                    .select('offered_apartments')
-                    .eq('id', accountId)
-                    .single();
-                let updatedOffered = accData?.offered_apartments || [];
-
                 const mainTenantName = data.personen.find(p => p.rol === 'Hoofdhuurder')?.naam || '';
+                const offers = selectedPanden
+                    .filter(p => p.apartmentId)
+                    .map(p => ({
+                        apartmentId: p.apartmentId,
+                        tenantName: mainTenantName,
+                        bidAmount: bidAmounts[p.apartmentId] || bidAmounts['__default'] || p.voorwaarden?.huurprijs || 0,
+                        startDate,
+                        motivation,
+                    }));
 
-                for (const p of selectedPanden) {
-                    if (!p.apartmentId) continue;
-                    if (!updatedOffered.includes(p.apartmentId)) {
-                        updatedOffered.push(p.apartmentId);
-                    }
-
-                    const { data: aptData } = await sb
-                        .from('apartments')
-                        .select('offers_in')
-                        .eq('id', p.apartmentId)
-                        .single();
-                    const offersIn = aptData?.offers_in || [];
-                    const bidAmount = bidAmounts[p.apartmentId] || bidAmounts['__default'] || p.voorwaarden?.huurprijs || 0;
-
-                    const existingIdx = offersIn.findIndex(o => o.account_id === accountId);
-                    const offerObj = {
-                        account_id: accountId,
-                        tenant_name: mainTenantName,
-                        bid_amount: bidAmount,
-                        start_date: startDate,
-                        motivation: motivation,
-                        status: 'Pending',
-                        submitted_at: new Date().toISOString()
-                    };
-
-                    if (existingIdx >= 0) {
-                        offersIn[existingIdx] = offerObj;
+                if (offers.length > 0) {
+                    const res = await fetch('/api/dossier/link-offers', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            accountId: linkOffersAccountId,
+                            phone: phoneNumber,
+                            offers,
+                        }),
+                    });
+                    const json = await res.json().catch(() => ({}));
+                    if (!res.ok || !json.success) {
+                        console.warn('[Aanvraag] Could not link offers to apartments on submit:', json?.message || `HTTP ${res.status}`, json?.errors);
+                    } else if (json.errors?.length) {
+                        console.warn('[Aanvraag] Some offers failed to link:', json.errors);
                     } else {
-                        offersIn.push(offerObj);
+                        console.log('[Aanvraag] ✓ Linked offers to apartments:', json.updated);
                     }
-
-                    await sb.from('apartments').update({ offers_in: offersIn }).eq('id', p.apartmentId);
+                } else {
+                    console.warn('[Aanvraag] No apartments selected — skipping link-offers');
                 }
-
-                await sb.from('accounts').update({ offered_apartments: updatedOffered }).eq('id', accountId);
             } catch (e) {
                 console.warn('[Aanvraag] Could not link offers to apartments on submit:', e);
             }

@@ -34,8 +34,9 @@ export const ZOKO_TEMPLATES = {
     // --- 3. Before viewing ---
     sales_force_booking_reminder_2_hours_in_person_viewing: { zokoId: 'sales_force_booking_reminder_2_hours_in_person_viewing', language: 'en', variableCount: 6, type: 'buttonTemplate', verified: true, stage: '3. Before viewing', timing: '2 hours before', label: 'Reminder 2h — in-person', vars: ['Candidate name', 'Apartment address', 'Agent name', 'Agent contact', 'Facetime viewing link', 'Cancel viewing link'] },
     sales_force_booking_reminder_2_hours_in_facetime_viewing: { zokoId: 'sales_force_booking_reminder_2_hours_in_facetime_viewing', language: 'en', variableCount: 5, type: 'buttonTemplate', verified: true, stage: '3. Before viewing', timing: '2 hours before', label: 'Reminder 2h — facetime', vars: ['Candidate name', 'Apartment address', 'Agent name', 'Agent contact', 'Cancel viewing link'] },
-    // No live Zoko match for "Documents missing BEFORE viewing" — keep disabled. vars are a best guess until the template is wired.
-    documents_missing_before_viewing: { zokoId: null, language: 'en', variableCount: 3, type: 'buttonTemplate', verified: false, stage: '3. Before viewing', timing: '24-48h before', label: 'Documents missing before viewing', vars: ['Candidate name', 'Missing documents', 'Apartment address'] },
+    // Pre-viewing document nudge — verified live in Zoko (fetched 2026-07-18).
+    // Button {{2}} points to the static upload page; no per-tenant magic link.
+    new_flow_upload_documents: { zokoId: 'new_flow_upload_documents', language: 'en', variableCount: 2, type: 'buttonTemplate', verified: true, stage: '3. Before viewing', timing: '24h before', label: 'Upload documents before viewing', vars: ['Candidate name', 'Upload documents button URL'] },
 
     // --- 4. Cancel / reschedule ---
     viewing_canceled: { zokoId: 'sales_force_viewing_canceled_by_apartmenthub', language: 'en', variableCount: 4, type: 'buttonTemplate', verified: true, stage: '4. Cancel / reschedule', timing: 'On cancel', label: 'Viewing canceled', vars: ['Candidate name', 'Apartment address', 'Viewing date', '"I have questions" link'] },
@@ -47,7 +48,7 @@ export const ZOKO_TEMPLATES = {
 
     // --- 6. Document reminders ---
     reminder_documents_after_viewing_4h: { zokoId: 'sales_force_reminder_documents_after_viewing_4_hours', language: 'en', variableCount: 2, type: 'buttonTemplate', verified: true, stage: '6. Document reminders', timing: '4h after viewing', label: 'Doc reminder 4h', vars: ['Candidate name', 'Apartment address'] },
-    reminder_documents_after_viewing_24h: { zokoId: 'sales_force_reminder_documents_after_viewing_24_hours', language: 'en', variableCount: 3, type: 'buttonTemplate', verified: true, stage: '6. Document reminders', timing: '24h after viewing', label: 'Doc reminder 24h', vars: ['Candidate name', 'Missing documents', 'Apartment address'] },
+    reminder_documents_after_viewing_24h: { zokoId: 'sales_force_reminder_documents_after_viewing_24_hours', language: 'en', variableCount: 3, type: 'buttonTemplate', verified: true, stage: '6. Document reminders', timing: '17h after viewing', label: 'Doc reminder 17h', vars: ['Candidate name', 'Missing documents', 'Apartment address'] },
     reminder_documents_after_viewing_40h: { zokoId: 'sales_force_reminder_documents_after_viewing_40_hours', language: 'en', variableCount: 3, type: 'buttonTemplate', verified: true, stage: '6. Document reminders', timing: '40h after viewing', label: 'Doc reminder 40h (final)', vars: ['Candidate name', 'Apartment address', 'Missing documents'] },
 
     // --- 7. Offer received ---

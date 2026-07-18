@@ -157,24 +157,46 @@ serve(async (req) => {
       dossier = newDossier;
     }
 
-    // Check if this phone belongs to a co-tenant or guarantor linked to another dossier
+    // Determine the user's role: check for main tenant FIRST, only fall back to
+    // co-tenant/guarantor if no tenant row exists. Without this priority, a stale
+    // guarantor row (e.g. from a previous broken invite) would override the main
+    // tenant role and the user would see the wrong dashboard.
     let sharedDossierId: string | null = null;
     let userRole: string = 'main_tenant';
     let persoonId: string | null = null;
 
-    const { data: linkedPerson } = await supabase
+    // 1. Is this person a main tenant (tenant type) anywhere?
+    const { data: mainPerson } = await supabase
       .from('personen')
       .select('id, dossier_id, type, rol')
       .eq('telefoon', formattedPhone)
-      .in('type', ['co_tenant', 'guarantor'])
+      .eq('type', 'tenant')
+      .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    if (linkedPerson) {
-      sharedDossierId = linkedPerson.dossier_id;
-      userRole = linkedPerson.type; // 'co_tenant' or 'guarantor'
-      persoonId = linkedPerson.id;
-      console.log(`[AUTH] User is a linked ${userRole} in dossier ${sharedDossierId}, persoon_id: ${persoonId}`);
+    if (mainPerson) {
+      // They're a main tenant — use their own dossier, keep default role
+      sharedDossierId = mainPerson.dossier_id;
+      persoonId = mainPerson.id;
+      console.log(`[AUTH] User is a main tenant in dossier ${sharedDossierId}, persoon_id: ${persoonId}`);
+    } else {
+      // 2. Only then check for co-tenant/guarantor role in another dossier
+      const { data: linkedPerson } = await supabase
+        .from('personen')
+        .select('id, dossier_id, type, rol')
+        .eq('telefoon', formattedPhone)
+        .in('type', ['co_tenant', 'guarantor'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (linkedPerson) {
+        sharedDossierId = linkedPerson.dossier_id;
+        userRole = linkedPerson.type; // 'co_tenant' or 'guarantor'
+        persoonId = linkedPerson.id;
+        console.log(`[AUTH] User is a linked ${userRole} in dossier ${sharedDossierId}, persoon_id: ${persoonId}`);
+      }
     }
 
     // Use the shared dossier if the user is a linked co-tenant/guarantor

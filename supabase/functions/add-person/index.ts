@@ -43,7 +43,7 @@ serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    const jwtSecret = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const jwtSecret = Deno.env.get('JWT_SECRET') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const key = await crypto.subtle.importKey(
       'raw',
       new TextEncoder().encode(jwtSecret),

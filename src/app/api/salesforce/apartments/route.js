@@ -73,8 +73,9 @@ async function getApartmentsFromSupabase() {
 
     const { data, error } = await supabase
         .from('apartments')
-        .select('id, "Full Address", street, area, zip_code, rental_price, bedrooms, square_meters, status, salesforce_apartment_id')
-        .eq('status', 'Active');
+        .select('id, "Full Address", street, area, zip_code, rental_price, bedrooms, square_meters, status, salesforce_apartment_id, created_at')
+        .eq('status', 'Active')
+        .order('created_at', { ascending: false });
 
     if (error) {
         throw new Error(`Supabase apartments query failed: ${error.message}`);
@@ -94,6 +95,7 @@ async function getApartmentsFromSupabase() {
             square_meters: a.square_meters ?? null,
             status: a.status ?? 'Active',
             salesforce_apartment_id: a.salesforce_apartment_id ?? null,
+            created_at: a.created_at ?? null,
         };
     });
 }

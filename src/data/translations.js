@@ -908,6 +908,8 @@ export const translations = {
             deselectAll: "Deselect All",
             coTenantWarning: "These details are filled by the main tenant. You cannot edit them.",
             coTenantBanner: "You are logged in as a co-tenant. You can only edit your own details.",
+            searchPlaceholder: "Search apartments...",
+            noSearchResults: "No apartments match your search",
         },
         nl: {
             title: "Selecteer Uw Appartementen",
@@ -925,6 +927,8 @@ export const translations = {
             deselectAll: "Alles deselecteren",
             coTenantWarning: "Deze gegevens zijn ingevuld door de hoofdhuurder. U kunt deze niet bewerken.",
             coTenantBanner: "U bent ingelogd als Co-Tenant. U kunt alleen uw eigen gegevens bewerken.",
+            searchPlaceholder: "Zoek appartementen...",
+            noSearchResults: "Geen appartementen gevonden",
         }
     },
     aanvraag: {

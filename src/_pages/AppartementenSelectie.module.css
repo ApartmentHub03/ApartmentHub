@@ -63,6 +63,28 @@
     gap: 0.75rem;
 }
 
+.searchInput {
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+    color: #111827;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    box-sizing: border-box;
+}
+
+.searchInput::placeholder {
+    color: #9ca3af;
+}
+
+.searchInput:focus {
+    border-color: hsl(var(--myrtle));
+    box-shadow: 0 0 0 3px hsl(var(--myrtle) / 0.12);
+}
+
 .selectLabelRow {
     display: flex;
     align-items: center;

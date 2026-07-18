@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { serviceClient, requireAdmin, requirePermission } from '@/services/crmAuth';
 import { isUuid, invalidId, failed } from '@/services/crmHttp';
+import { deleteCalEvents } from '@/services/calcom';
 
 // Full apartment record + edit/delete for the CRM detail view.
 // Read/edit need the "apartments" permission; DELETE is admin-only — it is a
@@ -92,7 +93,30 @@ export async function DELETE(request, { params }) {
     if (!isUuid(id)) return invalidId();
 
     try {
-        const { error } = await serviceClient().from('apartments').delete().eq('id', id);
+        // Fetch the apartment first so we can clean up Cal.com resources.
+        const supabase = serviceClient();
+        const { data: apt, error: fetchErr } = await supabase
+            .from('apartments')
+            .select('id, cal_event_type_id, cal_event_type_id_video, cal_schedule_id')
+            .eq('id', id)
+            .maybeSingle();
+        if (fetchErr) throw fetchErr;
+        if (!apt) return NextResponse.json({ success: false, message: 'Apartment not found' }, { status: 404 });
+
+        // Tear down Cal.com event types + schedule if they exist.
+        if (apt.cal_event_type_id || apt.cal_event_type_id_video || apt.cal_schedule_id) {
+            try {
+                await deleteCalEvents({
+                    calEventTypeId: apt.cal_event_type_id,
+                    calEventTypeIdVideo: apt.cal_event_type_id_video,
+                    calScheduleId: apt.cal_schedule_id,
+                });
+            } catch (calErr) {
+                console.error('[crm/apartment DELETE] Cal.com cleanup failed:', calErr);
+            }
+        }
+
+        const { error } = await supabase.from('apartments').delete().eq('id', id);
         if (error) throw error;
         return NextResponse.json({ success: true });
     } catch (err) {

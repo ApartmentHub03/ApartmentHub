@@ -33,6 +33,8 @@ export async function POST(request) {
             additional_notes: b.additional_notes || null,
             lengthInMins: b.lengthInMins != null && b.lengthInMins !== '' ? Number(b.lengthInMins) : null,
             slotInterval: b.slotInterval != null && b.slotInterval !== '' ? Number(b.slotInterval) : null,
+            real_estate_agent_id: b.real_estate_agent_id || null,
+            assigned_crm_user_id: b.assigned_crm_user_id || null,
             status,
         };
 

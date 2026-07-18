@@ -33,14 +33,19 @@ export async function GET(request, { params }) {
         if (error) throw error;
         if (!account) return NextResponse.json({ success: false, message: 'Application not found' }, { status: 404 });
 
-        // 1. The dossier behind this account, keyed on phone.
+        // 1. The dossier behind this account, keyed on phone. We also pull the
+        //    dossier-level bid fields (bid_amount / start_date / motivation /
+        //    months_advance) — the Aanvraag submit writes the bid here, not to
+        //    the `biedingen` table, so without this we'd have no bid to show
+        //    for Aanvraag-originated applications.
         const { data: dossierRows } = await supabase
             .from('dossiers')
-            .select('id')
+            .select('id, bid_amount, start_date, motivation, months_advance')
             .in('phone_number', phoneCandidates(account.whatsapp_number))
             .order('created_at', { ascending: false })
             .limit(1);
-        const dossierId = dossierRows?.[0]?.id || null;
+        const dossier = dossierRows?.[0] || null;
+        const dossierId = dossier?.id || null;
 
         // 2. Its people, and every document they uploaded. Selected with `*`
         //    deliberately: personen/documenten have been reshaped over time
@@ -54,6 +59,43 @@ export async function GET(request, { params }) {
             : [];
 
         const personById = new Map(personen.map((p) => [p.id, p]));
+
+        // 2b. Latest bid (if any) for this dossier — gives us offered rent,
+        //     motivation, start date. Deposit is typically 2× the bid amount.
+        //     Falls back to the dossier-level bid_amount/start_date/motivation
+        //     when no `biedingen` row exists: the Aanvraag form writes the bid
+        //     to `dossiers` (not `biedingen`), so without this fallback every
+        //     Aanvraag-submitted application would show `bid: null` in the CRM.
+        let bid = null;
+        if (dossierId) {
+            const { data: bidRows } = await supabase
+                .from('biedingen')
+                .select('id, amount, motivation, start_date, status, created_at')
+                .eq('dossier_id', dossierId)
+                .order('created_at', { ascending: false })
+                .limit(1);
+            if (bidRows && bidRows.length > 0) {
+                const b = bidRows[0];
+                bid = {
+                    amount: Number(b.amount) || 0,
+                    deposit: (Number(b.amount) || 0) * 2,
+                    motivation: b.motivation || '',
+                    start_date: b.start_date || null,
+                    status: b.status || 'pending',
+                    created_at: b.created_at || null,
+                };
+            } else if (dossier && dossier.bid_amount != null) {
+                const amt = Number(dossier.bid_amount) || 0;
+                bid = {
+                    amount: amt,
+                    deposit: amt * 2,
+                    motivation: dossier.motivation || '',
+                    start_date: dossier.start_date || null,
+                    status: 'pending',
+                    created_at: null,
+                };
+            }
+        }
 
         // 3. Co-tenants added through the CRM live as their own accounts row,
         //    linked back to this one, and may not be in personen.
@@ -115,7 +157,7 @@ export async function GET(request, { params }) {
 
         return NextResponse.json({
             success: true,
-            account: { ...account, documents, coTenants, dossierId },
+            account: { ...account, documents, coTenants, dossierId, personen, bid },
         });
     } catch (err) {
         return failed('crm/application GET', err, 'Failed to load the application');

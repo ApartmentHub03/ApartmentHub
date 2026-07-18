@@ -19,6 +19,7 @@ const AppartementenSelectie = () => {
     const [apartments, setApartments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [fetchError, setFetchError] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         const fetchApartments = async () => {
@@ -32,9 +33,9 @@ const AppartementenSelectie = () => {
                     console.error('[AppartementenSelectie] Error fetching apartments:', msg, data);
                     setFetchError(msg);
                 } else {
-                    const sorted = (data.apartments || []).slice().sort((a, b) =>
-                        (a['Full Address'] || '').localeCompare(b['Full Address'] || '')
-                    );
+                    // API already returns apartments ordered by created_at DESC;
+                    // preserve that order (do not re-sort by address here).
+                    const sorted = data.apartments || [];
                     setApartments(sorted);
                 }
             } catch (err) {
@@ -166,6 +167,25 @@ const AppartementenSelectie = () => {
     const subtitle = isMainTenant ? t.subtitle : t.coTenantSubtitle;
     const noAptMessage = isMainTenant ? t.noApartments : t.noMainTenantApartments;
 
+    const trimmedQuery = searchQuery.trim().toLowerCase();
+    const filteredApartments = trimmedQuery === ''
+        ? apartments
+        : apartments.filter((apt) => {
+            const haystack = [
+                apt['Full Address'],
+                apt.name,
+                apt.street,
+                apt.area,
+                apt.zipcode,
+                apt.address,
+                apt.city,
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+            return haystack.includes(trimmedQuery);
+        });
+
     return (
         <div className={styles.page}>
             <div className={styles.container}>
@@ -200,55 +220,71 @@ const AppartementenSelectie = () => {
                                         {noAptMessage}
                                     </div>
                                 ) : (
-                                    <div className={styles.apartmentGrid}>
-                                        {apartments.map((apt) => {
-                                            const isSelected = selectedApartments.includes(apt.id);
-                                            return (
-                                                <div
-                                                    key={apt.id}
-                                                    className={`${styles.apartmentCard} ${isSelected ? styles.apartmentCardSelected : ''}`}
-                                                    onClick={() => toggleApartment(apt.id)}
-                                                >
-                                                    <div className={styles.apartmentCardHeader}>
-                                                        <div className={styles.checkbox}>
-                                                            {isSelected && (
-                                                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                                                    <path d="M2 7L5.5 10.5L12 3.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                                                </svg>
-                                                            )}
-                                                        </div>
-                                                        <div className={styles.apartmentHeaderText}>
-                                                            <h3 className={styles.apartmentAddress}>
-                                                                {displayAddress(apt)}
-                                                            </h3>
-                                                            {(apt.address || apt.city || apt.zipcode) && (
-                                                                <div className={styles.apartmentLocation}>
-                                                                    {[apt.address, apt.zipcode, apt.city].filter(Boolean).join(', ')}
+                                    <>
+                                        <input
+                                            type="text"
+                                            className={styles.searchInput}
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            placeholder={t.searchPlaceholder}
+                                            aria-label={t.searchPlaceholder}
+                                        />
+                                        {filteredApartments.length === 0 ? (
+                                            <div className={styles.emptyState}>
+                                                {t.noSearchResults}
+                                            </div>
+                                        ) : (
+                                            <div className={styles.apartmentGrid}>
+                                                {filteredApartments.map((apt) => {
+                                                    const isSelected = selectedApartments.includes(apt.id);
+                                                    return (
+                                                        <div
+                                                            key={apt.id}
+                                                            className={`${styles.apartmentCard} ${isSelected ? styles.apartmentCardSelected : ''}`}
+                                                            onClick={() => toggleApartment(apt.id)}
+                                                        >
+                                                            <div className={styles.apartmentCardHeader}>
+                                                                <div className={styles.checkbox}>
+                                                                    {isSelected && (
+                                                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                                                            <path d="M2 7L5.5 10.5L12 3.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                                        </svg>
+                                                                    )}
                                                                 </div>
-                                                            )}
+                                                                <div className={styles.apartmentHeaderText}>
+                                                                    <h3 className={styles.apartmentAddress}>
+                                                                        {displayAddress(apt)}
+                                                                    </h3>
+                                                                    {(apt.address || apt.city || apt.zipcode) && (
+                                                                        <div className={styles.apartmentLocation}>
+                                                                            {[apt.address, apt.zipcode, apt.city].filter(Boolean).join(', ')}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div className={styles.apartmentDetails}>
+                                                                {apt.rental_price && (
+                                                                    <span className={styles.apartmentDetail}>
+                                                                        <strong>{'\u20AC'}{apt.rental_price}</strong> {t.price}
+                                                                    </span>
+                                                                )}
+                                                                {apt.bedrooms && (
+                                                                    <span className={styles.apartmentDetail}>
+                                                                        {apt.bedrooms} {t.rooms}
+                                                                    </span>
+                                                                )}
+                                                                {apt.square_meters && (
+                                                                    <span className={styles.apartmentDetail}>
+                                                                        {apt.square_meters}m{'\u00B2'}
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div className={styles.apartmentDetails}>
-                                                        {apt.rental_price && (
-                                                            <span className={styles.apartmentDetail}>
-                                                                <strong>{'\u20AC'}{apt.rental_price}</strong> {t.price}
-                                                            </span>
-                                                        )}
-                                                        {apt.bedrooms && (
-                                                            <span className={styles.apartmentDetail}>
-                                                                {apt.bedrooms} {t.rooms}
-                                                            </span>
-                                                        )}
-                                                        {apt.square_meters && (
-                                                            <span className={styles.apartmentDetail}>
-                                                                {apt.square_meters}m{'\u00B2'}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
 

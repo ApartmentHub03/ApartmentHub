@@ -4,15 +4,22 @@ import { ZOKO_TEMPLATES } from '@/services/zokoTemplates';
 import { isUuid, invalidId, failed } from '@/services/crmHttp';
 
 // Drive a booking's cancel / reschedule from the CRM: move the participant
-// between the apartment's viewing JSON buckets and fire the matching Zoko
-// template (when its templateId is confirmed). CRM-authed.
+// between the apartment's viewing JSON buckets, fire the matching Zoko
+// template (when its templateId is confirmed), AND fire an n8n webhook so
+// Zoko Flow can branch (e.g. "Really cancel or FaceTime?") and notify the
+// remaining scheduled viewers. CRM-authed.
 
 const ZOKO_API_URL = 'https://chat.zoko.io/v2/message';
 
-// action -> { from bucket, to bucket, zoko template key }
+// n8n webhooks for downstream branching + viewer notification.
+// Fire-and-forget: failures are logged but don't block the response.
+const N8N_CANCEL_WEBHOOK_URL = 'https://davidvanwachem.app.n8n.cloud/webhook/agent-cancel-notification';
+const N8N_RESCHEDULE_WEBHOOK_URL = 'https://davidvanwachem.app.n8n.cloud/webhook/agent-reschedule-notification';
+
+// action -> { from bucket, to bucket, zoko template key, n8n webhook url }
 const ACTIONS = {
-    cancel: { from: 'viewing_participants', to: 'viewing_cancellations', template: 'viewing_canceled' },
-    reschedule: { from: 'viewing_participants', to: 'booking_reschedules', template: 'reschedule_viewing' },
+    cancel: { from: 'viewing_participants', to: 'viewing_cancellations', template: 'viewing_canceled', webhookUrl: N8N_CANCEL_WEBHOOK_URL },
+    reschedule: { from: 'viewing_participants', to: 'booking_reschedules', template: 'reschedule_viewing', webhookUrl: N8N_RESCHEDULE_WEBHOOK_URL },
 };
 
 function digits(p) { return String(p || '').replace(/\D/g, ''); }
@@ -40,6 +47,21 @@ async function tryFireTemplate(key, recipient, name) {
     }
 }
 
+// Fire-and-forget n8n webhook. Failures are logged but never throw.
+async function tryFireN8nWebhook(url, payload) {
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        return { sent: res.ok, status: res.status };
+    } catch (err) {
+        console.error('[crm/booking-action] n8n webhook network error:', err);
+        return { sent: false, status: 0, error: String(err) };
+    }
+}
+
 export async function POST(request) {
     const auth = await requirePermission(request, 'candidates');
     if (auth.response) {
@@ -55,9 +77,11 @@ export async function POST(request) {
         if (!isUuid(apartmentId)) return invalidId();
 
         const supabase = serviceClient();
+        // Fetch all fields needed for: the move, the Zoko send, and the n8n
+        // payload (apartment address + event links + remaining participants).
         const { data: apt, error } = await supabase
             .from('apartments')
-            .select(`id, "Full Address", ${cfg.from}, ${cfg.to}`)
+            .select(`id, "Full Address", event_link, eventlink_video, ${cfg.from}, ${cfg.to}`)
             .eq('id', apartmentId)
             .maybeSingle();
         if (error) throw error;
@@ -92,7 +116,33 @@ export async function POST(request) {
         // Message the number on the booking record, never the one in the request.
         const whatsapp = await tryFireTemplate(cfg.template, moved.whatsapp_number, moved.name || name);
 
-        return NextResponse.json({ success: true, action, whatsapp });
+        // Fire n8n webhook so Zoko Flow can branch + notify remaining viewers.
+        // remaining_participants = the new (post-move) viewing_participants list,
+        // reduced to just {name, whatsapp_number} for n8n to loop over.
+        const remainingParticipants = newFrom.map((p) => ({
+            name: p?.name || '',
+            whatsapp_number: p?.whatsapp_number || '',
+        }));
+
+        const n8nPayload = {
+            event_type: action === 'cancel' ? 'agent_cancel' : 'agent_reschedule',
+            apartment_id: apartmentId,
+            apartment_address: apt['Full Address'] || '',
+            cancelled_participant: action === 'cancel'
+                ? { name: moved?.name || name || '', whatsapp_number: moved?.whatsapp_number || '' }
+                : undefined,
+            rescheduled_participant: action === 'reschedule'
+                ? { name: moved?.name || name || '', whatsapp_number: moved?.whatsapp_number || '' }
+                : undefined,
+            remaining_participants: remainingParticipants,
+            new_booking_link: action === 'reschedule' ? (apt.event_link || '') : undefined,
+            new_video_booking_link: action === 'reschedule' ? (apt.eventlink_video || '') : undefined,
+            timestamp: new Date().toISOString(),
+        };
+
+        const webhook = await tryFireN8nWebhook(cfg.webhookUrl, n8nPayload);
+
+        return NextResponse.json({ success: true, action, whatsapp, webhook });
     } catch (err) {
         return failed('crm/booking-action POST', err, 'Could not update this booking');
     }

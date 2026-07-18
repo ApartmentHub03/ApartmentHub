@@ -65,9 +65,13 @@ export async function POST(request, { params }) {
             .from('apartments')
             .update({
                 event_link: cal.eventlink || cal.eventlinkVideo,
+                eventlink_video: cal.eventlinkVideo || null,
                 slot_dates: [...slotDates, slot],
                 booking_details: { ...bookingDetails, latest_slot: slot },
-                status: apt.status === 'Null' || !apt.status ? 'CreateLink' : apt.status,
+                status: (apt.status === 'Null' || !apt.status || apt.status === 'CreateLink') ? 'Active' : apt.status,
+                cal_event_type_id: cal.calEventTypeId || null,
+                cal_event_type_id_video: cal.calEventTypeIdVideo || null,
+                cal_schedule_id: cal.calScheduleId || null,
             })
             .eq('id', id)
             .select()
