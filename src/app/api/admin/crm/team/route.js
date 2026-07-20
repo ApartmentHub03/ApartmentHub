@@ -20,7 +20,7 @@ export async function GET(request) {
         const supabase = serviceClient();
         const { data, error } = await supabase
             .from('crm_users')
-            .select('id, name, email, phone, role, permissions, city, start_date, is_active, created_at')
+            .select('id, name, email, phone, role, permissions, city, start_date, is_active, created_at, address')
             .order('created_at', { ascending: true });
         if (error) throw error;
         return NextResponse.json({ success: true, members: data || [] });
@@ -38,7 +38,7 @@ export async function POST(request) {
     }
     try {
         const body = await request.json();
-        const { name, email, phone, role = 'agent', permissions, city, start_date } = body || {};
+        const { name, email, phone, role = 'agent', permissions, city, start_date, address } = body || {};
 
         if (!name || !email) {
             return NextResponse.json({ success: false, message: 'Name and email are required' }, { status: 400 });
@@ -81,6 +81,7 @@ export async function POST(request) {
                 permissions: permissions || undefined, // fall back to table default
                 city: city || null,
                 start_date: start_date || null,
+                address: address || null,
             })
             .select()
             .single();
@@ -107,7 +108,7 @@ export async function PATCH(request) {
     }
     try {
         const body = await request.json();
-        const { id, name, phone, role, permissions, city, is_active } = body || {};
+        const { id, name, phone, role, permissions, city, is_active, address } = body || {};
 
         if (!isUuid(id)) {
             return NextResponse.json({ success: false, message: 'A valid member id is required' }, { status: 400 });
@@ -130,6 +131,7 @@ export async function PATCH(request) {
         if (permissions != null) update.permissions = permissions;
         if (city !== undefined) update.city = city || null;
         if (is_active != null) update.is_active = Boolean(is_active);
+        if (address !== undefined) update.address = address || null;
 
         if (Object.keys(update).length === 0) {
             return NextResponse.json({ success: false, message: 'Nothing to update' }, { status: 400 });
@@ -139,7 +141,7 @@ export async function PATCH(request) {
             .from('crm_users')
             .update(update)
             .eq('id', id)
-            .select('id, name, email, phone, role, permissions, city, start_date, is_active, created_at')
+            .select('id, name, email, phone, role, permissions, city, start_date, is_active, created_at, address')
             .single();
         if (error) throw error;
 

@@ -23,7 +23,8 @@
 ### Blocked on David
 - [x] Run backfill migration `20260717000000_backfill_admin_apartment_to_apartments.sql` on Supabase (fixed for missing `full_address` column) — **done (David confirmed)**
 - [ ] Deploy edge functions: `add-person` (JWT fix) + `auth-verify-code` (role lookup fix) — David will deploy via Supabase dashboard (CLI not installed on dev machine)
-- [ ] Confirm n8n workflows exist at `/webhook/send-offer-to-the-tenant` and `/webhook/deal-response` — **URL confirmed, awaiting confirmation workflows are ACTIVE**
+- [x] ~~Generate Offer decision (email / WhatsApp / both)~~ — **RESOLVED Jul 20, 2026 (Option A: Gmail draft)**. The `generate-offer/route.js` now creates a Gmail draft in the logged-in agent's mailbox via Workspace domain-wide delegation, addressed to the listing agent with the standard template + per-agent signature. n8n `send-offer-to-the-tenant` webhook dropped. See `DAVID_BLOCKERS.md` §1 for remaining setup steps (apply 2 migrations + grant Gmail delegation + set agent addresses).
+- [ ] Confirm n8n workflows exist at `/webhook/deal-response` — **URL confirmed, awaiting confirmation workflow is ACTIVE** (the `send-offer-to-the-tenant` workflow is no longer called from code — Option A replaced it)
 - [ ] Create `documents_missing_before_viewing` template in Zoko, send UUID
 - [x] Invoice PDF template — **done**. PDF generator at `src/app/api/admin/crm/invoices/[id]/send/invoice-pdf.js` matches David's real template (recipient block, INVOICE title, service fee + VAT + amounts due, congratulations paragraph, correct company footer with IBAN/SWIFT/KvK/BTW). Auto-attached to Resend email. `mark-deal` now auto-snapshots recipient name/address/zipcode + auto-generates invoice number + sets due_date (today+14d). Admin must fill in recipient city/country via the Edit modal before sending (no source column exists upstream).
 - [x] Verify `finance@apartmenthub.nl` sender identity in Resend — **done (David confirmed)**
@@ -179,7 +180,7 @@ Code-side wiring done. 2 new migrations written (David applies via Supabase SQL 
 
 ### Blocked on David → see `DAVID_BLOCKERS.md` for the full list
 All current blockers needing David's input live in `DAVID_BLOCKERS.md` now. Summary of what's there:
-- §1 — Generate Offer decision (email / WhatsApp / both) + new Zoko template design if WhatsApp
+- §1 — Generate Offer: ✅ code done (Option A: Gmail draft). Remaining: apply 2 migrations, grant Gmail delegation, set agent addresses.
 - §2 — n8n Cloud actions: verify workflows are Active, verify Zoko credential uses centralized key, create 5 new Phase 5 workflows
 - §3 — Supabase dashboard actions: create `Invoices` storage bucket, apply 4 migrations, deploy 2 edge functions
 - §4 — Confirm closer list (Lander/David/Kaj/Lucas all in `crm_users`?)
@@ -210,7 +211,7 @@ All current blockers needing David's input live in `DAVID_BLOCKERS.md` now. Summ
 - **No tests**: No test framework is set up for the CRM. Manual verification only.
 - **No error boundaries**: Scaffold doesn't implement React error boundaries. A crash in one view takes down the whole app.
 - **DB trigger `trigger_generate_offer` is dormant but harmless.** Two apartments still have non-null `generate_offer` values (`+917396428078`) in the DB — leftover from before the route was rewritten. The current `generate-offer/route.js` fires the n8n webhook directly from the API and writes nothing to the column (file header: "No DB write, no audit trail — n8n's execution log is the record"), so the trigger is no longer in the critical path. The stale non-null values are inert.
-- **Send Offer pipeline live (Jul 19, 2026).** `send-offer/route.js` + UI buttons in `views.tsx` move an application's offer from `offers_in` → `offers_sent` so Deal / No Deal buttons become reachable. This is a pure DB state change — sends no message. The *messaging* step (the actual offer email/WhatsApp to the tenant) is the **Generate offer** button, which is still blocked on David's decision — see `DAVID_BLOCKERS.md` §1.
+- **Send Offer pipeline live (Jul 19, 2026).** `send-offer/route.js` + UI buttons in `views.tsx` move an application's offer from `offers_in` → `offers_sent` so Deal / No Deal buttons become reachable. This is a pure DB state change — sends no message. The *messaging* step (the actual offer email to the agent) is the **Generate offer** button, now live as of Jul 20, 2026 — creates a Gmail draft in the logged-in agent's mailbox. See `DAVID_BLOCKERS.md` §1 for setup steps.
 
 ### Technical debt notes
 - The old `crm-admin/page.jsx` (1329 lines, single-file client component) was deleted on Jul 18, 2026 when the v2 build was promoted. The new scaffold follows a similar pattern but with TypeScript and slightly more file separation. Neither the old nor new version uses React Query — data fetching is `useState` + `useEffect` + `fetch`. The kanban CRM (`/crm`) does use React Query. If `/crm-admin` grows complex, consider migrating to React Query (already a dependency).

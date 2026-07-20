@@ -1,17 +1,30 @@
 import { NextResponse } from 'next/server';
 import { serviceClient, requirePermission } from '@/services/crmAuth';
 import { isUuid, invalidId, failed } from '@/services/crmHttp';
+import { phoneCandidates } from '@/services/crmApplications';
+import { createDraft } from '@/lib/gmail/client';
+import { renderOfferDraftEmail, deriveCandidateType } from '@/lib/email/offerDraftTemplate';
 
-// "Generate Offer" — fires the n8n webhook (send-offer-to-the-tenant) directly
-// from the API. Previously this wrote the tenant phone to apartments.generate_offer
-// and relied on a DB trigger to fire the webhook + clear the column, but that
-// trigger was broken in prod (references the dropped `name` column, and the
-// `generate_offer` column itself has a drifted name). Firing the webhook from
-// the API matches the broadcast/route.js pattern and removes the DB-trigger
-// dependency entirely. No DB write, no audit trail — n8n's execution log is the
-// record. The dormant trigger + column are left untouched (harmless).
+// "Generate Offer" — creates a Gmail draft in the LOGGED-IN agent's mailbox,
+// addressed to the apartment's real estate agent, presenting the candidate
+// with the standard offer template (rent, deposit, start date, candidate bio,
+// guarantor bio, per-agent signature with logo).
+//
+// Replaces the previous n8n-webhook flow: that workflow sent a WhatsApp from
+// the agent's personal number (wrong sender) and had no Zoko template for an
+// offer-to-tenant message. This route drafts the email for the agent to review
+// and send manually — no automated send, no WhatsApp.
+//
+// Auth: requires the "candidates" permission. The logged-in crm_user's email
+// is the Gmail mailbox the draft lands in (via Workspace domain-wide
+// delegation — see src/lib/gmail/client.js for setup).
+//
+// Body: { account_id } OR { tenant_phone }. Optionally { candidate_bio,
+// guarantor_bio } — if provided, they're upserted into the dossier row so the
+// bio persists for next time. If omitted, the route reads whatever's stored
+// (or falls back to a placeholder).
 
-const N8N_WEBHOOK_URL = 'https://davidvanwachem.app.n8n.cloud/webhook/send-offer-to-the-tenant';
+const ALLOWED_DOMAIN = process.env.GMAIL_DELEGATION_DOMAIN || 'apartmenthub.nl';
 
 export async function POST(request, { params }) {
     const auth = await requirePermission(request, 'candidates');
@@ -21,22 +34,36 @@ export async function POST(request, { params }) {
     const { id } = await params;
     if (!isUuid(id)) return invalidId();
 
+    const crm = auth.crm; // { id, name, email, role, ... }
+
+    // The Gmail draft is created in the logged-in agent's mailbox via
+    // domain-wide delegation. Their crm_users.email MUST be an
+    // @apartmenthub.nl (or configured domain) Workspace account — service
+    // accounts can't impersonate accounts outside the delegated domain.
+    if (!crm.email || !crm.email.toLowerCase().endsWith(`@${ALLOWED_DOMAIN}`)) {
+        return NextResponse.json({
+            success: false,
+            message: `Your CRM email (${crm.email || 'none'}) must be an @${ALLOWED_DOMAIN} Workspace account to use Generate offer.`,
+        }, { status: 400 });
+    }
+
     try {
         const body = await request.json();
-        const { tenant_phone, account_id } = body;
+        const { tenant_phone, account_id, candidate_bio, guarantor_bio } = body || {};
 
-        // Accept either tenant_phone or account_id. If account_id is given,
-        // look up the whatsapp_number from accounts.
+        // 1. Resolve candidate phone — accept either tenant_phone or account_id.
         let phone = null;
+        let accountId = null;
 
         if (tenant_phone && typeof tenant_phone === 'string' && tenant_phone.trim() !== '') {
             phone = tenant_phone.trim();
         } else if (account_id && typeof account_id === 'string' && account_id.trim() !== '') {
+            accountId = account_id.trim();
             const supabase = serviceClient();
             const { data: account, error: acctErr } = await supabase
                 .from('accounts')
                 .select('whatsapp_number')
-                .eq('id', account_id)
+                .eq('id', accountId)
                 .maybeSingle();
             if (acctErr) throw acctErr;
             if (!account || !account.whatsapp_number) {
@@ -49,60 +76,174 @@ export async function POST(request, { params }) {
             return NextResponse.json({ success: false, message: 'Either tenant_phone or account_id is required' }, { status: 400 });
         }
 
-        // Fetch the apartment with the fields n8n needs to draft the offer email.
         const supabase = serviceClient();
-        const { data: apt, error: fetchErr } = await supabase
+
+        // 2. Apartment + real estate agent.
+        const { data: apt, error: aptErr } = await supabase
             .from('apartments')
-            .select('id, "Full Address", street, area, zip_code, rental_price, bedrooms, square_meters, status, event_link, eventlink_video, additional_notes, booking_details')
+            .select('id, "Full Address", street, rental_price, real_estate_agent_id')
             .eq('id', id)
             .maybeSingle();
-        if (fetchErr) throw fetchErr;
+        if (aptErr) throw aptErr;
         if (!apt) return NextResponse.json({ success: false, message: 'Apartment not found' }, { status: 404 });
 
-        const apartmentName = apt['Full Address'] || apt.street || '';
+        let agent = null;
+        if (apt.real_estate_agent_id) {
+            const { data: agentRow, error: agentErr } = await supabase
+                .from('real_estate_agents')
+                .select('id, name, contact_person_name, email')
+                .eq('id', apt.real_estate_agent_id)
+                .maybeSingle();
+            if (agentErr) throw agentErr;
+            agent = agentRow;
+        }
+        if (!agent || !agent.email) {
+            return NextResponse.json({
+                success: false,
+                message: 'This apartment has no real estate agent email — set one on the listing before generating an offer.',
+            }, { status: 400 });
+        }
 
-        // Build the payload — matches the shape the old DB trigger sent, minus
-        // salesforce_id and tags (neither exists on the apartments table in prod
-        // and n8n's offer-drafting workflow doesn't read them).
-        const payload = {
-            event_type: 'generate_offer',
-            tenant_phone: phone,
-            apartment_id: apt.id,
-            apartment_name: apartmentName,
-            full_address: apartmentName || null,
-            area: apt.area,
-            rental_price: apt.rental_price,
-            bedrooms: apt.bedrooms,
-            square_meters: apt.square_meters,
-            event_link: apt.event_link,
-            status: apt.status,
-            additional_notes: apt.additional_notes,
-            timestamp: new Date().toISOString(),
-        };
+        // 3. Candidate account.
+        let account = null;
+        if (accountId) {
+            const { data, error } = await supabase
+                .from('accounts')
+                .select('id, tenant_name, whatsapp_number, email, work_status')
+                .eq('id', accountId)
+                .maybeSingle();
+            if (error) throw error;
+            account = data;
+        } else {
+            const { data, error } = await supabase
+                .from('accounts')
+                .select('id, tenant_name, whatsapp_number, email, work_status')
+                .eq('whatsapp_number', phone)
+                .maybeSingle();
+            if (error) throw error;
+            account = data;
+        }
+        if (!account) {
+            return NextResponse.json({ success: false, message: 'Candidate account not found' }, { status: 404 });
+        }
 
-        // Fire the n8n webhook (same pattern as broadcast/route.js)
-        try {
-            const res = await fetch(N8N_WEBHOOK_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
-            if (!res.ok) {
-                console.error('[crm/generate-offer] n8n webhook returned', res.status);
-                return NextResponse.json({ success: false, message: `n8n webhook returned ${res.status}` }, { status: 502 });
+        // 4. Dossier (by phone) + personen + latest bid.
+        const { data: dossierRows } = await supabase
+            .from('dossiers')
+            .select('id, bid_amount, start_date, motivation, months_advance, candidate_bio, guarantor_bio')
+            .in('phone_number', phoneCandidates(phone))
+            .order('created_at', { ascending: false })
+            .limit(1);
+        const dossier = dossierRows?.[0] || null;
+        const dossierId = dossier?.id || null;
+
+        let personen = [];
+        if (dossierId) {
+            const { data: pRows, error: pErr } = await supabase
+                .from('personen')
+                .select('*')
+                .eq('dossier_id', dossierId);
+            if (pErr) throw pErr;
+            personen = pRows || [];
+        }
+
+        let bidAmount = null;
+        let startDate = null;
+        if (dossierId) {
+            const { data: bidRows } = await supabase
+                .from('biedingen')
+                .select('id, amount, start_date')
+                .eq('dossier_id', dossierId)
+                .order('created_at', { ascending: false })
+                .limit(1);
+            if (bidRows && bidRows.length > 0) {
+                bidAmount = Number(bidRows[0].amount) || null;
+                startDate = bidRows[0].start_date || null;
+            } else if (dossier && dossier.bid_amount != null) {
+                bidAmount = Number(dossier.bid_amount) || null;
+                startDate = dossier.start_date || null;
             }
-        } catch (webhookErr) {
-            console.error('[crm/generate-offer] n8n webhook network error:', webhookErr);
-            return NextResponse.json({ success: false, message: 'Could not reach n8n webhook' }, { status: 502 });
+        }
+        if (bidAmount == null && apt.rental_price != null) {
+            // Fall back to the asking rent if the candidate hasn't bid yet.
+            bidAmount = Number(apt.rental_price);
+        }
+        const deposit = bidAmount != null ? bidAmount * 2 : null;
+
+        // 5. Persist the bios into the dossier if the caller passed them.
+        //    Idempotent: only updates if the value actually differs (or the
+        //    column is null). Keeps the bio reusable across apartments.
+        let finalCandidateBio = candidate_bio ?? dossier?.candidate_bio ?? '';
+        let finalGuarantorBio = guarantor_bio ?? dossier?.guarantor_bio ?? '';
+        if (dossierId && (candidate_bio != null || guarantor_bio != null)) {
+            const update = {};
+            if (candidate_bio != null && candidate_bio !== (dossier?.candidate_bio || '')) {
+                update.candidate_bio = candidate_bio;
+            }
+            if (guarantor_bio != null && guarantor_bio !== (dossier?.guarantor_bio || '')) {
+                update.guarantor_bio = guarantor_bio;
+            }
+            if (Object.keys(update).length > 0) {
+                const { error: bioErr } = await supabase
+                    .from('dossiers')
+                    .update(update)
+                    .eq('id', dossierId);
+                if (bioErr) console.error('[generate-offer] bio persist failed (continuing):', bioErr);
+            }
+        }
+
+        // 6. Resolve the sender's crm_users row (name + email + phone + address).
+        //    `crm` from requirePermission already has name/email; we need phone +
+        //    address too for the signature.
+        const { data: senderRow, error: senderErr } = await supabase
+            .from('crm_users')
+            .select('id, name, email, phone, address')
+            .eq('id', crm.id)
+            .maybeSingle();
+        if (senderErr) throw senderErr;
+        const sender = senderRow || { name: crm.name, email: crm.email, phone: null, address: null };
+
+        // 7. Derive candidate type from personen.
+        const candidateType = deriveCandidateType(personen);
+
+        // 8. Render + create the Gmail draft.
+        const emailArgs = {
+            agent,
+            apartment: { address: apt['Full Address'] || apt.street || '' },
+            candidate: { name: account.tenant_name || '' },
+            rent: bidAmount,
+            deposit,
+            startDate,
+            candidateType,
+            candidateBio: finalCandidateBio,
+            guarantorBio: finalGuarantorBio,
+            sender,
+        };
+        const { to, subject, html } = renderOfferDraftEmail(emailArgs);
+
+        let draft;
+        try {
+            draft = await createDraft(crm.email, { to, subject, html });
+        } catch (gmailErr) {
+            console.error('[generate-offer] Gmail draft creation failed:', gmailErr);
+            const msg = gmailErr?.errors?.[0]?.message || gmailErr?.message || 'Gmail API error';
+            return NextResponse.json({
+                success: false,
+                message: `Could not create Gmail draft: ${msg}. Check that the service account has domain-wide delegation for the gmail.compose scope in the Google Workspace Admin Console.`,
+            }, { status: 502 });
         }
 
         return NextResponse.json({
             success: true,
-            message: 'Generate offer triggered — n8n webhook fired',
+            message: 'Draft created in your Gmail — review and send manually',
+            draft_id: draft.id,
+            draft_url: 'https://mail.google.com/mail/u/0/#drafts',
             apartment_id: id,
-            tenant_phone: phone,
+            account_id: account.id,
+            to,
+            subject,
         });
     } catch (err) {
-        return failed('crm/generate-offer POST', err, 'Failed to trigger generate offer');
+        return failed('crm/generate-offer POST', err, 'Failed to generate offer draft');
     }
 }

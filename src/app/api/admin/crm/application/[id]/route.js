@@ -40,7 +40,7 @@ export async function GET(request, { params }) {
         //    for Aanvraag-originated applications.
         const { data: dossierRows } = await supabase
             .from('dossiers')
-            .select('id, bid_amount, start_date, motivation, months_advance')
+            .select('id, bid_amount, start_date, motivation, months_advance, candidate_bio, guarantor_bio')
             .in('phone_number', phoneCandidates(account.whatsapp_number))
             .order('created_at', { ascending: false })
             .limit(1);
@@ -157,7 +157,16 @@ export async function GET(request, { params }) {
 
         return NextResponse.json({
             success: true,
-            account: { ...account, documents, coTenants, dossierId, personen, bid },
+            account: {
+                ...account,
+                documents,
+                coTenants,
+                dossierId,
+                personen,
+                bid,
+                candidate_bio: dossier?.candidate_bio || null,
+                guarantor_bio: dossier?.guarantor_bio || null,
+            },
         });
     } catch (err) {
         return failed('crm/application GET', err, 'Failed to load the application');

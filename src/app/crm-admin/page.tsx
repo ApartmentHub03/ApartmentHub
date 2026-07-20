@@ -288,6 +288,7 @@ function CrmApp({ me, onLogout }: { me: Me; onLogout: (expired?: boolean) => voi
     const tabs = useMemo(() => {
         return TABS.filter((t) => {
             if (t.id === 'team' && !isAdmin) return false;
+            if (t.id === 'collab' && !isAdmin) return false;
             return true;
         });
     }, [isAdmin]);
@@ -403,7 +404,7 @@ function CrmApp({ me, onLogout }: { me: Me; onLogout: (expired?: boolean) => voi
             case 'agents':
                 return <AgentsView agents={lists.agents} />;
             case 'collab':
-                return <CollaborationsView />;
+                return <CollaborationsView agents={lists.realEstateAgents} onToast={showToast} onSaved={loadLists} isAdmin={isAdmin} />;
             case 'team':
                 return <TeamView team={team} loading={teamLoading} isAdmin={isAdmin} onToast={showToast} onAdded={loadTeam} />;
             default:

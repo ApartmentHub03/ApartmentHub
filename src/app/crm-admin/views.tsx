@@ -373,7 +373,8 @@ export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast,
             });
             const data = await res.json();
             if (data.success) {
-                onToast(`Offer triggered for ${tenantName} — n8n is drafting`);
+                onToast('Gmail draft created — click to review and send');
+                if (data.draft_url) window.open(data.draft_url, '_blank');
             } else {
                 onToast(data.message || 'Generate offer failed');
             }
@@ -1244,6 +1245,8 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
     const [app, setApp] = useState<ApplicationDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [candidateBio, setCandidateBio] = useState('');
+    const [guarantorBio, setGuarantorBio] = useState('');
     const fromLabel: Record<string, string> = { making: 'People Making an Offer', offersin: 'Offers In', offersout: 'Offers Out' };
 
     const loadApp = useCallback(async () => {
@@ -1271,6 +1274,13 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
         loadApp();
     }, [loadApp]);
 
+    useEffect(() => {
+        if (app) {
+            setCandidateBio(app.candidate_bio || '');
+            setGuarantorBio(app.guarantor_bio || '');
+        }
+    }, [app?.candidate_bio, app?.guarantor_bio]);
+
     async function generateOffer(offerType: 'normal' | 'hausing' | 'grand') {
         if (!apartmentId) { onToast('No apartment selected'); return; }
         const tenantPhone = app?.whatsapp_number || '';
@@ -1280,11 +1290,16 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
             const res = await fetch(`/api/admin/crm/apartment/${apartmentId}/generate-offer`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
-                body: JSON.stringify({ tenant_phone: tenantPhone }),
+                body: JSON.stringify({
+                    tenant_phone: tenantPhone,
+                    candidate_bio: candidateBio,
+                    guarantor_bio: guarantorBio,
+                }),
             });
             const data = await res.json();
             if (data.success) {
-                onToast(`${offerType === 'normal' ? 'Normal' : offerType === 'hausing' ? 'Hausing' : 'Grand relocation'} offer triggered — n8n is drafting`);
+                onToast('Gmail draft created — click to review and send');
+                if (data.draft_url) window.open(data.draft_url, '_blank');
             } else {
                 onToast(data.message || 'Generate offer failed');
             }
@@ -1543,12 +1558,41 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', background: 'var(--teal-l)', border: '1px solid #cfe9e5', borderRadius: 10, padding: '10px 13px', marginBottom: 14 }}>
                             <b style={{ fontSize: 13 }}>Generate offer:</b>
                             <button className={`${styles.btn} ${styles.btnSm}`} disabled={offerLoading} onClick={() => generateOffer('normal')}>
-                                {offerLoading ? 'Sending…' : 'Normal'}
+                                {offerLoading ? 'Creating draft…' : 'Normal'}
                             </button>
                             <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} disabled={offerLoading} onClick={() => generateOffer('hausing')}>Hausing</button>
                             <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} disabled={offerLoading} onClick={() => generateOffer('grand')}>Grand relocation</button>
                             <div className={styles.hint} style={{ flexBasis: '100%', marginTop: 4 }}>
-                                Writes tenant phone ({app.whatsapp_number || '—'}) to generate_offer → DB trigger fires n8n → AI drafts offer email.
+                                Creates a draft email in your Gmail ({app.whatsapp_number ? 'tenant ' + app.whatsapp_number : 'no tenant phone'}) addressed to the listing agent. Review and send manually.
+                            </div>
+                        </div>
+
+                        {/* Candidate + guarantor bio textareas — saved to the
+                            dossier so they're reusable when this candidate applies
+                            to another apartment. Inserted into the Gmail draft. */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+                            <div>
+                                <label className={styles.fLabel}>Candidate bio</label>
+                                <textarea
+                                    className={styles.inp}
+                                    rows={4}
+                                    placeholder="e.g. Lukas Norman (18 years old) is a Belgian student who will be studying Economics and Business Economics full-time at the Vrije Universiteit Amsterdam…"
+                                    value={candidateBio}
+                                    onChange={(e) => setCandidateBio(e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className={styles.fLabel}>Guarantor bio</label>
+                                <textarea
+                                    className={styles.inp}
+                                    rows={4}
+                                    placeholder="e.g. Kristine Hambrouck (mother) works at UNHCR as Head of Global Budget and Resource Allocation Service. She has held a permanent contract since 1998 and earns USD 315,917 gross per year…"
+                                    value={guarantorBio}
+                                    onChange={(e) => setGuarantorBio(e.target.value)}
+                                />
+                            </div>
+                            <div className={styles.hint}>
+                                These paragraphs are saved to the candidate's dossier and reused for future applications. They're inserted into the Gmail draft when you click Generate offer.
                             </div>
                         </div>
 
@@ -1971,48 +2015,211 @@ export function AgentsView({ agents }: { agents: CrmAgent[] }) {
 }
 
 // ============================================================
-// Collaborations — stub
-// TODO: Phase 2 — wire to real_estate_agents table
+// Collaborations — wired to real_estate_agents (point 9 · admin)
 // ============================================================
-export function CollaborationsView() {
+export function CollaborationsView({ agents, onToast, onSaved, isAdmin }: {
+    agents: RealEstateAgent[];
+    onToast: ToastFn;
+    onSaved: () => void;
+    isAdmin: boolean;
+}) {
+    const [form, setForm] = useState({ name: '', contactPerson: '', phone: '', email: '', offerType: 'Normal' });
+    const [saving, setSaving] = useState(false);
+    const [editId, setEditId] = useState<string | null>(null);
+    const [edit, setEdit] = useState({ name: '', contactPerson: '', phone: '', email: '', offerType: 'Normal' });
+    const [savingEdit, setSavingEdit] = useState(false);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+
+    if (!isAdmin) return <div className={styles.empty}>Admin access required to manage collaborations.</div>;
+
+    const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+        setForm((s) => ({ ...s, [k]: e.target.value }));
+    const setEditField = (k: keyof typeof edit) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+        setEdit((s) => ({ ...s, [k]: e.target.value }));
+
+    function startEdit(a: RealEstateAgent) {
+        setEditId(a.id);
+        setEdit({
+            name: a.name || '',
+            contactPerson: a.contact_person_name || '',
+            phone: a.phone_number || '',
+            email: a.email || '',
+            offerType: a.default_offer_type || 'Normal',
+        });
+    }
+
+    async function addCollaboration() {
+        if (!form.name.trim()) { onToast('Office name is required'); return; }
+        setSaving(true);
+        try {
+            const res = await fetch('/api/admin/crm/collaborations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
+                body: JSON.stringify({
+                    name: form.name,
+                    contact_person_name: form.contactPerson || undefined,
+                    phone_number: form.phone || undefined,
+                    email: form.email || undefined,
+                    default_offer_type: form.offerType,
+                }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setForm({ name: '', contactPerson: '', phone: '', email: '', offerType: 'Normal' });
+                onToast('Collaboration added');
+                onSaved();
+            } else {
+                onToast(data.message || 'Could not add collaboration');
+            }
+        } catch {
+            onToast('Could not add collaboration — check console');
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    async function saveEdit(id: string) {
+        setSavingEdit(true);
+        try {
+            const res = await fetch(`/api/admin/crm/collaborations/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
+                body: JSON.stringify({
+                    name: edit.name,
+                    contact_person_name: edit.contactPerson,
+                    phone_number: edit.phone,
+                    email: edit.email,
+                    default_offer_type: edit.offerType,
+                }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                onToast('Collaboration updated');
+                setEditId(null);
+                onSaved();
+            } else {
+                onToast(data.message || 'Could not update collaboration');
+            }
+        } catch {
+            onToast('Could not update collaboration — check console');
+        } finally {
+            setSavingEdit(false);
+        }
+    }
+
+    async function deleteCollaboration(a: RealEstateAgent) {
+        const ok = window.confirm(`Delete "${a.name}"? Apartments using it will have the realtor cleared.`);
+        if (!ok) return;
+        setDeletingId(a.id);
+        try {
+            const res = await fetch(`/api/admin/crm/collaborations/${a.id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
+            });
+            const data = await res.json();
+            if (data.success) {
+                onToast('Collaboration deleted');
+                onSaved();
+            } else {
+                onToast(data.message || 'Could not delete collaboration');
+            }
+        } catch {
+            onToast('Could not delete collaboration — check console');
+        } finally {
+            setDeletingId(null);
+        }
+    }
+
+    const offerPill = (t: string | null) => (
+        <span className={`${styles.pill} ${styles.pillGrey}`}>{t || 'Normal'}</span>
+    );
+
     return (
         <>
-            <h2 className={styles.pageTitle}>Collaborations <span className={styles.ref}>point 9</span></h2>
-            <p className={styles.sub}>External realtors, one per apartment. Each realtor maps to a default offer type.</p>
+            <h2 className={styles.pageTitle}>Collaborations <span className={styles.ref}>point 9 · admin</span></h2>
+            <p className={styles.sub}>
+                External realtor offices, one per apartment. Each realtor maps to a default offer type used by
+                Generate offer. Stored in <code>real_estate_agents</code>.
+            </p>
             <div className={styles.grid2}>
                 <div className={styles.card}>
                     <div className={styles.cardHead}><h3>Add collaboration</h3></div>
                     <div className={styles.cardBody}>
                         <label className={styles.fLabel}>Office</label>
-                        <input className={styles.inp} />
+                        <input className={styles.inp} value={form.name} onChange={set('name')} placeholder="e.g. De Vries Makelaars" />
                         <label className={styles.fLabel}>Contact person name</label>
-                        <input className={styles.inp} />
+                        <input className={styles.inp} value={form.contactPerson} onChange={set('contactPerson')} />
                         <div className={styles.formRow}>
-                            <div><label className={styles.fLabel}>Phone number</label><input className={styles.inp} /></div>
-                            <div><label className={styles.fLabel}>Email</label><input className={styles.inp} /></div>
+                            <div><label className={styles.fLabel}>Phone number</label><input className={styles.inp} value={form.phone} onChange={set('phone')} /></div>
+                            <div><label className={styles.fLabel}>Email</label><input className={styles.inp} type="email" value={form.email} onChange={set('email')} /></div>
                         </div>
                         <label className={styles.fLabel}>Default offer type</label>
-                        <select className={styles.inp}>
-                            <option>Normal</option>
-                            <option>Hausing</option>
-                            <option>Grand relocation</option>
+                        <select className={styles.inp} value={form.offerType} onChange={set('offerType')}>
+                            <option value="Normal">Normal</option>
+                            <option value="Hausing">Hausing</option>
+                            <option value="Grand relocation">Grand relocation</option>
                         </select>
-                        <button className={styles.btn} style={{ marginTop: 16 }}>Save</button>
+                        <button className={styles.btn} style={{ marginTop: 16 }} disabled={saving} onClick={addCollaboration}>
+                            {saving ? 'Adding…' : 'Save'}
+                        </button>
                     </div>
                 </div>
                 <div className={styles.card}>
                     <div className={styles.cardHead}>
                         <h3>Existing collaborations</h3>
-                        <span className={`${styles.hint} ${styles.cardHeadSp}`}>TODO: Phase 2</span>
+                        <span className={`${styles.hint} ${styles.cardHeadSp}`}>{agents.length} office{agents.length === 1 ? '' : 's'}</span>
                     </div>
                     <div className={styles.cardBody} style={{ padding: 0 }}>
-                        <table className={styles.table}>
-                            <thead><tr><th>Office</th><th>Offer type</th></tr></thead>
-                            <tbody>
-                                <tr><td>De Vries Makelaars</td><td><span className={`${styles.pill} ${styles.pillGrey}`}>Hausing</span></td></tr>
-                                <tr><td>Grachtenhuis</td><td><span className={`${styles.pill} ${styles.pillGrey}`}>Normal</span></td></tr>
-                            </tbody>
-                        </table>
+                        {agents.length === 0 ? (
+                            <div className={styles.empty} style={{ padding: 16 }}>No collaborations yet — add one above.</div>
+                        ) : (
+                            <table className={styles.table}>
+                                <thead><tr><th>Office</th><th>Contact</th><th>Phone</th><th>Email</th><th>Offer type</th><th></th></tr></thead>
+                                <tbody>
+                                    {agents.map((a) => (
+                                        <tr key={a.id}>
+                                            {editId === a.id ? (
+                                                <>
+                                                    <td><input className={styles.inp} style={{ fontSize: 12, padding: '4px 6px' }} value={edit.name} onChange={setEditField('name')} /></td>
+                                                    <td><input className={styles.inp} style={{ fontSize: 12, padding: '4px 6px' }} value={edit.contactPerson} onChange={setEditField('contactPerson')} placeholder="—" /></td>
+                                                    <td><input className={styles.inp} style={{ fontSize: 12, padding: '4px 6px' }} value={edit.phone} onChange={setEditField('phone')} placeholder="—" /></td>
+                                                    <td><input className={styles.inp} style={{ fontSize: 12, padding: '4px 6px' }} value={edit.email} onChange={setEditField('email')} placeholder="—" /></td>
+                                                    <td>
+                                                        <select className={styles.inp} style={{ fontSize: 12, padding: '4px 6px' }} value={edit.offerType} onChange={setEditField('offerType')}>
+                                                            <option value="Normal">Normal</option>
+                                                            <option value="Hausing">Hausing</option>
+                                                            <option value="Grand relocation">Grand relocation</option>
+                                                        </select>
+                                                    </td>
+                                                    <td style={{ whiteSpace: 'nowrap' }}>
+                                                        <button className={`${styles.btn} ${styles.btnSm}`} disabled={savingEdit} onClick={() => saveEdit(a.id)}>Save</button>
+                                                        <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} onClick={() => setEditId(null)}>Cancel</button>
+                                                    </td>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <td><b>{a.name}</b></td>
+                                                    <td>{a.contact_person_name || '—'}</td>
+                                                    <td style={{ fontSize: 12 }}>{a.phone_number || '—'}</td>
+                                                    <td style={{ fontSize: 12 }}>{a.email || '—'}</td>
+                                                    <td>{offerPill(a.default_offer_type)}</td>
+                                                    <td style={{ whiteSpace: 'nowrap' }}>
+                                                        <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} onClick={() => startEdit(a)}>Edit</button>
+                                                        <button
+                                                            className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`}
+                                                            disabled={deletingId === a.id}
+                                                            onClick={() => deleteCollaboration(a)}
+                                                        >
+                                                            {deletingId === a.id ? '…' : 'Delete'}
+                                                        </button>
+                                                    </td>
+                                                </>
+                                            )}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
                     </div>
                 </div>
             </div>
@@ -2030,10 +2237,13 @@ export function TeamView({ team, loading, isAdmin, onToast, onAdded }: {
     onToast: ToastFn;
     onAdded: () => void;
 }) {
-    const [form, setForm] = useState({ name: '', email: '', phone: '', startDate: '', role: 'agent' });
+    const [form, setForm] = useState({ name: '', email: '', phone: '', startDate: '', role: 'agent', address: '' });
     const [perms, setPerms] = useState({ apartments: true, candidates: true, offers: false, team: false });
     const [saving, setSaving] = useState(false);
     const [tempPw, setTempPw] = useState<string | null>(null);
+    const [editAddrId, setEditAddrId] = useState<string | null>(null);
+    const [editAddrValue, setEditAddrValue] = useState('');
+    const [savingAddr, setSavingAddr] = useState(false);
 
     if (!isAdmin) return <div className={styles.empty}>Admin access required to view the team.</div>;
     if (loading) return <div className={styles.loading}>Loading team…</div>;
@@ -2056,12 +2266,13 @@ export function TeamView({ team, loading, isAdmin, onToast, onAdded }: {
                     role: form.role,
                     permissions: perms,
                     start_date: form.startDate || undefined,
+                    address: form.address || undefined,
                 }),
             });
             const data = await res.json();
             if (data.success) {
                 setTempPw(data.tempPassword || null);
-                setForm({ name: '', email: '', phone: '', startDate: '', role: 'agent' });
+                setForm({ name: '', email: '', phone: '', startDate: '', role: 'agent', address: '' });
                 onToast('Employee added');
                 onAdded();
             } else {
@@ -2071,6 +2282,29 @@ export function TeamView({ team, loading, isAdmin, onToast, onAdded }: {
             onToast('Could not add employee — check console');
         } finally {
             setSaving(false);
+        }
+    }
+
+    async function saveAddress(memberId: string) {
+        setSavingAddr(true);
+        try {
+            const res = await fetch('/api/admin/crm/team', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
+                body: JSON.stringify({ id: memberId, address: editAddrValue }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                onToast('Address saved');
+                setEditAddrId(null);
+                onAdded();
+            } else {
+                onToast(data.message || 'Could not save address');
+            }
+        } catch {
+            onToast('Could not save address — check console');
+        } finally {
+            setSavingAddr(false);
         }
     }
 
@@ -2109,6 +2343,8 @@ export function TeamView({ team, loading, isAdmin, onToast, onAdded }: {
                         <div className={styles.perm}><input type="checkbox" checked={perms.candidates} onChange={(e) => setPerms((s) => ({ ...s, candidates: e.target.checked }))} /> Candidates &amp; viewings</div>
                         <div className={styles.perm}><input type="checkbox" checked={perms.offers} onChange={(e) => setPerms((s) => ({ ...s, offers: e.target.checked }))} /> Offers</div>
                         <div className={styles.perm}><input type="checkbox" checked={perms.team} onChange={(e) => setPerms((s) => ({ ...s, team: e.target.checked }))} /> Team (admin)</div>
+                        <label className={styles.fLabel} style={{ marginTop: 12 }}>Street address <span style={{ fontWeight: 400, color: '#8a9994' }}>(for the Gmail draft signature)</span></label>
+                        <input className={styles.inp} value={form.address} onChange={set('address')} placeholder="e.g. Korte Leidsedwarsstraat 12" />
                         <button className={styles.btn} style={{ marginTop: 16 }} disabled={saving} onClick={addEmployee}>
                             {saving ? 'Adding…' : 'Add employee'}
                         </button>
@@ -2124,7 +2360,7 @@ export function TeamView({ team, loading, isAdmin, onToast, onAdded }: {
                 <div className={styles.card}>
                     <div className={styles.cardBody} style={{ padding: 0 }}>
                         <table className={styles.table}>
-                            <thead><tr><th>Name</th><th>Role</th><th>Since</th></tr></thead>
+                            <thead><tr><th>Name</th><th>Role</th><th>Since</th><th>Address</th></tr></thead>
                             <tbody>
                                 {team.map((m) => (
                                     <tr key={m.id}>
@@ -2135,6 +2371,29 @@ export function TeamView({ team, loading, isAdmin, onToast, onAdded }: {
                                             </span>
                                         </td>
                                         <td>{m.created_at ? new Date(m.created_at).getFullYear() : '—'}</td>
+                                        <td>
+                                            {editAddrId === m.id ? (
+                                                <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                                                    <input
+                                                        className={styles.inp}
+                                                        style={{ fontSize: 12, padding: '4px 6px' }}
+                                                        value={editAddrValue}
+                                                        onChange={(e) => setEditAddrValue(e.target.value)}
+                                                        placeholder="Street address"
+                                                    />
+                                                    <button className={`${styles.btn} ${styles.btnSm}`} disabled={savingAddr} onClick={() => saveAddress(m.id)}>Save</button>
+                                                    <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} onClick={() => setEditAddrId(null)}>Cancel</button>
+                                                </span>
+                                            ) : (
+                                                <span
+                                                    style={{ cursor: 'pointer', fontSize: 12, color: m.address ? '#1a2b27' : '#8a9994' }}
+                                                    title="Click to edit — used in the Gmail draft signature"
+                                                    onClick={() => { setEditAddrId(m.id); setEditAddrValue(m.address || ''); }}
+                                                >
+                                                    {m.address || '— click to set —'}
+                                                </span>
+                                            )}
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>

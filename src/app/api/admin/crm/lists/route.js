@@ -71,7 +71,7 @@ export async function GET(request) {
                 .order('created_at', { ascending: false }),
             supabase
                 .from('real_estate_agents')
-                .select('id, name, contact_person_name, email, default_offer_type')
+                .select('id, name, contact_person_name, phone_number, email, default_offer_type')
                 .order('created_at', { ascending: false }),
             supabase
                 .from('invoices')

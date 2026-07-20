@@ -168,6 +168,7 @@ export interface RealEstateAgent {
     id: string;
     name: string;
     contact_person_name: string | null;
+    phone_number: string | null;
     email: string | null;
     default_offer_type: string | null;
 }
@@ -210,6 +211,7 @@ export interface TeamMember {
     start_date: string | null;
     is_active: boolean | null;
     created_at: string | null;
+    address: string | null;
 }
 
 export interface TeamResponse {
@@ -312,6 +314,8 @@ export interface ApplicationDetail {
     dossierId: string | null;
     personen: PersoonEntry[];
     bid: BidEntry | null;
+    candidate_bio: string | null;
+    guarantor_bio: string | null;
 }
 
 export interface ApplicationResponse {
