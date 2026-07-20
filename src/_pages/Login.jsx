@@ -209,8 +209,8 @@ const Login = () => {
 
                             <p className={styles.inputHint} style={{ textAlign: 'center', marginTop: '0.5rem' }}>
                                 {currentLang === 'en'
-                                    ? 'New here? Just enter your number — we\'ll set everything up for you.'
-                                    : 'Nieuw hier? Voer je nummer in — wij regelen de rest.'}
+                                    ? 'New here? Just enter your number and we\'ll set everything up for you.'
+                                    : 'Nieuw hier? Voer je nummer in en wij regelen de rest.'}
                             </p>
                         </form>
                     ) : (

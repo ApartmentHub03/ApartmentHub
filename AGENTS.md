@@ -34,6 +34,7 @@ There is no CI workflow in this repo. Verification = `npm run lint` + `npm run b
 - **Webhooks → n8n Cloud** at `davidvanwachem.app.n8n.cloud`. Outbound CRM automation is triggered by Postgres webhook triggers (see migrations with `_webhook` in the name) calling n8n, not by Next.js API routes.
 - **Storage bucket:** `dossier-documents` (Supabase Storage) for all dossier uploads.
 - **Git workflow:** never push to `main` directly — use a feature branch off `Beta` and open a PR. Commit messages often use conventional-commits prefixes (`fix(crm):`, `chore:`) but it's not enforced.
+- **No long dashes in UI copy.** Never use em dash (—) or en dash (–) in user-facing copy for the CRM or websites. Use a comma, a period, or the word "and" instead. (Applies to rendered text only; code comments, regex, and placeholder `'—'` data fallbacks are out of scope for this rule unless separately flagged.)
 
 ## Env vars an agent will actually need
 

@@ -72,6 +72,7 @@ supabase/
 - Edge functions use Deno runtime with `@supabase/supabase-js`
 - Webhooks go to n8n Cloud (davidvanwachem.app.n8n.cloud)
 - Git workflow: never push to `main` directly — use Beta branch + PRs
+- No long dashes in UI copy: never use em dash (—) or en dash (–) in user-facing copy for the CRM or websites. Use a comma, a period, or the word "and" instead. (Applies to rendered text only; code comments, regex, and placeholder `'—'` data fallbacks are out of scope.)
 
 ## MCP Server (`mcp-server/`)
 Centralized remote MCP server so any team member can connect from any device via Claude Code.
