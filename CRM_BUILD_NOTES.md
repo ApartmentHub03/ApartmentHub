@@ -127,7 +127,7 @@ Amsterdam wired. Utrecht = "coming soon" stub. Dropdown exists in UI but selecti
 - ✅ DealsView wired to real `won_deals` from `accepted_deals` JSONB
 
 ### Phase 5 — Zoko Flow triggers (in progress, Jul 18 2026)
-Code-side wiring done. 2 new migrations written (David applies via Supabase SQL Editor). 5 new n8n workflows needed (David creates in n8n Cloud — see `DAVID_BLOCKERS.md` section 6).
+Code-side wiring done. 2 new migrations written (David applies via Supabase SQL Editor — see `DAVID_BLOCKERS.md` §3b). 5 new n8n workflows needed (David creates in n8n Cloud — see `DAVID_BLOCKERS.md` §2d).
 
 | # | Trigger | Code | Migration | n8n workflow |
 |---|---------|------|-----------|--------------|
@@ -177,20 +177,19 @@ Code-side wiring done. 2 new migrations written (David applies via Supabase SQL 
 
 ## What's lacking / blocked
 
-### Blocked on David
+### Blocked on David → see `DAVID_BLOCKERS.md` for the full list
+All current blockers needing David's input live in `DAVID_BLOCKERS.md` now. Summary of what's there:
+- §1 — Generate Offer decision (email / WhatsApp / both) + new Zoko template design if WhatsApp
+- §2 — n8n Cloud actions: verify workflows are Active, verify Zoko credential uses centralized key, create 5 new Phase 5 workflows
+- §3 — Supabase dashboard actions: create `Invoices` storage bucket, apply 4 migrations, deploy 2 edge functions
+- §4 — Confirm closer list (Lander/David/Kaj/Lucas all in `crm_users`?)
+
+### Resolved blockers (kept here for history)
 - [x] ~~`documents_missing_before_viewing` — create in Zoko, send UUID~~ — **RESOLVED Jul 18, 2026**. Replaced by `new_flow_upload_documents` (fetched live from Zoko: 2 vars, candidate name + upload URL). Wired in `src/services/zokoTemplates.js:38`. The pre-viewing document reminder now fires via the new `pre_viewing_reminders` pg_cron job → n8n `pre-viewing-document-reminder` webhook.
 - [x] ~~Invoice PDF template~~ — **done**. `invoice-pdf.js` generates a real PDF matching David's template; attached to email via Resend. Requires David to create an `Invoices` storage bucket in Supabase dashboard (private) for `pdf_path` persistence — if missing, send still works but PDF won't be stored.
 - [x] ~~Confirm: template #11 timing is 17h (xlsx) or 24h~~ — **confirmed 17h**. Label + timing updated in `zokoTemplates.js:50`.
-- [ ] Confirm n8n workflows are **active** (not just URL exists) at `/webhook/send-offer-to-the-tenant` and `/webhook/deal-response`
 - [x] ~~Verify `finance@apartmenthub.nl` sender in Resend~~ — **confirmed verified**.
 - [x] ~~Confirm commission rule edge cases~~ — **confirmed via LOI legal text** (`LetterOfIntent.jsx:281`): "bij een huurprijs onder € 2.000,-: tweemaal de maandhuur". Strictly `<`. Current `commission.js:25` is correct.
-- [ ] **Confirm closer list** — DealModal uses `crm_users` (active team members) for the closer dropdown. The prototype shows Lander/David/Kaj/Lucas. Confirm these are the right people and they're all in `crm_users`.
-- [ ] **Edge function deploys** — `add-person` (JWT fix) + `auth-verify-code` (role lookup fix). David will deploy via Supabase dashboard (CLI not installed on dev machine).
-- [ ] **Create `Invoices` storage bucket in Supabase dashboard** (private). Invoice PDFs upload to path `invoices/{invoice_id}/invoice-{number}.pdf`. If bucket is missing, send still works (PDF attached to email) but `pdf_path` won't persist and the PDF won't be retrievable later.
-- [ ] **Apply migration `20260717010000_invoice_recipient_snapshot.sql`** — adds `recipient_name`, `recipient_address`, `recipient_zipcode`, `recipient_city`, `recipient_country` columns to `invoices`. Without this, mark-deal will throw on insert (columns won't exist).
-- [ ] **Apply migration `20260718140000_pre_viewing_reminders.sql`** (Phase 5, consolidated, non-destructive) — adds `viewing_start_time` column to existing `viewing_reminders` table, rewrites `schedule_viewing_reminders()` to insert 6 rows per booking (4 post-viewing + 2 pre-viewing when start_time is in the future), rewrites `process_viewing_reminders()` to route by `reminder_interval` (post-viewing → existing `post-viewing-reminder` webhook + NEW skip-if-offer-made check; pre-viewing → new `viewing-start-reminder` / `pre-viewing-document-reminder` webhooks), reschedules existing pg_cron job, backfills pre-viewing rows for existing future viewings. **No new table, no new cron job.** **Non-destructive:** no DELETE, no unique index — dedup via per-interval `IF NOT EXISTS` checks (same pattern as the original `20260226020000` function, extended to 6 intervals). Safe to run in Supabase SQL Editor — no destructive-operations warning.
-- [ ] **Apply migration `20260718160000_thank_you_for_offer.sql`** (Phase 5) — new `thank_you_offer_sent` guard table + trigger on `documenten` (AFTER INSERT when status='ontvangen') that fires n8n `thank-you-for-offer` webhook on first post-viewing upload. Also adds `bestandspad`/`bestandsnaam`/`uploaded_at` columns to `documenten` if missing.
-- [ ] **Create 5 new n8n workflows** (Phase 5) — see `DAVID_BLOCKERS.md` section 6 for full spec of each: `viewing-start-reminder`, `pre-viewing-document-reminder`, `thank-you-for-offer`, `agent-cancel-notification`, `agent-reschedule-notification`. Each must use the centralized `ZOKO_API_KEY` (`e500fef1-…`) in its Zoko send node to avoid the agent-personal-number bug.
 
 ### Confirmed applied to prod
 - ✅ `20260716000000_block_c_deals_invoices.sql` — VAT/commission/closer columns (David confirmed)
@@ -210,7 +209,8 @@ Code-side wiring done. 2 new migrations written (David applies via Supabase SQL 
 - **CSS duplication**: resolved by the Jul 18, 2026 promotion — `/crm-admin2/crm.module.css` was deleted alongside the rest of the dev scaffold; the v2 CSS now lives at `/crm-admin/crm.module.css`.
 - **No tests**: No test framework is set up for the CRM. Manual verification only.
 - **No error boundaries**: Scaffold doesn't implement React error boundaries. A crash in one view takes down the whole app.
-- **DB triggers assumed working but unverified**: Two apartments have non-null `generate_offer` values (`+917396428078`), which should have been cleared to NULL by `trigger_generate_offer` if the trigger is active. The Generate Offer API route (`/api/admin/crm/apartment/[id]/generate-offer`) writes the phone to the column and relies on the DB trigger to fire the n8n webhook + clear the column. If the trigger is dead, the phone will persist and no webhook fires. To verify after first real use: check if `generate_offer` returns to NULL after the API call. If it stays non-null, the trigger is dead — fall back to firing the webhook from the API route directly.
+- **DB trigger `trigger_generate_offer` is dormant but harmless.** Two apartments still have non-null `generate_offer` values (`+917396428078`) in the DB — leftover from before the route was rewritten. The current `generate-offer/route.js` fires the n8n webhook directly from the API and writes nothing to the column (file header: "No DB write, no audit trail — n8n's execution log is the record"), so the trigger is no longer in the critical path. The stale non-null values are inert.
+- **Send Offer pipeline live (Jul 19, 2026).** `send-offer/route.js` + UI buttons in `views.tsx` move an application's offer from `offers_in` → `offers_sent` so Deal / No Deal buttons become reachable. This is a pure DB state change — sends no message. The *messaging* step (the actual offer email/WhatsApp to the tenant) is the **Generate offer** button, which is still blocked on David's decision — see `DAVID_BLOCKERS.md` §1.
 
 ### Technical debt notes
 - The old `crm-admin/page.jsx` (1329 lines, single-file client component) was deleted on Jul 18, 2026 when the v2 build was promoted. The new scaffold follows a similar pattern but with TypeScript and slightly more file separation. Neither the old nor new version uses React Query — data fetching is `useState` + `useEffect` + `fetch`. The kanban CRM (`/crm`) does use React Query. If `/crm-admin` grows complex, consider migrating to React Query (already a dependency).

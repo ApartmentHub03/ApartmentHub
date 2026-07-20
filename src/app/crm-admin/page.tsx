@@ -393,7 +393,7 @@ function CrmApp({ me, onLogout }: { me: Me; onLogout: (expired?: boolean) => voi
             case 'apartments':
                 return <ApartmentsView apartments={lists.apartments} loading={loading} onOpenRecord={openRecord} onCreate={() => navigate({ tab: 'create' })} />;
             case 'deals':
-                return <DealsView wonDeals={lists.wonDeals} onToast={showToast} onModal={setModal} />;
+                return <DealsView wonDeals={lists.wonDeals} onToast={showToast} onModal={setModal} onSaved={bumpReload} />;
             case 'candidates':
                 return <CandidatesView candidates={lists.candidates} />;
             case 'leads':

@@ -1717,10 +1717,11 @@ function personGroup(name: string, role: string, roleClass: 'tenant' | 'guaranto
 // ============================================================
 // Deals — wired to lists.won_deals
 // ============================================================
-export function DealsView({ wonDeals, onToast, onModal }: {
+export function DealsView({ wonDeals, onToast, onModal, onSaved }: {
     wonDeals: WonDeal[];
     onToast: ToastFn;
     onModal: ModalFn;
+    onSaved?: () => void;
 }) {
     const [sending, setSending] = useState<string | null>(null);
 
@@ -1734,6 +1735,11 @@ export function DealsView({ wonDeals, onToast, onModal }: {
             const data = await res.json();
             if (data.success) {
                 onToast(data.message || 'Invoice sent');
+                // Trigger reload of wonDeals so the row reflects the new
+                // invoice_status ("sent") instead of still showing the
+                // "Send invoice" button. Same pattern DealModal uses
+                // (onSaved -> bumpReload -> loadLists effect).
+                onSaved?.();
             } else {
                 onToast(data.message || 'Failed to send invoice');
             }

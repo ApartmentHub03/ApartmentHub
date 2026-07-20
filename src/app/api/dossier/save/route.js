@@ -47,6 +47,14 @@ export async function POST(request) {
         // whatsapp_number as the canonical phone so the documentation_status
         // recompute trigger reliably matches. Lazy-create mirrors the safety
         // net that forward-docs-to-salesforce used to provide.
+        //
+        // Email is written to the account here too (from dossier.email) so
+        // that downstream flows — especially /api/admin/crm/invoices/[id]/send
+        // which requires accounts.email — can actually send the invoice email.
+        // Without this, a tenant who filled in their email on the form but
+        // never received an email-based OTP would have accounts.email = NULL
+        // forever, and Send invoice would 400 with "Account has no email
+        // address".
         const mainPerson = personen.find((p) => p.rol === 'Hoofdhuurder') || personen[0] || {};
         const tenantName =
             dossier.tenantName ||
@@ -55,18 +63,34 @@ export async function POST(request) {
             null;
 
         const { data: accMatch } = await supabase
-            .from('accounts').select('id, whatsapp_number')
-            .in('whatsapp_number', candidates).limit(1);
+            .from('accounts').select('id, whatsapp_number, email').in('whatsapp_number', candidates).limit(1);
 
         let canonicalPhone;
         let accountId = accMatch?.[0]?.id || null;
         if (accountId) {
             canonicalPhone = accMatch[0].whatsapp_number;
+            // Backfill email on the existing account if the form carries one
+            // and the account's email is null. Idempotent — won't overwrite a
+            // real email already on the row.
+            if (dossier.email && !accMatch[0].email) {
+                const { error: emailUpErr } = await supabase
+                    .from('accounts')
+                    .update({ email: dossier.email })
+                    .eq('id', accountId);
+                if (emailUpErr) {
+                    console.warn('[dossier/save] could not backfill accounts.email:', emailUpErr.message);
+                }
+            }
         } else {
             canonicalPhone = `+${digits}`;
             const { data: createdAcc, error: accErr } = await supabase
                 .from('accounts')
-                .insert({ whatsapp_number: canonicalPhone, tenant_name: tenantName, account_role: 'tenant' })
+                .insert({
+                    whatsapp_number: canonicalPhone,
+                    tenant_name: tenantName,
+                    email: dossier.email || null,
+                    account_role: 'tenant',
+                })
                 .select('id').single();
             if (accErr) throw new Error('account provision: ' + accErr.message);
             accountId = createdAcc.id;
