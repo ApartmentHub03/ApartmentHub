@@ -1,4 +1,6 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
 
 // Generates the ApartmentHub commission invoice PDF, matching the layout of
 // the real invoice template (Apartmenthub_invoice.pdf) David sent:
@@ -22,6 +24,8 @@ const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
 const TEAL = rgb(0.286, 0.467, 0.447); // #497772 — matches crm-admin brand color
 const INK = rgb(0.102, 0.169, 0.153);
 const GREY = rgb(0.275, 0.329, 0.31);
+
+const LOGO_PATH = path.join(process.cwd(), 'public', 'images', 'vertical-logo.png');
 
 function fmtEuro(n) {
     const num = Number(n || 0);
@@ -71,17 +75,43 @@ export async function generateInvoicePdf(invoice, apartmentAddress) {
     const page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
     let y = PAGE_HEIGHT - 70;
 
-    // --- Header: brand name top-right ---
-    const brand = 'APARTMENTHUB';
-    const brandSize = 16;
-    const brandWidth = helveticaBold.widthOfTextAtSize(brand, brandSize);
-    page.drawText(brand, {
-        x: PAGE_WIDTH - MARGIN_RIGHT - brandWidth,
-        y: PAGE_HEIGHT - 60,
-        size: brandSize,
-        font: helveticaBold,
-        color: TEAL,
-    });
+    // --- Header: logo top-right (replaces "APARTMENTHUB" text) ---
+    // Logo is 4090x1664 (~2.46:1). Size to match the original 16pt text brand's
+    // visual footprint: ~140pt wide, max 50pt tall. Right-aligned to PAGE_WIDTH - MARGIN_RIGHT.
+    const logoMaxW = 140;
+    const logoMaxH = 50;
+    let logoDrawn = false;
+    try {
+        const logoBytes = await fs.readFile(LOGO_PATH);
+        const logo = await pdfDoc.embedPng(logoBytes);
+        const scale = Math.min(logoMaxW / logo.width, logoMaxH / logo.height);
+        const w = logo.width * scale;
+        const h = logo.height * scale;
+        // Right-aligned at PAGE_WIDTH - MARGIN_RIGHT, vertically centered around
+        // the original text brand's baseline (PAGE_HEIGHT - 60 + ~6pt midline).
+        page.drawImage(logo, {
+            x: PAGE_WIDTH - MARGIN_RIGHT - w,
+            y: PAGE_HEIGHT - 60 - (h / 2) + 6,
+            width: w,
+            height: h,
+        });
+        logoDrawn = true;
+    } catch (logoErr) {
+        console.error('[invoice-pdf] logo embed failed, falling back to text:', logoErr);
+    }
+
+    if (!logoDrawn) {
+        const brand = 'APARTMENTHUB';
+        const brandSize = 16;
+        const brandWidth = helveticaBold.widthOfTextAtSize(brand, brandSize);
+        page.drawText(brand, {
+            x: PAGE_WIDTH - MARGIN_RIGHT - brandWidth,
+            y: PAGE_HEIGHT - 60,
+            size: brandSize,
+            font: helveticaBold,
+            color: TEAL,
+        });
+    }
 
     // --- Recipient block ---
     // Layout matches the real template: name / street / zipcode (own line) /
