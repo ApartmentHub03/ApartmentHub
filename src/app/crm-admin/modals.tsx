@@ -185,6 +185,8 @@ export function SendSegmentModal({ aptId, rentalPrice, bedrooms, onClose, onToas
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [search, setSearch] = useState('');
     const [excludeStudents, setExcludeStudents] = useState(false);
+    const [testMode, setTestMode] = useState(false);
+    const [testPhone, setTestPhone] = useState('');
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
     const [expanded, setExpanded] = useState(true);
@@ -249,17 +251,24 @@ export function SendSegmentModal({ aptId, rentalPrice, bedrooms, onClose, onToas
     }
 
     async function send() {
-        if (selected.size === 0) { onToast('Select at least one segment'); return; }
+        const normalizedTest = testPhone.replace(/\D/g, '');
+        if (testMode) {
+            if (normalizedTest.length < 7) { onToast('Enter a valid test phone number'); return; }
+        } else if (selected.size === 0) {
+            onToast('Select at least one segment'); return;
+        }
         setSending(true);
         try {
+            const payload: Record<string, unknown> = { segmentIds: Array.from(selected), excludeStudents };
+            if (testMode) payload.testPhone = normalizedTest;
             const res = await fetch(`/api/admin/crm/apartment/${aptId}/broadcast`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
-                body: JSON.stringify({ segmentIds: Array.from(selected), excludeStudents }),
+                body: JSON.stringify(payload),
             });
             const data = await res.json();
             if (data.success) {
-                onToast(`Broadcast queued — ${data.recipientCount} recipients`);
+                onToast(`Broadcast queued — ${data.recipientCount} recipient${data.recipientCount === 1 ? '' : 's'}`);
                 onClose();
             } else {
                 onToast(data.message || 'Failed to broadcast');
@@ -271,7 +280,7 @@ export function SendSegmentModal({ aptId, rentalPrice, bedrooms, onClose, onToas
         }
     }
 
-    const shortName = (name: string) => name.replace('Customer ', '').replace(' & ', ' · ').replace(' Bedroom', 'BR');
+    const shortName = (name: string) => name.replace(' Bedrooms', 'BR').replace(' Bedroom', 'BR');
 
     return (
         <ModalShell
@@ -280,17 +289,42 @@ export function SendSegmentModal({ aptId, rentalPrice, bedrooms, onClose, onToas
             footer={
                 <>
                     <button className={`${styles.btn} ${styles.btnGhost}`} onClick={onClose}>Cancel</button>
-                    <button className={`${styles.btn} ${styles.btnOrange}`} onClick={send} disabled={sending || selected.size === 0}>
-                        {sending ? 'Sending…' : `Send to ${totalRecipients} people`}
+                    <button className={`${styles.btn} ${styles.btnOrange}`} onClick={send} disabled={sending || (!testMode && selected.size === 0)}>
+                        {sending ? 'Sending…' : (testMode ? `Send test to ${testPhone.replace(/\D/g, '') || '—'}` : `Send to ${totalRecipients} people`)}
                     </button>
                 </>
             }
         >
             <p style={{ marginBottom: 10 }}>
-                Auto-matched from price + bedrooms · pick another if needed. Each segment shows how many people are in it (pulled from Zoko tags). Send broadcasts the apartment + PDF to the selected segment.
+                Auto-matched from price + bedrooms · pick another if needed. Each segment shows how many synced Zoko contacts are in it. Archived contacts and excluded cities are not counted. Send broadcasts the apartment + PDF to the selected segment.
             </p>
 
-            {loading ? (
+            <div style={{ marginBottom: 12, padding: 10, background: '#f3f6f6', borderRadius: 8 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, cursor: 'pointer' }}>
+                    <input
+                        type="checkbox"
+                        checked={testMode}
+                        onChange={(e) => setTestMode(e.target.checked)}
+                        style={{ accentColor: 'var(--teal)' }}
+                    />
+                    Test mode — send to one phone number only
+                </label>
+                {testMode && (
+                    <div style={{ marginTop: 8 }}>
+                        <label className={styles.fLabel}>Test phone number</label>
+                        <input
+                            className={styles.inp}
+                            type="tel"
+                            placeholder="+31 6 12345678"
+                            value={testPhone}
+                            onChange={(e) => setTestPhone(e.target.value)}
+                        />
+                        <div className={styles.hint}>Only this number receives the broadcast. Segments are ignored in test mode.</div>
+                    </div>
+                )}
+            </div>
+
+            {!testMode && (loading ? (
                 <div className={styles.hint}>Loading segments…</div>
             ) : (
                 <div className={styles.segPick}>
@@ -352,17 +386,17 @@ export function SendSegmentModal({ aptId, rentalPrice, bedrooms, onClose, onToas
                                         style={{ accentColor: 'var(--teal)' }}
                                     /> exclude <b>Students</b>
                                 </label>
-                                . Max 1 apartment per segment per day.
+                                . Use test mode to send to a single number. Max 1 apartment per segment per day.
                             </div>
                         </div>
                     )}
                 </div>
-            )}
+            ))}
 
             <div className={styles.waPreview} style={{ marginTop: 12 }}>
                 {rentalPrice ? `€${rentalPrice}` : '—'} / month
                 {'\n'}{bedrooms || '—'} bedrooms
-                {'\n'}Recipients: {totalRecipients}
+                {'\n'}Recipients: {testMode ? 1 : totalRecipients}
                 {'\n'}Template: pdf_apartment_utility (Zoko)
             </div>
         </ModalShell>

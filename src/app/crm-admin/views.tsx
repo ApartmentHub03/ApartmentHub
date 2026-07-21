@@ -250,7 +250,7 @@ function PipelineStatusPill({ stage, status }: { stage: PipelineStage; status: s
 // ============================================================
 // Apartment Record — wired to /api/admin/crm/apartment/[id]
 // ============================================================
-export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast, onModal, isAdmin, phoneToAccountId, reloadSignal }: {
+export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast, onModal, isAdmin, phoneToAccountId, nameToAccountId, reloadSignal }: {
     aptId: string;
     onBack: () => void;
     onOpenApplication: (accountId: string, name: string, from: 'scheduled' | 'canceled' | 'making' | 'offersin' | 'offersout') => void;
@@ -258,6 +258,7 @@ export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast,
     onModal: ModalFn;
     isAdmin: boolean;
     phoneToAccountId: Map<string, string>;
+    nameToAccountId: Map<string, string>;
     reloadSignal: number;
 }) {
     const [subtab, setSubtab] = useState<'scheduled' | 'canceled' | 'making' | 'offersin' | 'offersout'>('scheduled');
@@ -548,12 +549,22 @@ export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast,
                         //      (sampletest-video, etc.) that never had a real booker.
                         //   3. '—' last resort.
                         const phoneDigits = (p.whatsapp_number || '').replace(/\D/g, '');
-                        const acctId = phoneDigits.length >= 9 ? phoneToAccountId.get(phoneDigits.slice(-9)) : null;
                         const fallbackName = (p.name && p.name !== 'ApartmentHub') ? p.name : (p.whatsapp_number || '—');
                         const name = fallbackName;
+
+                        // Match to an account by phone (last 9 or 8 digits) or by exact
+                        // name. Cal.com formats vary, and test/organizer slots often lack
+                        // a real phone, so the name fallback makes genuine names clickable.
+                        let acctId: string | null = null;
+                        if (phoneDigits.length >= 9) acctId = phoneToAccountId.get(phoneDigits.slice(-9)) || null;
+                        if (!acctId && phoneDigits.length >= 8) acctId = phoneToAccountId.get(phoneDigits.slice(-8)) || null;
+                        if (!acctId && name && name !== '—') {
+                            acctId = nameToAccountId.get(name.trim().toLowerCase()) || null;
+                        }
+
                         const nameEl = acctId
                             ? <button style={{ color: 'var(--teal)', cursor: 'pointer', background: 'none', border: 'none', padding: 0, font: 'inherit', fontWeight: 600 }} onClick={() => onOpenApplication(acctId, name, 'scheduled')}>{name}</button>
-                            : <span style={{ fontWeight: 600 }}>{name}</span>;
+                            : <span style={{ fontWeight: 600 }} title="No candidate record matches this phone or name">{name}</span>;
                         return rel(nameEl, p.event_url || p.whatsapp_number || '', <span className={`${styles.pill} ${styles.pillGreen}`}>Joined</span>, i);
                     })}
                 </div>
@@ -1302,6 +1313,7 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
     const [sendLoading, setSendLoading] = useState(false);
     const [removingId, setRemovingId] = useState<string | null>(null);
     const [app, setApp] = useState<ApplicationDetail | null>(null);
+    const [aptRecord, setAptRecord] = useState<ApartmentRecord | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [candidateBio, setCandidateBio] = useState('');
@@ -1311,18 +1323,36 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
     const [editMotivation, setEditMotivation] = useState('');
     const fromLabel: Record<string, string> = { making: 'People Making an Offer', offersin: 'Offers In', offersout: 'Offers Out' };
 
+    // Helper: strip non-digits from bid input so agents can't accidentally paste
+    // a value like 2600001212 or "EUR 2.600" into the rent field.
+    function sanitizeBidAmount(raw: string): string {
+        return raw.replace(/\D/g, '');
+    }
+
+    // Find the matching offers_sent entry for this account on the loaded apartment.
+    const sentOffer = aptRecord?.offers_sent?.find((o) => o?.account_id === accountId) || null;
+
     const loadApp = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch(`/api/admin/crm/application/${accountId}`, {
-                headers: { Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
-            });
-            const data: ApplicationResponse = await res.json();
-            if (data.success && data.account) {
-                setApp(data.account);
+            const [appRes, aptRes] = await Promise.all([
+                fetch(`/api/admin/crm/application/${accountId}`, {
+                    headers: { Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
+                }),
+                fetch(`/api/admin/crm/apartment/${apartmentId}`, {
+                    headers: { Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
+                }),
+            ]);
+            const appData: ApplicationResponse = await appRes.json();
+            const aptData: ApartmentRecordResponse = await aptRes.json();
+            if (appData.success && appData.account) {
+                setApp(appData.account);
             } else {
-                setError(data.message || 'Failed to load application');
+                setError(appData.message || 'Failed to load application');
+            }
+            if (aptData.success && aptData.apartment) {
+                setAptRecord(aptData.apartment);
             }
         } catch (e) {
             setError('Failed to load application');
@@ -1330,21 +1360,38 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
         } finally {
             setLoading(false);
         }
-    }, [accountId]);
+    }, [accountId, apartmentId]);
 
     useEffect(() => {
         loadApp();
     }, [loadApp]);
 
+    // Find the matching offers_in entry for this account on the loaded apartment.
+    const inOffer = aptRecord?.offers_in?.find((o) => o?.account_id === accountId) || null;
+
     useEffect(() => {
-        if (app) {
-            setCandidateBio(app.candidate_bio || '');
-            setGuarantorBio(app.guarantor_bio || '');
+        if (!app) return;
+        setCandidateBio(app.candidate_bio || '');
+        setGuarantorBio(app.guarantor_bio || '');
+
+        // Prefer the actual offer state from offers_sent/offers_in when this view
+        // is opened from a pipeline stage. The application API only reads
+        // dossiers/biedingen, so without this the UI would revert to the tenant's
+        // original bid after the agent adjusts and saves the offer.
+        if (from === 'offersout' && sentOffer) {
+            setEditBidAmount(sentOffer.bid_amount != null ? String(sentOffer.bid_amount) : (app.bid ? String(app.bid.amount || '') : ''));
+            setEditStartDate((sentOffer.start_date as string | null) || app.bid?.start_date || '');
+            setEditMotivation((sentOffer.motivation as string | null) || app.bid?.motivation || '');
+        } else if ((from === 'offersin' || from === 'making') && inOffer) {
+            setEditBidAmount(inOffer.bid_amount != null ? String(inOffer.bid_amount) : (app.bid ? String(app.bid.amount || '') : ''));
+            setEditStartDate(inOffer.start_date || app.bid?.start_date || '');
+            setEditMotivation((inOffer.motivation as string | null) || app.bid?.motivation || '');
+        } else {
             setEditBidAmount(app.bid ? String(app.bid.amount || '') : '');
             setEditStartDate(app.bid?.start_date || '');
             setEditMotivation(app.bid?.motivation || '');
         }
-    }, [app?.candidate_bio, app?.guarantor_bio, app?.bid]);
+    }, [app?.candidate_bio, app?.guarantor_bio, app?.bid, sentOffer?.bid_amount, sentOffer?.start_date, sentOffer?.motivation, inOffer?.bid_amount, inOffer?.start_date, inOffer?.motivation]);
 
     async function generateOffer(offerType: 'normal' | 'hausing' | 'grand') {
         if (!apartmentId) { onToast('No apartment selected'); return; }
@@ -1457,15 +1504,19 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
     }
 
     // Save edits to the bid fields on the offers_sent entry. Only relevant when
-    // from === 'offersout': Offers In edits aren't persisted here (the existing
-    // Adjust Offer toggle for Offers In remains cosmetic-only — editing offers_in
-    // is a separate concern). PATCH /api/admin/crm/apartment/[id]/offers-sent/[accountId]
-    // rejects closed deals (DEAL_ACCEPTED / OFFER_DECLINED) with 409.
+    // Save edits to the bid fields on the active offer entry:
+    //   - Offers Out: PATCH /offers-sent/[accountId] (rejects closed deals with 409).
+    //   - Offers In / Making an Offer: PATCH /offers-in/[accountId] so negotiated
+    //     terms persist for the next Generate offer / Send offer.
     async function saveOfferedBid() {
         if (!apartmentId || !accountId) { onToast('No apartment or account selected'); return; }
         setSavingBid(true);
         try {
-            const res = await fetch(`/api/admin/crm/apartment/${apartmentId}/offers-sent/${accountId}`, {
+            const isOffersOut = from === 'offersout';
+            const endpoint = isOffersOut
+                ? `/api/admin/crm/apartment/${apartmentId}/offers-sent/${accountId}`
+                : `/api/admin/crm/apartment/${apartmentId}/offers-in/${accountId}`;
+            const res = await fetch(endpoint, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
                 body: JSON.stringify({
@@ -1478,7 +1529,15 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
             if (data.success) {
                 onToast('Offer updated');
                 setEditing(false);
-                loadApp();
+                // Refresh the apartment record so the offer source used by the bid
+                // display and generate-offer stays in sync.
+                const aptRes = await fetch(`/api/admin/crm/apartment/${apartmentId}`, {
+                    headers: { Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
+                });
+                const aptData: ApartmentRecordResponse = await aptRes.json();
+                if (aptData.success && aptData.apartment) {
+                    setAptRecord(aptData.apartment);
+                }
             } else {
                 onToast(data.message || 'Failed to update offer');
             }
@@ -1620,19 +1679,6 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
 
     // Bid details
     const bid = app.bid;
-    const bidFields: [string, string][] = bid
-        ? [
-            ['Offered rent (€)', String(bid.amount || '')],
-            ['Deposit (€)', String(bid.deposit || '')],
-            ['Start date', bid.start_date || '—'],
-            ['Total income (€/mo)', app.monthly_income ? String(app.monthly_income) : '—'],
-            ['Candidate type', app.work_status || '—'],
-        ]
-        : [
-            ['Total income (€/mo)', app.monthly_income ? String(app.monthly_income) : '—'],
-            ['Candidate type', app.work_status || '—'],
-            ['Move-in date', app.move_in_date || '—'],
-        ];
 
     function personFields(p: PersoonEntry | undefined, isMain: boolean): [string, string][] {
         if (!p) return [];
@@ -1677,26 +1723,19 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
                 <div className={styles.cardHead}>
                     <h3>Application · {name}</h3>
                     <span className={styles.ref}>{app.whatsapp_number || '—'} · dossier {app.dossierId ? app.dossierId.slice(0, 8) : '—'}</span>
-                    {/* Adjust Offer toggle: cosmetic for Offers In (no PATCH on
-                        offers_in today); persists via PATCH /offers-sent/[accountId]
-                        when opened from Offers Out. The Save button appears next to
-                        it while editing in Offers Out mode. */}
-                    {from === 'offersout' ? (
-                        <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
-                            {editing && (
-                                <button className={`${styles.btn} ${styles.btnSm}`} disabled={savingBid} onClick={saveOfferedBid}>
-                                    {savingBid ? 'Saving…' : 'Save'}
-                                </button>
-                            )}
-                            <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} onClick={() => setEditing(!editing)}>
-                                {editing ? '✓ Done' : 'Adjust Offer'}
+                    {/* Adjust Offer toggle. Save appears while editing so
+                        negotiated terms can be persisted for Offers In and
+                        Offers Out alike. */}
+                    <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+                        {editing && (
+                            <button className={`${styles.btn} ${styles.btnSm}`} disabled={savingBid} onClick={saveOfferedBid}>
+                                {savingBid ? 'Saving…' : 'Save'}
                             </button>
-                        </span>
-                    ) : (
-                        <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} style={{ marginLeft: 'auto' }} onClick={() => setEditing(!editing)}>
+                        )}
+                        <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} onClick={() => setEditing(!editing)}>
                             {editing ? '✓ Done' : 'Adjust Offer'}
                         </button>
-                    )}
+                    </span>
                 </div>
                 <div className={styles.cardBody}>
                     <div className={editing ? styles.potEditing : styles.potNotEditing}>
@@ -1799,39 +1838,45 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
                                 )}
                             </div>
                             <div className={styles.grpBody}>
-                                {/* When editing in Offers Out mode, render the editable
-                                    bid fields as controlled inputs bound to the
-                                    editBidAmount / editStartDate state so Save can
-                                    POST them to /offers-sent/[accountId]. Otherwise
-                                    fall back to the read-only potField rendering. */}
-                                {from === 'offersout' && bid ? (
+                                {/* Bid fields are always controlled so Adjust Offer edits
+                                    are actually captured. For Offers In / Making an Offer
+                                    the edits are local-only and used by Generate offer /
+                                    Send offer; for Offers Out they are persisted via
+                                    saveOfferedBid. */}
+                                <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '5px 0' }}>
+                                    <div style={{ width: 150, color: 'var(--muted)', fontSize: 12.5 }}>Offered rent (€)</div>
+                                    <input className={styles.potFld} readOnly={!editing} value={editBidAmount} onChange={(e) => setEditBidAmount(sanitizeBidAmount(e.target.value))} />
+                                </div>
+                                {bid && (
+                                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '5px 0' }}>
+                                        <div style={{ width: 150, color: 'var(--muted)', fontSize: 12.5 }}>Deposit (€)</div>
+                                        <input className={styles.potFld} readOnly value={String(bid.deposit || '')} />
+                                    </div>
+                                )}
+                                <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '5px 0' }}>
+                                    <div style={{ width: 150, color: 'var(--muted)', fontSize: 12.5 }}>Start date</div>
+                                    <input className={styles.potFld} readOnly={!editing} value={editStartDate} onChange={(e) => setEditStartDate(e.target.value)} />
+                                </div>
+                                <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '5px 0' }}>
+                                    <div style={{ width: 150, color: 'var(--muted)', fontSize: 12.5 }}>Total income (€/mo)</div>
+                                    <input className={styles.potFld} readOnly value={app.monthly_income ? String(app.monthly_income) : '—'} />
+                                </div>
+                                <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '5px 0' }}>
+                                    <div style={{ width: 150, color: 'var(--muted)', fontSize: 12.5 }}>Candidate type</div>
+                                    <input className={styles.potFld} readOnly value={app.work_status || '—'} />
+                                </div>
+                                {!bid && app.move_in_date && (
+                                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '5px 0' }}>
+                                        <div style={{ width: 150, color: 'var(--muted)', fontSize: 12.5 }}>Move-in date</div>
+                                        <input className={styles.potFld} readOnly value={app.move_in_date} />
+                                    </div>
+                                )}
+                                <label className={styles.fLabel} style={{ marginTop: 6 }}>Motivation</label>
+                                <textarea className={styles.potFld} readOnly={!editing} value={editMotivation} onChange={(e) => setEditMotivation(e.target.value)} />
+                                {!bid && app.negotiation_notes && (
                                     <>
-                                        <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '5px 0' }}>
-                                            <div style={{ width: 150, color: 'var(--muted)', fontSize: 12.5 }}>Offered rent (€)</div>
-                                            <input className={styles.potFld} readOnly={!editing} value={editBidAmount} onChange={(e) => setEditBidAmount(e.target.value)} />
-                                        </div>
-                                        <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '5px 0' }}>
-                                            <div style={{ width: 150, color: 'var(--muted)', fontSize: 12.5 }}>Start date</div>
-                                            <input className={styles.potFld} readOnly={!editing} value={editStartDate} onChange={(e) => setEditStartDate(e.target.value)} />
-                                        </div>
-                                        <label className={styles.fLabel} style={{ marginTop: 6 }}>Motivation</label>
-                                        <textarea className={styles.potFld} readOnly={!editing} value={editMotivation} onChange={(e) => setEditMotivation(e.target.value)} />
-                                    </>
-                                ) : (
-                                    <>
-                                        {bidFields.map(([l, v]) => potField(l, v, editing))}
-                                        {bid && (
-                                            <>
-                                                <label className={styles.fLabel} style={{ marginTop: 6 }}>Motivation</label>
-                                                <textarea className={styles.potFld} readOnly={!editing} defaultValue={bid.motivation} />
-                                            </>
-                                        )}
-                                        {!bid && app.negotiation_notes && (
-                                            <>
-                                                <label className={styles.fLabel} style={{ marginTop: 6 }}>Notes</label>
-                                                <textarea className={styles.potFld} readOnly={!editing} defaultValue={app.negotiation_notes} />
-                                            </>
-                                        )}
+                                        <label className={styles.fLabel} style={{ marginTop: 6 }}>Notes</label>
+                                        <textarea className={styles.potFld} readOnly value={app.negotiation_notes} />
                                     </>
                                 )}
                             </div>

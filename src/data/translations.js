@@ -1032,7 +1032,7 @@ export const translations = {
             submit: "Confirm & Submit",
             submitting: "Submitting...",
             successTitle: "Application Submitted!",
-            successMessage: "Your rental application has been submitted successfully. We will contact you within 24 hours.",
+            successMessage: "Your rental application has been submitted successfully. We will contact you within 7 days.",
             backToHome: "Back to Home"
         },
         nl: {
@@ -1055,7 +1055,7 @@ export const translations = {
             submit: "Bevestigen & Indienen",
             submitting: "Indienen...",
             successTitle: "Aanvraag Ingediend!",
-            successMessage: "Uw huurverzoek is succesvol ingediend. Wij nemen binnen 24 uur contact met u op.",
+            successMessage: "Uw huurverzoek is succesvol ingediend. Wij nemen binnen 7 dagen contact met u op.",
             backToHome: "Terug naar Home"
         }
     },

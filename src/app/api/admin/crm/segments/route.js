@@ -2,51 +2,21 @@ import { NextResponse } from 'next/server';
 import { serviceClient, requireCrmUser } from '@/services/crmAuth';
 import { failed } from '@/services/crmHttp';
 
-// Returns the 15 price x bedroom segments with live member counts parsed
-// from accounts.tags. Excludes OPT_OUT, ARCHIVED, Rotterdam, Almere.
-// Optional ?excludeStudents=true subtracts the "student" tag.
+// Returns candidate segments with live member counts from candidate_segment_members.
+// Members are active Zoko contacts synced daily by n8n.
+// Excludes archived members and optionally members tagged "student".
 
-const SEGMENTS = [
-    { id: '1500-2000-1', name: 'Customer €1500 · €2000 & 1 Bedroom', minBudget: 1500, maxBudget: 2000, minBedrooms: 1 },
-    { id: '1500-2000-2', name: 'Customer €1500 · €2000 & 2 Bedroom', minBudget: 1500, maxBudget: 2000, minBedrooms: 2 },
-    { id: '1500-2000-3', name: 'Customer €1500 · €2000 & 3 Bedroom', minBudget: 1500, maxBudget: 2000, minBedrooms: 3 },
-    { id: '2000-2500-1', name: 'Customer €2000 · €2500 & 1 Bedroom', minBudget: 2000, maxBudget: 2500, minBedrooms: 1 },
-    { id: '2000-2500-2', name: 'Customer €2000 · €2500 & 2 Bedroom', minBudget: 2000, maxBudget: 2500, minBedrooms: 2 },
-    { id: '2000-2500-3', name: 'Customer €2000 · €2500 & 3 Bedroom', minBudget: 2000, maxBudget: 2500, minBedrooms: 3 },
-    { id: '2500-3000-1', name: 'Customer €2500 · €3000 & 1 Bedroom', minBudget: 2500, maxBudget: 3000, minBedrooms: 1 },
-    { id: '2500-3000-2', name: 'Customer €2500 · €3000 & 2 Bedroom', minBudget: 2500, maxBudget: 3000, minBedrooms: 2 },
-    { id: '2500-3000-3', name: 'Customer €2500 · €3000 & 3 Bedroom', minBudget: 2500, maxBudget: 3000, minBedrooms: 3 },
-    { id: '3000-3500-1', name: 'Customer €3000 · €3500 & 1 Bedroom', minBudget: 3000, maxBudget: 3500, minBedrooms: 1 },
-    { id: '3000-3500-2', name: 'Customer €3000 · €3500 & 2 Bedroom', minBudget: 3000, maxBudget: 3500, minBedrooms: 2 },
-    { id: '3000-3500-3', name: 'Customer €3000 · €3500 & 3 Bedroom', minBudget: 3000, maxBudget: 3500, minBedrooms: 3 },
-    { id: '3500-4000-2', name: 'Customer €3500 · €4000 & 2 Bedroom', minBudget: 3500, maxBudget: 4000, minBedrooms: 2 },
-    { id: '3500-4000-3', name: 'Customer €3500 · €4000 & 3 Bedroom', minBudget: 3500, maxBudget: 4000, minBedrooms: 3 },
-    { id: '4000-4500-3', name: 'Customer €4000 · €4500 & 3 Bedroom', minBudget: 4000, maxBudget: 4500, minBedrooms: 3 },
-];
+const EXCLUDED_TAGS = ['OPT_OUT', 'OPT-IN', 'Rotterdam', 'Almere'];
 
-const EXCLUSION_TAGS = ['OPT_OUT', 'ARCHIVED', 'Rotterdam', 'Almere'];
-
-function parsePriceRange(tag) {
-    // Handles "€1250-1500€", "€1500 - €2000", "1500-2000" etc.
-    const m = tag.match(/€?(\d+)\s*-\s*€?(\d+)/);
-    if (!m) return null;
-    return { min: Number(m[1]), max: Number(m[2]) };
+function hasStudentTag(tags) {
+    if (!Array.isArray(tags)) return false;
+    return tags.some((t) => String(t).toLowerCase() === 'student');
 }
 
-function parseBedrooms(tag) {
-    // Handles "1 Bedroom", "2 Bedrooms", "3 Bedrooms"
-    const m = tag.match(/(\d+)\s*Bedroom/);
-    if (!m) return null;
-    return Number(m[1]);
-}
-
-function isExcluded(tags) {
-    const lower = tags.map((t) => t.toLowerCase());
-    return EXCLUSION_TAGS.some((ex) => lower.includes(ex.toLowerCase()));
-}
-
-function isStudent(tags) {
-    return tags.some((t) => t.toLowerCase() === 'student');
+function hasExcludedTag(tags) {
+    if (!Array.isArray(tags)) return false;
+    const lower = tags.map((t) => String(t).toLowerCase());
+    return EXCLUDED_TAGS.some((ex) => lower.includes(ex.toLowerCase()));
 }
 
 export async function GET(request) {
@@ -54,53 +24,56 @@ export async function GET(request) {
     if (auth.response) {
         return NextResponse.json(auth.response.body, { status: auth.response.status });
     }
+
     try {
         const url = new URL(request.url);
         const excludeStudents = url.searchParams.get('excludeStudents') === 'true';
 
         const supabase = serviceClient();
-        // Fetch all accounts with tags (limit 5000 to cover the full audience)
-        const { data: accounts, error } = await supabase
-            .from('accounts')
-            .select('id, tags')
-            .not('tags', 'is', null)
-            .limit(5000);
-        if (error) throw error;
 
-        // Build per-segment counts
-        const counts = SEGMENTS.map((seg) => {
-            let count = 0;
-            for (const acc of accounts || []) {
-                const tags = acc.tags || [];
-                if (tags.length === 0) continue;
-                // Exclude OPT_OUT, ARCHIVED, Rotterdam, Almere
-                if (isExcluded(tags)) continue;
-                // Optional student exclusion
-                if (excludeStudents && isStudent(tags)) continue;
-                // Check price range overlap
-                const priceRanges = tags.map(parsePriceRange).filter(Boolean);
-                const inPrice = priceRanges.some(
-                    (pr) => seg.minBudget >= pr.min && seg.maxBudget <= pr.max
-                );
-                if (!inPrice) continue;
-                // Check bedroom match
-                const bedroomTags = tags.map(parseBedrooms).filter((b) => b !== null);
-                const inBedrooms = bedroomTags.length === 0 || bedroomTags.includes(seg.minBedrooms);
-                if (!inBedrooms) continue;
-                count++;
-            }
+        // Load canonical segments
+        const { data: segments, error: segErr } = await supabase
+            .from('candidate_segments')
+            .select('id, name, min_budget, max_budget, min_bedrooms')
+            .order('min_budget', { ascending: true })
+            .order('min_bedrooms', { ascending: true });
+        if (segErr) throw segErr;
+        if (!segments || segments.length === 0) {
+            return NextResponse.json({ success: true, segments: [] });
+        }
+
+        // Count active members per segment.
+        // We do this in one query grouped by segment_id for efficiency.
+        const segmentIds = segments.map((s) => s.id);
+        const { data: counts, error: countErr } = await supabase
+            .from('candidate_segment_members')
+            .select('segment_id, tags')
+            .in('segment_id', segmentIds)
+            .eq('is_archived', false);
+        if (countErr) throw countErr;
+
+        const countMap = new Map();
+        for (const row of counts || []) {
+            if (hasExcludedTag(row.tags)) continue;
+            if (excludeStudents && hasStudentTag(row.tags)) continue;
+            countMap.set(row.segment_id, (countMap.get(row.segment_id) || 0) + 1);
+        }
+
+        const result = segments.map((seg) => {
+            const maxBudget = seg.max_budget;
             return {
-                id: seg.id,
+                id: `${seg.min_budget}-${maxBudget === null ? 'plus' : maxBudget}-${seg.min_bedrooms}`,
                 name: seg.name,
-                min_budget: seg.minBudget,
-                max_budget: seg.maxBudget,
-                min_bedrooms: seg.minBedrooms,
-                count,
+                min_budget: Number(seg.min_budget),
+                max_budget: maxBudget === null ? null : Number(maxBudget),
+                min_bedrooms: Number(seg.min_bedrooms),
+                count: countMap.get(seg.id) || 0,
             };
         });
 
-        return NextResponse.json({ success: true, segments: counts });
+        return NextResponse.json({ success: true, segments: result });
     } catch (err) {
+        console.error('[crm/segments] GET error:', err);
         return failed('crm/segments GET', err, 'Failed to load segment counts');
     }
 }

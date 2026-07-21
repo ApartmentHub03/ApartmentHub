@@ -328,7 +328,7 @@ const LetterOfIntent = () => {
         fullTerms: 'Terms and Conditions',
         successTitle: 'Application Submitted!',
         successSubtitle: 'Your Letter of Intent has been successfully sent.',
-        responseTime: 'We will contact you within <strong>24 hours</strong>.',
+        responseTime: 'We will contact you within <strong>7 days</strong>.',
         emailSent: 'Confirmation sent to:',
         backToHome: 'Back to Home',
         whatsappQuestions: 'Questions? WhatsApp us'

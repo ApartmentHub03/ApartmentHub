@@ -366,12 +366,20 @@ function CrmApp({ me, onLogout }: { me: Me; onLogout: (expired?: boolean) => voi
         }
 
         if (view.apartmentId) {
-            // Build phone→accountId lookup from candidates for scheduled row clicks
+            // Build phone→accountId and name→accountId lookups from candidates for
+            // scheduled row clicks. Cal.com supplies a name and sometimes a phone,
+            // but the two don't always match the stored candidate format.
             const phoneToAccountId = new Map<string, string>();
+            const nameToAccountId = new Map<string, string>();
             for (const c of lists.candidates) {
                 if (c.whatsapp_number) {
                     const digits = String(c.whatsapp_number).replace(/\D/g, '');
                     if (digits.length >= 9) phoneToAccountId.set(digits.slice(-9), c.id);
+                    // Also index shorter suffix for numbers without country code.
+                    if (digits.length >= 8) phoneToAccountId.set(digits.slice(-8), c.id);
+                }
+                if (c.tenant_name) {
+                    nameToAccountId.set(c.tenant_name.trim().toLowerCase(), c.id);
                 }
             }
             return <ApartmentRecordView
@@ -382,6 +390,7 @@ function CrmApp({ me, onLogout }: { me: Me; onLogout: (expired?: boolean) => voi
                 onModal={setModal}
                 isAdmin={isAdmin}
                 phoneToAccountId={phoneToAccountId}
+                nameToAccountId={nameToAccountId}
                 reloadSignal={reloadSignal}
             />;
         }
