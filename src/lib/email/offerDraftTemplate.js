@@ -21,7 +21,7 @@
 //
 //   Yours sincerely,
 //
-//   [horizontal-logo.png]
+//   [vertical-logo-small.webp (PNG fallback)]
 //   {sender name}
 //   Real Estate Agent
 //   Email: {sender email}
@@ -29,7 +29,7 @@
 //   Address: {sender address}
 //   https://apartmenthub.nl/
 
-const LOGO_URL = 'https://apartmenthub.nl/images/horizontal-logo.png';
+const LOGO_URL = 'https://apartmenthub.nl/images/vertical-logo-small.png';
 
 function escapeHtml(s) {
     return String(s ?? '')
@@ -147,7 +147,7 @@ export function renderOfferDraftEmail({
   <table style="margin-top:8px;border-collapse:collapse">
     <tr>
       <td style="vertical-align:top;padding-right:14px">
-        <img src="${LOGO_URL}" alt="ApartmentHub" style="height:44px;display:block" />
+        <img src="${LOGO_URL}" alt="ApartmentHub" style="max-width:160px;height:auto;display:block" />
       </td>
       <td style="vertical-align:top;font-size:13px;line-height:1.6;color:#1a2b27">
         <b style="font-size:15px">${escapeHtml(senderName)}</b><br />

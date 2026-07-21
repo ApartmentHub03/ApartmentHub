@@ -78,16 +78,29 @@ export async function POST(request, { params }) {
 
         const supabase = serviceClient();
 
-        // 2. Apartment + real estate agent.
+        // 2. Apartment + real estate agent. Also fetch assigned_crm_user_id
+        //    so we can fall back to the internal team member when no external
+        //    realtor is linked (or the realtor has no email). This prevents the
+        //    "no real estate agent email" 400 that blocked drafting on listings
+        //    created without a realtor — the draft is still useful addressed to
+        //    the assigned agent or to yourself for review/forwarding.
         const { data: apt, error: aptErr } = await supabase
             .from('apartments')
-            .select('id, "Full Address", street, rental_price, real_estate_agent_id')
+            .select('id, "Full Address", street, rental_price, real_estate_agent_id, assigned_crm_user_id')
             .eq('id', id)
             .maybeSingle();
         if (aptErr) throw aptErr;
         if (!apt) return NextResponse.json({ success: false, message: 'Apartment not found' }, { status: 404 });
 
+        // Resolve the offer email recipient with a fallback chain:
+        //   1. real_estate_agents row linked via real_estate_agent_id (external realtor)
+        //   2. crm_users row linked via assigned_crm_user_id (internal team member)
+        //   3. the logged-in agent's own email (draft to self)
+        // Only 400 if all three are empty — effectively impossible since
+        // crm_users.email is NOT NULL.
         let agent = null;
+        let recipientSource = 'self';
+
         if (apt.real_estate_agent_id) {
             const { data: agentRow, error: agentErr } = await supabase
                 .from('real_estate_agents')
@@ -95,13 +108,50 @@ export async function POST(request, { params }) {
                 .eq('id', apt.real_estate_agent_id)
                 .maybeSingle();
             if (agentErr) throw agentErr;
-            agent = agentRow;
+            if (agentRow && agentRow.email) {
+                agent = agentRow;
+                recipientSource = 'real_estate_agent';
+            }
         }
-        if (!agent || !agent.email) {
-            return NextResponse.json({
-                success: false,
-                message: 'This apartment has no real estate agent email — set one on the listing before generating an offer.',
-            }, { status: 400 });
+
+        if (!agent && apt.assigned_crm_user_id) {
+            const { data: assignedUser, error: assignedErr } = await supabase
+                .from('crm_users')
+                .select('id, name, email')
+                .eq('id', apt.assigned_crm_user_id)
+                .maybeSingle();
+            if (assignedErr) throw assignedErr;
+            if (assignedUser && assignedUser.email) {
+                // Build a synthetic agent object so renderOfferDraftEmail's
+                // agentName / agentEmail logic still works unchanged.
+                agent = {
+                    id: assignedUser.id,
+                    name: assignedUser.name,
+                    contact_person_name: assignedUser.name,
+                    email: assignedUser.email,
+                };
+                recipientSource = 'assigned_crm_user';
+            }
+        }
+
+        if (!agent) {
+            // Final fallback: draft to the logged-in agent themselves. They can
+            // fill in the real recipient in Gmail before sending. crm.email is
+            // guaranteed by requirePermission and crm_users.email is NOT NULL,
+            // so this should always succeed.
+            if (!crm.email) {
+                return NextResponse.json({
+                    success: false,
+                    message: 'No recipient available — set a real estate agent or assign a CRM user on the listing, or ensure your CRM account has an email.',
+                }, { status: 400 });
+            }
+            agent = {
+                id: crm.id,
+                name: crm.name || 'there',
+                contact_person_name: crm.name || crm.email,
+                email: crm.email,
+            };
+            recipientSource = 'self';
         }
 
         // 3. Candidate account.
@@ -242,6 +292,8 @@ export async function POST(request, { params }) {
             account_id: account.id,
             to,
             subject,
+            recipient_source: recipientSource,
+            recipient_name: agent?.contact_person_name || agent?.name || '',
         });
     } catch (err) {
         return failed('crm/generate-offer POST', err, 'Failed to generate offer draft');

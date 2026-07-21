@@ -373,7 +373,14 @@ export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast,
             });
             const data = await res.json();
             if (data.success) {
-                onToast('Gmail draft created — click to review and send');
+                // Surface who the draft is addressed to so the agent knows where
+                // the offer email is going (realtor / assigned agent / yourself).
+                const sourceLabel = data.recipient_source === 'real_estate_agent'
+                    ? 'realtor'
+                    : data.recipient_source === 'assigned_crm_user'
+                        ? 'assigned agent'
+                        : 'yourself';
+                onToast(`Gmail draft created — addressed to ${data.to || ''} (${sourceLabel})`);
                 if (data.draft_url) window.open(data.draft_url, '_blank');
             } else {
                 onToast(data.message || 'Generate offer failed');
@@ -391,7 +398,7 @@ export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast,
     // pipeline step between "tenant submitted offer" and "agent responds to
     // offer". See /api/admin/crm/apartment/[id]/send-offer/route.js.
     async function sendOffer(accountId: string, tenantName: string) {
-        if (!confirm(`Send the offer from ${tenantName} to Offers Out?\n\nThis moves the offer to the next pipeline stage so you can mark Deal / No Deal. The tenant's entry disappears from Offers In.`)) return;
+        if (!confirm(`Send the offer from ${tenantName} to Offers Out?\n\nThis moves the offer to the next pipeline stage so you can mark Deal / No Deal, and creates a Gmail draft you can review and send.`)) return;
         setSendLoading(accountId);
         try {
             const res = await fetch(`/api/admin/crm/apartment/${aptId}/send-offer`, {
@@ -401,10 +408,37 @@ export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast,
             });
             const data = await res.json();
             if (data.success) {
-                onToast(data.already_sent
-                    ? `${tenantName}'s offer was already in Offers Out`
-                    : `Offer from ${tenantName} sent to Offers Out`);
                 loadApt();
+                // If this was a fresh send (not already in Offers Out), auto-draft
+                // the Gmail offer email so the agent can review and send it. Matches
+                // the button name: "Send offer" should both move the pipeline AND
+                // draft the email — the two were previously separate clicks and the
+                // agent often didn't realise no email was drafted. Idempotent on the
+                // already_sent path: skip the draft since one was presumably made
+                // when the offer was first sent.
+                if (!data.already_sent) {
+                    onToast(`${tenantName}'s offer sent to Offers Out. Drafting Gmail…`);
+                    try {
+                        const draftRes = await fetch(`/api/admin/crm/apartment/${aptId}/generate-offer`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
+                            body: JSON.stringify({ account_id: accountId }),
+                        });
+                        const draftData = await draftRes.json();
+                        if (draftData.success) {
+                            const sourceLabel = draftData.recipient_source === 'real_estate_agent' ? 'realtor' : draftData.recipient_source === 'assigned_crm_user' ? 'assigned agent' : 'yourself';
+                            onToast(`Offer sent to Offers Out and Gmail draft created — addressed to ${draftData.to || ''} (${sourceLabel})`);
+                            if (draftData.draft_url) window.open(draftData.draft_url, '_blank');
+                        } else {
+                            onToast(`Offer sent, but Gmail draft failed: ${draftData.message || 'unknown error'}. Click "Generate offer" to retry.`);
+                        }
+                    } catch (draftErr) {
+                        console.error('send-offer auto-draft error:', draftErr);
+                        onToast('Offer sent to Offers Out, but Gmail draft failed. Click "Generate offer" to retry.');
+                    }
+                } else {
+                    onToast(`${tenantName}'s offer was already in Offers Out`);
+                }
             } else {
                 onToast(data.message || 'Failed to send offer');
             }
@@ -600,6 +634,7 @@ export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast,
                         <div className={styles.empty}>No offers sent out yet.</div>
                     ) : offersOut.map((o, i) => {
                         const name = o.tenant_name || o.name || '—';
+                        const acctId = o.account_id || '';
                         const status = String(o.status || '').toUpperCase().trim();
                         const meta = [
                             o.sent_at ? `Sent ${new Date(o.sent_at).toLocaleDateString('nl-NL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}` : null,
@@ -610,18 +645,27 @@ export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast,
                         ].filter(Boolean).join(' · ');
 
                         const isDone = status === 'DEAL_ACCEPTED' || status === 'OFFER_DECLINED';
+                        // Name is clickable to open the application dossier
+                        // (Client Info) — same pattern as Offers In / People Making
+                        // an Offer rows. Only clickable when we have an account_id.
+                        const nameNode = acctId
+                            ? <button style={{ color: 'var(--teal)', cursor: 'pointer', background: 'none', border: 'none', padding: 0, font: 'inherit', fontWeight: 600 }} onClick={() => onOpenApplication(acctId, name, 'offersout')}>{name}</button>
+                            : <span>{name}</span>;
                         const rightPill = isDone
                             ? <span className={`${styles.pill} ${status === 'DEAL_ACCEPTED' ? styles.pillGreen : styles.pillRed}`}>{status === 'DEAL_ACCEPTED' ? 'Deal won' : 'Declined'}</span>
                             : (
                                 <span style={{ display: 'flex', gap: 5 }}>
-                                    <button className={`${styles.btn} ${styles.btnSm}`} onClick={() => onModal({ type: 'deal', aptId: aptId, accountId: o.account_id || '', rentPrice: apt.rental_price })}>Deal</button>
-                                    <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} disabled={noDealLoading === (o.account_id || '')} onClick={() => noDeal(o.account_id || '', name)}>
-                                        {noDealLoading === (o.account_id || '') ? '…' : 'No deal'}
+                                    <button className={`${styles.btn} ${styles.btnSm}`} onClick={() => onModal({ type: 'deal', aptId: aptId, accountId: acctId, rentPrice: apt.rental_price })}>Deal</button>
+                                    <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} disabled={noDealLoading === acctId} onClick={() => noDeal(acctId, name)}>
+                                        {noDealLoading === acctId ? '…' : 'No deal'}
+                                    </button>
+                                    <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} onClick={() => onOpenApplication(acctId, name, 'offersout')} title="Open the tenant dossier — adjust offer, re-draft Gmail, download documents">
+                                        Client Info
                                     </button>
                                 </span>
                             );
 
-                        return rel(name, meta, rightPill, i);
+                        return rel(nameNode, meta, rightPill, i);
                     })}
                 </div>
             </div>
@@ -1239,6 +1283,7 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
     onModal: ModalFn;
 }) {
     const [editing, setEditing] = useState(false);
+    const [savingBid, setSavingBid] = useState(false);
     const [offerLoading, setOfferLoading] = useState(false);
     const [sendLoading, setSendLoading] = useState(false);
     const [removingId, setRemovingId] = useState<string | null>(null);
@@ -1247,6 +1292,9 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
     const [error, setError] = useState<string | null>(null);
     const [candidateBio, setCandidateBio] = useState('');
     const [guarantorBio, setGuarantorBio] = useState('');
+    const [editBidAmount, setEditBidAmount] = useState('');
+    const [editStartDate, setEditStartDate] = useState('');
+    const [editMotivation, setEditMotivation] = useState('');
     const fromLabel: Record<string, string> = { making: 'People Making an Offer', offersin: 'Offers In', offersout: 'Offers Out' };
 
     const loadApp = useCallback(async () => {
@@ -1278,8 +1326,11 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
         if (app) {
             setCandidateBio(app.candidate_bio || '');
             setGuarantorBio(app.guarantor_bio || '');
+            setEditBidAmount(app.bid ? String(app.bid.amount || '') : '');
+            setEditStartDate(app.bid?.start_date || '');
+            setEditMotivation(app.bid?.motivation || '');
         }
-    }, [app?.candidate_bio, app?.guarantor_bio]);
+    }, [app?.candidate_bio, app?.guarantor_bio, app?.bid]);
 
     async function generateOffer(offerType: 'normal' | 'hausing' | 'grand') {
         if (!apartmentId) { onToast('No apartment selected'); return; }
@@ -1298,7 +1349,12 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
             });
             const data = await res.json();
             if (data.success) {
-                onToast('Gmail draft created — click to review and send');
+                const sourceLabel = data.recipient_source === 'real_estate_agent'
+                    ? 'realtor'
+                    : data.recipient_source === 'assigned_crm_user'
+                        ? 'assigned agent'
+                        : 'yourself';
+                onToast(`Gmail draft created — addressed to ${data.to || ''} (${sourceLabel})`);
                 if (data.draft_url) window.open(data.draft_url, '_blank');
             } else {
                 onToast(data.message || 'Generate offer failed');
@@ -1320,7 +1376,7 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
     async function sendOffer() {
         if (!apartmentId || !accountId) { onToast('No apartment or account selected'); return; }
         const tenantName = app?.tenant_name || name || 'this tenant';
-        if (!confirm(`Send ${tenantName}'s offer to Offers Out?\n\nThis moves the offer to the next pipeline stage. You'll be taken back to the apartment record where you can mark Deal / No Deal.`)) return;
+        if (!confirm(`Send ${tenantName}'s offer to Offers Out?\n\nThis moves the offer to the next pipeline stage. After the Gmail draft is created you'll be taken back to the apartment record where you can mark Deal / No Deal.`)) return;
         setSendLoading(true);
         try {
             const res = await fetch(`/api/admin/crm/apartment/${apartmentId}/send-offer`, {
@@ -1330,9 +1386,39 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
             });
             const data = await res.json();
             if (data.success) {
-                onToast(data.already_sent
-                    ? `${tenantName}'s offer was already in Offers Out`
-                    : `Offer from ${tenantName} sent to Offers Out`);
+                // If this was a fresh send (not already in Offers Out), auto-draft
+                // the Gmail offer email so the agent can review and send it. Matches
+                // the button name: "Send offer" should both move the pipeline AND
+                // draft the email — the two were previously separate clicks and the
+                // agent often didn't realise no email was drafted. Idempotent on the
+                // already_sent path: skip the draft since one was made on first send.
+                if (!data.already_sent) {
+                    onToast(`${tenantName}'s offer sent to Offers Out. Drafting Gmail…`);
+                    try {
+                        const draftRes = await fetch(`/api/admin/crm/apartment/${apartmentId}/generate-offer`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
+                            body: JSON.stringify({
+                                tenant_phone: app?.whatsapp_number || '',
+                                candidate_bio: candidateBio,
+                                guarantor_bio: guarantorBio,
+                            }),
+                        });
+                        const draftData = await draftRes.json();
+                        if (draftData.success) {
+                            const sourceLabel = draftData.recipient_source === 'real_estate_agent' ? 'realtor' : draftData.recipient_source === 'assigned_crm_user' ? 'assigned agent' : 'yourself';
+                            onToast(`Offer sent to Offers Out and Gmail draft created — addressed to ${draftData.to || ''} (${sourceLabel})`);
+                            if (draftData.draft_url) window.open(draftData.draft_url, '_blank');
+                        } else {
+                            onToast(`Offer sent, but Gmail draft failed: ${draftData.message || 'unknown error'}. Click "Generate offer" to retry.`);
+                        }
+                    } catch (draftErr) {
+                        console.error('send-offer auto-draft error:', draftErr);
+                        onToast('Offer sent to Offers Out, but Gmail draft failed. Click "Generate offer" to retry.');
+                    }
+                } else {
+                    onToast(`${tenantName}'s offer was already in Offers Out`);
+                }
                 onBack();
             } else {
                 onToast(data.message || 'Failed to send offer');
@@ -1342,6 +1428,40 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
             console.error('send-offer error:', e);
         } finally {
             setSendLoading(false);
+        }
+    }
+
+    // Save edits to the bid fields on the offers_sent entry. Only relevant when
+    // from === 'offersout': Offers In edits aren't persisted here (the existing
+    // Adjust Offer toggle for Offers In remains cosmetic-only — editing offers_in
+    // is a separate concern). PATCH /api/admin/crm/apartment/[id]/offers-sent/[accountId]
+    // rejects closed deals (DEAL_ACCEPTED / OFFER_DECLINED) with 409.
+    async function saveOfferedBid() {
+        if (!apartmentId || !accountId) { onToast('No apartment or account selected'); return; }
+        setSavingBid(true);
+        try {
+            const res = await fetch(`/api/admin/crm/apartment/${apartmentId}/offers-sent/${accountId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
+                body: JSON.stringify({
+                    bid_amount: editBidAmount === '' ? null : Number(editBidAmount),
+                    start_date: editStartDate || null,
+                    motivation: editMotivation,
+                }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                onToast('Offer updated');
+                setEditing(false);
+                loadApp();
+            } else {
+                onToast(data.message || 'Failed to update offer');
+            }
+        } catch (e) {
+            onToast('Failed to update offer — check console');
+            console.error('save-offered-bid error:', e);
+        } finally {
+            setSavingBid(false);
         }
     }
 
@@ -1532,9 +1652,26 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
                 <div className={styles.cardHead}>
                     <h3>Application · {name}</h3>
                     <span className={styles.ref}>{app.whatsapp_number || '—'} · dossier {app.dossierId ? app.dossierId.slice(0, 8) : '—'}</span>
-                    <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} style={{ marginLeft: 'auto' }} onClick={() => setEditing(!editing)}>
-                        {editing ? '✓ Done' : 'Adjust Offer'}
-                    </button>
+                    {/* Adjust Offer toggle: cosmetic for Offers In (no PATCH on
+                        offers_in today); persists via PATCH /offers-sent/[accountId]
+                        when opened from Offers Out. The Save button appears next to
+                        it while editing in Offers Out mode. */}
+                    {from === 'offersout' ? (
+                        <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+                            {editing && (
+                                <button className={`${styles.btn} ${styles.btnSm}`} disabled={savingBid} onClick={saveOfferedBid}>
+                                    {savingBid ? 'Saving…' : 'Save'}
+                                </button>
+                            )}
+                            <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} onClick={() => setEditing(!editing)}>
+                                {editing ? '✓ Done' : 'Adjust Offer'}
+                            </button>
+                        </span>
+                    ) : (
+                        <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} style={{ marginLeft: 'auto' }} onClick={() => setEditing(!editing)}>
+                            {editing ? '✓ Done' : 'Adjust Offer'}
+                        </button>
+                    )}
                 </div>
                 <div className={styles.cardBody}>
                     <div className={editing ? styles.potEditing : styles.potNotEditing}>
@@ -1598,18 +1735,22 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
 
                         {/* Send offer — moves this application's offer from Offers In
                             to Offers Out on the apartment so the Deal / No Deal
-                            buttons become reachable. This is the pipeline step the
-                            "Generate offer" buttons above do NOT perform —
-                            Generate only fires the n8n email-draft webhook. */}
+                            buttons become reachable, then auto-drafts a Gmail offer
+                            email so the agent can review and send it. Hidden when
+                            opened from Offers Out — the offer is already there and
+                            send-offer would 404 (no offers_in entry left). Use the
+                            "Generate offer" buttons above to re-draft from Offers Out. */}
+                        {from !== 'offersout' && (
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', background: 'var(--green-l)', border: '1px solid #c6ecd3', borderRadius: 10, padding: '10px 13px', marginBottom: 14 }}>
                             <b style={{ fontSize: 13 }}>Send to Offers Out:</b>
-                            <button className={`${styles.btn} ${styles.btnSm}`} disabled={sendLoading} onClick={sendOffer} title="Move this offer to the Offers Out subtab so you can mark Deal / No Deal">
+                            <button className={`${styles.btn} ${styles.btnSm}`} disabled={sendLoading} onClick={sendOffer} title="Move this offer to the Offers Out subtab and create a Gmail draft you can review and send">
                                 {sendLoading ? 'Sending…' : 'Send offer'}
                             </button>
                             <div className={styles.hint} style={{ flexBasis: '100%', marginTop: 4 }}>
-                                Moves this application's offer from Offers In to Offers Out on the apartment. After sending, you'll be taken back to the apartment record where you can mark Deal / No Deal.
+                                Moves this application's offer from Offers In to Offers Out on the apartment and creates a Gmail draft. After sending, you'll be taken back to the apartment record where you can mark Deal / No Deal.
                             </div>
                         </div>
+                        )}
 
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
                             <button
@@ -1622,19 +1763,50 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
 
                         {/* Bid details */}
                         <div className={styles.grp}>
-                            <div className={styles.grpHead}><b>Bid details</b><span className={styles.hint}>{bid ? '· from latest bid' : '· applicant info'}</span></div>
-                            <div className={styles.grpBody}>
-                                {bidFields.map(([l, v]) => potField(l, v, editing))}
-                                {bid && (
-                                    <>
-                                        <label className={styles.fLabel} style={{ marginTop: 6 }}>Motivation</label>
-                                        <textarea className={styles.potFld} readOnly={!editing} defaultValue={bid.motivation} />
-                                    </>
+                            <div className={styles.grpHead}>
+                                <b>Bid details</b><span className={styles.hint}>{bid ? '· from latest bid' : '· applicant info'}</span>
+                                {from === 'offersout' && editing && (
+                                    <span style={{ marginLeft: 'auto' }}>
+                                        <button className={`${styles.btn} ${styles.btnSm}`} disabled={savingBid} onClick={saveOfferedBid}>
+                                            {savingBid ? 'Saving…' : 'Save'}
+                                        </button>
+                                    </span>
                                 )}
-                                {!bid && app.negotiation_notes && (
+                            </div>
+                            <div className={styles.grpBody}>
+                                {/* When editing in Offers Out mode, render the editable
+                                    bid fields as controlled inputs bound to the
+                                    editBidAmount / editStartDate state so Save can
+                                    POST them to /offers-sent/[accountId]. Otherwise
+                                    fall back to the read-only potField rendering. */}
+                                {from === 'offersout' && bid ? (
                                     <>
-                                        <label className={styles.fLabel} style={{ marginTop: 6 }}>Notes</label>
-                                        <textarea className={styles.potFld} readOnly={!editing} defaultValue={app.negotiation_notes} />
+                                        <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '5px 0' }}>
+                                            <div style={{ width: 150, color: 'var(--muted)', fontSize: 12.5 }}>Offered rent (€)</div>
+                                            <input className={styles.potFld} readOnly={!editing} value={editBidAmount} onChange={(e) => setEditBidAmount(e.target.value)} />
+                                        </div>
+                                        <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '5px 0' }}>
+                                            <div style={{ width: 150, color: 'var(--muted)', fontSize: 12.5 }}>Start date</div>
+                                            <input className={styles.potFld} readOnly={!editing} value={editStartDate} onChange={(e) => setEditStartDate(e.target.value)} />
+                                        </div>
+                                        <label className={styles.fLabel} style={{ marginTop: 6 }}>Motivation</label>
+                                        <textarea className={styles.potFld} readOnly={!editing} value={editMotivation} onChange={(e) => setEditMotivation(e.target.value)} />
+                                    </>
+                                ) : (
+                                    <>
+                                        {bidFields.map(([l, v]) => potField(l, v, editing))}
+                                        {bid && (
+                                            <>
+                                                <label className={styles.fLabel} style={{ marginTop: 6 }}>Motivation</label>
+                                                <textarea className={styles.potFld} readOnly={!editing} defaultValue={bid.motivation} />
+                                            </>
+                                        )}
+                                        {!bid && app.negotiation_notes && (
+                                            <>
+                                                <label className={styles.fLabel} style={{ marginTop: 6 }}>Notes</label>
+                                                <textarea className={styles.potFld} readOnly={!editing} defaultValue={app.negotiation_notes} />
+                                            </>
+                                        )}
                                     </>
                                 )}
                             </div>
@@ -2427,5 +2599,302 @@ export function BusinessPlaceholder({ biz, onBack }: { biz: BusinessLine; onBack
                 </div>
             </div>
         </div>
+    );
+}
+
+// ============================================================
+// Dev Tools — admin-only destructive utilities for testing
+// ============================================================
+
+// Applicant-flow localStorage keys to wipe on a reset. These are the keys the
+// /nl/aanvraag + invite flow writes to localStorage. The CRM admin session
+// lives in sessionStorage with crm_* keys, so it is never touched.
+const APPLICANT_LS_KEYS = [
+    'auth_token',
+    'auth_phone',
+    'auth_first_name',
+    'auth_last_name',
+    'auth_user_role',
+    'auth_persoon_id',
+    'dossier_id',
+    'account_id',
+    'invite_dossier_id',
+    'invite_role',
+    'invite_persoon_id',
+    'invite_token',
+    'pending_apartment_selected',
+    'ah_leadform_b_v1',
+];
+
+function clearApplicantLocalStorage(phoneDigits: string) {
+    if (typeof window === 'undefined') return 0;
+    let cleared = 0;
+    for (const k of APPLICANT_LS_KEYS) {
+        if (window.localStorage.getItem(k) !== null) {
+            window.localStorage.removeItem(k);
+            cleared++;
+        }
+    }
+    // Draft keys are namespaced per-phone: aanvraag_draft_v1:<digits>
+    const prefix = 'aanvraag_draft_v1:';
+    // Always clear the specific one for this phone...
+    if (phoneDigits) {
+        const k = `${prefix}${phoneDigits}`;
+        if (window.localStorage.getItem(k) !== null) {
+            window.localStorage.removeItem(k);
+            cleared++;
+        }
+    }
+    // ...and sweep any other draft keys left from prior runs (best-effort).
+    try {
+        const toRemove: string[] = [];
+        for (let i = 0; i < window.localStorage.length; i++) {
+            const key = window.localStorage.key(i);
+            if (key && key.startsWith(prefix)) toRemove.push(key);
+        }
+        for (const key of toRemove) {
+            window.localStorage.removeItem(key);
+            cleared++;
+        }
+    } catch {
+        // localStorage access can throw in privacy modes; non-fatal.
+    }
+    return cleared;
+}
+
+export function DevToolsView({ onToast, onSaved }: { onToast: ToastFn; onSaved?: () => void }) {
+    const [phone, setPhone] = useState('');
+    const [busy, setBusy] = useState(false);
+    const [stage, setStage] = useState<'idle' | 'preview' | 'done'>('idle');
+    const [preview, setPreview] = useState<{
+        phone: string;
+        willDelete: Record<string, number>;
+        accountNames: string[];
+        dossierAddresses: string[];
+    } | null>(null);
+    const [result, setResult] = useState<{ deleted: Record<string, number>; storageErrors?: string[]; warnings?: { step: string; message: string }[]; phone?: string; lsCleared?: number } | null>(null);
+
+    const digits = (s: string) => s.replace(/\D/g, '');
+
+    async function doPreview() {
+        const trimmed = phone.trim();
+        if (!trimmed) { onToast('Enter a phone number first'); return; }
+        if (digits(trimmed).length < 8) { onToast('That phone number looks too short'); return; }
+
+        setBusy(true);
+        setPreview(null);
+        setResult(null);
+        try {
+            const res = await fetch(`/api/admin/crm/reset-dossier?preview=true`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
+                body: JSON.stringify({ phone: trimmed }),
+            });
+            const data = await res.json();
+            if (data.success && data.preview) {
+                setPreview({
+                    phone: data.phone || trimmed,
+                    willDelete: data.willDelete || {},
+                    accountNames: data.accountNames || [],
+                    dossierAddresses: data.dossierAddresses || [],
+                });
+                setStage('preview');
+            } else if (res.status === 403) {
+                onToast(data.message || 'This phone is not allowed for reset');
+            } else {
+                onToast(data.message || 'Preview failed');
+            }
+        } catch {
+            onToast('Preview failed — check console');
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    async function doReset() {
+        const trimmed = phone.trim();
+        if (!trimmed || !preview) return;
+
+        const wd = preview.willDelete;
+        const ok = window.confirm(
+            `CONFIRM DESTRUCTIVE RESET for ${preview.phone}\n\n` +
+            `This will permanently delete:\n` +
+            `  - ${wd.accounts ?? 0} account(s): ${(preview.accountNames.length ? preview.accountNames.join(', ') : '(no names)')}\n` +
+            `  - ${wd.dossiers ?? 0} dossier(s): ${(preview.dossierAddresses.length ? preview.dossierAddresses.join(', ') : '(none)')}\n` +
+            `  - ${wd.personen ?? 0} personen rows\n` +
+            `  - ${wd.documenten ?? 0} documenten rows + their Storage files\n` +
+            `  - ${wd.invoices ?? 0} invoice(s)\n` +
+            `  - ${wd.apartmentRefs ?? 0} offer/deal refs across ${wd.aptsAffected ?? 0} apartment(s)\n\n` +
+            `Also clears this browser's applicant localStorage.\n\n` +
+            `This CANNOT be undone. Type the phone number digits to confirm in the next prompt.`
+        );
+        if (!ok) return;
+
+        // Second factor: require the admin to type the digits to confirm.
+        const entered = window.prompt(`Type the digits of ${preview.phone} (no +, no spaces) to confirm:`);
+        if (entered === null) { onToast('Cancelled'); return; }
+        if (entered.replace(/\D/g, '') !== digits(trimmed)) {
+            onToast('Digits did not match — reset aborted, nothing was deleted');
+            return;
+        }
+
+        setBusy(true);
+        try {
+            const res = await fetch('/api/admin/crm/reset-dossier', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
+                body: JSON.stringify({ phone: trimmed }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                const lsCleared = clearApplicantLocalStorage(digits(trimmed));
+                setResult({ deleted: data.deleted || {}, storageErrors: data.storageErrors, warnings: data.warnings, phone: data.phone, lsCleared });
+                setStage('done');
+                onToast('Test dossier reset');
+                onSaved?.();
+            } else if (res.status === 403) {
+                onToast(data.message || 'This phone is not allowed for reset');
+            } else {
+                onToast(data.message || 'Reset failed');
+            }
+        } catch {
+            onToast('Reset failed — check console');
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    function resetForm() {
+        setPhone('');
+        setPreview(null);
+        setResult(null);
+        setStage('idle');
+    }
+
+    return (
+        <>
+            <h2 className={styles.pageTitle}>Dev Tools <span className={styles.ref}>admin · testing</span></h2>
+            <p className={styles.sub}>
+                Utilities for testing the /nl/aanvraag flow. The reset wipes all server data for a phone number
+                (accounts, dossiers, personen, documenten, Storage files, invoices, apartment offer/deal references)
+                and clears this browser&apos;s applicant localStorage so the form starts fresh. The CRM admin
+                session (sessionStorage) is never touched.
+            </p>
+
+            <div className={styles.grid2Wide}>
+                <div className={styles.card}>
+                    <div className={styles.cardHead}><h3>Reset Test Dossier</h3></div>
+                    <div className={styles.cardBody}>
+                        <label className={styles.fLabel}>Applicant phone number</label>
+                        <input
+                            className={styles.inp}
+                            type="tel"
+                            placeholder="+31 6 12 34 56 78"
+                            value={phone}
+                            onChange={(e) => { setPhone(e.target.value); setStage('idle'); setPreview(null); setResult(null); }}
+                            disabled={busy}
+                            style={{ marginBottom: 12 }}
+                        />
+
+                        {stage === 'idle' && (
+                            <button className={styles.btn} onClick={doPreview} disabled={busy || !phone.trim()}>
+                                {busy ? 'Checking…' : 'Preview what will be deleted'}
+                            </button>
+                        )}
+
+                        {stage === 'preview' && preview && (
+                            <div style={{ marginTop: 8 }}>
+                                <div style={{ padding: 12, background: 'var(--bg-soft, #f6f6f7)', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>
+                                    <div style={{ fontWeight: 600, marginBottom: 6 }}>
+                                        Found for {preview.phone}:
+                                    </div>
+                                    <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
+                                        <li><strong>{preview.willDelete.accounts ?? 0}</strong> account(s){preview.accountNames.length > 0 ? `: ${preview.accountNames.join(', ')}` : ''}</li>
+                                        <li><strong>{preview.willDelete.dossiers ?? 0}</strong> dossier(s){preview.dossierAddresses.length > 0 ? `: ${preview.dossierAddresses.join(', ')}` : ''}</li>
+                                        <li><strong>{preview.willDelete.personen ?? 0}</strong> personen rows</li>
+                                        <li><strong>{preview.willDelete.documenten ?? 0}</strong> documenten rows + Storage files</li>
+                                        <li><strong>{preview.willDelete.invoices ?? 0}</strong> invoice(s)</li>
+                                        <li><strong>{preview.willDelete.apartmentRefs ?? 0}</strong> offer/deal refs across <strong>{preview.willDelete.aptsAffected ?? 0}</strong> apartment(s)</li>
+                                    </ul>
+                                    {(preview.willDelete.accounts ?? 0) === 0 && (preview.willDelete.dossiers ?? 0) === 0 && (
+                                        <div style={{ marginTop: 8, color: 'var(--muted, #666)' }}>Nothing to delete — this phone has no data.</div>
+                                    )}
+                                </div>
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                    <button className={styles.btnDanger} onClick={doReset} disabled={busy || ((preview.willDelete.accounts ?? 0) === 0 && (preview.willDelete.dossiers ?? 0) === 0)}>
+                                        {busy ? 'Resetting…' : 'Confirm reset'}
+                                    </button>
+                                    <button className={`${styles.btn} ${styles.btnGhost}`} onClick={resetForm} disabled={busy}>
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {stage === 'done' && result && (
+                            <div style={{ marginTop: 16 }}>
+                                <div style={{ padding: 12, background: 'var(--bg-soft, #f6f6f7)', borderRadius: 8, fontSize: 13 }}>
+                                    <div style={{ fontWeight: 600, marginBottom: 6 }}>Deleted for {result.phone || phone.trim()}:</div>
+                                    <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
+                                        <li>Accounts: {result.deleted.accounts ?? 0}</li>
+                                        <li>Dossiers: {result.deleted.dossiers ?? 0}</li>
+                                        <li>Personen: {result.deleted.personen ?? 0}</li>
+                                        <li>Documenten rows: {result.deleted.documenten ?? 0}</li>
+                                        <li>Invoices: {result.deleted.invoices ?? 0}</li>
+                                        <li>Apartment offer/deal refs scrubbed: {result.deleted.apartmentRefs ?? 0}</li>
+                                        <li>Storage files: {result.deleted.storageFiles ?? 0}</li>
+                                        <li>Browser localStorage keys cleared: {result.lsCleared ?? 0}</li>
+                                    </ul>
+                                    {result.storageErrors && result.storageErrors.length > 0 && (
+                                        <div style={{ marginTop: 8, color: 'var(--danger, #b42318)', fontSize: 12 }}>
+                                            Storage cleanup warnings: {result.storageErrors.join('; ')}
+                                        </div>
+                                    )}
+                                    {result.warnings && result.warnings.length > 0 && (
+                                        <div style={{ marginTop: 8, color: '#b54708', fontSize: 12 }}>
+                                            Skipped steps (server-side): {result.warnings.map((w) => w.step).join(', ')}
+                                        </div>
+                                    )}
+                                </div>
+                                <button className={`${styles.btn} ${styles.btnGhost}`} style={{ marginTop: 12 }} onClick={resetForm}>
+                                    Reset another number
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className={styles.card}>
+                    <div className={styles.cardHead}><h3>What gets cleared</h3></div>
+                    <div className={styles.cardBody}>
+                        <p style={{ marginTop: 0, fontSize: 13, lineHeight: 1.6 }}>
+                            Server-side (Supabase, via service role):
+                        </p>
+                        <ul style={{ margin: '0 0 12px 0', paddingLeft: 18, fontSize: 13, lineHeight: 1.6 }}>
+                            <li><code>accounts</code> rows matching the phone (main + linked co-tenant/guarantor accounts)</li>
+                            <li><code>dossiers</code> rows for that phone</li>
+                            <li><code>personen</code> rows in those dossiers (CASCADE removes <code>documenten</code>)</li>
+                            <li><code>documenten</code> rows with a matching <code>phone_number</code> (orphans)</li>
+                            <li><code>invoices</code> rows keyed by <code>account_id</code></li>
+                            <li><code>apartments.offers_in</code>, <code>offers_sent</code>, <code>accepted_deals</code>, <code>rejected_deals</code> entries referencing the account_id(s)</li>
+                            <li>Storage files under <code>dossier-documents/&lt;digits&gt;/</code> + any paths recorded in <code>documenten.bestandspad</code></li>
+                        </ul>
+                        <p style={{ margin: '12px 0 0 0', fontSize: 13, lineHeight: 1.6 }}>
+                            Browser-side (this tab&apos;s localStorage only):
+                        </p>
+                        <ul style={{ margin: '0 0 12px 0', paddingLeft: 18, fontSize: 13, lineHeight: 1.6 }}>
+                            <li><code>auth_*</code>, <code>dossier_id</code>, <code>account_id</code>, <code>invite_*</code>, <code>pending_apartment_selected</code>, <code>ah_leadform_b_v1</code></li>
+                            <li>all <code>aanvraag_draft_v1:*</code> draft keys</li>
+                        </ul>
+                        <p style={{ margin: '12px 0 0 0', fontSize: 12, color: 'var(--muted, #666)' }}>
+                            Not cleared: CRM admin session (sessionStorage <code>crm_*</code>), city selector (<code>ah_city</code>), language prefs (<code>inv-lang</code>).
+                        </p>
+                        <p style={{ margin: '12px 0 0 0', fontSize: 12, color: 'var(--muted, #666)' }}>
+                            Safety: the route refuses to run if a phone matches more than 5 accounts or 3 dossiers (a test dossier never should). Every DELETE is scoped to resolved ids only.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </>
     );
 }

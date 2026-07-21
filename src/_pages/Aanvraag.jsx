@@ -780,6 +780,67 @@ const Aanvraag = () => {
                     return;
                 }
             }
+
+            // Persist documenten row(s) immediately so the CRM dashboard
+            // reflects the upload without waiting for the final submit
+            // (/api/dossier/save). Awaited — if this fails we must revert the
+            // slot so the form doesn't lie about the upload succeeding.
+            const persoonRoleForCheck = persoon.rol === 'Garantsteller' ? 'guarantor' : 'tenant';
+            const requiredDocsForCheck = getRequiredDocuments(persoon.werkstatus, persoonRoleForCheck);
+            const docConfig = requiredDocsForCheck.find(d => d.type === type);
+            const isMultiFileSlot = docConfig?.multiFile === true ||
+                (filesToUpload.length > 1) || (existingDocs.length > 0);
+
+            try {
+                const r = await fetch('/api/dossier/save-doc', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: mainTenantPhone,
+                        persoonPhone: persoon.telefoon,
+                        persoonName: persoon.naam,
+                        role: persoon.rol,
+                        naam: persoon.naam,
+                        werkstatus: persoon.werkstatus,
+                        email: persoon.email,
+                        docType: type,
+                        files: uploadedDocs.map(d => ({ filePath: d.filePath, fileName: d.fileName })),
+                        replace: !isMultiFileSlot,
+                    }),
+                });
+                const d = await r.json();
+                if (!d.success) {
+                    console.error('[Aanvraag] save-doc failed:', d.message);
+                    alert(currentLang === 'en'
+                        ? `Upload saved to storage but could not be recorded: ${d.message}. Please try again.`
+                        : `Upload opgeslagen in opslag maar niet geregistreerd: ${d.message}. Probeer het opnieuw.`);
+                    // Revert the just-uploaded docs from local state so the slot
+                    // shows as empty, not as falsely "uploaded".
+                    setData(prevData => prevData ? {
+                        ...prevData,
+                        personen: prevData.personen.map(p => p.persoonId === persoonId
+                            ? { ...p, documenten: (p.documenten || []).filter(doc => doc.type !== type) }
+                            : p),
+                    } : prevData);
+                    setSaveStatus('error');
+                    setTimeout(() => setSaveStatus('idle'), 2000);
+                    return;
+                }
+            } catch (e) {
+                console.error('[Aanvraag] save-doc error:', e);
+                alert(currentLang === 'en'
+                    ? 'Network error recording upload. Please try again.'
+                    : 'Netwerkfout bij opslaan upload. Probeer het opnieuw.');
+                setData(prevData => prevData ? {
+                    ...prevData,
+                    personen: prevData.personen.map(p => p.persoonId === persoonId
+                        ? { ...p, documenten: (p.documenten || []).filter(doc => doc.type !== type) }
+                        : p),
+                } : prevData);
+                setSaveStatus('error');
+                setTimeout(() => setSaveStatus('idle'), 2000);
+                return;
+            }
         }
 
         // After successful upload, also send upload event(s) to n8n (fire-and-forget so webhook never blocks uploads).
@@ -916,6 +977,24 @@ const Aanvraag = () => {
                 console.error('[Aanvraag] Failed to delete document:', result.error);
             }
         }
+
+        // Also remove the documenten row(s) from the DB so the CRM dashboard
+        // reflects the removal immediately. Fire-and-forget.
+        const hoofdhuurderRem = data.personen.find(p => p.rol === 'Hoofdhuurder');
+        const mainTenantPhoneRem = hoofdhuurderRem?.telefoon || phoneNumber;
+        fetch('/api/dossier/save-doc', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                phone: mainTenantPhoneRem,
+                persoonPhone: persoon.telefoon,
+                persoonName: persoon.naam,
+                docType,
+                filePath: filePaths[0] || undefined,
+            }),
+        }).then(r => r.json()).then(d => {
+            if (!d.success) console.error('[Aanvraag] remove-doc failed:', d.message);
+        }).catch(e => console.error('[Aanvraag] remove-doc error:', e));
     };
 
     const handleAddCoTenant = () => {

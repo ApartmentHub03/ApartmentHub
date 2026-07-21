@@ -19,7 +19,7 @@ This file lists **only items blocked on David**. For everything already finished
 ## 1. Generate Offer — ✅ DONE (Option A: Gmail draft)
 
 ### What was built
-- **Gmail draft creation** via Google Workspace domain-wide delegation. The service account already used for SEO (`GOOGLE_SERVICE_ACCOUNT_EMAIL` + `GOOGLE_PRIVATE_KEY`) impersonates the logged-in agent's `crm_users.email` and creates a draft in their Gmail. Scope: `https://www.googleapis.com/auth/gmail.compose` (drafts only — no read/send of other mail).
+- **Gmail draft creation** via Google Workspace domain-wide delegation. A **dedicated Gmail service account** (`GMAIL_SERVICE_ACCOUNT_EMAIL` + `GMAIL_PRIVATE_KEY`, separate from the SEO SA) impersonates the logged-in agent's `crm_users.email` and creates a draft in their Gmail. Scope: `https://www.googleapis.com/auth/gmail.compose` (drafts only — no read/send of other mail). Falls back to the SEO SA (`GOOGLE_*`) if the dedicated vars are unset.
 - **Per-agent signature** with `horizontal-logo.png`, agent name, "Real Estate Agent" title, email, mobile, and street address. Address is a new `crm_users.address` column — set it in the Team page (click the Address cell in the roster, or fill it when adding a new employee).
 - **Candidate + guarantor bios** entered in the CRM ApplicationDetailView as textareas, persisted to `dossiers.candidate_bio` + `dossiers.guarantor_bio` so they're reusable when the candidate applies to another apartment. Falls back to `[EDIT BIO HERE]` placeholders in the draft if unset.
 - **Candidate type auto-derived** from `personen` count + `werk_status` (e.g., "2 students", "single working person").
@@ -36,12 +36,13 @@ This file lists **only items blocked on David**. For everything already finished
   ALTER TABLE public.crm_users
       ADD COLUMN IF NOT EXISTS address TEXT;
   ```
-- [ ] **Grant Gmail delegation in Google Workspace Admin Console:**
-  1. Google Cloud Console → the service account used for SEO → copy its **Client ID** (numeric)
+- [x] **Grant Gmail delegation in Google Workspace Admin Console:**
+  1. Google Cloud Console → the dedicated Gmail service account (`apartmenthub-gmail@argon-zoo-500515-r0.iam.gserviceaccount.com`) → copy its **Client ID** (numeric: `109009316148519629467`)
   2. admin.google.com → Security → API Controls → Manage Domain-Wide Delegation → Add new
   3. Client ID: paste the service account's Client ID
   4. OAuth scopes: `https://www.googleapis.com/auth/gmail.compose`
   5. Click Authorize
+  - **Done — David configured the DWD entry Jul 21, 2026.**
 - [ ] **Set each agent's street address** in `/crm-admin` → Team tab → click the Address cell in the roster → type → Save. New employees can be added with an address directly in the "Add employee" form.
 - [ ] **Confirm each agent's `crm_users.email` is an `@apartmenthub.nl` Workspace account.** The route rejects non-`@apartmenthub.nl` emails with a clear 400 error. Personal Gmail accounts won't work with domain-wide delegation.
 

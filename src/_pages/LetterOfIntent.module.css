@@ -158,6 +158,18 @@
     margin-bottom: 0;
 }
 
+.termsLink {
+    display: inline-block;
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: #497772;
+    text-decoration: underline;
+}
+
+.termsLink:hover {
+    color: #2f4d49;
+}
+
 .checkboxItem {
     display: flex;
     align-items: flex-start;

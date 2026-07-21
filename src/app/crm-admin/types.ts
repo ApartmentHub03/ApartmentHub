@@ -235,7 +235,8 @@ export type TabId =
     | 'seo'
     | 'agents'
     | 'collab'
-    | 'team';
+    | 'team'
+    | 'devtools';
 
 export type ViewState = {
     tab: TabId | 'create';

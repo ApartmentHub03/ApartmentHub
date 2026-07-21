@@ -162,7 +162,10 @@ export async function POST(request) {
             // that's what drives the recompute to 'Complete'.
             const docRows = [];
             for (const d of p.documenten || []) {
-                const files = d.files || (d.file ? [d.file] : []);
+                let files = d.files;
+                if (!files || files.length === 0) {
+                    files = d.file ? [d.file] : (d.filePath || d.file_path ? [d] : []);
+                }
                 for (const f of files) {
                     if (!f || !(f.filePath || f.file_path)) continue;
                     docRows.push({

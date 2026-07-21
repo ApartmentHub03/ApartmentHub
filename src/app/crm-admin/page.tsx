@@ -12,7 +12,7 @@ import type {
 import {
     DashboardView, ApartmentsView, ApartmentRecordView, CreateApartmentView,
     DealsView, CandidatesView, MarketingView, SeoView, AgentsView,
-    CollaborationsView, TeamView, ApplicationDetailView, BusinessPlaceholder,
+    CollaborationsView, TeamView, DevToolsView, ApplicationDetailView, BusinessPlaceholder,
 } from './views';
 import {
     MeetingLinksModal, SendSegmentModal, RescheduleModal, DealModal, EditInvoiceModal,
@@ -27,7 +27,7 @@ function parseHash(hash: string): ViewState {
     if (!h) return { tab: 'dashboard' };
     const parts = h.split('/');
     if (parts[0] === 'create') return { tab: 'create' };
-    const validTabs: TabId[] = ['dashboard', 'apartments', 'deals', 'candidates', 'leads', 'seo', 'agents', 'collab', 'team'];
+    const validTabs: TabId[] = ['dashboard', 'apartments', 'deals', 'candidates', 'leads', 'seo', 'agents', 'collab', 'team', 'devtools'];
     if (parts[0] === 'apartments' && parts[1]) {
         const aptId = parts[1];
         if (parts[2] === 'application' && parts[3]) {
@@ -64,6 +64,7 @@ const TABS: { id: TabId; label: string }[] = [
     { id: 'agents', label: 'Agents' },
     { id: 'collab', label: 'Collaborations' },
     { id: 'team', label: 'Team' },
+    { id: 'devtools', label: 'Dev Tools' },
 ];
 
 // --- Auth helpers (inline, matching crm-admin/page.jsx) ---
@@ -289,6 +290,7 @@ function CrmApp({ me, onLogout }: { me: Me; onLogout: (expired?: boolean) => voi
         return TABS.filter((t) => {
             if (t.id === 'team' && !isAdmin) return false;
             if (t.id === 'collab' && !isAdmin) return false;
+            if (t.id === 'devtools' && !isAdmin) return false;
             return true;
         });
     }, [isAdmin]);
@@ -407,6 +409,8 @@ function CrmApp({ me, onLogout }: { me: Me; onLogout: (expired?: boolean) => voi
                 return <CollaborationsView agents={lists.realEstateAgents} onToast={showToast} onSaved={loadLists} isAdmin={isAdmin} />;
             case 'team':
                 return <TeamView team={team} loading={teamLoading} isAdmin={isAdmin} onToast={showToast} onAdded={loadTeam} />;
+            case 'devtools':
+                return <DevToolsView onToast={showToast} onSaved={loadLists} />;
             default:
                 return <DashboardView me={me} lists={lists} loading={loading} />;
         }

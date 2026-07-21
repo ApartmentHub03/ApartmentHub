@@ -122,6 +122,8 @@
 .btnGhost:hover { background: #f3f6f6; }
 .btnOrange { background: var(--orange); color: #fff; }
 .btnOrange:hover { filter: brightness(.95); }
+.btnDanger { background: #b42318; color: #fff; }
+.btnDanger:hover { background: #912018; }
 .btnSm { padding: 6px 10px; font-size: 12.5px; }
 
 /* --- Topbar (dark) --- */

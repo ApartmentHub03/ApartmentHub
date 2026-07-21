@@ -1,9 +1,13 @@
 // Gmail API client using Google Workspace domain-wide delegation.
 //
-// Reuses the same service-account credentials as the SEO integrations
-// (GOOGLE_SERVICE_ACCOUNT_EMAIL + GOOGLE_PRIVATE_KEY — see src/lib/seo/googleAuth.js).
-// To create drafts in a personal @gmail.com mailbox the service account must
-// be granted domain-wide delegation in the Google Workspace Admin Console for
+// Uses a dedicated Gmail service account (GMAIL_SERVICE_ACCOUNT_EMAIL +
+// GMAIL_PRIVATE_KEY) separate from the SEO integrations' service account
+// (GOOGLE_SERVICE_ACCOUNT_EMAIL + GOOGLE_PRIVATE_KEY — see
+// src/lib/seo/googleAuth.js). Falling back to the SEO credentials keeps older
+// deployments working while the dedicated SA is being rolled out.
+//
+// To create drafts in a @apartmenthub.nl mailbox the service account must be
+// granted domain-wide delegation in the Google Workspace Admin Console for
 // the scope https://www.googleapis.com/auth/gmail.compose.
 //
 // Each call to createGmailClient(userEmail) returns a gmail v1 client that
@@ -15,15 +19,16 @@ import { google } from 'googleapis';
 const SCOPE = 'https://www.googleapis.com/auth/gmail.compose';
 
 export function createGmailClient(userEmail) {
-    const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-    const privateKeyRaw = process.env.GOOGLE_PRIVATE_KEY;
+    const clientEmail = process.env.GMAIL_SERVICE_ACCOUNT_EMAIL || process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+    const privateKeyRaw = process.env.GMAIL_PRIVATE_KEY || process.env.GOOGLE_PRIVATE_KEY;
 
     if (!clientEmail || !privateKeyRaw) {
         throw new Error(
-            'Missing GOOGLE_SERVICE_ACCOUNT_EMAIL or GOOGLE_PRIVATE_KEY env vars. ' +
-                'Gmail delegation requires the same service account used by SEO ' +
-                '(see src/lib/seo/googleAuth.js). Grant domain-wide delegation ' +
-                'for the gmail.compose scope in the Google Workspace Admin Console.'
+            'Missing GMAIL_SERVICE_ACCOUNT_EMAIL or GMAIL_PRIVATE_KEY env vars. ' +
+                'Gmail delegation requires a dedicated service account (separate ' +
+                'from SEO). Grant domain-wide delegation for the gmail.compose ' +
+                'scope in the Google Workspace Admin Console. Falls back to ' +
+                'GOOGLE_SERVICE_ACCOUNT_EMAIL / GOOGLE_PRIVATE_KEY if set.'
         );
     }
     if (!userEmail) {

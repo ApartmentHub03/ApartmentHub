@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useSelector } from 'react-redux';
 import { CheckCircle, MessageCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -259,6 +260,7 @@ const LetterOfIntent = () => {
     ];
 
     const conditions = currentLang === 'nl' ? conditionsNL : conditionsEN;
+    const termsLink = currentLang === 'nl' ? '/nl/algemene-voorwaarden' : '/en/terms-and-conditions';
 
     const texts = currentLang === 'nl' ? {
         title: 'Letter of Intent',
@@ -288,6 +290,7 @@ const LetterOfIntent = () => {
         submit: 'Ondertekenen & Indienen',
         submitting: 'Bezig met verzenden...',
         whatsappHelp: 'Heb je vragen? Chat met ons via WhatsApp',
+        fullTerms: 'Algemene voorwaarden',
         successTitle: 'Aanvraag Ingediend!',
         successSubtitle: 'Je Letter of Intent is succesvol verzonden.',
         responseTime: 'Wij nemen binnen <strong>24 uur</strong> contact met je op.',
@@ -322,6 +325,7 @@ const LetterOfIntent = () => {
         submit: 'Sign & Submit',
         submitting: 'Submitting...',
         whatsappHelp: 'Have questions? Chat with us via WhatsApp',
+        fullTerms: 'Terms and Conditions',
         successTitle: 'Application Submitted!',
         successSubtitle: 'Your Letter of Intent has been successfully sent.',
         responseTime: 'We will contact you within <strong>24 hours</strong>.',
@@ -474,6 +478,9 @@ const LetterOfIntent = () => {
                                         <li key={idx}>{condition}</li>
                                     ))}
                                 </ul>
+                                <Link href={termsLink} className={styles.termsLink} target="_blank" rel="noopener noreferrer">
+                                    {texts.fullTerms}
+                                </Link>
                             </div>
 
                             <label className={styles.checkboxItem}>
