@@ -38,19 +38,32 @@ function ModalShell({ title, onClose, children, footer }: {
 // Wired to POST /api/admin/crm/apartment/[id]/generate-slot
 export function MeetingLinksModal({ aptId, onClose, onToast, onSaved }: { aptId: string; onClose: () => void; onToast: ToastFn; onSaved?: () => void }) {
     const [start, setStart] = useState('');
-    const [end, setEnd] = useState('');
-    const [slotLength, setSlotLength] = useState('30');
+    const [duration, setDuration] = useState('30'); // total viewing window in minutes
+    const [slotLength, setSlotLength] = useState('5'); // per-booking slot length
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<{ eventlink?: string | null; eventlinkVideo?: string | null } | null>(null);
 
+    // Auto-compute viewing end from start + duration
+    const viewingEnd = (() => {
+        if (!start) return '';
+        const d = new Date(start);
+        if (isNaN(d.getTime())) return '';
+        d.setMinutes(d.getMinutes() + Number(duration) || 0);
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    })();
+
+    const numSlots = Number(duration) > 0 && Number(slotLength) > 0 ? Math.floor(Number(duration) / Number(slotLength)) : 0;
+
     async function generate() {
-        if (!start || !end || !slotLength) { onToast('Fill in start, end and slot length'); return; }
+        if (!start) { onToast('Fill in the viewing date & time'); return; }
+        if (!viewingEnd) { onToast('Could not compute end time — check duration'); return; }
         setLoading(true);
         try {
             const res = await fetch(`/api/admin/crm/apartment/${aptId}/generate-slot`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
-                body: JSON.stringify({ start, end, slotLengthMinutes: Number(slotLength) }),
+                body: JSON.stringify({ start, end: viewingEnd, slotLengthMinutes: Number(slotLength) }),
             });
             const data = await res.json();
             if (data.success) {
@@ -112,23 +125,46 @@ export function MeetingLinksModal({ aptId, onClose, onToast, onSaved }: { aptId:
             }
         >
             <p>Creates a Cal.com schedule + in-person and video event types for this apartment.</p>
-            <label className={styles.fLabel}>Start date &amp; time</label>
-            <input className={styles.inp} type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} />
-            <label className={styles.fLabel} style={{ marginTop: 10 }}>End date &amp; time</label>
-            <input className={styles.inp} type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} />
+            <div className={styles.formRow}>
+                <div>
+                    <label className={styles.fLabel}>Start date & time</label>
+                    <input className={styles.inp} type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} />
+                </div>
+                <div>
+                    <label className={styles.fLabel}>Duration (min)</label>
+                    <input
+                        className={styles.inp}
+                        type="number"
+                        min={1}
+                        step={1}
+                        placeholder="30"
+                        value={duration}
+                        onChange={(e) => setDuration(e.target.value)}
+                    />
+                </div>
+            </div>
             <div className={styles.formRow3} style={{ marginTop: 10 }}>
                 <div>
-                    <label className={styles.fLabel}>Slot length (min)</label>
+                    <label className={styles.fLabel}>Slot Duration (min)</label>
                     <select className={styles.inp} value={slotLength} onChange={(e) => setSlotLength(e.target.value)}>
-                        <option value="30">30</option>
-                        <option value="20">20</option>
-                        <option value="45">45</option>
-                        <option value="60">60</option>
+                        <option value="5">5</option>
+                        <option value="10">10</option>
                     </select>
+                    <div className={styles.hint}>Per-booking slot length sent to Cal.com</div>
+                </div>
+                <div>
+                    <label className={styles.fLabel}>No. of slots</label>
+                    <input className={styles.inp} value={numSlots > 0 ? String(numSlots) : '—'} readOnly style={{ color: 'var(--muted)' }} />
+                    <div className={styles.hint}>Auto · duration ÷ slot duration</div>
+                </div>
+                <div>
+                    <label className={styles.fLabel}>Viewing ends</label>
+                    <input className={styles.inp} value={viewingEnd || '—'} readOnly style={{ color: 'var(--muted)' }} />
+                    <div className={styles.hint}>Auto · start + duration</div>
                 </div>
             </div>
             <p className={styles.hint} style={{ marginTop: 8 }}>
-                Each slot is {slotLength} min. Agents pick a window; candidates self-book one slot via Cal.com.
+                Total window is {duration || '—'} min · each slot is {slotLength} min.
             </p>
         </ModalShell>
     );

@@ -48,8 +48,8 @@ export async function POST(request, { params }) {
     }
 
     try {
-        const body = await request.json();
-        const { tenant_phone, account_id, candidate_bio, guarantor_bio } = body || {};
+    const body = await request.json();
+    const { tenant_phone, account_id, candidate_bio, guarantor_bio, bid_amount, start_date } = body || {};
 
         // 1. Resolve candidate phone — accept either tenant_phone or account_id.
         let phone = null;
@@ -218,6 +218,22 @@ export async function POST(request, { params }) {
             // Fall back to the asking rent if the candidate hasn't bid yet.
             bidAmount = Number(apt.rental_price);
         }
+
+        // Caller-provided overrides win over the dossier-derived values. The
+        // Offers Out "Adjust Offer" flow edits the offers_sent entry (agent
+        // counter-offer) — those edits are passed here so the Gmail draft
+        // reflects the agent's negotiated amount, not the tenant's original bid.
+        if (bid_amount != null) {
+            const n = Number(bid_amount);
+            if (Number.isFinite(n) && n >= 0) bidAmount = n;
+        }
+        if (typeof start_date === 'string' && start_date.trim() !== '') {
+            startDate = start_date;
+        }
+        // motivation override is accepted but not rendered in the current
+        // email template — kept for future use. The dossier's motivation is
+        // not overwritten (agent counter-offer motivation lives in offers_sent).
+
         const deposit = bidAmount != null ? bidAmount * 2 : null;
 
         // 5. Persist the bios into the dossier if the caller passed them.

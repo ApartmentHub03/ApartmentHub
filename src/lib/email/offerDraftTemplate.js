@@ -124,7 +124,7 @@ export function renderOfferDraftEmail({
   <p style="margin:0 0 12px;font-size:14px">Hi ${escapeHtml(agentName)},</p>
 
   <p style="margin:0 0 16px;font-size:14px">
-    Here is the proposal from my candidate: <b>${escapeHtml(candidateName)}</b> at <b>${escapeHtml(apartmentAddress)}</b>.
+    Here is the proposal from my candidate: <b style="color:#497772">${escapeHtml(candidateName)}</b> at <b>${escapeHtml(apartmentAddress)}</b>.
   </p>
 
   <table style="font-size:14px;border-collapse:collapse;margin:0 0 16px">
@@ -144,27 +144,41 @@ export function renderOfferDraftEmail({
 
   <p style="margin:0 0 4px;font-size:14px">Yours sincerely,</p>
 
-  <table style="margin-top:8px;border-collapse:collapse">
+  <table style="margin-top:8px;border-collapse:collapse;width:100%;max-width:540px">
     <tr>
-      <td style="vertical-align:top;padding-right:14px">
-        <img src="${LOGO_URL}" alt="ApartmentHub" style="max-width:160px;height:auto;display:block" />
+      <td style="vertical-align:top;padding-right:20px;width:140px">
+        <img src="${LOGO_URL}" alt="ApartmentHub" style="max-width:140px;height:auto;display:block;margin-bottom:8px" />
+        <a href="https://apartmenthub.nl/" style="color:#497772;text-decoration:none;font-size:13px">https://apartmenthub.nl/</a>
       </td>
-      <td style="vertical-align:top;font-size:13px;line-height:1.6;color:#1a2b27">
-        <b style="font-size:15px">${escapeHtml(senderName)}</b><br />
-        Real Estate Agent<br />
-        Email: ${escapeHtml(senderEmail || '—')}<br />
-        Mobile: ${escapeHtml(senderPhone)}<br />
-        ${senderAddress ? `Address: ${escapeHtml(senderAddress)}<br />` : ''}
-        <a href="https://apartmenthub.nl/" style="color:#497772;text-decoration:none">https://apartmenthub.nl/</a>
+      <td style="vertical-align:top;font-size:13px;line-height:1.5;color:#1a2b27">
+        <b style="font-size:17px;color:#1a2b27">${escapeHtml(senderName)}</b><br />
+        <span style="color:#1a2b27">Real Estate Agent</span>
+        <table style="border-collapse:collapse;margin-top:6px;width:100%">
+          <tr>
+            <td style="vertical-align:top;padding-right:16px;width:50%">
+              <b style="color:#6e7d78;font-size:12px">Email:</b><br />
+              <a href="mailto:${escapeHtml(senderEmail)}" style="color:#497772;text-decoration:underline">${escapeHtml(senderEmail)}</a>
+            </td>
+            <td style="vertical-align:top;width:50%">
+              <b style="color:#6e7d78;font-size:12px">Mobile:</b><br />
+              ${escapeHtml(senderPhone)}
+            </td>
+          </tr>
+        </table>
+        ${senderAddress ? `<div style="margin-top:6px"><span style="color:#6e7d78;font-size:12px">Address:</span><br />${escapeHtml(senderAddress)}</div>` : ''}
       </td>
     </tr>
   </table>
+
+  <p style="margin:16px 0 0;font-size:11px;line-height:1.5;color:#6e7d78;border-top:1px solid #e5eae8;padding-top:12px">
+    The content of this email is confidential and intended for the recipient specified in message only. It is strictly forbidden to share any part of this message with any third party, without a written consent of the sender. If you received this message by mistake, please reply to this message and follow with its deletion, so that we can ensure such a mistake does not occur in the future.
+  </p>
 </div>
 </body></html>`;
 
     return {
         to: agentEmail,
-        subject: `Proposal for ${apartmentAddress} — ${candidateName}`,
+        subject: `Proposal for ${apartmentAddress}, ${candidateName}`,
         html,
     };
 }

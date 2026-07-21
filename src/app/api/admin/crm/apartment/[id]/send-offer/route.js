@@ -36,7 +36,7 @@ export async function POST(request, { params }) {
 
     try {
         const body = await request.json();
-        const { account_id, offer_type = 'normal' } = body || {};
+        const { account_id, offer_type = 'normal', bid_amount, start_date, motivation } = body || {};
 
         if (!isUuid(account_id)) {
             return NextResponse.json({ success: false, message: 'A valid account_id is required' }, { status: 400 });
@@ -109,14 +109,18 @@ export async function POST(request, { params }) {
         // 5. Build the offers_sent entry. Shape matches what mark-deal /
         //    no-deal read (account_id + status) and what the deal-response
         //    trigger reads (tenant_name, whatsapp_number, responded_at).
+        //    Caller-provided bid_amount / start_date / motivation override the
+        //    offers_in snapshot values — this is how the agent's Adjust Offer
+        //    edits (from ApplicationDetailView) get persisted into the new
+        //    offers_sent entry on send.
         const sentAt = new Date().toISOString();
         const newSent = {
             account_id,
             tenant_name: inOffer.tenant_name || null,
             whatsapp_number: account?.whatsapp_number || null,
-            bid_amount: Number(inOffer.bid_amount) || 0,
-            start_date: inOffer.start_date || null,
-            motivation: inOffer.motivation || null,
+            bid_amount: bid_amount != null ? Number(bid_amount) : (Number(inOffer.bid_amount) || 0),
+            start_date: (typeof start_date === 'string' && start_date.trim() !== '') ? start_date : (inOffer.start_date || null),
+            motivation: motivation != null ? motivation : (inOffer.motivation || null),
             offer_type,
             status: 'PENDING',
             sent_at: sentAt,

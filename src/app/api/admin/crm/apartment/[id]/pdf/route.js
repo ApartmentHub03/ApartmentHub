@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import { serviceClient, requirePermission } from '@/services/crmAuth';
 import { isUuid, invalidId, failed } from '@/services/crmHttp';
 
-// Apartment brochure PDF — upload to the private "Apartment Doc" bucket and
-// record its path on the apartment (booking_details.brochure_pdf). GET returns
-// a fresh signed URL.
+// Apartment brochure / attachment — upload to the private "Apartment Doc"
+// bucket and record its path on the apartment (booking_details.brochure_pdf).
+// GET returns a fresh signed URL. PDF is recommended but any file type is
+// accepted up to 20 MB.
 
 const BUCKET = 'Apartment Doc';
 const MAX_BYTES = 20 * 1024 * 1024; // 20 MB
@@ -45,11 +46,8 @@ export async function POST(request, { params }) {
         if (!file || typeof file === 'string') {
             return NextResponse.json({ success: false, message: 'No file uploaded' }, { status: 400 });
         }
-        if (file.type && file.type !== 'application/pdf') {
-            return NextResponse.json({ success: false, message: 'Only PDF files are allowed' }, { status: 400 });
-        }
         if (file.size > MAX_BYTES) {
-            return NextResponse.json({ success: false, message: 'PDF exceeds 20 MB' }, { status: 400 });
+            return NextResponse.json({ success: false, message: 'File exceeds 20 MB' }, { status: 400 });
         }
 
         const supabase = serviceClient();
@@ -66,7 +64,7 @@ export async function POST(request, { params }) {
         const buffer = Buffer.from(await file.arrayBuffer());
 
         const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, buffer, {
-            contentType: 'application/pdf', upsert: true,
+            contentType: file.type || 'application/octet-stream', upsert: true,
         });
         if (upErr) throw upErr;
 

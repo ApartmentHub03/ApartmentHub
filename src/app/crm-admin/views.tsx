@@ -645,15 +645,19 @@ export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast,
                         ].filter(Boolean).join(' · ');
 
                         const isDone = status === 'DEAL_ACCEPTED' || status === 'OFFER_DECLINED';
+                        // account_id must be a valid UUID to open the dossier or
+                        // mark a deal — legacy rows without one can't be acted on.
+                        const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                        const hasAccount = Boolean(acctId) && UUID_RE.test(acctId);
                         // Name is clickable to open the application dossier
                         // (Client Info) — same pattern as Offers In / People Making
-                        // an Offer rows. Only clickable when we have an account_id.
-                        const nameNode = acctId
+                        // an Offer rows. Only clickable when we have a valid account_id.
+                        const nameNode = hasAccount
                             ? <button style={{ color: 'var(--teal)', cursor: 'pointer', background: 'none', border: 'none', padding: 0, font: 'inherit', fontWeight: 600 }} onClick={() => onOpenApplication(acctId, name, 'offersout')}>{name}</button>
-                            : <span>{name}</span>;
+                            : <span>{name} <span style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 400 }}>(no account linked)</span></span>;
                         const rightPill = isDone
                             ? <span className={`${styles.pill} ${status === 'DEAL_ACCEPTED' ? styles.pillGreen : styles.pillRed}`}>{status === 'DEAL_ACCEPTED' ? 'Deal won' : 'Declined'}</span>
-                            : (
+                            : hasAccount ? (
                                 <span style={{ display: 'flex', gap: 5 }}>
                                     <button className={`${styles.btn} ${styles.btnSm}`} onClick={() => onModal({ type: 'deal', aptId: aptId, accountId: acctId, rentPrice: apt.rental_price })}>Deal</button>
                                     <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} disabled={noDealLoading === acctId} onClick={() => noDeal(acctId, name)}>
@@ -662,6 +666,12 @@ export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast,
                                     <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} onClick={() => onOpenApplication(acctId, name, 'offersout')} title="Open the tenant dossier — adjust offer, re-draft Gmail, download documents">
                                         Client Info
                                     </button>
+                                </span>
+                            ) : (
+                                <span style={{ display: 'flex', gap: 5 }}>
+                                    <button className={`${styles.btn} ${styles.btnSm}`} disabled title="No tenant account linked to this offer">Deal</button>
+                                    <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} disabled title="No tenant account linked to this offer">No deal</button>
+                                    <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} disabled title="No tenant account linked to this offer">Client Info</button>
                                 </span>
                             );
 
@@ -1038,6 +1048,7 @@ export function CreateApartmentView({ onBack, onToast, onCreated, realEstateAgen
     }
 
     async function save() {
+        if (saving) return;
         const id = await ensureSaved();
         if (!id) return;
         onToast('Apartment saved');
@@ -1155,12 +1166,16 @@ export function CreateApartmentView({ onBack, onToast, onCreated, realEstateAgen
                         </div>
                         <div>
                             <label className={styles.fLabel}>Duration (min)</label>
-                            <select className={styles.inp} value={duration} onChange={(e) => setDuration(e.target.value)}>
-                                <option value="30">30</option>
-                                <option value="20">20</option>
-                                <option value="45">45</option>
-                                <option value="60">60</option>
-                            </select>
+                            <input
+                                className={styles.inp}
+                                type="number"
+                                min={1}
+                                step={1}
+                                placeholder="30"
+                                value={duration}
+                                onChange={(e) => setDuration(e.target.value)}
+                            />
+                            <div className={styles.hint}>Type any number of minutes (e.g. 35 or 120)</div>
                         </div>
                     </div>
                     <div className={styles.formRow3}>
@@ -1213,13 +1228,13 @@ export function CreateApartmentView({ onBack, onToast, onCreated, realEstateAgen
                 </div>
             </div>
 
-            {/* Step 3: Brochure PDF */}
+            {/* Step 3: Brochure / Attachment */}
             <div className={styles.card}>
-                <div className={styles.cardHead}><h3>3. Brochure PDF</h3>{pdfUploaded && <span className={styles.hint} style={{ color: 'var(--teal-d)' }}>✓ Uploaded</span>}</div>
+                <div className={styles.cardHead}><h3>3. Brochure / Attachment</h3>{pdfUploaded && <span className={styles.hint} style={{ color: 'var(--teal-d)' }}>✓ Uploaded</span>}</div>
                 <div className={styles.cardBody}>
                     {pdfUploaded ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <span style={{ flex: 1, fontSize: 13.5 }}>📄 {pdfFile?.name || 'Brochure PDF'}</span>
+                            <span style={{ flex: 1, fontSize: 13.5 }}>📄 {pdfFile?.name || 'Attachment'}</span>
                             <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} onClick={() => { setPdfUploaded(false); setPdfFile(null); }}>Replace</button>
                         </div>
                     ) : (
@@ -1236,12 +1251,11 @@ export function CreateApartmentView({ onBack, onToast, onCreated, realEstateAgen
                             }}
                             onClick={() => document.getElementById('create-pdf-input')?.click()}
                         >
-                            <b>{pdfUploading ? 'Uploading…' : 'Upload Files'}</b> — one PDF with extra info
+                            <b>{pdfUploading ? 'Uploading…' : 'Upload Files'}</b> — one file with extra info (PDF recommended)
                             <span style={{ marginLeft: 'auto', color: '#bbb' }}>max 20 MB</span>
                             <input
                                 id="create-pdf-input"
                                 type="file"
-                                accept="application/pdf"
                                 hidden
                                 onChange={(e) => { const f = e.target.files?.[0]; if (f) setPdfFile(f); }}
                             />
@@ -1251,11 +1265,11 @@ export function CreateApartmentView({ onBack, onToast, onCreated, realEstateAgen
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
                             <span style={{ flex: 1, fontSize: 13.5 }}>📄 {pdfFile.name}</span>
                             <button className={styles.btn} disabled={pdfUploading} onClick={uploadPdf}>
-                                {pdfUploading ? 'Uploading…' : 'Upload PDF'}
+                                {pdfUploading ? 'Uploading…' : 'Upload File'}
                             </button>
                         </div>
                     )}
-                    <div className={styles.hint} style={{ marginTop: 8 }}>One PDF · max 20 MB. Stored in Supabase Storage.</div>
+                    <div className={styles.hint} style={{ marginTop: 8 }}>One file · max 20 MB (PDF recommended). Stored in Supabase Storage.</div>
                 </div>
             </div>
 
@@ -1345,6 +1359,9 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
                     tenant_phone: tenantPhone,
                     candidate_bio: candidateBio,
                     guarantor_bio: guarantorBio,
+                    bid_amount: editBidAmount === '' ? null : Number(editBidAmount),
+                    start_date: editStartDate || null,
+                    motivation: editMotivation,
                 }),
             });
             const data = await res.json();
@@ -1382,7 +1399,12 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
             const res = await fetch(`/api/admin/crm/apartment/${apartmentId}/send-offer`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
-                body: JSON.stringify({ account_id: accountId }),
+                body: JSON.stringify({
+                    account_id: accountId,
+                    bid_amount: editBidAmount === '' ? null : Number(editBidAmount),
+                    start_date: editStartDate || null,
+                    motivation: editMotivation,
+                }),
             });
             const data = await res.json();
             if (data.success) {
@@ -1402,6 +1424,9 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
                                 tenant_phone: app?.whatsapp_number || '',
                                 candidate_bio: candidateBio,
                                 guarantor_bio: guarantorBio,
+                                bid_amount: editBidAmount === '' ? null : Number(editBidAmount),
+                                start_date: editStartDate || null,
+                                motivation: editMotivation,
                             }),
                         });
                         const draftData = await draftRes.json();

@@ -387,7 +387,7 @@ function CrmApp({ me, onLogout }: { me: Me; onLogout: (expired?: boolean) => voi
         }
 
         if (view.tab === 'create') {
-            return <CreateApartmentView onBack={() => navigate({ tab: 'apartments' })} onToast={showToast} onCreated={(newId) => { loadLists(); openRecord(newId); }} realEstateAgents={lists.realEstateAgents} crmUsers={lists.crmUsers} />;
+            return <CreateApartmentView onBack={() => navigate({ tab: 'apartments' })} onToast={showToast} onCreated={(newId) => { loadLists(); navigate({ tab: 'apartments', apartmentId: newId }); }} realEstateAgents={lists.realEstateAgents} crmUsers={lists.crmUsers} />;
         }
 
         switch (view.tab) {
