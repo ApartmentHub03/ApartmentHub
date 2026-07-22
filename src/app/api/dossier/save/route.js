@@ -126,13 +126,45 @@ export async function POST(request) {
             dossierId = created.id;
         }
 
-        // 2. Replace personen (+ their documenten) for a clean, idempotent save.
-        const { data: oldPersonen } = await supabase.from('personen').select('id').eq('dossier_id', dossierId);
+        // 2. Replace personen, preserving existing documenten across the swap.
+        //
+        // The old approach was: delete ALL documenten + personen, then re-insert
+        // from the form's React state. If the form state was stale (e.g. page
+        // reloaded and draft merge dropped some docs), the documenten rows
+        // created by /api/dossier/save-doc (incremental upload) were permanently
+        // lost — the CRM then showed everything as "Missing."
+        //
+        // New approach: cache existing documenten before deleting personen,
+        // match them to the new personen by (rol + name), and re-insert with
+        // the new persoon_ids. Form-payload documenten are then upserted,
+        // deduped by bestandspad so we never create duplicates.
+        const { data: oldPersonen } = await supabase
+            .from('personen').select('id, rol, voornaam, achternaam, naam, type, telefoon')
+            .eq('dossier_id', dossierId);
         const oldIds = (oldPersonen || []).map((p) => p.id);
+
+        // 2a. Cache existing documenten keyed by old persoon_id.
+        let cachedDocs = [];
+        if (oldIds.length) {
+            const { data: existingDocs } = await supabase
+                .from('documenten').select('*').in('persoon_id', oldIds);
+            cachedDocs = existingDocs || [];
+        }
+
+        // 2b. Delete old documenten + personen.
         if (oldIds.length) {
             await supabase.from('documenten').delete().in('persoon_id', oldIds);
             await supabase.from('personen').delete().eq('dossier_id', dossierId);
         }
+
+        // 2c. Build a mapping from old persoon identity → new persoon id.
+        // Match by (rol + lowercased name) or (rol + telefoon digits).
+        const oldPersonKey = (p) => {
+            const name = `${p.voornaam || ''} ${p.achternaam || ''}`.trim().toLowerCase() || (p.naam || '').trim().toLowerCase();
+            const phone = String(p.telefoon || '').replace(/\D/g, '');
+            return `${p.rol || p.type || ''}|${name}|${phone}`;
+        };
+        const oldKeyToNewId = new Map();
 
         const savedPersonen = [];
         for (const p of personen) {
@@ -157,6 +189,17 @@ export async function POST(request) {
             const { data: person, error: pErr } = await supabase.from('personen').insert(row).select('id').single();
             if (pErr) throw pErr;
 
+            // Record the old→new mapping so cached docs can be re-linked.
+            const newName = `${voornaam || ''} ${achternaam || ''}`.trim().toLowerCase();
+            const newPhone = String(p.telefoon || '').replace(/\D/g, '');
+            const newKey = `${p.rol || type || ''}|${newName}|${newPhone}`;
+            oldKeyToNewId.set(newKey, person.id);
+            // Also try matching by name only (phone may differ between save-doc and save).
+            const nameOnlyKey = `${p.rol || type || ''}|${newName}`;
+            if (!oldKeyToNewId.has(nameOnlyKey)) {
+                oldKeyToNewId.set(nameOnlyKey, person.id);
+            }
+
             // Flatten the form's grouped documenten ({type, file|files}) into
             // rows. Only uploaded files are written, as status 'ontvangen' —
             // that's what drives the recompute to 'Complete'.
@@ -178,6 +221,39 @@ export async function POST(request) {
                     });
                 }
             }
+
+            // Re-link cached documenten from the old persoon to the new one.
+            // Dedupe by bestandspad — if the form payload already carries the
+            // same file, skip the cached copy.
+            const formPaths = new Set(docRows.map((r) => r.bestandspad).filter(Boolean));
+            const targetNewId = person.id;
+
+            for (const cd of cachedDocs) {
+                // Match cached doc to this new person if the old persoon's key
+                // maps to this new id.
+                const oldPerson = (oldPersonen || []).find((op) => op.id === cd.persoon_id);
+                if (!oldPerson) continue;
+                const opFullName = `${oldPerson.voornaam || ''} ${oldPerson.achternaam || ''}`.trim().toLowerCase() || (oldPerson.naam || '').trim().toLowerCase();
+                const opKey = oldPersonKey(oldPerson);
+                const opNameOnly = `${oldPerson.rol || oldPerson.type || ''}|${opFullName}`;
+
+                // Check if this old person maps to the current new person.
+                const mappedNewId = oldKeyToNewId.get(opKey) || oldKeyToNewId.get(opNameOnly);
+                if (mappedNewId !== targetNewId) continue;
+
+                // Skip if the form payload already has this file.
+                if (cd.bestandspad && formPaths.has(cd.bestandspad)) continue;
+
+                docRows.push({
+                    persoon_id: targetNewId,
+                    type: cd.type,
+                    bestandsnaam: cd.bestandsnaam || null,
+                    bestandspad: cd.bestandspad || cd.file_path || null,
+                    status: cd.status || 'ontvangen',
+                    phone_number: canonicalPhone,
+                });
+            }
+
             if (docRows.length) {
                 const { error: dErr } = await supabase.from('documenten').insert(docRows);
                 if (dErr) throw dErr;

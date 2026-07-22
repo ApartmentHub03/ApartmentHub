@@ -53,14 +53,16 @@ export async function POST(request, { params }) {
 
         const supabase = serviceClient();
 
-        // 2. Fetch dossier by phone.
-        const { data: dossierRows } = await supabase
-            .from('dossiers')
-            .select('id, ai_profile, ai_profile_at, linkedin_url, candidate_bio, guarantor_bio')
-            .in('phone_number', phoneCandidates(phone))
-            .order('created_at', { ascending: false })
-            .limit(1);
-        const dossier = dossierRows?.[0] || null;
+        // 2. Fetch dossier by phone. Try with AI columns first; fall back to
+        //    safe columns if the migration hasn't been applied yet.
+        const phoneFilter = phoneCandidates(phone);
+        const DOSSIER_COLS_FULL = 'id, ai_profile, ai_profile_at, linkedin_url, candidate_bio, guarantor_bio';
+        const DOSSIER_COLS_SAFE = 'id, candidate_bio, guarantor_bio';
+        let dossierRes = await supabase.from('dossiers').select(DOSSIER_COLS_FULL).in('phone_number', phoneFilter).order('created_at', { ascending: false }).limit(1);
+        if (dossierRes.error) {
+            dossierRes = await supabase.from('dossiers').select(DOSSIER_COLS_SAFE).in('phone_number', phoneFilter).order('created_at', { ascending: false }).limit(1);
+        }
+        const dossier = dossierRes.data?.[0] || null;
         if (!dossier) {
             return NextResponse.json({ success: false, message: 'No dossier found for this candidate' }, { status: 404 });
         }
@@ -101,7 +103,14 @@ export async function POST(request, { params }) {
             .update(update)
             .eq('id', dossier.id);
         if (updateErr) {
-            console.error('[analyze-candidate] persist failed (continuing):', updateErr);
+            console.error('[analyze-candidate] full persist failed, trying safe columns:', updateErr);
+            const safeUpdate = {};
+            if (update.candidate_bio) safeUpdate.candidate_bio = update.candidate_bio;
+            if (update.guarantor_bio) safeUpdate.guarantor_bio = update.guarantor_bio;
+            if (Object.keys(safeUpdate).length) {
+                const { error: safeErr } = await supabase.from('dossiers').update(safeUpdate).eq('id', dossier.id);
+                if (safeErr) console.error('[analyze-candidate] safe persist also failed:', safeErr);
+            }
         }
 
         return NextResponse.json({

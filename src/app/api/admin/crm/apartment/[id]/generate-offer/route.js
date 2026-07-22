@@ -179,13 +179,14 @@ export async function POST(request, { params }) {
         }
 
         // 4. Dossier (by phone) + personen + latest bid.
-        const { data: dossierRows } = await supabase
-            .from('dossiers')
-            .select('id, bid_amount, start_date, motivation, months_advance, candidate_bio, guarantor_bio, linkedin_url')
-            .in('phone_number', phoneCandidates(phone))
-            .order('created_at', { ascending: false })
-            .limit(1);
-        const dossier = dossierRows?.[0] || null;
+        const phoneFilter = phoneCandidates(phone);
+        const DOSSIER_COLS_FULL = 'id, bid_amount, start_date, motivation, months_advance, candidate_bio, guarantor_bio, linkedin_url';
+        const DOSSIER_COLS_SAFE = 'id, bid_amount, start_date, motivation, months_advance, candidate_bio, guarantor_bio';
+        let dossierRes = await supabase.from('dossiers').select(DOSSIER_COLS_FULL).in('phone_number', phoneFilter).order('created_at', { ascending: false }).limit(1);
+        if (dossierRes.error) {
+            dossierRes = await supabase.from('dossiers').select(DOSSIER_COLS_SAFE).in('phone_number', phoneFilter).order('created_at', { ascending: false }).limit(1);
+        }
+        const dossier = dossierRes.data?.[0] || null;
         const dossierId = dossier?.id || null;
 
         let personen = [];
@@ -285,7 +286,16 @@ export async function POST(request, { params }) {
                         .from('dossiers')
                         .update(aiUpdate)
                         .eq('id', dossierId);
-                    if (aiErr) console.error('[generate-offer] AI profile persist failed (continuing):', aiErr);
+                    if (aiErr) {
+                        console.error('[generate-offer] AI profile persist failed, trying safe columns:', aiErr);
+                        const safeAiUpdate = {};
+                        if (aiResult.candidate_bio) safeAiUpdate.candidate_bio = aiResult.candidate_bio;
+                        if (aiResult.guarantor_bio) safeAiUpdate.guarantor_bio = aiResult.guarantor_bio;
+                        if (Object.keys(safeAiUpdate).length) {
+                            const { error: safeErr } = await supabase.from('dossiers').update(safeAiUpdate).eq('id', dossierId);
+                            if (safeErr) console.error('[generate-offer] safe persist also failed:', safeErr);
+                        }
+                    }
                 }
             } catch (aiErr) {
                 console.error('[generate-offer] AI analysis failed (continuing with empty bios):', aiErr);

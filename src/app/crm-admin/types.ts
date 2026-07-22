@@ -255,6 +255,7 @@ export interface DocumentEntry {
     file_name: string | null;
     file_path: string | null;
     uploaded_at: string | null;
+    persoon_id: string | null;
     person: string | null;
     person_role: string | null;
     url: string | null;

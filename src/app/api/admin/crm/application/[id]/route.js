@@ -38,13 +38,15 @@ export async function GET(request, { params }) {
         //    months_advance) — the Aanvraag submit writes the bid here, not to
         //    the `biedingen` table, so without this we'd have no bid to show
         //    for Aanvraag-originated applications.
-        const { data: dossierRows } = await supabase
-            .from('dossiers')
-            .select('id, bid_amount, start_date, motivation, months_advance, candidate_bio, guarantor_bio, ai_profile, ai_profile_at, linkedin_url')
-            .in('phone_number', phoneCandidates(account.whatsapp_number))
-            .order('created_at', { ascending: false })
-            .limit(1);
-        const dossier = dossierRows?.[0] || null;
+        const phoneFilter = phoneCandidates(account.whatsapp_number);
+        const DOSSIER_COLS_FULL = 'id, bid_amount, start_date, motivation, months_advance, candidate_bio, guarantor_bio, ai_profile, ai_profile_at, linkedin_url';
+        const DOSSIER_COLS_SAFE = 'id, bid_amount, start_date, motivation, months_advance, candidate_bio, guarantor_bio';
+        let dossierQuery = supabase.from('dossiers').select(DOSSIER_COLS_FULL).in('phone_number', phoneFilter).order('created_at', { ascending: false }).limit(1);
+        let dossierRes = await dossierQuery;
+        if (dossierRes.error) {
+            dossierRes = await supabase.from('dossiers').select(DOSSIER_COLS_SAFE).in('phone_number', phoneFilter).order('created_at', { ascending: false }).limit(1);
+        }
+        const dossier = dossierRes.data?.[0] || null;
         const dossierId = dossier?.id || null;
 
         // 2. Its people, and every document they uploaded. Selected with `*`
@@ -137,12 +139,13 @@ export async function GET(request, { params }) {
                     file_name: d.bestandsnaam,
                     file_path: d.bestandspad || d.file_path,
                     uploaded_at: d.uploaded_at,
+                    persoon_id: d.persoon_id || null,
                     person: p ? personName(p) : null,
                     person_role: p ? roleLabel(p) : null,
                 };
             })
             : (Array.isArray(account.documents) ? account.documents : []).map((d) => ({
-                ...d, person: account.tenant_name || null, person_role: 'Main tenant',
+                ...d, persoon_id: null, person: account.tenant_name || null, person_role: 'Main tenant',
             }));
 
         const documents = await Promise.all(rawDocs.map(async (d) => {

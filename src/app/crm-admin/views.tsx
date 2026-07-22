@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import styles from './crm.module.css';
 import type { Me, Apartment, Candidate, CrmAgent, Bookings, TeamMember, BusinessLine, ApplicationDetail, ApplicationResponse, PersoonEntry, DocumentEntry, PipelineStage, ViewingEntry, OfferInEntry, OfferSentEntry, DealEntry, ApartmentRecord, ApartmentRecordResponse, WonDeal, RealEstateAgent, CrmUserOption, Segment, AIProfile } from './types';
 import type { ModalState } from './modals';
+import { documentsByWorkStatus, documentTypeLabels } from '../../config/documentRequirements';
 
 type ToastFn = (msg: string) => void;
 type ModalFn = (m: ModalState | null) => void;
@@ -1320,6 +1321,19 @@ export function CreateApartmentView({ onBack, onToast, onCreated, realEstateAgen
 }
 
 // ============================================================
+// fallbackDocNames — returns English display names for the required
+// documents of a given work_status, used when a person has zero real
+// documenten rows so the CRM shows the right placeholder pills (e.g.
+// "Proof of Study Enrollment" for a student, not "Employment contract").
+// ============================================================
+function fallbackDocNames(workStatus: string | null | undefined, onlyRequired: boolean = true): string[] {
+    const docs = documentsByWorkStatus[workStatus || ''] || documentsByWorkStatus.werknemer || [];
+    return docs
+        .filter((d) => !onlyRequired || d.verplicht)
+        .map((d) => documentTypeLabels.en[d.type]?.name || d.description || d.type);
+}
+
+// ============================================================
 // ProfileFields — renders a PersonProfile as a key/value grid
 // ============================================================
 function ProfileFields({ profile }: { profile: import('./types').PersonProfile }) {
@@ -1761,15 +1775,19 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
     const coTenants = personen.filter((p) => p.rol === 'Medehuurder' || p.type === 'co_tenant');
     const guarantors = personen.filter((p) => p.rol === 'Garantsteller' || p.type === 'guarantor');
 
-    // Map documents to per-person arrays
+    // Map documents to per-person arrays. Match by persoon_id (reliable) with
+    // a name-string fallback for legacy docs that have no persoon_id.
     const docsByPerson = new Map<string, DocumentEntry[]>();
     for (const d of app.documents || []) {
-        // Find the person this doc belongs to by matching person name
-        const person = personen.find((p) => {
-            const pn = [p.voornaam, p.achternaam].filter(Boolean).join(' ').trim() || p.naam || '';
-            return pn === d.person;
-        });
-        const pid = person?.id || '_unknown';
+        let pid = d.persoon_id || null;
+        if (!pid) {
+            // Fallback: match by person name string for legacy rows.
+            const person = personen.find((p) => {
+                const pn = [p.voornaam, p.achternaam].filter(Boolean).join(' ').trim() || p.naam || '';
+                return pn === d.person;
+            });
+            pid = person?.id || '_unknown';
+        }
         if (!docsByPerson.has(pid)) docsByPerson.set(pid, []);
         docsByPerson.get(pid)!.push(d);
     }
@@ -2076,7 +2094,7 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
                         {/* Main tenant */}
                         {personGroup(mainTenantName, 'Main Tenant', 'tenant',
                             personFields(mainTenant, true),
-                            personDocsSection(mainTenant?.id, ['ID Document (passport / ID)', 'Employment contract', 'Salary slips (last 3)']),
+                            personDocsSection(mainTenant?.id, fallbackDocNames((mainTenant as any)?.werk_status || mainTenant?.work_status || app.work_status)),
                             showAmber,
                             undefined,
                             mainTenant?.id ? () => downloadZip(mainTenant.id) : undefined)}
@@ -2086,7 +2104,7 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
                             const pname = [p.voornaam, p.achternaam].filter(Boolean).join(' ').trim() || p.naam || 'Co-tenant';
                             return personGroup(pname, 'Co-Tenant', 'tenant',
                                 personFields(p, false),
-                                personDocsSection(p.id, ['ID Document (passport / ID)', 'Annual statements (last 1-2 years)']),
+                                personDocsSection(p.id, fallbackDocNames((p as any)?.werk_status || p?.work_status)),
                                 showAmber,
                                 removingId === p.id ? undefined : () => removePerson(p.id, pname),
                                 () => downloadZip(p.id));
@@ -2097,7 +2115,7 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
                             const pname = [p.voornaam, p.achternaam].filter(Boolean).join(' ').trim() || p.naam || 'Guarantor';
                             return personGroup(pname, 'Guarantor', 'guarantor',
                                 personFields(p, false),
-                                personDocsSection(p.id, ['ID Document (passport / ID)', 'Employment contract', 'Salary slips (last 3)']),
+                                personDocsSection(p.id, fallbackDocNames((p as any)?.werk_status || p?.work_status)),
                                 showAmber,
                                 removingId === p.id ? undefined : () => removePerson(p.id, pname),
                                 () => downloadZip(p.id));
