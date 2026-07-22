@@ -279,6 +279,19 @@ const AppartementenSelectie = () => {
                                                                     </span>
                                                                 )}
                                                             </div>
+                                                            {apt.brochure_url && (
+                                                                <div className={styles.apartmentCardFooter}>
+                                                                    <a
+                                                                        href={apt.brochure_url}
+                                                                        target="_blank"
+                                                                        rel="noreferrer"
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                        className={styles.viewPdfBtn}
+                                                                    >
+                                                                        {t.viewPdf}
+                                                                    </a>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     );
                                                 })}

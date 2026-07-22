@@ -910,6 +910,7 @@ export const translations = {
             coTenantBanner: "You are logged in as a co-tenant. You can only edit your own details.",
             searchPlaceholder: "Search apartments...",
             noSearchResults: "No apartments match your search",
+            viewPdf: "View PDF",
         },
         nl: {
             title: "Selecteer Uw Appartementen",
@@ -929,6 +930,7 @@ export const translations = {
             coTenantBanner: "U bent ingelogd als Co-Tenant. U kunt alleen uw eigen gegevens bewerken.",
             searchPlaceholder: "Zoek appartementen...",
             noSearchResults: "Geen appartementen gevonden",
+            viewPdf: "Bekijk PDF",
         }
     },
     aanvraag: {

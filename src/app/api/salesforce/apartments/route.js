@@ -73,7 +73,7 @@ async function getApartmentsFromSupabase() {
 
     const { data, error } = await supabase
         .from('apartments')
-        .select('id, "Full Address", street, area, zip_code, rental_price, bedrooms, square_meters, status, salesforce_apartment_id, created_at')
+        .select('id, "Full Address", street, area, zip_code, rental_price, bedrooms, square_meters, status, salesforce_apartment_id, created_at, booking_details')
         .eq('status', 'Active')
         .order('created_at', { ascending: false });
 
@@ -81,8 +81,26 @@ async function getApartmentsFromSupabase() {
         throw new Error(`Supabase apartments query failed: ${error.message}`);
     }
 
-    return (data || []).map((a) => {
+    const BUCKET = 'Apartment Doc';
+    const SIGNED_TTL = 86400; // 24 hours
+
+    return Promise.all((data || []).map(async (a) => {
         const fullAddress = a['Full Address'] || [a.street, a.area].filter(Boolean).join(', ') || '';
+        const brochure = a.booking_details?.brochure_pdf;
+        let brochure_url = null;
+        let brochure_name = null;
+        if (brochure?.path) {
+            try {
+                const { data: signed } = await supabase.storage
+                    .from(BUCKET).createSignedUrl(brochure.path, SIGNED_TTL);
+                if (signed?.signedUrl) {
+                    brochure_url = signed.signedUrl;
+                    brochure_name = brochure.name || null;
+                }
+            } catch {
+                // Best-effort — a storage error shouldn't break the apartment list.
+            }
+        }
         return {
             id: a.id,
             'Full Address': fullAddress,
@@ -96,8 +114,10 @@ async function getApartmentsFromSupabase() {
             status: a.status ?? 'Active',
             salesforce_apartment_id: a.salesforce_apartment_id ?? null,
             created_at: a.created_at ?? null,
+            brochure_url,
+            brochure_name,
         };
-    });
+    }));
 }
 
 export async function GET() {
