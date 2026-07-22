@@ -34,7 +34,7 @@ function parseHash(hash: string): ViewState {
             const fromParam = new URLSearchParams(h.split('?')[1] || '').get('from');
             const from = (['scheduled', 'canceled', 'making', 'offersin', 'offersout'] as const).includes(fromParam as any)
                 ? (fromParam as ViewState['applicationFrom']) : undefined;
-            return { tab: 'apartments', apartmentId: aptId, applicationId: parts[3], applicationFrom: from };
+            return { tab: 'apartments', apartmentId: aptId, applicationId: parts[3].split('?')[0], applicationFrom: from };
         }
         return { tab: 'apartments', apartmentId: aptId };
     }
@@ -362,6 +362,8 @@ function CrmApp({ me, onLogout }: { me: Me; onLogout: (expired?: boolean) => voi
                 onBack={backToRecord}
                 onToast={showToast}
                 onModal={setModal}
+                realEstateAgents={lists.realEstateAgents}
+                crmUsers={lists.crmUsers}
             />;
         }
 
@@ -392,6 +394,7 @@ function CrmApp({ me, onLogout }: { me: Me; onLogout: (expired?: boolean) => voi
                 phoneToAccountId={phoneToAccountId}
                 nameToAccountId={nameToAccountId}
                 reloadSignal={reloadSignal}
+                realEstateAgents={lists.realEstateAgents}
             />;
         }
 

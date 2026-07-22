@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { serviceClient, requirePermission } from '@/services/crmAuth';
 import { isUuid, invalidId, failed } from '@/services/crmHttp';
+import { phoneCandidates } from '@/services/crmApplications';
 
 // "Send offer" — moves an offer from apartments.offers_in to apartments.offers_sent.
 //
@@ -36,7 +37,7 @@ export async function POST(request, { params }) {
 
     try {
         const body = await request.json();
-        const { account_id, offer_type = 'normal', bid_amount, start_date, motivation } = body || {};
+        const { account_id, offer_type = 'normal', bid_amount, start_date, motivation, candidate_bio, guarantor_bio } = body || {};
 
         if (!isUuid(account_id)) {
             return NextResponse.json({ success: false, message: 'A valid account_id is required' }, { status: 400 });
@@ -48,14 +49,60 @@ export async function POST(request, { params }) {
 
         const supabase = serviceClient();
 
-        // 1. Fetch apartment with both offer arrays.
+        // 1. Fetch apartment with offer arrays + realtor/agent links so we can
+        //    persist the recipient email on the offers_sent record.
         const { data: apt, error: aptErr } = await supabase
             .from('apartments')
-            .select('id, offers_in, offers_sent')
+            .select('id, offers_in, offers_sent, real_estate_agent_id, assigned_crm_user_id')
             .eq('id', id)
             .maybeSingle();
         if (aptErr) throw aptErr;
         if (!apt) return NextResponse.json({ success: false, message: 'Apartment not found' }, { status: 404 });
+
+        // Resolve the offer email recipient using the same fallback chain as
+        // generate-offer: external realtor -> assigned CRM user -> logged-in agent.
+        let realtorEmail = null;
+        let recipientSource = 'self';
+
+        if (apt.real_estate_agent_id) {
+            const { data: agentRow, error: agentErr } = await supabase
+                .from('real_estate_agents')
+                .select('id, name, contact_person_name, email')
+                .eq('id', apt.real_estate_agent_id)
+                .maybeSingle();
+            if (agentErr) throw agentErr;
+            if (agentRow && agentRow.email) {
+                realtorEmail = agentRow.email;
+                recipientSource = 'real_estate_agent';
+            }
+        }
+
+        if (!realtorEmail && apt.assigned_crm_user_id) {
+            const { data: assignedUser, error: assignedErr } = await supabase
+                .from('crm_users')
+                .select('id, name, email')
+                .eq('id', apt.assigned_crm_user_id)
+                .maybeSingle();
+            if (assignedErr) throw assignedErr;
+            if (assignedUser && assignedUser.email) {
+                realtorEmail = assignedUser.email;
+                recipientSource = 'assigned_crm_user';
+            }
+        }
+
+        if (!realtorEmail) {
+            // Final fallback: the logged-in agent themselves. They can fill in
+            // the real recipient in Gmail before sending. crm.email is guaranteed
+            // by requirePermission.
+            if (!auth.crm?.email) {
+                return NextResponse.json({
+                    success: false,
+                    message: 'No recipient available — set a real estate agent or assign a CRM user on the listing, or ensure your CRM account has an email.',
+                }, { status: 400 });
+            }
+            realtorEmail = auth.crm.email;
+            recipientSource = 'self';
+        }
 
         const offersIn = Array.isArray(apt.offers_in) ? apt.offers_in : [];
         const offersSent = Array.isArray(apt.offers_sent) ? apt.offers_sent : [];
@@ -124,6 +171,8 @@ export async function POST(request, { params }) {
             offer_type,
             status: 'PENDING',
             sent_at: sentAt,
+            realtor_email: realtorEmail,
+            recipient_source: recipientSource,
         };
 
         // 6. Single atomic UPDATE — append to offers_sent + remove from
@@ -136,6 +185,40 @@ export async function POST(request, { params }) {
             .update({ offers_in: nextOffersIn, offers_sent: nextOffersSent })
             .eq('id', id);
         if (updateErr) throw updateErr;
+
+        // 7. Persist candidate_bio / guarantor_bio to the dossier so edits
+        //    made in the Adjust Offer screen are saved even if the auto-drafted
+        //    generate-offer call fails or is skipped (already_sent path).
+        //    Mirrors the upsert logic in generate-offer route.js.
+        if (account?.whatsapp_number && (candidate_bio != null || guarantor_bio != null)) {
+            try {
+                const { data: dossierRows } = await supabase
+                    .from('dossiers')
+                    .select('id, candidate_bio, guarantor_bio')
+                    .in('phone_number', phoneCandidates(account.whatsapp_number))
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+                const dossier = dossierRows?.[0];
+                if (dossier) {
+                    const update = {};
+                    if (candidate_bio != null && candidate_bio !== (dossier.candidate_bio || '')) {
+                        update.candidate_bio = candidate_bio;
+                    }
+                    if (guarantor_bio != null && guarantor_bio !== (dossier.guarantor_bio || '')) {
+                        update.guarantor_bio = guarantor_bio;
+                    }
+                    if (Object.keys(update).length > 0) {
+                        const { error: bioErr } = await supabase
+                            .from('dossiers')
+                            .update(update)
+                            .eq('id', dossier.id);
+                        if (bioErr) console.error('[send-offer] bio persist failed (continuing):', bioErr);
+                    }
+                }
+            } catch (bioPersistErr) {
+                console.error('[send-offer] bio persist error (continuing):', bioPersistErr);
+            }
+        }
 
         return NextResponse.json({
             success: true,

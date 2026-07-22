@@ -57,7 +57,7 @@ const buildPandFromSavedEntry = (entry) => ({
     },
 });
 
-const Aanvraag = () => {
+const Aanvraag = ({ preselectedApartmentId }) => {
     const router = useRouter();
     const pathname = usePathname();
     const dispatch = useDispatch();
@@ -347,6 +347,47 @@ const Aanvraag = () => {
                 }
             }
 
+            // Final fallback: pre-select from URL param if nothing else selected.
+            const urlApartmentId = preselectedApartmentId;
+            if (panden.length === 0 && urlApartmentId) {
+                const catalogRow = sfApts.get(urlApartmentId);
+                if (catalogRow) {
+                    panden = [buildPandFromApartment(catalogRow)];
+                } else {
+                    // Not in the active catalog (e.g. status not Active) — fetch directly from Supabase.
+                    try {
+                        const { data: directApt } = await sb
+                            .from('apartments')
+                            .select('id, "Full Address", street, area, zip_code, rental_price, bedrooms, square_meters, additional_notes, available_from')
+                            .eq('id', urlApartmentId)
+                            .maybeSingle();
+                        if (directApt) {
+                            panden = [buildPandFromApartment(directApt)];
+                        }
+                    } catch (e) {
+                        console.warn('[Aanvraag] Could not fetch ?apartment apartment', urlApartmentId, e);
+                    }
+                }
+
+                if (panden.length > 0) {
+                    const aptEntry = {
+                        apartment_id: urlApartmentId,
+                        address: panden[0].adres,
+                        name: panden[0].name,
+                        rental_price: panden[0].voorwaarden?.huurprijs || null,
+                        bid_amount: panden[0].voorwaarden?.huurprijs || null,
+                        selected_at: new Date().toISOString(),
+                    };
+                    if (accountId) {
+                        await sb.from('accounts').update({
+                            apartment_selected: [aptEntry]
+                        }).eq('id', accountId);
+                    } else if (typeof window !== 'undefined') {
+                        localStorage.setItem('pending_apartment_selected', JSON.stringify([aptEntry]));
+                    }
+                }
+            }
+
             setSelectedPanden(panden);
 
             // Use first apartment as legacy fallback for single-pand references
@@ -466,7 +507,7 @@ const Aanvraag = () => {
         };
 
         loadData();
-    }, [dossierId, accountId, authLoading]);
+    }, [dossierId, accountId, authLoading, preselectedApartmentId]);
 
     // Auto-save with debouncing
     const saveTimeoutRef = useRef(null);

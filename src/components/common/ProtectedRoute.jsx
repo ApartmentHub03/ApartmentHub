@@ -15,7 +15,11 @@ const ProtectedRoute = ({ children }) => {
 
     useEffect(() => {
         if (!isLoading && !isAuthenticated) {
-            router.push(`/login?from=${encodeURIComponent(pathname)}`);
+            // Preserve the full URL (including query string) so deep links like
+            // /aanvraag?apartment=UUID survive the login redirect.
+            const query = typeof window !== 'undefined' ? window.location.search : '';
+            const from = query ? `${pathname}${query}` : pathname;
+            router.push(`/login?from=${encodeURIComponent(from)}`);
         }
     }, [isLoading, isAuthenticated, router, pathname]);
 

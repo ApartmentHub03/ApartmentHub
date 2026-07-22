@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import styles from './crm.module.css';
 import type { Me, Apartment, Candidate, CrmAgent, Bookings, TeamMember, BusinessLine, ApplicationDetail, ApplicationResponse, PersoonEntry, DocumentEntry, PipelineStage, ViewingEntry, OfferInEntry, OfferSentEntry, DealEntry, ApartmentRecord, ApartmentRecordResponse, WonDeal, RealEstateAgent, CrmUserOption } from './types';
 import type { ModalState } from './modals';
@@ -250,7 +250,7 @@ function PipelineStatusPill({ stage, status }: { stage: PipelineStage; status: s
 // ============================================================
 // Apartment Record — wired to /api/admin/crm/apartment/[id]
 // ============================================================
-export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast, onModal, isAdmin, phoneToAccountId, nameToAccountId, reloadSignal }: {
+export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast, onModal, isAdmin, phoneToAccountId, nameToAccountId, reloadSignal, realEstateAgents }: {
     aptId: string;
     onBack: () => void;
     onOpenApplication: (accountId: string, name: string, from: 'scheduled' | 'canceled' | 'making' | 'offersin' | 'offersout') => void;
@@ -260,6 +260,7 @@ export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast,
     phoneToAccountId: Map<string, string>;
     nameToAccountId: Map<string, string>;
     reloadSignal: number;
+    realEstateAgents: RealEstateAgent[];
 }) {
     const [subtab, setSubtab] = useState<'scheduled' | 'canceled' | 'making' | 'offersin' | 'offersout'>('scheduled');
     const [apt, setApt] = useState<ApartmentRecord | null>(null);
@@ -516,6 +517,9 @@ export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast,
     const offersOut: OfferSentEntry[] = Array.isArray(apt.offers_sent) ? apt.offers_sent : [];
 
     const address = apt['Full Address'] || apt.street || '—';
+    const realtor = apt.real_estate_agent_id
+        ? realEstateAgents.find((r) => r.id === apt.real_estate_agent_id)
+        : null;
     const latestSlot = apt.booking_details?.latest_slot as { start?: string; end?: string } | undefined;
     const slotDates = Array.isArray(apt.slot_dates) ? apt.slot_dates : [];
     const lastSlot = (slotDates.length > 0 ? slotDates[slotDates.length - 1] : null) as { start?: string; end?: string } | null;
@@ -622,7 +626,16 @@ export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast,
                             o.start_date ? `start ${o.start_date}` : null,
                             o.motivation ? `· ${o.motivation}` : null,
                         ].filter(Boolean).join(' · ');
-                        return rel(o.tenant_name || '—', meta, (
+                        const name = o.tenant_name || '—';
+                        const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                        const hasAccount = Boolean(o.account_id) && UUID_RE.test(o.account_id);
+                        // Name is clickable to open the application dossier
+                        // (Client Info) — same pattern as Offers Out / People Making
+                        // an Offer rows. Only clickable when we have a valid account_id.
+                        const nameNode = hasAccount
+                            ? <button style={{ color: 'var(--teal)', cursor: 'pointer', background: 'none', border: 'none', padding: 0, font: 'inherit', fontWeight: 600 }} onClick={() => onOpenApplication(o.account_id, name, 'offersin')}>{name}</button>
+                            : <span>{name} <span style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 400 }}>(no account linked)</span></span>;
+                        return rel(nameNode, meta, (
                             <span style={{ display: 'flex', gap: 6 }}>
                                 <button className={`${styles.btn} ${styles.btnSm}`} disabled={sendLoading === o.account_id} onClick={() => sendOffer(o.account_id, o.tenant_name || '—')} title="Move this offer to Offers Out so you can mark Deal / No Deal">
                                     {sendLoading === o.account_id ? '…' : 'Send offer'}
@@ -652,6 +665,9 @@ export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast,
                             o.offer_type || null,
                             o.bid_amount ? `bid €${o.bid_amount}` : null,
                             o.start_date ? `start ${o.start_date}` : null,
+                            o.realtor_email ? (
+                                o.recipient_source === 'real_estate_agent' ? `to realtor ${o.realtor_email}` : `to ${o.realtor_email}`
+                            ) : null,
                             status === 'DEAL_ACCEPTED' ? '· accepted' : status === 'OFFER_DECLINED' ? '· declined' : '· awaiting',
                         ].filter(Boolean).join(' · ');
 
@@ -804,7 +820,16 @@ export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast,
                     <div>
                         {field('City', apt.area || '—')}
                         {field('Zip Code', apt.zip_code || '—')}
-                        {field('Realtor', '—')}
+                        {field('Realtor', realtor ? (
+                            <span>
+                                {realtor.name}
+                                {realtor.email && (
+                                    <span style={{ color: 'var(--muted)', marginLeft: 6 }}>
+                                        · <a href={`mailto:${realtor.email}`} style={{ color: 'var(--teal)' }}>{realtor.email}</a>
+                                    </span>
+                                )}
+                            </span>
+                        ) : '—')}
                         {field('Status', <span className={`${styles.pill} ${styles.pillTeal}`}>{apt.status || '—'}</span>)}
                         {field('Viewing date', viewingDate ? new Date(viewingDate).toLocaleString('nl-NL') : '—')}
                         {field('Viewing ends', viewingEnd ? new Date(viewingEnd).toLocaleString('nl-NL') : '—')}
@@ -1298,7 +1323,7 @@ export function CreateApartmentView({ onBack, onToast, onCreated, realEstateAgen
 // Application Detail — stub with mock per-person data
 // TODO: Phase 3 — wire to /api/admin/crm/application/[id]
 // ============================================================
-export function ApplicationDetailView({ name, accountId, apartmentId, from, onBack, onToast, onModal }: {
+export function ApplicationDetailView({ name, accountId, apartmentId, from, onBack, onToast, onModal, realEstateAgents, crmUsers }: {
     name: string;
     accountId: string;
     apartmentId: string;
@@ -1306,6 +1331,8 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
     onBack: () => void;
     onToast: ToastFn;
     onModal: ModalFn;
+    realEstateAgents: RealEstateAgent[];
+    crmUsers: CrmUserOption[];
 }) {
     const [editing, setEditing] = useState(false);
     const [savingBid, setSavingBid] = useState(false);
@@ -1368,6 +1395,21 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
 
     // Find the matching offers_in entry for this account on the loaded apartment.
     const inOffer = aptRecord?.offers_in?.find((o) => o?.account_id === accountId) || null;
+
+    // Resolve the intended offer recipient up-front so the agent sees who will
+    // receive the Gmail draft before clicking Generate offer / Send offer.
+    const offerRecipient = useMemo(() => {
+        if (!aptRecord) return null;
+        if (aptRecord.real_estate_agent_id) {
+            const agent = realEstateAgents.find((r) => r.id === aptRecord.real_estate_agent_id);
+            if (agent?.email) return { email: agent.email, name: agent.name, source: 'realtor' };
+        }
+        if (aptRecord.assigned_crm_user_id) {
+            const user = crmUsers.find((u) => u.id === aptRecord.assigned_crm_user_id);
+            if (user?.email) return { email: user.email, name: user.name, source: 'assigned agent' };
+        }
+        return null;
+    }, [aptRecord, realEstateAgents, crmUsers]);
 
     useEffect(() => {
         if (!app) return;
@@ -1451,6 +1493,8 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
                     bid_amount: editBidAmount === '' ? null : Number(editBidAmount),
                     start_date: editStartDate || null,
                     motivation: editMotivation,
+                    candidate_bio: candidateBio,
+                    guarantor_bio: guarantorBio,
                 }),
             });
             const data = await res.json();
@@ -1591,7 +1635,11 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
                 const j = await res.json().catch(() => ({}));
                 throw new Error(j.message || `HTTP ${res.status}`);
             }
+            const contentType = res.headers.get('Content-Type') || '';
             const blob = await res.blob();
+            if (!contentType.includes('application/zip') || blob.size < 22) {
+                throw new Error('Server did not return a valid ZIP archive');
+            }
             const cd = res.headers.get('Content-Disposition') || '';
             const m = cd.match(/filename="([^"]+)"/);
             const a = document.createElement('a');
@@ -1764,7 +1812,11 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
                             <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} disabled={offerLoading} onClick={() => generateOffer('hausing')}>Hausing</button>
                             <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} disabled={offerLoading} onClick={() => generateOffer('grand')}>Grand relocation</button>
                             <div className={styles.hint} style={{ flexBasis: '100%', marginTop: 4 }}>
-                                Creates a draft email in your Gmail ({app.whatsapp_number ? 'tenant ' + app.whatsapp_number : 'no tenant phone'}) addressed to the listing agent. Review and send manually.
+                                Creates a draft email in your Gmail ({app.whatsapp_number ? 'tenant ' + app.whatsapp_number : 'no tenant phone'})
+                                addressed to {offerRecipient
+                                    ? <>{offerRecipient.name ? `${offerRecipient.name} · ` : ''}<a href={`mailto:${offerRecipient.email}`} style={{ color: 'var(--teal)' }}>{offerRecipient.email}</a> ({offerRecipient.source})</>
+                                    : 'the listing agent (set a realtor or assigned CRM user to see the email)'}.
+                                Review and send manually.
                             </div>
                         </div>
 
@@ -1811,7 +1863,10 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
                                 {sendLoading ? 'Sending…' : 'Send offer'}
                             </button>
                             <div className={styles.hint} style={{ flexBasis: '100%', marginTop: 4 }}>
-                                Moves this application's offer from Offers In to Offers Out on the apartment and creates a Gmail draft. After sending, you'll be taken back to the apartment record where you can mark Deal / No Deal.
+                                Moves this application's offer from Offers In to Offers Out on the apartment and creates a Gmail draft addressed to {offerRecipient
+                                    ? <>{offerRecipient.name ? `${offerRecipient.name} · ` : ''}<a href={`mailto:${offerRecipient.email}`} style={{ color: 'var(--teal)' }}>{offerRecipient.email}</a> ({offerRecipient.source})</>
+                                    : 'the listing agent (set a realtor or assigned CRM user to see the email)'}.
+                                After sending, you'll be taken back to the apartment record where you can mark Deal / No Deal.
                             </div>
                         </div>
                         )}
@@ -1882,9 +1937,6 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
                             </div>
                         </div>
 
-                        {/* Bid & contract section */}
-                        {personGroup('Bid & contract', 'Bid', 'tenant', [], personDocsSection(undefined, ['Signed Letter of Intent', 'Generated Offer (PDF)']), showAmber)}
-
                         {/* Main tenant */}
                         {personGroup(mainTenantName, 'Main Tenant', 'tenant',
                             personFields(mainTenant, true),
@@ -1939,6 +1991,29 @@ function potField(label: string, value: string, editing: boolean) {
     );
 }
 
+// Download a single signed URL or Storage URL. Fetches the blob first so the
+// browser triggers a real download via object URL — the `download` attribute
+// on a cross-origin href (Supabase Storage) is ignored and the file opens
+// inline instead.
+async function downloadSingle(url: string, filename?: string) {
+    const name = filename || url.split('/').pop() || 'document';
+    try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(a.href);
+    } catch {
+        // Fallback: open in new tab
+        window.open(url, '_blank', 'noopener');
+    }
+}
+
 function personGroup(name: string, role: string, roleClass: 'tenant' | 'guarantor', fields: [string, string][], docs: { name: string; status: string; url: string | null }[], incomplete: boolean, onRemove?: () => void, onZip?: () => void) {
     const canRemove = onRemove && role !== 'Main Tenant' && role !== 'Bid';
     const realDocCount = docs.filter((d) => d.url).length;
@@ -1991,6 +2066,15 @@ function personGroup(name: string, role: string, roleClass: 'tenant' | 'guaranto
                                 <span className={`${styles.pill} ${styles.pillAmber}`}>Missing</span>
                             ) : (
                                 <span className={`${styles.pill} ${styles.pillGreen}`}>Uploaded</span>
+                            )}
+                            {d.url && (
+                                <button
+                                    className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`}
+                                    title={`Download ${d.name}`}
+                                    onClick={() => downloadSingle(d.url || '', d.name)}
+                                >
+                                    Download
+                                </button>
                             )}
                         </div>
                     );

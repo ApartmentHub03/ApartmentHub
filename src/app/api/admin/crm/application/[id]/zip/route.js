@@ -30,6 +30,10 @@ import {
 
 const BUCKET = 'dossier-documents';
 
+// Internal document types that should not appear in the tenant-facing ZIP.
+// Add more types here as needed.
+const INTERNAL_DOC_TYPES = ['loi_signature'];
+
 function safeSegment(s) {
     return String(s || '')
         .replace(/[^A-Za-z0-9-]+/g, '-')
@@ -126,13 +130,15 @@ export async function GET(request, { params }) {
                 person_role: 'Main tenant',
             }));
 
-        // 5. Apply the optional personId filter. Match on documenten.persoon_id
-        //    when present; for the legacy JSONB-mirror fallback rows, match on
-        //    person name as the detail view does (views.tsx:1324-1327).
-        let filtered = rawDocs;
+        // 5. Apply the optional personId filter and drop internal-only
+        //    documents (signatures, agent notes, etc.). Match on
+        //    documenten.persoon_id when present; for the legacy JSONB-mirror
+        //    fallback rows, match on person name as the detail view does
+        //    (views.tsx:1324-1327).
+        let filtered = rawDocs.filter((d) => !INTERNAL_DOC_TYPES.includes(d.type));
         let personFilterName = null;
         if (personId) {
-            filtered = rawDocs.filter((d) => {
+            filtered = filtered.filter((d) => {
                 if (d.person_id) return d.person_id === personId;
                 const p = personen.find((pp) => pp.id === personId);
                 const pn = p ? personName(p) : null;
@@ -146,6 +152,7 @@ export async function GET(request, { params }) {
         //    filtered to one person (the folder adds nothing in that case).
         const zip = new JSZip();
         const fileList = [];
+        const usedPaths = new Set();
 
         for (const d of filtered) {
             const entry = {
@@ -177,11 +184,27 @@ export async function GET(request, { params }) {
                 const buf = Buffer.from(await blob.arrayBuffer());
 
                 const baseName = d.file_name || d.type || 'document';
-                const safeName = safeFileName(baseName);
+                let safeName = safeFileName(baseName);
                 const folder = personId
                     ? null
                     : (d.person ? safeSegment(d.person) : 'unassigned');
-                const zipPath = folder ? `${folder}/${safeName}` : safeName;
+                let zipPath = folder ? `${folder}/${safeName}` : safeName;
+                // Deduplicate paths inside the ZIP so two files with the same
+                // sanitized name don't overwrite each other.
+                if (usedPaths.has(zipPath)) {
+                    const extDot = safeName.lastIndexOf('.');
+                    const stem = extDot > 0 ? safeName.slice(0, extDot) : safeName;
+                    const ext = extDot > 0 ? safeName.slice(extDot) : '';
+                    let counter = 2;
+                    let candidate = `${stem}-${counter}${ext}`;
+                    while (usedPaths.has(folder ? `${folder}/${candidate}` : candidate)) {
+                        counter += 1;
+                        candidate = `${stem}-${counter}${ext}`;
+                    }
+                    safeName = candidate;
+                    zipPath = folder ? `${folder}/${safeName}` : safeName;
+                }
+                usedPaths.add(zipPath);
                 zip.file(zipPath, buf);
 
                 entry.ok = true;
@@ -193,31 +216,16 @@ export async function GET(request, { params }) {
             fileList.push(entry);
         }
 
-        // 7. Rich manifest — account metadata + per-file audit trail.
-        zip.file('manifest.json', JSON.stringify({
-            account_id: account.id,
-            tenant_name: account.tenant_name,
-            whatsapp_number: account.whatsapp_number,
-            email: account.email,
-            nationality: account.nationality,
-            work_status: account.work_status,
-            monthly_income: account.monthly_income,
-            current_address: account.current_address,
-            current_zipcode: account.current_zipcode,
-            preferred_location: account.preferred_location,
-            move_in_date: account.move_in_date,
-            documentation_status: account.documentation_status,
-            account_role: account.account_role,
-            status: account.status,
-            dossier_id: dossierId,
-            apartment_id: apartmentId || null,
-            person_filter: personFilterName,
-            generated_at: new Date().toISOString(),
-            generated_by: auth.crm?.email || null,
-            file_count: filtered.length,
-            ok_count: fileList.filter((f) => f.ok).length,
-            files: fileList,
-        }, null, 2));
+        const okCount = fileList.filter((f) => f.ok).length;
+        if (okCount === 0) {
+            return NextResponse.json({
+                success: false,
+                message: 'No downloadable files found for this application',
+                file_count: filtered.length,
+                missing_paths: fileList.filter((f) => f.error === 'no_file_path').map((f) => f.type),
+                download_errors: fileList.filter((f) => f.error && f.error !== 'no_file_path').map((f) => ({ type: f.type, error: f.error })),
+            }, { status: 404 });
+        }
 
         const archiveBuf = await zip.generateAsync({
             type: 'arraybuffer',
@@ -228,6 +236,15 @@ export async function GET(request, { params }) {
         const tenantSlug = safeSegment(account.tenant_name) || 'tenant';
         const personSlug = personFilterName ? `-${safeSegment(personFilterName)}` : '';
         const filename = `application-${shortId}-${tenantSlug}${personSlug}.zip`;
+
+        console.log('[crm/application/zip] generated', {
+            account_id: id,
+            file_count: filtered.length,
+            ok_count: okCount,
+            size: archiveBuf.byteLength,
+            personId: personId || null,
+            personFilterName,
+        });
 
         return new NextResponse(archiveBuf, {
             status: 200,

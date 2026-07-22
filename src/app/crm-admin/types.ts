@@ -58,6 +58,8 @@ export interface OfferSentEntry {
     bid_amount?: number | null;
     start_date?: string | null;
     offer_type?: string | null;
+    realtor_email?: string | null;
+    recipient_source?: 'real_estate_agent' | 'assigned_crm_user' | 'self' | null;
     [key: string]: unknown;
 }
 
@@ -162,6 +164,7 @@ export interface WonDeal {
 export interface CrmUserOption {
     id: string;
     name: string;
+    email?: string | null;
 }
 
 export interface RealEstateAgent {

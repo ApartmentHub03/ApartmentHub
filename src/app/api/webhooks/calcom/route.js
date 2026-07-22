@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createHmac } from 'node:crypto';
 import { getSupabaseServer } from '@/lib/supabaseServer';
 import { sha256, normalizePhone, buildUserData, eventId, sendCapiEvent, findZokoCustomerId, addZokoTags } from '@/lib/meta-capi';
+import { ZOKO_TEMPLATES } from '@/services/zokoTemplates';
 
 /* ------------------------------------------------------------------ */
 /* HMAC verification                                                  */
@@ -47,6 +48,83 @@ function extractName(payload) {
         if (responses[key]?.value) return responses[key].value.trim();
     }
     return null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Resolve the apartment a Cal.com booking belongs to                 */
+/* ------------------------------------------------------------------ */
+// Mirrors the SQL event_url_matches() helper: case-insensitive
+// substring match in either direction.
+function eventUrlMatches(tenantUrl, aptEventLink) {
+    if (!tenantUrl || !aptEventLink) return false;
+    const t = tenantUrl.trim().toLowerCase();
+    const a = aptEventLink.trim().toLowerCase();
+    if (!t || !a) return false;
+    return t === a || t.includes(a) || a.includes(t);
+}
+
+async function findApartmentForBooking(supabase, payload) {
+    const eventTypeId = payload?.eventTypeId ?? payload?.event_type_id ?? null;
+    const bookingUrl = payload?.url || payload?.manageLink || null;
+
+    // 1. Prefer exact eventTypeId match — most reliable.
+    if (eventTypeId) {
+        const { data } = await supabase
+            .from('apartments')
+            .select('id, "Full Address"')
+            .or(`cal_event_type_id.eq.${eventTypeId},cal_event_type_id_video.eq.${eventTypeId}`)
+            .limit(1)
+            .maybeSingle();
+        if (data) return data;
+    }
+
+    // 2. Fallback: substring-match the booking URL against event_link / eventlink_video.
+    if (bookingUrl) {
+        const { data: apts } = await supabase
+            .from('apartments')
+            .select('id, "Full Address", event_link, eventlink_video')
+            .not('event_link', 'is', null);
+        if (apts && apts.length > 0) {
+            const match = apts.find((a) =>
+                eventUrlMatches(bookingUrl, a.event_link) ||
+                eventUrlMatches(bookingUrl, a.eventlink_video)
+            );
+            if (match) return { id: match.id, 'Full Address': match['Full Address'] };
+        }
+    }
+
+    return null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Send the "upload your documents" WhatsApp template directly to Zoko */
+/* ------------------------------------------------------------------ */
+async function sendUploadDocsWhatsApp(recipient, name, uploadUrl) {
+    const tpl = ZOKO_TEMPLATES.new_flow_upload_documents;
+    const apiKey = process.env.ZOKO_API_KEY;
+    if (!tpl?.verified || !tpl?.zokoId) return { sent: false, reason: 'template_not_verified' };
+    if (!apiKey) return { sent: false, reason: 'no_api_key' };
+    if (!recipient) return { sent: false, reason: 'no_recipient' };
+
+    const args = [name || '', uploadUrl || ''];
+    try {
+        const res = await fetch('https://chat.zoko.io/v2/message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json', apikey: apiKey },
+            body: JSON.stringify({
+                channel: 'whatsapp',
+                recipient: String(recipient).replace(/\D/g, ''),
+                type: tpl.type,
+                templateId: tpl.zokoId,
+                templateLanguage: tpl.language,
+                templateArgs: args,
+            }),
+        });
+        return { sent: res.ok, status: res.status };
+    } catch (err) {
+        console.error('[webhook/calcom] Zoko send network error:', err);
+        return { sent: false, reason: 'network_error' };
+    }
 }
 
 async function findLead(supabase, phoneOrEmail, name) {
@@ -163,6 +241,28 @@ export async function POST(request) {
                         await addZokoTags(zokoApiKey, customerId, ['viewing_planned']);
                         results.zoko = { success: true, customerId };
                     }
+                }
+
+                // WhatsApp: "upload your documents" — fires immediately after
+                // booking, complementing the existing 24h-before pg_cron
+                // reminder. Only sent for valid phone numbers (not email
+                // fallbacks) and never blocks the DB write or the 200 response.
+                if (normalizedPhone && /^\d{7,15}$/.test(normalizedPhone)) {
+                    const apartment = await findApartmentForBooking(supabase, body.payload);
+                    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://apartmenthub.nl';
+                    const uploadUrl = apartment
+                        ? `${siteUrl}/aanvraag?apartment=${apartment.id}`
+                        : `${siteUrl}/aanvraag`;
+                    const displayName = name || lead.full_name || '';
+                    try {
+                        results.whatsapp = await sendUploadDocsWhatsApp(normalizedPhone, displayName, uploadUrl);
+                        console.log('[webhook/calcom] WhatsApp upload-docs:', results.whatsapp);
+                    } catch (err) {
+                        console.error('[webhook/calcom] WhatsApp send error:', err);
+                        results.whatsapp = { sent: false, reason: 'exception' };
+                    }
+                } else {
+                    console.log('[webhook/calcom] Skipping WhatsApp: no valid phone (got email or none)');
                 }
 
                 // Update meta_leads

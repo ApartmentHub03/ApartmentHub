@@ -128,10 +128,9 @@ export async function createCalLinks({ address, slotStartDatetime, slotEndDateti
             title: `${address} (Video)`,
             slug: `${slug}-video`,
             lengthInMinutes: Number(slotLengthMinutes),
-            locations: [{ type: 'integration', integration: 'cal-video' }],
-            bookingFields,
-            bookingWindow,
-            scheduleId,
+            locations: [{ type: 'phoneCall' }],
+            description: 'We will call you with WhatsApp at the booked time.',
+            bookingFields, bookingWindow, scheduleId,
             color: { lightThemeHex: '#1d4ed8', darkThemeHex: '#60a5fa' },
         }),
     });
