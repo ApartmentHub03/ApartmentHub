@@ -30,6 +30,7 @@ export async function POST(request) {
     try {
         const result = await createCalLinks({ address, slotStartDatetime, slotEndDatetime, slotLengthMinutes });
         if (!result.success) {
+            console.error('[admin/generate-link] createCalLinks failed:', result);
             return NextResponse.json({ success: false, message: result.message }, { status: 502 });
         }
         return NextResponse.json(result);

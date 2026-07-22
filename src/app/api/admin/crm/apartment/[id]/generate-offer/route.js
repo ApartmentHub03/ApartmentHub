@@ -4,6 +4,7 @@ import { isUuid, invalidId, failed } from '@/services/crmHttp';
 import { phoneCandidates } from '@/services/crmApplications';
 import { createDraft } from '@/lib/gmail/client';
 import { renderOfferDraftEmail, deriveCandidateType } from '@/lib/email/offerDraftTemplate';
+import { analyzeCandidateProfile } from '@/app/lib/candidate-profile';
 
 // "Generate Offer" — creates a Gmail draft in the LOGGED-IN agent's mailbox,
 // addressed to the apartment's real estate agent, presenting the candidate
@@ -180,7 +181,7 @@ export async function POST(request, { params }) {
         // 4. Dossier (by phone) + personen + latest bid.
         const { data: dossierRows } = await supabase
             .from('dossiers')
-            .select('id, bid_amount, start_date, motivation, months_advance, candidate_bio, guarantor_bio')
+            .select('id, bid_amount, start_date, motivation, months_advance, candidate_bio, guarantor_bio, linkedin_url')
             .in('phone_number', phoneCandidates(phone))
             .order('created_at', { ascending: false })
             .limit(1);
@@ -258,6 +259,39 @@ export async function POST(request, { params }) {
             }
         }
 
+        // 5b. If both bios are still empty and we have a dossier, auto-analyze
+        //     the candidate's documents with Claude to generate the profile and
+        //     bio paragraphs. Agent-typed bios always take priority; this only
+        //     fills when nobody has written them yet. Never throws — on failure
+        //     we continue with empty bios (existing behavior).
+        let aiProfileData = null;
+        if (dossierId && !finalCandidateBio.trim() && !finalGuarantorBio.trim()) {
+            try {
+                const aiResult = await analyzeCandidateProfile({
+                    dossierId,
+                    phone,
+                    linkedinUrl: dossier?.linkedin_url || null,
+                });
+                if (aiResult.candidate_bio) finalCandidateBio = aiResult.candidate_bio;
+                if (aiResult.guarantor_bio) finalGuarantorBio = aiResult.guarantor_bio;
+                aiProfileData = aiResult.profile;
+
+                // Persist AI-generated bios + profile to the dossier for reuse.
+                if (finalCandidateBio || finalGuarantorBio || aiProfileData) {
+                    const aiUpdate = { ai_profile: aiProfileData, ai_profile_at: new Date().toISOString() };
+                    if (aiResult.candidate_bio) aiUpdate.candidate_bio = aiResult.candidate_bio;
+                    if (aiResult.guarantor_bio) aiUpdate.guarantor_bio = aiResult.guarantor_bio;
+                    const { error: aiErr } = await supabase
+                        .from('dossiers')
+                        .update(aiUpdate)
+                        .eq('id', dossierId);
+                    if (aiErr) console.error('[generate-offer] AI profile persist failed (continuing):', aiErr);
+                }
+            } catch (aiErr) {
+                console.error('[generate-offer] AI analysis failed (continuing with empty bios):', aiErr);
+            }
+        }
+
         // 6. Resolve the sender's crm_users row (name + email + phone + address).
         //    `crm` from requirePermission already has name/email; we need phone +
         //    address too for the signature.
@@ -310,6 +344,7 @@ export async function POST(request, { params }) {
             subject,
             recipient_source: recipientSource,
             recipient_name: agent?.contact_person_name || agent?.name || '',
+            ai_profile: aiProfileData,
         });
     } catch (err) {
         return failed('crm/generate-offer POST', err, 'Failed to generate offer draft');

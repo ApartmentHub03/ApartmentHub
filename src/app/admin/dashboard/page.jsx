@@ -183,7 +183,7 @@ export default function AdminDashboard() {
 
             const data = await res.json();
 
-            if (data.success && (data.eventlink || data.eventlinkVideo)) {
+            if (data.success && data.eventlink && data.eventlinkVideo) {
                 const { error } = await supabase
                     .from('admin_apartment')
                     .update({

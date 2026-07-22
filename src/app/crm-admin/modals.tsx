@@ -12,7 +12,8 @@ export type ModalState =
     | { type: 'sendSegment'; aptId: string; rentalPrice: number | null; bedrooms: string | null }
     | { type: 'reschedule' }
     | { type: 'deal'; aptId: string; accountId: string; rentPrice: number | null }
-    | { type: 'editInvoice'; invoiceId: string };
+    | { type: 'editInvoice'; invoiceId: string }
+    | { type: 'csvUpload'; segmentId: string; segmentName: string };
 
 function ModalShell({ title, onClose, children, footer }: {
     title: string;
@@ -669,6 +670,115 @@ export function EditInvoiceModal({ invoiceId, onClose, onToast, onSaved }: {
                     <label className={styles.fLabel}>Country *</label>
                     <input className={styles.inp} value={form.recipient_country} onChange={set('recipient_country')} placeholder="Netherlands" />
                 </>
+            )}
+        </ModalShell>
+    );
+}
+
+// --- CSV Upload Modal ---
+// Uploads a CSV/text file of contacts for a segment. Replaces all members.
+export function CsvUploadModal({ segmentId, segmentName, onClose, onToast, onSaved }: {
+    segmentId: string;
+    segmentName: string;
+    onClose: () => void;
+    onToast: ToastFn;
+    onSaved?: () => void;
+}) {
+    const [file, setFile] = useState<File | null>(null);
+    const [preview, setPreview] = useState<string[]>([]);
+    const [uploading, setUploading] = useState(false);
+
+    async function handleFile(f: File) {
+        setFile(f);
+        setPreview([]);
+        try {
+            const text = await f.text();
+            const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+            setPreview(lines.slice(0, 6));
+        } catch {
+            setPreview([]);
+        }
+    }
+
+    async function upload() {
+        if (!file) { onToast('Select a file first'); return; }
+        setUploading(true);
+        try {
+            const fd = new FormData();
+            fd.append('file', file);
+            const res = await fetch(`/api/admin/crm/segments/${segmentId}/upload`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
+                body: fd,
+            });
+            const data = await res.json();
+            if (data.success) {
+                onToast(data.message || 'Upload complete');
+                onSaved?.();
+                onClose();
+            } else {
+                onToast(data.message || 'Upload failed');
+            }
+        } catch {
+            onToast('Upload failed — check console');
+        } finally {
+            setUploading(false);
+        }
+    }
+
+    return (
+        <ModalShell
+            title={`Upload CSV · ${segmentName}`}
+            onClose={onClose}
+            footer={
+                <>
+                    <button className={`${styles.btn} ${styles.btnGhost}`} onClick={onClose} disabled={uploading}>Cancel</button>
+                    <button className={`${styles.btn} ${styles.btnOrange}`} onClick={upload} disabled={!file || uploading}>
+                        {uploading ? 'Uploading…' : 'Upload & Replace'}
+                    </button>
+                </>
+            }
+        >
+            <p>Upload a CSV or text file with <b>Name</b> and <b>Phone</b> columns. This replaces all current members of this segment.</p>
+
+            <div
+                className={styles.drop}
+                style={{ cursor: uploading ? 'wait' : 'pointer' }}
+                onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = 'var(--teal)'; }}
+                onDragLeave={(e) => { e.currentTarget.style.borderColor = 'var(--line)'; }}
+                onDrop={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.style.borderColor = 'var(--line)';
+                    const f = e.dataTransfer.files?.[0];
+                    if (f) handleFile(f);
+                }}
+                onClick={() => document.getElementById('csv-upload-input')?.click()}
+            >
+                <b>{uploading ? 'Uploading…' : file ? file.name : 'Drop CSV here or click to browse'}</b>
+                <span style={{ marginLeft: 'auto', color: '#bbb' }}>max 5 MB</span>
+                <input
+                    id="csv-upload-input"
+                    type="file"
+                    accept=".csv,.txt,.tsv"
+                    hidden
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+                    disabled={uploading}
+                />
+            </div>
+
+            {preview.length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                    <div className={styles.hint} style={{ marginBottom: 4 }}>Preview (first {Math.min(preview.length, 6)} rows):</div>
+                    <pre style={{ fontSize: 11.5, background: '#f6f8f8', padding: 10, borderRadius: 6, overflow: 'auto', margin: 0, whiteSpace: 'pre-wrap' }}>
+                        {preview.join('\n')}
+                    </pre>
+                </div>
+            )}
+
+            {file && (
+                <div className={styles.hint} style={{ marginTop: 10, color: '#b42318' }}>
+                    Warning: uploading will replace all existing members of this segment.
+                </div>
             )}
         </ModalShell>
     );

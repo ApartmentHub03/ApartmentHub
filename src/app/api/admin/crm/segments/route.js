@@ -3,21 +3,9 @@ import { serviceClient, requireCrmUser } from '@/services/crmAuth';
 import { failed } from '@/services/crmHttp';
 
 // Returns candidate segments with live member counts from candidate_segment_members.
-// Members are active Zoko contacts synced daily by n8n.
+// Counts are fetched via the get_segment_counts() SQL function (aggregate query)
+// to avoid the Supabase 1000-row response cap that broke client-side counting.
 // Excludes archived members and optionally members tagged "student".
-
-const EXCLUDED_TAGS = ['OPT_OUT', 'OPT-IN', 'Rotterdam', 'Almere'];
-
-function hasStudentTag(tags) {
-    if (!Array.isArray(tags)) return false;
-    return tags.some((t) => String(t).toLowerCase() === 'student');
-}
-
-function hasExcludedTag(tags) {
-    if (!Array.isArray(tags)) return false;
-    const lower = tags.map((t) => String(t).toLowerCase());
-    return EXCLUDED_TAGS.some((ex) => lower.includes(ex.toLowerCase()));
-}
 
 export async function GET(request) {
     const auth = await requireCrmUser(request);
@@ -42,21 +30,14 @@ export async function GET(request) {
             return NextResponse.json({ success: true, segments: [] });
         }
 
-        // Count active members per segment.
-        // We do this in one query grouped by segment_id for efficiency.
-        const segmentIds = segments.map((s) => s.id);
+        // Count active members per segment via SQL function (accurate at any scale).
         const { data: counts, error: countErr } = await supabase
-            .from('candidate_segment_members')
-            .select('segment_id, tags')
-            .in('segment_id', segmentIds)
-            .eq('is_archived', false);
+            .rpc('get_segment_counts', { exclude_students: excludeStudents });
         if (countErr) throw countErr;
 
         const countMap = new Map();
         for (const row of counts || []) {
-            if (hasExcludedTag(row.tags)) continue;
-            if (excludeStudents && hasStudentTag(row.tags)) continue;
-            countMap.set(row.segment_id, (countMap.get(row.segment_id) || 0) + 1);
+            countMap.set(row.segment_id, Number(row.member_count) || 0);
         }
 
         const result = segments.map((seg) => {

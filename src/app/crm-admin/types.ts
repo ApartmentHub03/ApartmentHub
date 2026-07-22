@@ -295,6 +295,26 @@ export interface BidEntry {
     created_at: string | null;
 }
 
+export interface PersonProfile {
+    name: string | null;
+    date_of_birth: string | null;
+    nationality: string | null;
+    job_title: string | null;
+    employer: string | null;
+    contract_type: string | null;
+    monthly_income: string | null;
+    income_currency: string | null;
+    relationship: string | null;
+}
+
+export interface AIProfile {
+    main_tenant: PersonProfile | null;
+    guarantor: PersonProfile | null;
+    co_tenants: PersonProfile[] | null;
+    gaps: string[];
+    sources: string[];
+}
+
 export interface ApplicationDetail {
     id: string;
     tenant_name: string | null;
@@ -320,6 +340,9 @@ export interface ApplicationDetail {
     bid: BidEntry | null;
     candidate_bio: string | null;
     guarantor_bio: string | null;
+    ai_profile: AIProfile | null;
+    ai_profile_at: string | null;
+    linkedin_url: string | null;
 }
 
 export interface ApplicationResponse {

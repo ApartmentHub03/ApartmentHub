@@ -15,7 +15,7 @@ import {
     CollaborationsView, TeamView, DevToolsView, ApplicationDetailView, BusinessPlaceholder,
 } from './views';
 import {
-    MeetingLinksModal, SendSegmentModal, RescheduleModal, DealModal, EditInvoiceModal,
+    MeetingLinksModal, SendSegmentModal, RescheduleModal, DealModal, EditInvoiceModal, CsvUploadModal,
     type ModalState,
 } from './modals';
 
@@ -422,7 +422,7 @@ function CrmApp({ me, onLogout }: { me: Me; onLogout: (expired?: boolean) => voi
             case 'team':
                 return <TeamView team={team} loading={teamLoading} isAdmin={isAdmin} onToast={showToast} onAdded={loadTeam} />;
             case 'devtools':
-                return <DevToolsView onToast={showToast} onSaved={loadLists} />;
+                return <DevToolsView onToast={showToast} onSaved={loadLists} onModal={setModal} reloadSignal={reloadSignal} />;
             default:
                 return <DashboardView me={me} lists={lists} loading={loading} />;
         }
@@ -523,6 +523,8 @@ function renderModal(modal: ModalState, setModal: (m: ModalState | null) => void
             return <DealModal aptId={modal.aptId} accountId={modal.accountId} rentPrice={modal.rentPrice} crmUsers={crmUsers} onClose={close} onToast={showToast} onSaved={onSaved} />;
         case 'editInvoice':
             return <EditInvoiceModal invoiceId={modal.invoiceId} onClose={close} onToast={showToast} onSaved={onSaved} />;
+        case 'csvUpload':
+            return <CsvUploadModal segmentId={modal.segmentId} segmentName={modal.segmentName} onClose={close} onToast={showToast} onSaved={onSaved} />;
         default:
             return null;
     }

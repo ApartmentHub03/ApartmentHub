@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import styles from './crm.module.css';
-import type { Me, Apartment, Candidate, CrmAgent, Bookings, TeamMember, BusinessLine, ApplicationDetail, ApplicationResponse, PersoonEntry, DocumentEntry, PipelineStage, ViewingEntry, OfferInEntry, OfferSentEntry, DealEntry, ApartmentRecord, ApartmentRecordResponse, WonDeal, RealEstateAgent, CrmUserOption } from './types';
+import type { Me, Apartment, Candidate, CrmAgent, Bookings, TeamMember, BusinessLine, ApplicationDetail, ApplicationResponse, PersoonEntry, DocumentEntry, PipelineStage, ViewingEntry, OfferInEntry, OfferSentEntry, DealEntry, ApartmentRecord, ApartmentRecordResponse, WonDeal, RealEstateAgent, CrmUserOption, Segment, AIProfile } from './types';
 import type { ModalState } from './modals';
 
 type ToastFn = (msg: string) => void;
@@ -1320,6 +1320,33 @@ export function CreateApartmentView({ onBack, onToast, onCreated, realEstateAgen
 }
 
 // ============================================================
+// ProfileFields — renders a PersonProfile as a key/value grid
+// ============================================================
+function ProfileFields({ profile }: { profile: import('./types').PersonProfile }) {
+    const rows: Array<[string, string | null]> = [
+        ['Name', profile.name],
+        ['Date of birth', profile.date_of_birth],
+        ['Nationality', profile.nationality],
+        ['Job title', profile.job_title],
+        ['Employer', profile.employer],
+        ['Contract type', profile.contract_type],
+        ['Monthly income', profile.monthly_income],
+        ['Currency', profile.income_currency],
+        ['Relationship', profile.relationship],
+    ];
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {rows.map(([label, val]) => (
+                <div key={label} style={{ display: 'flex', gap: 8 }}>
+                    <span style={{ color: 'var(--muted)', minWidth: 90 }}>{label}:</span>
+                    <span>{val || <span style={{ color: 'var(--muted)' }}>—</span>}</span>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+// ============================================================
 // Application Detail — stub with mock per-person data
 // TODO: Phase 3 — wire to /api/admin/crm/application/[id]
 // ============================================================
@@ -1345,6 +1372,9 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
     const [error, setError] = useState<string | null>(null);
     const [candidateBio, setCandidateBio] = useState('');
     const [guarantorBio, setGuarantorBio] = useState('');
+    const [aiProfile, setAiProfile] = useState<AIProfile | null>(null);
+    const [aiProfileLoading, setAiProfileLoading] = useState(false);
+    const [linkedinUrl, setLinkedinUrl] = useState('');
     const [editBidAmount, setEditBidAmount] = useState('');
     const [editStartDate, setEditStartDate] = useState('');
     const [editMotivation, setEditMotivation] = useState('');
@@ -1415,6 +1445,8 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
         if (!app) return;
         setCandidateBio(app.candidate_bio || '');
         setGuarantorBio(app.guarantor_bio || '');
+        setAiProfile(app.ai_profile || null);
+        setLinkedinUrl(app.linkedin_url || '');
 
         // Prefer the actual offer state from offers_sent/offers_in when this view
         // is opened from a pipeline stage. The application API only reads
@@ -1433,7 +1465,47 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
             setEditStartDate(app.bid?.start_date || '');
             setEditMotivation(app.bid?.motivation || '');
         }
-    }, [app?.candidate_bio, app?.guarantor_bio, app?.bid, sentOffer?.bid_amount, sentOffer?.start_date, sentOffer?.motivation, inOffer?.bid_amount, inOffer?.start_date, inOffer?.motivation]);
+    }, [app?.candidate_bio, app?.guarantor_bio, app?.ai_profile, app?.linkedin_url, app?.bid, sentOffer?.bid_amount, sentOffer?.start_date, sentOffer?.motivation, inOffer?.bid_amount, inOffer?.start_date, inOffer?.motivation]);
+
+    async function analyzeDocuments() {
+        if (!apartmentId) { onToast('No apartment selected'); return; }
+        const tenantPhone = app?.whatsapp_number || '';
+        if (!tenantPhone) { onToast('No tenant phone found for this application'); return; }
+        setAiProfileLoading(true);
+        try {
+            const res = await fetch(`/api/admin/crm/apartment/${apartmentId}/analyze-candidate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
+                body: JSON.stringify({
+                    tenant_phone: tenantPhone,
+                    linkedin_url: linkedinUrl || null,
+                }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setAiProfile(data.profile);
+                // Auto-fill bios only if they're empty (don't overwrite agent edits).
+                if (data.candidate_bio && !candidateBio.trim()) {
+                    setCandidateBio(data.candidate_bio);
+                }
+                if (data.guarantor_bio && !guarantorBio.trim()) {
+                    setGuarantorBio(data.guarantor_bio);
+                }
+                if (data.gaps && data.gaps.length > 0) {
+                    onToast(`Profile extracted with ${data.gaps.length} gap(s): ${data.gaps.join(', ')}`);
+                } else {
+                    onToast('AI profile extracted from documents');
+                }
+            } else {
+                onToast(data.message || 'Analysis failed');
+            }
+        } catch (e) {
+            onToast('Analysis failed — check console');
+            console.error('analyze-candidate error:', e);
+        } finally {
+            setAiProfileLoading(false);
+        }
+    }
 
     async function generateOffer(offerType: 'normal' | 'hausing' | 'grand') {
         if (!apartmentId) { onToast('No apartment selected'); return; }
@@ -1462,6 +1534,7 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
                         : 'yourself';
                 onToast(`Gmail draft created — addressed to ${data.to || ''} (${sourceLabel})`);
                 if (data.draft_url) window.open(data.draft_url, '_blank');
+                if (data.ai_profile) setAiProfile(data.ai_profile);
             } else {
                 onToast(data.message || 'Generate offer failed');
             }
@@ -1803,6 +1876,69 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
                             </div>
                         )}
 
+                        {/* AI Candidate Profile — extracted from uploaded documents
+                            by Claude. Shows structured fields (name, job, income,
+                            nationality) and gaps. LinkedIn URL is optional, used
+                            for profession inference when docs are missing. */}
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', background: 'var(--bg-secondary, #f8f9fa)', border: '1px solid var(--border, #e0e0e0)', borderRadius: 10, padding: '10px 13px', marginBottom: 14 }}>
+                            <b style={{ fontSize: 13 }}>AI Candidate Profile:</b>
+                            <button className={`${styles.btn} ${styles.btnSm}`} disabled={aiProfileLoading} onClick={analyzeDocuments}>
+                                {aiProfileLoading ? 'Analyzing documents…' : 'Analyze documents'}
+                            </button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexBasis: '100%', marginTop: 4 }}>
+                                <input
+                                    className={styles.inp}
+                                    style={{ flex: 1, fontSize: 13 }}
+                                    placeholder="LinkedIn URL (optional, for profession inference when docs are missing)"
+                                    value={linkedinUrl}
+                                    onChange={(e) => setLinkedinUrl(e.target.value)}
+                                />
+                            </div>
+                            <div className={styles.hint} style={{ flexBasis: '100%', marginTop: 4 }}>
+                                Analyzes all uploaded documents with Claude to extract a candidate profile (name, job, income, nationality) and auto-fills the bio paragraphs below.
+                            </div>
+                        </div>
+
+                        {aiProfile && (
+                            <div style={{ background: 'var(--bg-secondary, #f8f9fa)', border: '1px solid var(--border, #e0e0e0)', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
+                                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Extracted Profile</div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 20px', fontSize: 12.5 }}>
+                                    {aiProfile.main_tenant && (
+                                        <div>
+                                            <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--teal)' }}>Main Tenant</div>
+                                            <ProfileFields profile={aiProfile.main_tenant} />
+                                        </div>
+                                    )}
+                                    {aiProfile.guarantor && (
+                                        <div>
+                                            <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--teal)' }}>Guarantor</div>
+                                            <ProfileFields profile={aiProfile.guarantor} />
+                                        </div>
+                                    )}
+                                </div>
+                                {aiProfile.co_tenants && aiProfile.co_tenants.length > 0 && (
+                                    <div style={{ marginTop: 10 }}>
+                                        {aiProfile.co_tenants.map((ct, i) => (
+                                            <div key={i}>
+                                                <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--teal)' }}>Co-tenant {i + 1}</div>
+                                                <ProfileFields profile={ct} />
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                {aiProfile.gaps && aiProfile.gaps.length > 0 && (
+                                    <div style={{ marginTop: 10, padding: '8px 10px', background: 'var(--amber-l, #fff8e6)', border: '1px solid #f3dca6', borderRadius: 8, fontSize: 12, color: '#8a5a12' }}>
+                                        <b>Gaps:</b> {aiProfile.gaps.join(', ')}
+                                    </div>
+                                )}
+                                {aiProfile.sources && aiProfile.sources.length > 0 && (
+                                    <div style={{ marginTop: 6, fontSize: 11, color: 'var(--muted)' }}>
+                                        Sources: {aiProfile.sources.join(', ')}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         {/* Generate offer buttons */}
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', background: 'var(--teal-l)', border: '1px solid #cfe9e5', borderRadius: 10, padding: '10px 13px', marginBottom: 14 }}>
                             <b style={{ fontSize: 13 }}>Generate offer:</b>
@@ -1845,7 +1981,7 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
                                 />
                             </div>
                             <div className={styles.hint}>
-                                These paragraphs are saved to the candidate's dossier and reused for future applications. They're inserted into the Gmail draft when you click Generate offer.
+                                These paragraphs are saved to the candidate's dossier and reused for future applications. They're inserted into the Gmail draft when you click Generate offer. Click "Analyze documents" above to auto-fill them from the uploaded documents with AI.
                             </div>
                         </div>
 
@@ -2816,7 +2952,7 @@ function clearApplicantLocalStorage(phoneDigits: string) {
     return cleared;
 }
 
-export function DevToolsView({ onToast, onSaved }: { onToast: ToastFn; onSaved?: () => void }) {
+export function DevToolsView({ onToast, onSaved, onModal, reloadSignal }: { onToast: ToastFn; onSaved?: () => void; onModal: ModalFn; reloadSignal?: number }) {
     const [phone, setPhone] = useState('');
     const [busy, setBusy] = useState(false);
     const [stage, setStage] = useState<'idle' | 'preview' | 'done'>('idle');
@@ -2827,8 +2963,34 @@ export function DevToolsView({ onToast, onSaved }: { onToast: ToastFn; onSaved?:
         dossierAddresses: string[];
     } | null>(null);
     const [result, setResult] = useState<{ deleted: Record<string, number>; storageErrors?: string[]; warnings?: { step: string; message: string }[]; phone?: string; lsCleared?: number } | null>(null);
+    const [segments, setSegments] = useState<Segment[]>([]);
+    const [segLoading, setSegLoading] = useState(true);
 
     const digits = (s: string) => s.replace(/\D/g, '');
+
+    // Load segments for the CSV upload card.
+    useEffect(() => {
+        let cancelled = false;
+        async function loadSegments() {
+            setSegLoading(true);
+            try {
+                const res = await fetch(`/api/admin/crm/segments`, {
+                    headers: { Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
+                });
+                const data = await res.json();
+                if (cancelled) return;
+                if (data.success && Array.isArray(data.segments)) {
+                    setSegments(data.segments);
+                }
+            } catch {
+                if (!cancelled) onToast('Failed to load segments');
+            } finally {
+                if (!cancelled) setSegLoading(false);
+            }
+        }
+        loadSegments();
+        return () => { cancelled = true; };
+    }, [onToast, reloadSignal]);
 
     async function doPreview() {
         const trimmed = phone.trim();
@@ -3047,6 +3209,51 @@ export function DevToolsView({ onToast, onSaved }: { onToast: ToastFn; onSaved?:
                             Safety: the route refuses to run if a phone matches more than 5 accounts or 3 dossiers (a test dossier never should). Every DELETE is scoped to resolved ids only.
                         </p>
                     </div>
+                </div>
+            </div>
+
+            <div className={styles.card} style={{ marginTop: 16 }}>
+                <div className={styles.cardHead}>
+                    <h3>Segment CSV Upload</h3>
+                    <span className={`${styles.hint} ${styles.cardHeadSp}`}>{segments.length} segments · upload replaces all members</span>
+                </div>
+                <div className={styles.cardBody}>
+                    <p style={{ marginTop: 0, fontSize: 13, lineHeight: 1.6 }}>
+                        Upload Zoko contact lists per segment. Download the list from Zoko as CSV,
+                        then upload it here for the matching segment. Each upload replaces all
+                        current members of that segment.
+                    </p>
+                    {segLoading ? (
+                        <div className={styles.loading}>Loading segments…</div>
+                    ) : segments.length === 0 ? (
+                        <div className={styles.empty}>No segments configured.</div>
+                    ) : (
+                        <table className={styles.table}>
+                            <thead>
+                                <tr><th>Segment</th><th>Members</th><th></th></tr>
+                            </thead>
+                            <tbody>
+                                {segments.map((s) => (
+                                    <tr key={s.id}>
+                                        <td>{s.name}</td>
+                                        <td>
+                                            <span className={`${styles.pill} ${s.count > 0 ? styles.pillTeal : styles.pillGrey}`}>
+                                                {s.count}
+                                            </span>
+                                        </td>
+                                        <td style={{ textAlign: 'right' }}>
+                                            <button
+                                                className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`}
+                                                onClick={() => onModal({ type: 'csvUpload', segmentId: s.id, segmentName: s.name })}
+                                            >
+                                                Upload CSV
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
             </div>
         </>

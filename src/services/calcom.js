@@ -128,7 +128,7 @@ export async function createCalLinks({ address, slotStartDatetime, slotEndDateti
             title: `${address} (Video)`,
             slug: `${slug}-video`,
             lengthInMinutes: Number(slotLengthMinutes),
-            locations: [{ type: 'phoneCall' }],
+            locations: [{ type: 'attendeePhone' }],
             description: 'We will call you with WhatsApp at the booked time.',
             bookingFields, bookingWindow, scheduleId,
             color: { lightThemeHex: '#1d4ed8', darkThemeHex: '#60a5fa' },
@@ -140,15 +140,22 @@ export async function createCalLinks({ address, slotStartDatetime, slotEndDateti
     if (inPersonEvent.status === 'success' && inPersonEvent.data) {
         results.eventlink = `${inPersonEvent.data.bookingUrl}?${new URLSearchParams({ date: slotDate })}`;
         results.calEventTypeId = inPersonEvent.data.id;
+    } else {
+        console.error('[calcom] in-person event-type creation failed:', inPersonEvent);
     }
 
     if (videoEvent.status === 'success' && videoEvent.data) {
         results.eventlinkVideo = `${videoEvent.data.bookingUrl}?${new URLSearchParams({ date: slotDate })}`;
         results.calEventTypeIdVideo = videoEvent.data.id;
+    } else {
+        console.error('[calcom] video event-type creation failed:', videoEvent);
     }
 
-    if (!results.eventlink && !results.eventlinkVideo) {
-        return { success: false, message: 'Failed to create Cal.com event types' };
+    if (!results.eventlink || !results.eventlinkVideo) {
+        return {
+            success: false,
+            message: `Failed to create ${!results.eventlink ? 'in-person' : 'video'} event type`,
+        };
     }
 
     return {

@@ -40,7 +40,7 @@ export async function GET(request, { params }) {
         //    for Aanvraag-originated applications.
         const { data: dossierRows } = await supabase
             .from('dossiers')
-            .select('id, bid_amount, start_date, motivation, months_advance, candidate_bio, guarantor_bio')
+            .select('id, bid_amount, start_date, motivation, months_advance, candidate_bio, guarantor_bio, ai_profile, ai_profile_at, linkedin_url')
             .in('phone_number', phoneCandidates(account.whatsapp_number))
             .order('created_at', { ascending: false })
             .limit(1);
@@ -166,6 +166,9 @@ export async function GET(request, { params }) {
                 bid,
                 candidate_bio: dossier?.candidate_bio || null,
                 guarantor_bio: dossier?.guarantor_bio || null,
+                ai_profile: dossier?.ai_profile || null,
+                ai_profile_at: dossier?.ai_profile_at || null,
+                linkedin_url: dossier?.linkedin_url || null,
             },
         });
     } catch (err) {
