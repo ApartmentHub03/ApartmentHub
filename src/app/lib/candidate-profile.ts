@@ -67,21 +67,21 @@ For the GUARANTOR (if any documents mention one):
 For CO-TENANTS (if visible in the documents):
 - name, job_title, employer, monthly_income, income_currency
 
-Then write two bio paragraphs (3-5 sentences each, professional tone, English):
+Then write two bio paragraphs (3-5 sentences each, professional tone, DUTCH):
 - candidate_bio: introduces the main tenant — their name, age if known, nationality,
   what they study or do for work, employer, contract type, income. Written as a
-  narrative the listing agent can include in an offer email.
+  narrative the listing agent can include in an offer email. Written in Dutch.
 - guarantor_bio: introduces the guarantor — their name, relationship to the tenant,
-  profession, employer, income. If no guarantor, return empty string.
+  profession, employer, income. If no guarantor, return empty string. Written in Dutch.
 
-Style reference for candidate_bio:
-"e.g. Lukas Norman (18 years old) is a Belgian student who will be studying
-Economics and Business Economics full-time at the Vrije Universiteit Amsterdam..."
+Style reference for candidate_bio (write in Dutch, this is just an example of the tone/structure):
+"Lukas Norman (18 jaar) is een Belgische student die voltijds Economics and
+Business Economics gaat studeren aan de Vrije Universiteit Amsterdam..."
 
-Style reference for guarantor_bio:
-"e.g. Kristine Hambrouck (mother) works at UNHCR as Head of Global Budget and
-Resource Allocation Service. She has held a permanent contract since 1998 and
-earns USD 315,917 gross per year..."
+Style reference for guarantor_bio (write in Dutch, this is just an example of the tone/structure):
+"Kristine Hambrouck (moeder) werkt bij UNHCR als Head of Global Budget and
+Resource Allocation Service. Zij heeft sinds 1998 een vast contract en
+verdient USD 315.917 bruto per jaar..."
 
 If a LinkedIn URL is provided, use it to infer likely profession/employer when
 the documents don't contain that information. Clearly note in the gaps array
@@ -106,6 +106,19 @@ Rules:
 - Cite only facts directly visible in the documents or reasonably inferred from a LinkedIn URL.
 - If a field is not found, use null (not an empty string) for string fields.
 - Empty gaps array is fine if everything was found.
+- Do NOT use em dashes (—) or en dashes (–) in the bios. Use commas, periods, or "and".
+- Do NOT use filler, hedging, or meta-commentary. Ban phrases like:
+  "as confirmed by", "is established", "while specific details are limited",
+  "in the provided documents", "submitted this application in support of",
+  "it is worth noting", "based on the available information",
+  "at this time", "currently", "it should be noted".
+- Do NOT describe what is missing — only state what is known. If a detail is
+  unknown, simply omit it. Never write "specific details are limited" or
+  "information is not available".
+- Write in a direct, factual tone. Every sentence must state a concrete fact
+  about the candidate (name, age, nationality, study/work, employer, income,
+  contract type). If you cannot state a concrete fact, do not write that sentence.
+- Keep each bio to 3-5 sentences. No padding to hit the sentence count.
 - Output JSON only.`;
 
 function safeParse(raw: string): Record<string, unknown> | null {

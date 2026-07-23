@@ -162,7 +162,7 @@ function rel(name: React.ReactNode, meta: string, right: React.ReactNode, key?: 
 // Apartments — pipeline-grouped list wired to lists.apartments
 // ============================================================
 const PIPELINE_GROUPS: { stage: PipelineStage; label: string; pillClass: string }[] = [
-    { stage: 'active', label: 'Active — viewing just went (past week)', pillClass: 'pillGreen' },
+    { stage: 'active', label: 'Active viewing just went (past week)', pillClass: 'pillGreen' },
     { stage: 'waiting', label: 'Waiting for offers', pillClass: 'pillAmber' },
     { stage: 'offers_out', label: 'Offers out', pillClass: 'pillTeal' },
     { stage: 'deals', label: 'Deals — won / failed (mixed)', pillClass: 'pillTeal' },

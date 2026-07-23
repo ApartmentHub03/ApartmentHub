@@ -1,35 +1,41 @@
-// Renders the "Generate offer" Gmail draft email.
+// Renders the "Generate offer" Gmail draft email (Dutch body copy — the
+// audience is Dutch real estate agents/collaborators). The signature block
+// itself (job title, Email/Mobile/Address labels) stays in the fixed
+// bilingual brand format used across every ApartmentHub signature.
 //
 // Template (matches David's spec):
 //
-//   Hi {agent contact name},
+//   Hoi {agent contact name},
 //
-//   Here is the proposal from my candidate: {candidate name} at {apartment address}.
+//   Hierbij de voordracht van mijn kandidaat: {candidate name} voor {apartment address}.
 //
-//   Rent: € {rent}
-//   Deposit: € {deposit}
-//   Start date: {start date}
+//   Huur: € {rent}
+//   Borg: € {deposit}
+//   Ingangsdatum: {start date}
 //
-//   Candidate type: {candidate type}
+//   Type kandidaat: {candidate type}
 //
 //   {candidate bio — free text}
 //
-//   Guarantor:
+//   Garantsteller:
 //   {guarantor bio — free text}
 //
-//   I hope I have provided you with sufficient information.
+//   Ik hoop je hiermee voldoende te hebben geïnformeerd.
 //
-//   Yours sincerely,
+//   Met vriendelijke groet,
 //
-//   [vertical-logo-small.webp (PNG fallback)]
-//   {sender name}
-//   Real Estate Agent
-//   Email: {sender email}
-//   Mobile: {sender phone}
-//   Address: {sender address}
+//   [logo]  {sender name}
+//           Real Estate Agent
+//
+//   Email:              Mobile:
+//   {sender email}      {sender phone}
+//
+//   Address:
+//   {sender address}
+//
 //   https://apartmenthub.nl/
 
-const LOGO_URL = 'https://apartmenthub.nl/images/vertical-logo-small.png';
+const LOGO_URL = 'https://apartmenthub.nl/images/vertical-logo.png';
 
 function escapeHtml(s) {
     return String(s ?? '')
@@ -48,32 +54,32 @@ function fmtDate(d) {
     if (!d) return '—';
     const date = new Date(d);
     if (Number.isNaN(date.getTime())) return escapeHtml(d);
-    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+    return date.toLocaleDateString('nl-NL', { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
-// Derive the "Candidate type" label from personen rows.
-//   1 person + werk_status='student' → "single student"
-//   1 person + werk_status='working' → "single working person"
-//   2 persons, both student → "2 students"
-//   2 persons, both working → "2 working people"
-//   2 persons, mixed → "2 people (1 student, 1 working)"
-//   Fallback → "single person"
+// Derive the "Type kandidaat" label from personen rows.
+//   1 person + werk_status='student' → "alleenstaande student"
+//   1 person + werk_status='working' → "alleenstaande werkende"
+//   2 persons, both student → "2 studenten"
+//   2 persons, both working → "2 werkenden"
+//   2 persons, mixed → "2 personen (1 student, 1 werkend)"
+//   Fallback → "alleenstaand persoon"
 export function deriveCandidateType(personen) {
-    if (!Array.isArray(personen) || personen.length === 0) return 'single person';
+    if (!Array.isArray(personen) || personen.length === 0) return 'alleenstaand persoon';
     const nonGuarantors = personen.filter((p) => (p.rol || p.type || 'tenant') !== 'Garantsteller' && p.type !== 'guarantor');
     const group = nonGuarantors.length ? nonGuarantors : personen;
     const count = group.length;
     if (count === 1) {
         const ws = String(group[0].werk_status || group[0].work_status || '').toLowerCase();
-        if (ws === 'student') return 'single student';
-        if (ws === 'working' || ws === 'werk') return 'single working person';
-        return 'single person';
+        if (ws === 'student') return 'alleenstaande student';
+        if (ws === 'working' || ws === 'werk') return 'alleenstaande werkende';
+        return 'alleenstaand persoon';
     }
     const students = group.filter((p) => String(p.werk_status || p.work_status || '').toLowerCase() === 'student').length;
     const working = count - students;
-    if (students === count) return `${count} students`;
-    if (working === count) return `${count} working people`;
-    return `${count} people (${students} student${students === 1 ? '' : 's'}, ${working} working)`;
+    if (students === count) return `${count} studenten`;
+    if (working === count) return `${count} werkenden`;
+    return `${count} personen (${students} student${students === 1 ? '' : 'en'}, ${working} werkend)`;
 }
 
 /**
@@ -102,7 +108,7 @@ export function renderOfferDraftEmail({
     guarantorBio,
     sender,
 }) {
-    const agentName = (agent?.contact_person_name || agent?.name || 'there').trim();
+    const agentName = (agent?.contact_person_name || agent?.name || 'daar').trim();
     const agentEmail = (agent?.email || '').trim();
     const apartmentAddress = apartment?.address || '—';
     const candidateName = (candidate?.name || '—').trim();
@@ -113,64 +119,70 @@ export function renderOfferDraftEmail({
 
     const bioHtml = candidateBio
         ? escapeHtml(candidateBio).replace(/\r\n|\n|\r/g, '<br />')
-        : '<em>[Candidate bio — edit here]</em>';
+        : '<em>[Kandidaat bio — hier aanvullen]</em>';
     const guarantorHtml = guarantorBio
         ? escapeHtml(guarantorBio).replace(/\r\n|\n|\r/g, '<br />')
-        : '<em>[Guarantor bio — edit here]</em>';
+        : '<em>[Garantsteller bio — hier aanvullen]</em>';
 
     const html = `<!DOCTYPE html>
 <html><body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a2b27;background:#ffffff">
 <div style="max-width:640px;margin:0 auto;padding:24px 0">
-  <p style="margin:0 0 12px;font-size:14px">Hi ${escapeHtml(agentName)},</p>
+  <p style="margin:0 0 12px;font-size:14px">Hoi ${escapeHtml(agentName)},</p>
 
   <p style="margin:0 0 16px;font-size:14px">
-    Here is the proposal from my candidate: <b style="color:#497772">${escapeHtml(candidateName)}</b> at <b>${escapeHtml(apartmentAddress)}</b>.
+    Hierbij de voordracht van mijn kandidaat: <b style="color:#497772">${escapeHtml(candidateName)}</b> voor <b>${escapeHtml(apartmentAddress)}</b>.
   </p>
 
   <table style="font-size:14px;border-collapse:collapse;margin:0 0 16px">
-    <tr><td style="padding:2px 12px 2px 0;color:#46544f">Rent:</td><td><b>${fmtEuro(rent)}</b></td></tr>
-    <tr><td style="padding:2px 12px 2px 0;color:#46544f">Deposit:</td><td><b>${fmtEuro(deposit)}</b></td></tr>
-    <tr><td style="padding:2px 12px 2px 0;color:#46544f">Start date:</td><td><b>${fmtDate(startDate)}</b></td></tr>
+    <tr><td style="padding:2px 12px 2px 0;color:#46544f">Huur:</td><td><b>${fmtEuro(rent)}</b></td></tr>
+    <tr><td style="padding:2px 12px 2px 0;color:#46544f">Borg:</td><td><b>${fmtEuro(deposit)}</b></td></tr>
+    <tr><td style="padding:2px 12px 2px 0;color:#46544f">Ingangsdatum:</td><td><b>${fmtDate(startDate)}</b></td></tr>
   </table>
 
-  <p style="margin:0 0 16px;font-size:14px">Candidate type: <b>${escapeHtml(candidateType)}</b></p>
+  <p style="margin:0 0 16px;font-size:14px">Type kandidaat: <b>${escapeHtml(candidateType)}</b></p>
 
   <p style="margin:0 0 16px;font-size:14px;line-height:1.5">${bioHtml}</p>
 
-  <p style="margin:0 0 4px;font-size:14px"><b>Guarantor:</b></p>
+  <p style="margin:0 0 4px;font-size:14px"><b>Garantsteller:</b></p>
   <p style="margin:0 0 16px;font-size:14px;line-height:1.5">${guarantorHtml}</p>
 
-  <p style="margin:0 0 24px;font-size:14px">I hope I have provided you with sufficient information.</p>
+  <p style="margin:0 0 24px;font-size:14px">Ik hoop je hiermee voldoende te hebben geinformeerd.</p>
 
-  <p style="margin:0 0 4px;font-size:14px">Yours sincerely,</p>
+  <p style="margin:0 0 4px;font-size:14px">Met vriendelijke groet,</p>
 
-  <table style="margin-top:8px;border-collapse:collapse;width:100%;max-width:540px">
+  <table style="border-collapse:collapse;margin-top:12px;max-width:420px">
     <tr>
-      <td style="vertical-align:top;padding-right:20px;width:140px">
-        <img src="${LOGO_URL}" alt="ApartmentHub" style="max-width:140px;height:auto;display:block;margin-bottom:8px" />
-        <a href="https://apartmenthub.nl/" style="color:#497772;text-decoration:none;font-size:13px">https://apartmenthub.nl/</a>
+      <td style="vertical-align:top;width:64px;padding-right:14px">
+        <img src="${LOGO_URL}" alt="ApartmentHub" style="width:56px;height:auto;display:block" />
       </td>
-      <td style="vertical-align:top;font-size:13px;line-height:1.5;color:#1a2b27">
-        <b style="font-size:17px;color:#1a2b27">${escapeHtml(senderName)}</b><br />
-        <span style="color:#1a2b27">Real Estate Agent</span>
-        <table style="border-collapse:collapse;margin-top:6px;width:100%">
+      <td style="vertical-align:top">
+        <div style="font-size:17px;font-weight:700;color:#497772;line-height:1.3">${escapeHtml(senderName)}</div>
+        <div style="font-size:13px;color:#1a1a1a;line-height:1.4;margin-bottom:8px">Real Estate Agent</div>
+        <table style="border-collapse:collapse">
           <tr>
-            <td style="vertical-align:top;padding-right:16px;width:50%">
-              <b style="color:#6e7d78;font-size:12px">Email:</b><br />
-              <a href="mailto:${escapeHtml(senderEmail)}" style="color:#497772;text-decoration:underline">${escapeHtml(senderEmail)}</a>
+            <td style="vertical-align:top;padding-right:40px">
+              <div style="font-size:12px;font-weight:700;color:#1a1a1a">Email:</div>
+              <a href="mailto:${escapeHtml(senderEmail)}" style="font-size:12px;color:#1a1a1a;text-decoration:underline">${escapeHtml(senderEmail)}</a>
             </td>
-            <td style="vertical-align:top;width:50%">
-              <b style="color:#6e7d78;font-size:12px">Mobile:</b><br />
-              ${escapeHtml(senderPhone)}
+            <td style="vertical-align:top">
+              <div style="font-size:12px;font-weight:700;color:#1a1a1a">Mobile:</div>
+              <div style="font-size:12px;color:#1a1a1a">${escapeHtml(senderPhone)}</div>
             </td>
           </tr>
         </table>
-        ${senderAddress ? `<div style="margin-top:6px"><span style="color:#6e7d78;font-size:12px">Address:</span><br />${escapeHtml(senderAddress)}</div>` : ''}
+        ${senderAddress ? `<div style="margin-top:8px">
+          <div style="font-size:12px;font-weight:700;color:#1a1a1a">Address:</div>
+          <div style="font-size:12px;color:#1a1a1a">${escapeHtml(senderAddress)}</div>
+        </div>` : ''}
       </td>
     </tr>
   </table>
 
-  <p style="margin:16px 0 0;font-size:11px;line-height:1.5;color:#6e7d78;border-top:1px solid #e5eae8;padding-top:12px">
+  <p style="margin:12px 0 0;font-size:12px">
+    <a href="https://apartmenthub.nl/" style="font-weight:700;color:#1a1a1a;text-decoration:underline">https://apartmenthub.nl/</a>
+  </p>
+
+  <p style="margin:16px 0 0;font-size:10px;line-height:1.5;color:#497772;max-width:420px">
     The content of this email is confidential and intended for the recipient specified in message only. It is strictly forbidden to share any part of this message with any third party, without a written consent of the sender. If you received this message by mistake, please reply to this message and follow with its deletion, so that we can ensure such a mistake does not occur in the future.
   </p>
 </div>
@@ -178,7 +190,7 @@ export function renderOfferDraftEmail({
 
     return {
         to: agentEmail,
-        subject: `Proposal for ${apartmentAddress}, ${candidateName}`,
+        subject: `Voordracht voor ${apartmentAddress}, ${candidateName}`,
         html,
     };
 }
