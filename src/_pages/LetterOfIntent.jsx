@@ -293,7 +293,7 @@ const LetterOfIntent = () => {
         fullTerms: 'Algemene voorwaarden',
         successTitle: 'Aanvraag Ingediend!',
         successSubtitle: 'Je Letter of Intent is succesvol verzonden.',
-        responseTime: 'Wij nemen binnen <strong>24 uur</strong> contact met je op.',
+        responseTime: 'Wij nemen binnen <strong>7 dagen</strong> contact met je op.',
         emailSent: 'Bevestiging verzonden naar:',
         backToHome: 'Terug naar Home',
         whatsappQuestions: 'Vragen? WhatsApp ons'
