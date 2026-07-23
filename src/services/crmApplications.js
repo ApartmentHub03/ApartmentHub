@@ -9,6 +9,8 @@
 // Aanvraag.jsx, so it stays empty while `personen` holds the real co-tenant
 // rows. Read the chain; fall back to the mirrors so legacy rows still show.
 
+import { generateLetterOfIntentPdf } from '@/lib/pdf/letterOfIntent';
+
 export const MAIN_ROLE = 'Hoofdhuurder';
 
 // The statuses the sync trigger treats as "uploaded".
@@ -256,4 +258,168 @@ export async function buildApplicationZip(supabase, accountId, { personId, apart
     const filename = `application-${shortId}-${tenantSlug}${personSlug}.zip`;
 
     return { buffer: archiveBuf, filename, fileCount: okCount };
+}
+
+// --- Letter of Intent PDF builder ---
+// Fills the ApartmentHub "Letter of Intent" template (see
+// src/app/api/admin/crm/apartment/[id]/generate-offer/loi-pdf.js) with the
+// applicant's data so it can be attached to the Gmail offer draft and/or
+// bundled into the application ZIP download. Best-effort: returns null when
+// the minimum data (an apartment to describe) isn't available, so callers
+// can skip the attachment rather than failing the whole request.
+
+const LOI_SIGNATURE_TYPE = 'loi_signature';
+
+function splitName(fullName) {
+    const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return { firstName: '', surname: '' };
+    if (parts.length === 1) return { firstName: parts[0], surname: '' };
+    return { firstName: parts.slice(0, -1).join(' '), surname: parts[parts.length - 1] };
+}
+
+function personToLoiFields(p, aiPerson) {
+    if (!p) return null;
+    const { firstName, surname } = p.voornaam || p.achternaam
+        ? { firstName: p.voornaam || '', surname: p.achternaam || '' }
+        : splitName(personName(p));
+    return {
+        firstName,
+        surname,
+        street: p.huidige_adres || '',
+        postcode: p.postcode || '',
+        city: p.woonplaats || '',
+        email: p.email || '',
+        phone: p.telefoon || p.whatsapp || '',
+        // date_of_birth isn't a column on `personen` — the AI-extracted
+        // profile (dossiers.ai_profile, parsed from uploaded ID documents)
+        // is the only source. Passport number is never captured as
+        // structured data anywhere, so it's always left for manual entry.
+        dateOfBirth: aiPerson?.date_of_birth || '',
+        passportNumber: '',
+    };
+}
+
+/**
+ * @param {object} supabase - service-role Supabase client
+ * @param {string} accountId - accounts.id
+ * @param {object} opts
+ * @param {string} opts.apartmentId - apartments.id (required — property details come from here)
+ * @param {number} [opts.bidAmount] - override the derived rent amount (e.g. the agent's negotiated figure)
+ * @param {string} [opts.startDate] - override the derived start date
+ * @param {object} [opts.aiProfile] - dossiers.ai_profile (already fetched by the caller), reused to avoid a duplicate Claude analysis
+ * @returns {Promise<{buffer: Uint8Array, filename: string} | null>} null if an apartment or account can't be resolved
+ */
+export async function buildLetterOfIntentPdf(supabase, accountId, opts = {}) {
+    const { apartmentId, bidAmount: bidOverride, startDate: startDateOverride, aiProfile } = opts;
+    if (!apartmentId) return null;
+
+    const { data: account, error: accErr } = await supabase
+        .from('accounts')
+        .select('id, tenant_name, whatsapp_number, email')
+        .eq('id', accountId)
+        .maybeSingle();
+    if (accErr) throw accErr;
+    if (!account) return null;
+
+    const { data: apt, error: aptErr } = await supabase
+        .from('apartments')
+        .select('id, "Full Address", street, area, zip_code, rental_price')
+        .eq('id', apartmentId)
+        .maybeSingle();
+    if (aptErr) throw aptErr;
+    if (!apt) return null;
+
+    const { data: dossierRows } = await supabase
+        .from('dossiers')
+        .select('id, bid_amount, start_date, ai_profile')
+        .in('phone_number', phoneCandidates(account.whatsapp_number))
+        .order('created_at', { ascending: false })
+        .limit(1);
+    const dossier = dossierRows?.[0] || null;
+    const dossierId = dossier?.id || null;
+
+    const personen = dossierId
+        ? await fetchIn(supabase, 'personen', '*', 'dossier_id', [dossierId])
+        : [];
+
+    const mainPerson = personen.find((p) => isMainTenant(p)) || null;
+    const coPerson = personen.find((p) => !isMainTenant(p)) || null;
+
+    let bidAmount = bidOverride != null ? Number(bidOverride) : null;
+    if (bidAmount == null && dossier?.bid_amount != null) bidAmount = Number(dossier.bid_amount);
+    if (bidAmount == null && apt.rental_price != null) bidAmount = Number(apt.rental_price);
+    const startDate = startDateOverride || dossier?.start_date || null;
+    const deposit = bidAmount != null ? bidAmount * 2 : null;
+
+    const effectiveAiProfile = aiProfile || dossier?.ai_profile || null;
+
+    const mainTenant = mainPerson
+        ? personToLoiFields(mainPerson, effectiveAiProfile?.main_tenant)
+        : {
+            firstName: splitName(account.tenant_name).firstName,
+            surname: splitName(account.tenant_name).surname,
+            email: account.email || '',
+            phone: account.whatsapp_number || '',
+            street: '',
+            postcode: '',
+            city: '',
+            dateOfBirth: '',
+            passportNumber: '',
+        };
+    const coTenant = coPerson
+        ? personToLoiFields(coPerson, effectiveAiProfile?.guarantor || effectiveAiProfile?.co_tenants?.[0])
+        : null;
+
+    // Best-effort: if the main tenant has already signed via the
+    // LetterOfIntent.jsx flow, stamp that signature onto the PDF instead of
+    // leaving the signature box blank.
+    let signaturePngBytes = null;
+    let signedDate = null;
+    if (mainPerson) {
+        const { data: sigDocs } = await supabase
+            .from('documenten')
+            .select('bestandspad, file_path, uploaded_at')
+            .eq('persoon_id', mainPerson.id)
+            .eq('type', LOI_SIGNATURE_TYPE)
+            .order('uploaded_at', { ascending: false })
+            .limit(1);
+        const sigDoc = sigDocs?.[0] || null;
+        const sigPath = sigDoc?.bestandspad || sigDoc?.file_path || null;
+        if (sigPath) {
+            try {
+                const { data: blob, error: dlErr } = await supabase.storage
+                    .from(ZIP_BUCKET)
+                    .download(storagePath(sigPath));
+                if (!dlErr && blob) {
+                    signaturePngBytes = Buffer.from(await blob.arrayBuffer());
+                    signedDate = sigDoc.uploaded_at || null;
+                }
+            } catch (sigErr) {
+                console.warn('[buildLetterOfIntentPdf] signature download failed, leaving box blank:', sigErr);
+            }
+        }
+    }
+
+    const pdfBytes = await generateLetterOfIntentPdf({
+        mainTenant,
+        coTenant,
+        property: {
+            street: apt['Full Address'] || apt.street || '',
+            postcode: apt.zip_code || '',
+            city: apt.area || '',
+            rentPrice: bidAmount,
+            deposit,
+            startDate,
+            monthsUpfront: 1,
+        },
+        signaturePngBytes,
+        signedPlace: apt.area || 'Amsterdam',
+        signedDate,
+    });
+
+    const shortId = String(account.id).slice(0, 8);
+    const tenantSlug = safeSegment(account.tenant_name) || 'tenant';
+    const filename = `letter-of-intent-${shortId}-${tenantSlug}.pdf`;
+
+    return { buffer: Buffer.from(pdfBytes), filename };
 }
