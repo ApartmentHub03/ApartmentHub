@@ -86,6 +86,10 @@ const Aanvraag = ({ preselectedApartmentId }) => {
     const [motivation, setMotivation] = useState("");
     const [monthsAdvance, setMonthsAdvance] = useState(0);
     const [tenantProgress, setTenantProgress] = useState({});
+    // Already-submitted applications (from accounts.offered_apartments joined
+    // with apartments.offers_in). Rendered as cards above the form so returning
+    // tenants see prior submissions and can apply to another apartment.
+    const [appliedApartments, setAppliedApartments] = useState([]);
 
     const [showAddPersonModal, setShowAddPersonModal] = useState(false);
     const [showUploadChoiceModal, setShowUploadChoiceModal] = useState(false);
@@ -165,62 +169,76 @@ const Aanvraag = ({ preselectedApartmentId }) => {
             let panden = [];
             let mainPandenLocal = []; // local capture so sidebar logic doesn't read stale state
 
-            // Load apartments from accounts.apartment_selected (persisted in Supabase)
+            // Load apartments from accounts.apartment_selected (persisted in Supabase).
+            // Prefer the localStorage accountId over AuthContext's value: AuthContext
+            // only hydrates account_id on mount and does NOT re-read it when
+            // AppartementenSelectie (or /api/dossier/save) writes a freshly-resolved
+            // accountId to localStorage mid-session. The localStorage value is the
+            // most recently verified id (the select-apartment route verifies the row
+            // exists before returning it). AuthContext.accountId can be a stale id
+            // from a prior login that no longer exists, which makes the .maybeSingle()
+            // below return no rows and the apartment selection appears empty.
             const { supabase: sb } = await import('../integrations/supabase/client');
+            const lsAccountId = typeof window !== 'undefined' ? localStorage.getItem('account_id') : null;
+            let effectiveAccountId = lsAccountId || accountId;
 
-            if (accountId) {
-                try {
-                    const { data: accData, error: accError } = await sb
-                        .from('accounts')
-                        .select('current_bookings, documentation_status, apartment_selected')
-                        .eq('id', accountId)
-                        .single();
+            // Read the accounts row through the server-side service-role route.
+            // The browser Supabase client uses the publishable key + RLS, but this
+            // app authenticates via a custom OTP flow (not Supabase Auth), so the
+            // browser client is effectively anonymous to PostgREST and a direct
+            // `sb.from('accounts').select()` returns 0 rows even for an
+            // authenticated tenant — leaving apartment_selected empty on /aanvraag
+            // despite a successful POST to /api/dossier/select-apartment. The
+            // route resolves the account by id, falling back to phone (same as the
+            // POST), and returns apartment_selected + offered_apartments in one go.
+            try {
+                const accRes = await fetch(
+                    '/api/dossier/select-apartment?'
+                        + new URLSearchParams({ accountId: effectiveAccountId || '', phone: phoneNumber || '' }),
+                    { headers: { 'Content-Type': 'application/json' } },
+                );
+                const accJson = await accRes.json();
+                if (accJson.success && accJson.accountId) {
+                    effectiveAccountId = accJson.accountId;
+                    // Cache the server-resolved id so autoSave / link-offers use it.
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem('account_id', accJson.accountId);
+                    }
 
-                    if (!accError) {
-                        const savedApts = accData?.apartment_selected || [];
+                    const savedApts = Array.isArray(accJson.apartment_selected) ? accJson.apartment_selected : [];
 
-                        if (savedApts.length > 0) {
-                            // Resolve full apartment details from the SF catalog we
-                            // fetched above. IDs SF doesn't return fall back to the
-                            // saved entry's stored address/rental_price.
-                            panden = savedApts
-                                .filter(a => a.apartment_id)
-                                .map(a => {
-                                    const row = sfApts.get(a.apartment_id);
-                                    return row ? buildPandFromApartment(row) : buildPandFromSavedEntry(a);
-                                });
-
-                            // Restore per-apartment bids from saved data
-                            const savedBids = {};
-                            savedApts.forEach(a => {
-                                if (a.apartment_id && a.bid_amount) {
-                                    savedBids[a.apartment_id] = a.bid_amount;
-                                }
+                    if (savedApts.length > 0) {
+                        // Resolve full apartment details from the SF catalog we
+                        // fetched above. IDs SF doesn't return fall back to the
+                        // saved entry's stored address/rental_price.
+                        panden = savedApts
+                            .filter(a => a.apartment_id)
+                            .map(a => {
+                                const row = sfApts.get(a.apartment_id);
+                                return row ? buildPandFromApartment(row) : buildPandFromSavedEntry(a);
                             });
-                            if (Object.keys(savedBids).length > 0) {
-                                setBidAmounts(prev => ({ ...savedBids, ...prev }));
-                            }
-                        }
 
-                        // Fallback: load from current_bookings if no apartments selected yet
-                        if (panden.length === 0 && accData?.current_bookings?.length > 0) {
-                            const booking = accData.current_bookings[0];
-                            if (booking.apartment_id) {
-                                const aptData = sfApts.get(booking.apartment_id);
-                                if (aptData) {
-                                    panden = [buildPandFromApartment(aptData)];
-                                }
+                        // Restore per-apartment bids from saved data
+                        const savedBids = {};
+                        savedApts.forEach(a => {
+                            if (a.apartment_id && a.bid_amount) {
+                                savedBids[a.apartment_id] = a.bid_amount;
                             }
-                        }
-
-                        // Set initial 'Not filled' status if empty
-                        if (!accData?.documentation_status) {
-                            await sb.from('accounts').update({ documentation_status: 'Pending' }).eq('id', accountId);
+                        });
+                        if (Object.keys(savedBids).length > 0) {
+                            setBidAmounts(prev => ({ ...savedBids, ...prev }));
                         }
                     }
-                } catch (e) {
-                    console.warn('[Aanvraag] Could not load apartments from accounts', e);
+
+                    // "My Applications" card data — the route already joined
+                    // offers_in for us, so just pass the array through.
+                    const offered = Array.isArray(accJson.offered_apartments) ? accJson.offered_apartments : [];
+                    if (offered.length > 0) {
+                        setAppliedApartments(offered);
+                    }
                 }
+            } catch (e) {
+                console.warn('[Aanvraag] Could not load apartments from accounts', e);
             }
 
             // For co-tenants: resolve the main tenant's account via the
@@ -319,34 +337,6 @@ const Aanvraag = ({ preselectedApartmentId }) => {
                 }
             }
 
-            // Fallback: check localStorage for pending selections (when no account exists yet)
-            if (panden.length === 0 && typeof window !== 'undefined') {
-                const pending = localStorage.getItem('pending_apartment_selected');
-                if (pending) {
-                    try {
-                        const pendingApts = JSON.parse(pending);
-                        if (pendingApts.length > 0) {
-                            panden = pendingApts
-                                .filter(a => a.apartment_id)
-                                .map(a => {
-                                    const row = sfApts.get(a.apartment_id);
-                                    return row ? buildPandFromApartment(row) : buildPandFromSavedEntry(a);
-                                });
-                        }
-
-                        // If account now exists, persist and clear localStorage
-                        if (accountId && panden.length > 0) {
-                            await sb.from('accounts').update({
-                                apartment_selected: pendingApts
-                            }).eq('id', accountId);
-                            localStorage.removeItem('pending_apartment_selected');
-                        }
-                    } catch (e) {
-                        console.warn('[Aanvraag] Could not parse pending_apartment_selected', e);
-                    }
-                }
-            }
-
             // Final fallback: pre-select from URL param if nothing else selected.
             const urlApartmentId = preselectedApartmentId;
             if (panden.length === 0 && urlApartmentId) {
@@ -370,20 +360,34 @@ const Aanvraag = ({ preselectedApartmentId }) => {
                 }
 
                 if (panden.length > 0) {
+                    // Persist the URL-param selection server-side via the service
+                    // role so it lands on the right accounts row even when the
+                    // browser's accountId is null/stale (Login.jsx's RLS-gated
+                    // lookup often fails for freshly-provisioned accounts). The
+                    // previous code either wrote via supabase-js (silently
+                    // swallowed RLS denials) or stashed the entry in localStorage
+                    // which stranded when accountId never resolved.
                     const aptEntry = {
                         apartment_id: urlApartmentId,
                         address: panden[0].adres,
-                        name: panden[0].name,
                         rental_price: panden[0].voorwaarden?.huurprijs || null,
-                        bid_amount: panden[0].voorwaarden?.huurprijs || null,
                         selected_at: new Date().toISOString(),
                     };
-                    if (accountId) {
-                        await sb.from('accounts').update({
-                            apartment_selected: [aptEntry]
-                        }).eq('id', accountId);
-                    } else if (typeof window !== 'undefined') {
-                        localStorage.setItem('pending_apartment_selected', JSON.stringify([aptEntry]));
+                    try {
+                        const selRes = await fetch('/api/dossier/select-apartment', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ accountId, phone: phoneNumber, apartments: [aptEntry] }),
+                        });
+                        const selJson = await selRes.json();
+                        if (selJson.success && selJson.accountId && typeof window !== 'undefined') {
+                            const stored = localStorage.getItem('account_id');
+                            if (!stored || stored !== selJson.accountId) {
+                                localStorage.setItem('account_id', selJson.accountId);
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('[Aanvraag] Could not persist URL-param apartment selection:', e);
                     }
                 }
             }
@@ -507,7 +511,7 @@ const Aanvraag = ({ preselectedApartmentId }) => {
         };
 
         loadData();
-    }, [dossierId, accountId, authLoading, preselectedApartmentId]);
+    }, [dossierId, accountId, authLoading, preselectedApartmentId, phoneNumber, isMainTenant, userRole]);
 
     // Auto-save with debouncing
     const saveTimeoutRef = useRef(null);
@@ -522,24 +526,32 @@ const Aanvraag = ({ preselectedApartmentId }) => {
         // current. Only the main tenant writes here — co-tenants/guarantors
         // would otherwise freeze stale main-tenant data into their own
         // account and the pre-fill would never refresh.
-        if (accountId && data.panden?.length > 0 && isMainTenant) {
-            try {
-                const { supabase: sb } = await import('../integrations/supabase/client');
-                const updatedSelected = data.panden.map(p => ({
-                    apartment_id: p.apartmentId,
-                    address: p.adres,
-                    rental_price: p.voorwaarden?.huurprijs || null,
-                    bid_amount: bidAmounts[p.apartmentId] || null,
-                    start_date: startDate || null,
-                    motivation: motivation || null,
-                    months_advance: monthsAdvance || 0,
-                    selected_at: new Date().toISOString()
-                }));
-                await sb.from('accounts').update({
-                    apartment_selected: updatedSelected
-                }).eq('id', accountId);
-            } catch (e) {
-                console.warn('[Aanvraag] Could not save per-apartment bids:', e);
+        if (isMainTenant && data.panden?.length > 0) {
+            // Prefer the verified localStorage accountId (AppartementenSelectie
+            // / /api/dossier/save write the server-resolved id there) over
+            // AuthContext.accountId, which can be stale/missing. Same reason
+            // as loadData's effectiveAccountId: the stale id would either
+            // no-op the update (wrong row) or skip it entirely.
+            const autoSaveAccountId = (typeof window !== 'undefined' ? localStorage.getItem('account_id') : null) || accountId;
+            if (autoSaveAccountId) {
+                try {
+                    const { supabase: sb } = await import('../integrations/supabase/client');
+                    const updatedSelected = data.panden.map(p => ({
+                        apartment_id: p.apartmentId,
+                        address: p.adres,
+                        rental_price: p.voorwaarden?.huurprijs || null,
+                        bid_amount: bidAmounts[p.apartmentId] || null,
+                        start_date: startDate || null,
+                        motivation: motivation || null,
+                        months_advance: monthsAdvance || 0,
+                        selected_at: new Date().toISOString()
+                    }));
+                    await sb.from('accounts').update({
+                        apartment_selected: updatedSelected
+                    }).eq('id', autoSaveAccountId);
+                } catch (e) {
+                    console.warn('[Aanvraag] Could not save per-apartment bids:', e);
+                }
             }
         }
 
@@ -1679,6 +1691,67 @@ const Aanvraag = ({ preselectedApartmentId }) => {
                                             ? 'You are logged in as a co-tenant. You can edit your own details and the apartment and bid (shared with the main tenant).'
                                             : 'U bent ingelogd als Co-Tenant. U kunt uw eigen gegevens en het appartement en bod (gedeeld met de hoofdhuurder) bewerken.')}
                                 </span>
+                            </div>
+                        )}
+
+                        {/* My Applications — already-submitted offers so returning
+                            tenants see prior applications and can apply again. */}
+                        {appliedApartments.length > 0 && (
+                            <div className={styles.stepContainer} style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '0.75rem', padding: '1rem 1.25rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                                    <h2 className={styles.stepTitle} style={{ margin: 0 }}>
+                                        {currentLang === 'en' ? 'My Applications' : 'Mijn Aanvragen'}
+                                    </h2>
+                                </div>
+                                <p style={{ fontSize: '0.8125rem', color: '#6b7280', margin: '0 0 0.75rem' }}>
+                                    {currentLang === 'en'
+                                        ? 'Apartments you have already applied to.'
+                                        : 'Appartementen waarop u al heeft gesolliciteerd.'}
+                                </p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    {appliedApartments.map(a => {
+                                        const isAccepted = a.status === 'Accepted' || a.status === 'Deal';
+                                        const isRejected = a.status === 'Rejected' || a.status === 'No Deal';
+                                        const statusColor = isAccepted ? '#15803d' : isRejected ? '#b91c1c' : '#b45309';
+                                        const statusBg = isAccepted ? '#f0fdf4' : isRejected ? '#fef2f2' : '#fffbeb';
+                                        const statusBorder = isAccepted ? '#bbf7d0' : isRejected ? '#fecaca' : '#fde68a';
+                                        const submittedLabel = a.submittedAt
+                                            ? new Date(a.submittedAt).toLocaleDateString(currentLang === 'en' ? 'en-GB' : 'nl-NL')
+                                            : '-';
+                                        return (
+                                            <div key={a.apartmentId} style={{
+                                                display: 'flex', alignItems: 'center', gap: '0.75rem',
+                                                padding: '0.625rem 0.875rem', background: '#ffffff',
+                                                border: '1px solid #e5e7eb', borderRadius: '0.5rem',
+                                            }}>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {a.address || a.apartmentId}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.125rem' }}>
+                                                        {a.bidAmount != null
+                                                            ? `${currentLang === 'en' ? 'Bid' : 'Bod'}: ${'\u20AC'}${a.bidAmount}`
+                                                            : (currentLang === 'en' ? 'Bid: -' : 'Bod: -')}
+                                                        {' · '}
+                                                        {currentLang === 'en' ? 'Submitted' : 'Ingediend'}: {submittedLabel}
+                                                    </div>
+                                                </div>
+                                                <span style={{
+                                                    fontSize: '0.75rem', fontWeight: 600, padding: '0.25rem 0.625rem',
+                                                    borderRadius: '9999px', color: statusColor, background: statusBg,
+                                                    border: `1px solid ${statusBorder}`, whiteSpace: 'nowrap',
+                                                }}>
+                                                    {isAccepted
+                                                        ? (currentLang === 'en' ? 'Accepted' : 'Geaccepteerd')
+                                                        : isRejected
+                                                            ? (currentLang === 'en' ? 'Rejected' : 'Afgewezen')
+                                                            : (currentLang === 'en' ? 'Pending' : 'In behandeling')}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         )}
 

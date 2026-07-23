@@ -147,10 +147,15 @@ export function MeetingLinksModal({ aptId, onClose, onToast, onSaved }: { aptId:
             <div className={styles.formRow3} style={{ marginTop: 10 }}>
                 <div>
                     <label className={styles.fLabel}>Slot Duration (min)</label>
-                    <select className={styles.inp} value={slotLength} onChange={(e) => setSlotLength(e.target.value)}>
-                        <option value="5">5</option>
-                        <option value="10">10</option>
-                    </select>
+                    <input
+                        className={styles.inp}
+                        type="number"
+                        min={1}
+                        step={1}
+                        placeholder="5"
+                        value={slotLength}
+                        onChange={(e) => setSlotLength(e.target.value)}
+                    />
                     <div className={styles.hint}>Per-booking slot length sent to Cal.com</div>
                 </div>
                 <div>

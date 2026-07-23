@@ -95,7 +95,20 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('auth_token', token);
         localStorage.setItem('auth_phone', phoneNumber);
         localStorage.setItem('dossier_id', dossierId);
-        if (accountId) localStorage.setItem('account_id', accountId);
+        // Always overwrite account_id on login: an explicit null means the
+        // account row wasn't found by Login.jsx's RLS-gated lookup this time
+        // (common for freshly-provisioned accounts). Keeping a stale id from
+        // a prior session would poison every subsequent accounts read/write
+        // in Aanvraag/AppartementenSelectie (wrong row, no-op updates, empty
+        // loads). /api/dossier/save and /api/dossier/select-apartment re-
+        // resolve the account server-side by phone and write the verified id
+        // back here, so clearing is safe — the correct id lands as soon as
+        // the user submits or picks an apartment.
+        if (accountId) {
+            localStorage.setItem('account_id', accountId);
+        } else {
+            localStorage.removeItem('account_id');
+        }
         if (firstName) localStorage.setItem('auth_first_name', firstName);
         if (lastName) localStorage.setItem('auth_last_name', lastName);
         localStorage.setItem('auth_user_role', userRole || 'main_tenant');

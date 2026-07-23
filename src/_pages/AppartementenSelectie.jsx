@@ -13,7 +13,7 @@ const AppartementenSelectie = () => {
     const router = useRouter();
     const currentLang = useSelector((state) => state.ui.language);
     const t = translations.apartments[currentLang] || translations.apartments.nl;
-    const { isMainTenant, accountId } = useAuth();
+    const { isMainTenant, accountId, phoneNumber } = useAuth();
 
     const [selectedApartments, setSelectedApartments] = useState([]);
     const [apartments, setApartments] = useState([]);
@@ -58,10 +58,12 @@ const AppartementenSelectie = () => {
     };
 
     const [saving, setSaving] = useState(false);
+    const [saveError, setSaveError] = useState(null);
 
     const handleContinue = async () => {
         if (selectedApartments.length === 0) return;
         setSaving(true);
+        setSaveError(null);
 
         // Read the flag at click-time (not render-time) to avoid SSR issues
         const isFromSubmit = typeof window !== 'undefined' && sessionStorage.getItem('fromSubmitFlow') === 'true';
@@ -75,14 +77,42 @@ const AppartementenSelectie = () => {
                 selected_at: new Date().toISOString()
             }));
 
-            if (accountId) {
-                // Save to Supabase if account exists
-                await supabase.from('accounts').update({
-                    apartment_selected: aptEntries
-                }).eq('id', accountId);
-            } else {
-                // No account yet — store temporarily in localStorage for Aanvraag to pick up
-                localStorage.setItem('pending_apartment_selected', JSON.stringify(aptEntries));
+            if (accountId || phoneNumber) {
+                // Persist the selection server-side via the service role so it
+                // always lands on the right accounts row even when the browser's
+                // accountId is null/stale (Login.jsx's RLS-gated lookup often
+                // fails for freshly-provisioned accounts). The previous direct
+                // supabase-js write silently swallowed { error } on RLS denial,
+                // navigated unconditionally, and rehydrated the old apartment.
+                //
+                // Send both the AuthContext accountId and the localStorage
+                // accountId (if different): the route verifies the id exists
+                // before writing, and falls back to a phone-based lookup. The
+                // localStorage value is the one most recently captured from a
+                // prior save/select response, so it's usually the freshest.
+                const lsAccountId = typeof window !== 'undefined' ? localStorage.getItem('account_id') : null;
+                const selectRes = await fetch('/api/dossier/select-apartment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        accountId: accountId || lsAccountId || null,
+                        phone: phoneNumber,
+                        apartments: aptEntries,
+                    }),
+                });
+                const selectJson = await selectRes.json();
+                if (!selectRes.ok || !selectJson.success) {
+                    throw new Error(selectJson?.message || `HTTP ${selectRes.status}`);
+                }
+                // Capture the server-resolved accountId so the rest of the
+                // session (autoSave on /aanvraag, link-offers on submit) uses
+                // the correct id. Mirrors Aanvraag.jsx's post-save write.
+                if (selectJson.accountId && typeof window !== 'undefined') {
+                    const stored = localStorage.getItem('account_id');
+                    if (!stored || stored !== selectJson.accountId) {
+                        localStorage.setItem('account_id', selectJson.accountId);
+                    }
+                }
             }
 
             // If coming from the submit flow, link offers to selected apartments then go to LOI
@@ -154,6 +184,7 @@ const AppartementenSelectie = () => {
             }
         } catch (err) {
             console.error('[AppartementenSelectie] Error saving apartments:', err);
+            setSaveError(err?.message || 'Could not save your apartment selection. Please try again.');
             setSaving(false);
         }
     };
@@ -309,6 +340,11 @@ const AppartementenSelectie = () => {
                             >
                                 {t.continueBtn}
                             </Button>
+                            {saveError && (
+                                <div style={{ marginTop: 12, padding: '0.75rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '0.5rem', color: '#b91c1c', fontSize: '0.875rem' }}>
+                                    {saveError}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -1053,14 +1053,15 @@ export function CreateApartmentView({ onBack, onToast, onCreated, realEstateAgen
         }
     }
 
-    async function uploadPdf() {
-        if (!pdfFile) return;
+    async function uploadPdf(file?: File) {
+        const f = file ?? pdfFile;
+        if (!f) return;
         const id = await ensureSaved();
         if (!id) return;
         setPdfUploading(true);
         try {
             const fd = new FormData();
-            fd.append('file', pdfFile);
+            fd.append('file', f);
             const res = await fetch(`/api/admin/crm/apartment/${id}/pdf`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
@@ -1218,10 +1219,15 @@ export function CreateApartmentView({ onBack, onToast, onCreated, realEstateAgen
                     <div className={styles.formRow3}>
                         <div>
                             <label className={styles.fLabel}>Slot Duration (min)</label>
-                            <select className={styles.inp} value={slotLength} onChange={(e) => setSlotLength(e.target.value)}>
-                                <option value="5">5</option>
-                                <option value="10">10</option>
-                            </select>
+                            <input
+                                className={styles.inp}
+                                type="number"
+                                min={1}
+                                step={1}
+                                placeholder="5"
+                                value={slotLength}
+                                onChange={(e) => setSlotLength(e.target.value)}
+                            />
                             <div className={styles.hint}>Per-booking slot length sent to Cal.com</div>
                         </div>
                         <div>
@@ -1284,7 +1290,7 @@ export function CreateApartmentView({ onBack, onToast, onCreated, realEstateAgen
                                 e.preventDefault();
                                 e.currentTarget.style.borderColor = 'var(--line)';
                                 const f = e.dataTransfer.files?.[0];
-                                if (f) { setPdfFile(f); }
+                                if (f) { setPdfFile(f); uploadPdf(f); }
                             }}
                             onClick={() => document.getElementById('create-pdf-input')?.click()}
                         >
@@ -1294,16 +1300,8 @@ export function CreateApartmentView({ onBack, onToast, onCreated, realEstateAgen
                                 id="create-pdf-input"
                                 type="file"
                                 hidden
-                                onChange={(e) => { const f = e.target.files?.[0]; if (f) setPdfFile(f); }}
+                                onChange={(e) => { const f = e.target.files?.[0]; if (f) { setPdfFile(f); uploadPdf(f); } }}
                             />
-                        </div>
-                    )}
-                    {pdfFile && !pdfUploaded && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
-                            <span style={{ flex: 1, fontSize: 13.5 }}>📄 {pdfFile.name}</span>
-                            <button className={styles.btn} disabled={pdfUploading} onClick={uploadPdf}>
-                                {pdfUploading ? 'Uploading…' : 'Upload File'}
-                            </button>
                         </div>
                     )}
                     <div className={styles.hint} style={{ marginTop: 8 }}>One file · max 20 MB (PDF recommended). Stored in Supabase Storage.</div>
@@ -2930,6 +2928,9 @@ const APPLICANT_LS_KEYS = [
     'invite_role',
     'invite_persoon_id',
     'invite_token',
+    // pending_apartment_selected is deprecated (apartment selection now persists
+    // server-side via /api/dossier/select-apartment) but kept here to drain
+    // legacy entries from before the fix.
     'pending_apartment_selected',
     'ah_leadform_b_v1',
 ];
