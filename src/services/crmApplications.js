@@ -107,11 +107,14 @@ function safeFileName(s) {
  * @param {string} accountId - accounts.id
  * @param {object} [opts]
  * @param {string} [opts.personId] - restrict to one person's documents
- * @param {string} [opts.apartmentId] - context only (manifest.json)
+ * @param {string} [opts.apartmentId] - when provided (and personId is not
+ *   set — the LOI is a whole-application document, not per-person), a
+ *   pre-filled "letter-of-intent.pdf" is generated and included at the root
+ *   of the archive alongside the per-person folders.
  * @returns {Promise<{buffer: ArrayBuffer, filename: string, fileCount: number} | null>}
  *   null when no downloadable files exist.
  */
-export async function buildApplicationZip(supabase, accountId, { personId, apartmentId: _apartmentId } = {}) {
+export async function buildApplicationZip(supabase, accountId, { personId, apartmentId } = {}) {
     const JSZip = (await import('jszip')).default;
 
     // 1. Load the account.
@@ -245,7 +248,27 @@ export async function buildApplicationZip(supabase, accountId, { personId, apart
     }
 
     const okCount = fileList.filter((f) => f.ok).length;
-    if (okCount === 0) return null;
+
+    // 7. Best-effort: include a pre-filled Letter of Intent PDF at the root
+    //    of the archive when the download is apartment-scoped and isn't
+    //    restricted to a single person's documents (the LOI covers the
+    //    whole application, not one person). Never blocks the ZIP — if it
+    //    fails, the archive still contains whatever uploaded documents were
+    //    found.
+    let loiIncluded = false;
+    if (apartmentId && !personId) {
+        try {
+            const loiResult = await buildLetterOfIntentPdf(supabase, accountId, { apartmentId });
+            if (loiResult) {
+                zip.file(loiResult.filename, loiResult.buffer);
+                loiIncluded = true;
+            }
+        } catch (loiErr) {
+            console.warn('[buildApplicationZip] Letter of Intent build failed, continuing without it:', loiErr);
+        }
+    }
+
+    if (okCount === 0 && !loiIncluded) return null;
 
     const archiveBuf = await zip.generateAsync({
         type: 'arraybuffer',
@@ -262,11 +285,11 @@ export async function buildApplicationZip(supabase, accountId, { personId, apart
 
 // --- Letter of Intent PDF builder ---
 // Fills the ApartmentHub "Letter of Intent" template (see
-// src/app/api/admin/crm/apartment/[id]/generate-offer/loi-pdf.js) with the
-// applicant's data so it can be attached to the Gmail offer draft and/or
-// bundled into the application ZIP download. Best-effort: returns null when
-// the minimum data (an apartment to describe) isn't available, so callers
-// can skip the attachment rather than failing the whole request.
+// src/lib/pdf/letterOfIntent.js) with the applicant's data so it can be
+// attached to the Gmail offer draft and/or bundled into the application ZIP
+// download. Best-effort: returns null when the minimum data (an apartment to
+// describe) isn't available, so callers can skip the attachment rather than
+// failing the whole request.
 
 const LOI_SIGNATURE_TYPE = 'loi_signature';
 
@@ -329,15 +352,29 @@ export async function buildLetterOfIntentPdf(supabase, accountId, opts = {}) {
     if (aptErr) throw aptErr;
     if (!apt) return null;
 
-    const { data: dossierRows } = await supabase
+    // ai_profile may not exist in every environment (older schema) — fall
+    // back to a query without it rather than throwing, matching the
+    // DOSSIER_COLS_SAFE pattern used in generate-offer/route.js.
+    let dossierRows;
+    const dossierRes = await supabase
         .from('dossiers')
         .select('id, bid_amount, start_date, ai_profile')
         .in('phone_number', phoneCandidates(account.whatsapp_number))
         .order('created_at', { ascending: false })
         .limit(1);
+    if (dossierRes.error) {
+        const safeRes = await supabase
+            .from('dossiers')
+            .select('id, bid_amount, start_date')
+            .in('phone_number', phoneCandidates(account.whatsapp_number))
+            .order('created_at', { ascending: false })
+            .limit(1);
+        dossierRows = safeRes.data;
+    } else {
+        dossierRows = dossierRes.data;
+    }
     const dossier = dossierRows?.[0] || null;
     const dossierId = dossier?.id || null;
-
     const personen = dossierId
         ? await fetchIn(supabase, 'personen', '*', 'dossier_id', [dossierId])
         : [];

@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
 import { serviceClient, requirePermission } from '@/services/crmAuth';
 import { isUuid, invalidId, failed } from '@/services/crmHttp';
-import { phoneCandidates } from '@/services/crmApplications';
+import { phoneCandidates, buildApplicationZip, buildLetterOfIntentPdf } from '@/services/crmApplications';
 import { createDraft, createDraftWithAttachments } from '@/lib/gmail/client';
 import { renderOfferDraftEmail, deriveCandidateType } from '@/lib/email/offerDraftTemplate';
 import { analyzeCandidateProfile } from '@/app/lib/candidate-profile';
-import { buildApplicationZip } from '@/services/crmApplications';
 
 // "Generate Offer" — creates a Gmail draft in the LOGGED-IN agent's mailbox,
 // addressed to the apartment's real estate agent, presenting the candidate
@@ -369,6 +368,32 @@ export async function POST(request, { params }) {
             console.warn('[generate-offer] ZIP build failed, continuing without attachment:', zipErr);
         }
 
+        // 9b. Build a pre-filled "Letter of Intent" PDF and attach it too.
+        //     Best-effort, same pattern as the ZIP above: never block the
+        //     draft on a PDF failure.
+        let loiSkipReason = null;
+        try {
+            const loiResult = await buildLetterOfIntentPdf(supabase, account.id, {
+                apartmentId: id,
+                bidAmount,
+                startDate,
+                aiProfile: aiProfileData,
+            });
+            if (loiResult) {
+                attachments.push({
+                    filename: loiResult.filename,
+                    contentType: 'application/pdf',
+                    content: loiResult.buffer,
+                });
+                console.log('[generate-offer] Attached Letter of Intent:', loiResult.filename);
+            } else {
+                loiSkipReason = 'apartment or account not found';
+            }
+        } catch (loiErr) {
+            loiSkipReason = loiErr?.message || 'build failed';
+            console.warn('[generate-offer] Letter of Intent build failed, continuing without attachment:', loiErr);
+        }
+
         let draft;
         try {
             if (attachments.length > 0) {
@@ -398,8 +423,9 @@ export async function POST(request, { params }) {
             recipient_name: agent?.contact_person_name || agent?.name || '',
             ai_profile: aiProfileData,
             attachment: attachments.length > 0
-                ? { filename: attachments[0].filename, file_count: zipFileCount }
+                ? { filenames: attachments.map((a) => a.filename), file_count: zipFileCount }
                 : { skipped: true, reason: zipSkipReason },
+            letter_of_intent: loiSkipReason ? { skipped: true, reason: loiSkipReason } : { attached: true },
         });
     } catch (err) {
         return failed('crm/generate-offer POST', err, 'Failed to generate offer draft');
