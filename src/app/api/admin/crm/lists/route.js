@@ -62,9 +62,8 @@ export async function GET(request) {
                 .order('created_at', { ascending: false }),
             supabase
                 .from('accounts')
-                .select('id, tenant_name, whatsapp_number, email, status, preferred_location, move_in_date, contract_start_date, contract_end_date, created_at')
-                .order('created_at', { ascending: false })
-                .limit(200),
+                .select('id, tenant_name, whatsapp_number')
+                .order('created_at', { ascending: false }),
             supabase
                 .from('crm_agents')
                 .select('id, name, whatsapp_number, email, salesforce_agent_id')
