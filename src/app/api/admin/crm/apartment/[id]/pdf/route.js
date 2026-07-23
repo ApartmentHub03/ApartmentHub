@@ -9,6 +9,9 @@ import { isUuid, invalidId, failed } from '@/services/crmHttp';
 
 const BUCKET = 'Apartment Doc';
 
+export const runtime = 'nodejs';
+export const maxDuration = 60;
+
 export async function GET(request, { params }) {
     const auth = await requirePermission(request, 'apartments');
     if (auth.response) {
