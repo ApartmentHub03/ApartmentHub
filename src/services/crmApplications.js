@@ -409,9 +409,18 @@ export async function buildLetterOfIntentPdf(supabase, accountId, opts = {}) {
 
     // Best-effort: if the main tenant has already signed via the
     // LetterOfIntent.jsx flow, stamp that signature onto the PDF instead of
-    // leaving the signature box blank.
+    // leaving the signature box blank. Two lookup strategies, most reliable
+    // first:
+    //   1. documenten row keyed by mainPerson.id (the linked path — works when
+    //      /api/dossier/signature resolved the dossier and wrote a row).
+    //   2. Storage bucket scan at ${digits}/loi/ (the orphaned-audit-copy
+    //      path — works even when linked:false, since the PNG is always
+    //      uploaded to that prefix). This is the fallback that catches the
+    //      common failure mode where the signature file exists in Storage
+    //      but has no documenten row tying it to a persoon_id.
     let signaturePngBytes = null;
     let signedDate = null;
+    const accountDigits = phoneKey(account.whatsapp_number);
     if (mainPerson) {
         const { data: sigDocs } = await supabase
             .from('documenten')
@@ -423,6 +432,7 @@ export async function buildLetterOfIntentPdf(supabase, accountId, opts = {}) {
         const sigDoc = sigDocs?.[0] || null;
         const sigPath = sigDoc?.bestandspad || sigDoc?.file_path || null;
         if (sigPath) {
+            console.log('[buildLetterOfIntentPdf] signature row found via persoon_id:', sigPath);
             try {
                 const { data: blob, error: dlErr } = await supabase.storage
                     .from(ZIP_BUCKET)
@@ -430,12 +440,82 @@ export async function buildLetterOfIntentPdf(supabase, accountId, opts = {}) {
                 if (!dlErr && blob) {
                     signaturePngBytes = Buffer.from(await blob.arrayBuffer());
                     signedDate = sigDoc.uploaded_at || null;
+                    console.log('[buildLetterOfIntentPdf] signature downloaded:', signaturePngBytes.length, 'bytes');
+                } else {
+                    console.warn('[buildLetterOfIntentPdf] signature storage download failed (row path):', dlErr?.message || 'no blob');
                 }
             } catch (sigErr) {
-                console.warn('[buildLetterOfIntentPdf] signature download failed, leaving box blank:', sigErr);
+                console.warn('[buildLetterOfIntentPdf] signature download threw (row path), leaving box blank:', sigErr);
             }
+        } else {
+            console.warn('[buildLetterOfIntentPdf] no loi_signature documenten row for persoon_id', mainPerson.id, '— falling back to bucket scan');
+        }
+    } else {
+        console.warn('[buildLetterOfIntentPdf] mainPerson is null (dossier not resolved by phone) — skipping persoon_id sig lookup');
+    }
+
+    // Fallback: scan the dossier-documents bucket at ${digits}/loi/ for the
+    // most recent signature-*.png. The signature route always uploads here
+    // (signature/route.js line 42), even when it can't link a documenten row.
+    if (!signaturePngBytes && accountDigits) {
+        try {
+            const { data: list, error: listErr } = await supabase.storage
+                .from(ZIP_BUCKET)
+                .list(`${accountDigits}/loi/`);
+            if (listErr) {
+                console.warn('[buildLetterOfIntentPdf] bucket list failed:', listErr.message);
+            } else if (list && list.length) {
+                // signature-<iso-timestamp>.png — sort by updated_at desc as a
+                // proxy for newest; the filename stamp isn't zero-padded ISO so
+                // lexical sort is unreliable. Supabase list returns updated_at.
+                const sigFiles = list
+                    .filter((f) => /^signature-.*\.png$/i.test(f.name))
+                    .sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
+                const newest = sigFiles[0];
+                if (newest) {
+                    const bucketPath = `${accountDigits}/loi/${newest.name}`;
+                    console.log('[buildLetterOfIntentPdf] bucket fallback: downloading', bucketPath);
+                    const { data: blob, error: dlErr } = await supabase.storage
+                        .from(ZIP_BUCKET)
+                        .download(bucketPath);
+                    if (!dlErr && blob) {
+                        signaturePngBytes = Buffer.from(await blob.arrayBuffer());
+                        // Best-effort date from filename: signature-2026-07-23T10-30-00-000Z.png
+                        const m = newest.name.match(/^signature-(.+)\.png$/);
+                        if (m) {
+                            const isoish = m[1].replace(/-(\d{2})-(\d{2})-(\d{2})-(\d{3})Z$/, 'T$1:$2:$3.$4Z');
+                            signedDate = isoish || null;
+                        }
+                        console.log('[buildLetterOfIntentPdf] bucket fallback downloaded:', signaturePngBytes.length, 'bytes, date:', signedDate);
+                    } else {
+                        console.warn('[buildLetterOfIntentPdf] bucket fallback download failed:', dlErr?.message || 'no blob');
+                    }
+                } else {
+                    console.warn('[buildLetterOfIntentPdf] bucket fallback: no signature-*.png files in', `${accountDigits}/loi/`);
+                }
+            } else {
+                console.warn('[buildLetterOfIntentPdf] bucket fallback: list empty for', `${accountDigits}/loi/`);
+            }
+        } catch (fbErr) {
+            console.warn('[buildLetterOfIntentPdf] bucket fallback threw:', fbErr);
         }
     }
+
+    console.log('[loi-pdf] diagnostic summary:', JSON.stringify({
+        accountId,
+        whatsapp: account.whatsapp_number,
+        dossierFound: !!dossier,
+        dossierId,
+        personenCount: personen.length,
+        mainPersonFound: !!mainPerson,
+        mainTenantName: mainTenant ? `${mainTenant.firstName} ${mainTenant.surname}`.trim() : null,
+        mainTenantAddress: mainTenant ? `${mainTenant.street} ${mainTenant.postcode} ${mainTenant.city}`.trim() : null,
+        mainTenantDob: mainTenant?.dateOfBirth || null,
+        mainTenantPassport: mainTenant?.passportNumber || null,
+        coPersonFound: !!coPerson,
+        signatureAttached: !!signaturePngBytes,
+        signatureBytes: signaturePngBytes?.length || 0,
+    }));
 
     const pdfBytes = await generateLetterOfIntentPdf({
         mainTenant,

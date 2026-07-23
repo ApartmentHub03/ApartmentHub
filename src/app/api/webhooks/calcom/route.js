@@ -258,25 +258,29 @@ export async function POST(request) {
                 // apartment id so /aanvraag pre-selects it after login. {{5}}
                 // is the FULL URL (matching the new_flow_upload_documents
                 // pattern where the button var is the entire URL set at send
-                // time). Only sent for valid phone numbers (not email
-                // fallbacks) and never blocks the DB write or the 200 response.
+                // time). Only sent for CRM bookings (apartment found in the
+                // apartments table); /admin/dashboard bookings use a different
+                // table and are skipped to avoid sending an empty-address
+                // template. Never blocks the DB write or the 200 response.
                 if (normalizedPhone && /^\d{7,15}$/.test(normalizedPhone)) {
                     const apartment = await findApartmentForBooking(supabase, body.payload);
-                    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://apartmenthub.nl';
-                    const uploadUrl = apartment
-                        ? `${siteUrl}/aanvraag?apartment=${apartment.id}`
-                        : `${siteUrl}/aanvraag`;
-                    const displayName = name || lead.full_name || '';
-                    const apartmentAddress = apartment?.['Full Address'] || '';
-                    const startMs = body.payload.startTime ? new Date(body.payload.startTime).getTime() : Date.now();
-                    const viewingDate = new Date(startMs).toLocaleDateString('nl-NL');
-                    const viewingTime = new Date(startMs).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
-                    try {
-                        results.whatsapp = await sendBookingConfirmedWhatsApp(normalizedPhone, displayName, apartmentAddress, viewingDate, viewingTime, uploadUrl);
-                        console.log('[webhook/calcom] WhatsApp booking-confirmed:', results.whatsapp);
-                    } catch (err) {
-                        console.error('[webhook/calcom] WhatsApp send error:', err);
-                        results.whatsapp = { sent: false, reason: 'exception' };
+                    if (!apartment) {
+                        console.log('[webhook/calcom] Skipping WhatsApp: apartment not found in apartments table (likely a /admin/dashboard booking)');
+                    } else {
+                        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://apartmenthub.nl';
+                        const uploadUrl = `${siteUrl}/aanvraag?apartment=${apartment.id}`;
+                        const displayName = name || lead.full_name || '';
+                        const apartmentAddress = apartment['Full Address'] || '';
+                        const startMs = body.payload.startTime ? new Date(body.payload.startTime).getTime() : Date.now();
+                        const viewingDate = new Date(startMs).toLocaleDateString('nl-NL');
+                        const viewingTime = new Date(startMs).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+                        try {
+                            results.whatsapp = await sendBookingConfirmedWhatsApp(normalizedPhone, displayName, apartmentAddress, viewingDate, viewingTime, uploadUrl);
+                            console.log('[webhook/calcom] WhatsApp booking-confirmed:', results.whatsapp);
+                        } catch (err) {
+                            console.error('[webhook/calcom] WhatsApp send error:', err);
+                            results.whatsapp = { sent: false, reason: 'exception' };
+                        }
                     }
                 } else {
                     console.log('[webhook/calcom] Skipping WhatsApp: no valid phone (got email or none)');

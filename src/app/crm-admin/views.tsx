@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import styles from './crm.module.css';
-import type { Me, Apartment, Candidate, CrmAgent, Bookings, TeamMember, BusinessLine, ApplicationDetail, ApplicationResponse, PersoonEntry, DocumentEntry, PipelineStage, ViewingEntry, OfferInEntry, OfferSentEntry, DealEntry, ApartmentRecord, ApartmentRecordResponse, WonDeal, RealEstateAgent, CrmUserOption, Segment, AIProfile } from './types';
+import type { Me, Apartment, Candidate, CandidateMember, CandidatesResponse, CrmAgent, Bookings, TeamMember, BusinessLine, ApplicationDetail, ApplicationResponse, PersoonEntry, DocumentEntry, PipelineStage, ViewingEntry, OfferInEntry, OfferSentEntry, DealEntry, ApartmentRecord, ApartmentRecordResponse, WonDeal, RealEstateAgent, CrmUserOption, Segment, AIProfile } from './types';
 import type { ModalState } from './modals';
 import { documentsByWorkStatus, documentTypeLabels } from '../../config/documentRequirements';
 
@@ -312,7 +312,6 @@ export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast,
     useEffect(() => { loadPdf(); }, [loadPdf, reloadSignal]);
 
     async function uploadPdf(file: File) {
-        if (file.type !== 'application/pdf') { onToast('Only PDF files'); return; }
         setPdfLoading(true);
         try {
             const fd = new FormData();
@@ -840,7 +839,7 @@ export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast,
 
             <div className={styles.card}>
                 <div className={styles.cardHead}>
-                    <h3>Apartment Brochure (PDF)</h3>
+                    <h3>Apartment Brochure / Attachment</h3>
                     <span className={styles.hint}>shared via pdf_apartment_utility</span>
                 </div>
                 <div className={styles.cardBody}>
@@ -850,7 +849,7 @@ export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast,
                             <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} onClick={viewPdf}>View</button>
                             <label className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} style={{ cursor: 'pointer' }}>
                                 Replace
-                                <input type="file" accept="application/pdf" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPdf(f); }} disabled={pdfLoading} />
+                                <input type="file" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPdf(f); }} disabled={pdfLoading} />
                             </label>
                         </div>
                     ) : (
@@ -867,19 +866,17 @@ export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast,
                             }}
                             onClick={() => document.getElementById(`pdf-input-${aptId}`)?.click()}
                         >
-                            <b>{pdfLoading ? 'Uploading…' : 'Upload Files'}</b> — one PDF with extra info
-                            <span style={{ marginLeft: 'auto', color: '#bbb' }}>max 20 MB</span>
+                            <b>{pdfLoading ? 'Uploading…' : 'Upload Files'}</b> — one file with extra info (PDF recommended)
                             <input
                                 id={`pdf-input-${aptId}`}
                                 type="file"
-                                accept="application/pdf"
                                 hidden
                                 onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPdf(f); }}
                                 disabled={pdfLoading}
                             />
                         </div>
                     )}
-                    <div className={styles.hint} style={{ marginTop: 8 }}>One PDF · max 20 MB. Stored in Supabase Storage.</div>
+                    <div className={styles.hint} style={{ marginTop: 8 }}>One file (PDF recommended). Stored in Supabase Storage.</div>
                 </div>
             </div>
         </>
@@ -1107,7 +1104,7 @@ export function CreateApartmentView({ onBack, onToast, onCreated, realEstateAgen
             </div>
             <h2 className={styles.pageTitle}>New apartment</h2>
             <p className={styles.sub}>
-                Fill the fields, generate the meeting links, upload the PDF and save.
+                Fill the fields, generate the meeting links, upload the file and save.
             </p>
 
             {/* Status strip */}
@@ -1295,7 +1292,6 @@ export function CreateApartmentView({ onBack, onToast, onCreated, realEstateAgen
                             onClick={() => document.getElementById('create-pdf-input')?.click()}
                         >
                             <b>{pdfUploading ? 'Uploading…' : 'Upload Files'}</b> — one file with extra info (PDF recommended)
-                            <span style={{ marginLeft: 'auto', color: '#bbb' }}>max 20 MB</span>
                             <input
                                 id="create-pdf-input"
                                 type="file"
@@ -1304,7 +1300,7 @@ export function CreateApartmentView({ onBack, onToast, onCreated, realEstateAgen
                             />
                         </div>
                     )}
-                    <div className={styles.hint} style={{ marginTop: 8 }}>One file · max 20 MB (PDF recommended). Stored in Supabase Storage.</div>
+                    <div className={styles.hint} style={{ marginTop: 8 }}>One file (PDF recommended). Stored in Supabase Storage.</div>
                 </div>
             </div>
 
@@ -1362,7 +1358,7 @@ function ProfileFields({ profile }: { profile: import('./types').PersonProfile }
 // Application Detail — stub with mock per-person data
 // TODO: Phase 3 — wire to /api/admin/crm/application/[id]
 // ============================================================
-export function ApplicationDetailView({ name, accountId, apartmentId, from, onBack, onToast, onModal, realEstateAgents, crmUsers }: {
+export function ApplicationDetailView({ name, accountId, apartmentId, from, onBack, onToast, onModal, realEstateAgents, crmUsers, reloadSignal }: {
     name: string;
     accountId: string;
     apartmentId: string;
@@ -1372,6 +1368,7 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
     onModal: ModalFn;
     realEstateAgents: RealEstateAgent[];
     crmUsers: CrmUserOption[];
+    reloadSignal?: number;
 }) {
     const [editing, setEditing] = useState(false);
     const [savingBid, setSavingBid] = useState(false);
@@ -1434,6 +1431,12 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
     useEffect(() => {
         loadApp();
     }, [loadApp]);
+
+    // Refresh when a modal action (e.g. manual document upload) bumps the
+    // reload signal, so the new document appears without a manual reload.
+    useEffect(() => {
+        if (reloadSignal && reloadSignal > 0) loadApp();
+    }, [reloadSignal, loadApp]);
 
     // Find the matching offers_in entry for this account on the loaded apartment.
     const inOffer = aptRecord?.offers_in?.find((o) => o?.account_id === accountId) || null;
@@ -1699,6 +1702,10 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
         } finally {
             setRemovingId(null);
         }
+    }
+
+    function openUploadModal(persoonId: string, persoonName: string) {
+        onModal({ type: 'uploadDocument', accountId, persoonId, persoonName });
     }
 
     // Trigger a browser download of the ZIP for this application. Pass
@@ -2095,7 +2102,8 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
                             personDocsSection(mainTenant?.id, fallbackDocNames((mainTenant as any)?.werk_status || mainTenant?.work_status || app.work_status)),
                             showAmber,
                             undefined,
-                            mainTenant?.id ? () => downloadZip(mainTenant.id) : undefined)}
+                            mainTenant?.id ? () => downloadZip(mainTenant.id) : undefined,
+                            mainTenant?.id ? () => openUploadModal(mainTenant.id, mainTenantName) : undefined)}
 
                         {/* Co-tenants */}
                         {coTenants.map((p) => {
@@ -2105,7 +2113,8 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
                                 personDocsSection(p.id, fallbackDocNames((p as any)?.werk_status || p?.work_status)),
                                 showAmber,
                                 removingId === p.id ? undefined : () => removePerson(p.id, pname),
-                                () => downloadZip(p.id));
+                                () => downloadZip(p.id),
+                                () => openUploadModal(p.id, pname));
                         })}
 
                         {/* Guarantors */}
@@ -2116,7 +2125,8 @@ export function ApplicationDetailView({ name, accountId, apartmentId, from, onBa
                                 personDocsSection(p.id, fallbackDocNames((p as any)?.werk_status || p?.work_status)),
                                 showAmber,
                                 removingId === p.id ? undefined : () => removePerson(p.id, pname),
-                                () => downloadZip(p.id));
+                                () => downloadZip(p.id),
+                                () => openUploadModal(p.id, pname));
                         })}
 
                         {/* Linked-account co-tenants not in personen */}
@@ -2166,7 +2176,7 @@ async function downloadSingle(url: string, filename?: string) {
     }
 }
 
-function personGroup(name: string, role: string, roleClass: 'tenant' | 'guarantor', fields: [string, string][], docs: { name: string; status: string; url: string | null }[], incomplete: boolean, onRemove?: () => void, onZip?: () => void) {
+function personGroup(name: string, role: string, roleClass: 'tenant' | 'guarantor', fields: [string, string][], docs: { name: string; status: string; url: string | null }[], incomplete: boolean, onRemove?: () => void, onZip?: () => void, onUpload?: () => void) {
     const canRemove = onRemove && role !== 'Main Tenant' && role !== 'Bid';
     const realDocCount = docs.filter((d) => d.url).length;
     return (
@@ -2195,6 +2205,13 @@ function personGroup(name: string, role: string, roleClass: 'tenant' | 'guaranto
                                 : `Download this person's ${realDocCount} document${realDocCount === 1 ? '' : 's'} as ZIP`}
                         onClick={onZip}
                     >ZIP</button>
+                    {onUpload && (
+                        <button
+                            className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`}
+                            onClick={onUpload}
+                            title="Upload a document for this person (e.g. received via WhatsApp or email)"
+                        >Upload</button>
+                    )}
                 </span>
             </div>
             <div className={styles.grpBody}>
@@ -2360,38 +2377,152 @@ export function DealsView({ wonDeals, onToast, onModal, onSaved }: {
 }
 
 // ============================================================
-// Candidates — wired to lists.candidates
+// Candidates — from candidate_segment_members (Zoko segments)
 // ============================================================
-export function CandidatesView({ candidates }: { candidates: Candidate[] }) {
+const CANDIDATE_PAGE_SIZE = 50;
+
+function formatPhone(phone: string): string {
+    const digits = String(phone || '').replace(/\D/g, '');
+    return digits ? `+${digits}` : phone || '—';
+}
+
+function formatRelative(iso: string | null): string {
+    if (!iso) return '—';
+    const then = new Date(iso).getTime();
+    if (Number.isNaN(then)) return '—';
+    const diffMs = Date.now() - then;
+    const diffMin = Math.round(diffMs / 60000);
+    if (diffMin < 1) return 'just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHr = Math.round(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h ago`;
+    const diffDay = Math.round(diffHr / 24);
+    if (diffDay < 30) return `${diffDay}d ago`;
+    return new Date(iso).toLocaleDateString('nl-NL');
+}
+
+export function CandidatesView() {
+    const [candidates, setCandidates] = useState<CandidateMember[]>([]);
+    const [total, setTotal] = useState(0);
+    const [page, setPage] = useState(1);
+    const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [loading, setLoading] = useState(true);
+
+    // Debounce the search input 300ms before triggering a fetch.
+    useEffect(() => {
+        const t = setTimeout(() => {
+            setDebouncedSearch(search);
+            setPage(1);
+        }, 300);
+        return () => clearTimeout(t);
+    }, [search]);
+
+    useEffect(() => {
+        let cancelled = false;
+        async function load() {
+            setLoading(true);
+            try {
+                const params = new URLSearchParams();
+                if (debouncedSearch) params.set('q', debouncedSearch);
+                params.set('page', String(page));
+                params.set('pageSize', String(CANDIDATE_PAGE_SIZE));
+                const res = await fetch(`/api/admin/crm/candidates?${params.toString()}`, {
+                    headers: { Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
+                });
+                const data: CandidatesResponse = await res.json();
+                if (!cancelled) {
+                    if (data.success) {
+                        setCandidates(data.candidates || []);
+                        setTotal(data.total || 0);
+                    } else {
+                        setCandidates([]);
+                        setTotal(0);
+                    }
+                }
+            } catch {
+                if (!cancelled) { setCandidates([]); setTotal(0); }
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        }
+        load();
+        return () => { cancelled = true; };
+    }, [page, debouncedSearch]);
+
+    const totalPages = Math.max(1, Math.ceil(total / CANDIDATE_PAGE_SIZE));
+    const from = total === 0 ? 0 : (page - 1) * CANDIDATE_PAGE_SIZE + 1;
+    const to = Math.min(page * CANDIDATE_PAGE_SIZE, total);
+
     return (
         <>
-            <h2 className={styles.pageTitle}>Candidates <span className={styles.ref}>booked a viewing</span></h2>
+            <h2 className={styles.pageTitle}>Candidates <span className={styles.ref}>Zoko segments</span></h2>
             <p className={styles.sub}>
-                Candidates are the people who have <b>scheduled a viewing</b>. Each account: phone + name from Zoko,
-                then completed with email + all /aanvraag info, tags/segments, viewed apartments and a one-click chat link.
+                Contacts synced from Zoko segments. Each row is one phone in one segment.
+                Search by name, phone, or email.
             </p>
             <div className={styles.card}>
+                <div className={styles.cardHead} style={{ alignItems: 'center', gap: 10 }}>
+                    <h3 style={{ margin: 0 }}>{total.toLocaleString()} member{total === 1 ? '' : 's'}</h3>
+                    <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <input
+                            className={styles.inp}
+                            style={{ width: 260 }}
+                            placeholder="Search name, phone, email…"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
+                    </span>
+                </div>
                 <div className={styles.cardBody} style={{ padding: 0 }}>
-                    {candidates.length === 0 ? (
-                        <div className={styles.empty}>No candidates yet.</div>
+                    {loading ? (
+                        <div className={styles.empty}>Loading…</div>
+                    ) : candidates.length === 0 ? (
+                        <div className={styles.empty}>No candidates found.</div>
                     ) : (
                         <table className={styles.table}>
                             <thead>
-                                <tr><th>Name</th><th>Phone</th><th>Email</th><th>Status</th><th></th></tr>
+                                <tr><th>Name</th><th>Phone</th><th>Email</th><th>Segment</th><th>Tags</th><th>Synced</th></tr>
                             </thead>
                             <tbody>
-                                {candidates.map((c) => (
-                                    <tr key={c.id}>
-                                        <td><a style={{ color: 'var(--teal)', fontWeight: 600 }}>{c.tenant_name || '—'}</a></td>
-                                        <td>{c.whatsapp_number || '—'}</td>
-                                        <td>{c.email || '—'}</td>
-                                        <td><span className={`${styles.pill} ${styles.pillGrey}`}>{c.status || '—'}</span></td>
-                                        <td><button className={styles.chat}>Open chat</button></td>
+                                {candidates.map((m) => (
+                                    <tr key={m.id}>
+                                        <td><a style={{ color: 'var(--teal)', fontWeight: 600 }}>{m.name || '—'}</a></td>
+                                        <td>{formatPhone(m.phone)}</td>
+                                        <td>{m.email || '—'}</td>
+                                        <td>{m.segment_name || '—'}</td>
+                                        <td>
+                                            {(m.tags || []).slice(0, 3).map((t) => (
+                                                <span key={t} className={`${styles.pill} ${styles.pillGrey}`} style={{ marginRight: 4 }}>{t}</span>
+                                            ))}
+                                            {(m.tags || []).length > 3 && <span className={styles.hint}>+{m.tags!.length - 3}</span>}
+                                            {(m.tags || []).length === 0 && <span style={{ color: 'var(--muted)' }}>—</span>}
+                                        </td>
+                                        <td><span className={styles.hint}>{formatRelative(m.last_sync_at)}</span></td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     )}
+                </div>
+                {/* Pagination footer */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: '1px solid var(--line)' }}>
+                    <span className={styles.hint}>
+                        {total === 0 ? '0 results' : `Showing ${from}–${to} of ${total.toLocaleString()}`}
+                    </span>
+                    <span style={{ display: 'flex', gap: 6 }}>
+                        <button
+                            className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`}
+                            disabled={page <= 1 || loading}
+                            onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        >‹ Prev</button>
+                        <span className={styles.hint} style={{ alignSelf: 'center', padding: '0 8px' }}>Page {page} / {totalPages}</span>
+                        <button
+                            className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`}
+                            disabled={page >= totalPages || loading}
+                            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        >Next ›</button>
+                    </span>
                 </div>
             </div>
         </>
@@ -2984,6 +3115,8 @@ export function DevToolsView({ onToast, onSaved, onModal, reloadSignal }: { onTo
     const [result, setResult] = useState<{ deleted: Record<string, number>; storageErrors?: string[]; warnings?: { step: string; message: string }[]; phone?: string; lsCleared?: number } | null>(null);
     const [segments, setSegments] = useState<Segment[]>([]);
     const [segLoading, setSegLoading] = useState(true);
+    const [zokoRefreshing, setZokoRefreshing] = useState(false);
+    const [zokoProgress, setZokoProgress] = useState<{ current: number; total: number; name: string } | null>(null);
 
     const digits = (s: string) => s.replace(/\D/g, '');
 
@@ -3010,6 +3143,73 @@ export function DevToolsView({ onToast, onSaved, onModal, reloadSignal }: { onTo
         loadSegments();
         return () => { cancelled = true; };
     }, [onToast, reloadSignal]);
+
+    async function refreshFromZoko() {
+        if (zokoRefreshing) return;
+        setZokoRefreshing(true);
+        setZokoProgress({ current: 0, total: 0, name: 'Fetching segment list…' });
+        try {
+            const token = sessionStorage.getItem('crm_token');
+            const listRes = await fetch('/api/admin/crm/sync/zoko-segments', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const listData = await listRes.json();
+            if (!listData.success || !Array.isArray(listData.segments)) {
+                onToast(listData.message || 'Failed to list Zoko segments');
+                setZokoRefreshing(false);
+                setZokoProgress(null);
+                return;
+            }
+
+            const zokoSegments = listData.segments;
+            const batchId = `zoko-${Date.now()}`;
+            let totalMembers = 0;
+
+            for (let i = 0; i < zokoSegments.length; i++) {
+                if (i > 0) await new Promise((r) => setTimeout(r, 5200)); // respect Zoko 1 req / 5 sec rate limit
+                const seg = zokoSegments[i];
+                setZokoProgress({ current: i + 1, total: zokoSegments.length, name: seg.name || seg.id });
+                try {
+                    const syncRes = await fetch('/api/admin/crm/sync/zoko-segments', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({
+                            zokoSegmentId: seg.id,
+                            zokoSegmentName: seg.name,
+                            zokoCreatedAt: seg.createdAt,
+                            batchId,
+                            finalize: i === zokoSegments.length - 1,
+                        }),
+                    });
+                    const syncData = await syncRes.json();
+                    if (syncData.success) {
+                        totalMembers += syncData.memberCount || 0;
+                    } else {
+                        console.error('[refreshFromZoko] segment sync failed:', seg.name, syncData.message);
+                    }
+                } catch (err) {
+                    console.error('[refreshFromZoko] segment sync error:', seg.name, err);
+                }
+            }
+
+            onToast(`Synced ${zokoSegments.length} segments, ${totalMembers} total members`);
+            // Reload segment counts.
+            setSegLoading(true);
+            const segRes = await fetch('/api/admin/crm/segments', {
+                headers: { Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
+            });
+            const segData = await segRes.json();
+            if (segData.success && Array.isArray(segData.segments)) {
+                setSegments(segData.segments);
+            }
+        } catch (err) {
+            console.error('[refreshFromZoko] error:', err);
+            onToast('Failed to refresh from Zoko');
+        } finally {
+            setZokoRefreshing(false);
+            setZokoProgress(null);
+        }
+    }
 
     async function doPreview() {
         const trimmed = phone.trim();
@@ -3233,45 +3433,36 @@ export function DevToolsView({ onToast, onSaved, onModal, reloadSignal }: { onTo
 
             <div className={styles.card} style={{ marginTop: 16 }}>
                 <div className={styles.cardHead}>
-                    <h3>Segment CSV Upload</h3>
-                    <span className={`${styles.hint} ${styles.cardHeadSp}`}>{segments.length} segments · upload replaces all members</span>
+                    <h3>Refresh segments from Zoko</h3>
+                    <span className={`${styles.hint} ${styles.cardHeadSp}`}>pulls live segments + members via Zoko API</span>
                 </div>
                 <div className={styles.cardBody}>
                     <p style={{ marginTop: 0, fontSize: 13, lineHeight: 1.6 }}>
-                        Upload Zoko contact lists per segment. Download the list from Zoko as CSV,
-                        then upload it here for the matching segment. Each upload replaces all
-                        current members of that segment.
+                        Fetches all segments and their members directly from the Zoko Segments API.
+                        Each segment replaces its current member list. Takes ~5 seconds per segment
+                        due to the Zoko rate limit.
                     </p>
-                    {segLoading ? (
-                        <div className={styles.loading}>Loading segments…</div>
-                    ) : segments.length === 0 ? (
-                        <div className={styles.empty}>No segments configured.</div>
-                    ) : (
-                        <table className={styles.table}>
-                            <thead>
-                                <tr><th>Segment</th><th>Members</th><th></th></tr>
-                            </thead>
-                            <tbody>
-                                {segments.map((s) => (
-                                    <tr key={s.id}>
-                                        <td>{s.name}</td>
-                                        <td>
-                                            <span className={`${styles.pill} ${s.count > 0 ? styles.pillTeal : styles.pillGrey}`}>
-                                                {s.count}
-                                            </span>
-                                        </td>
-                                        <td style={{ textAlign: 'right' }}>
-                                            <button
-                                                className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`}
-                                                onClick={() => onModal({ type: 'csvUpload', segmentId: s.id, segmentName: s.name })}
-                                            >
-                                                Upload CSV
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    <button
+                        className={`${styles.btn} ${styles.btnOrange} ${styles.btnSm}`}
+                        onClick={refreshFromZoko}
+                        disabled={zokoRefreshing}
+                    >
+                        {zokoRefreshing ? 'Syncing…' : 'Refresh from Zoko'}
+                    </button>
+                    {zokoProgress && (
+                        <div style={{ marginTop: 10, fontSize: 13, color: 'var(--muted)' }}>
+                            {zokoProgress.current} / {zokoProgress.total} — {zokoProgress.name}
+                            {zokoProgress.total > 0 && (
+                                <div style={{ marginTop: 6, height: 4, background: '#e0e6e6', borderRadius: 2, overflow: 'hidden' }}>
+                                    <div style={{
+                                        height: '100%',
+                                        width: `${(zokoProgress.current / zokoProgress.total) * 100}%`,
+                                        background: 'var(--teal)',
+                                        transition: 'width 0.3s',
+                                    }} />
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>

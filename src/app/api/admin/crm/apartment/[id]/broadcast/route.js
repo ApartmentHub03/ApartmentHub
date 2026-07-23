@@ -1,37 +1,101 @@
 import { NextResponse } from 'next/server';
 import { serviceClient, requirePermission } from '@/services/crmAuth';
 import { isUuid, invalidId, failed } from '@/services/crmHttp';
+import { ZOKO_TEMPLATES } from '@/services/zokoTemplates';
 
-// Manual broadcast: selects recipients from candidate_segment_members matching
-// the chosen segments and fires the existing n8n webhook.
+// Direct Zoko broadcast: selects recipients from candidate_segment_members
+// matching the chosen Zoko segment IDs and sends the pdf_apartment_utility
+// template to each recipient via POST /v2/message.
 //
-// Recipients are active Zoko contacts synced by n8n; no accounts lookup required.
-// Excludes archived members and optionally members tagged "student".
+// Hybrid execution: the first SYNC_BATCH_SIZE recipients are sent
+// synchronously (so the user gets immediate feedback), the rest fire as a
+// background promise that logs progress to the console.
 
-const N8N_WEBHOOK_URL = 'https://davidvanwachem.app.n8n.cloud/webhook/trigger-status-change-active';
+const ZOKO_API_URL = 'https://chat.zoko.io/v2/message';
+const BROCHURE_BUCKET = 'Apartment Doc';
+const BROCHURE_TTL = 86400; // 24 hours
+const SYNC_BATCH_SIZE = 50;
+const SEND_DELAY_MS = 300; // delay between individual /v2/message calls
 
-const EXCLUDED_TAGS = ['OPT_OUT', 'OPT-IN', 'Rotterdam', 'Almere'];
+const QUESTIONS_LINK = 'https://apartmenthub.nl/contact/';
+const UNSUBSCRIBE_LINK = 'https://apartmenthub.nl/contact/';
 
-function hasStudentTag(tags) {
-    if (!Array.isArray(tags)) return false;
-    return tags.some((t) => String(t).toLowerCase() === 'student');
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function hasExcludedTag(tags) {
-    if (!Array.isArray(tags)) return false;
-    const lower = tags.map((t) => String(t).toLowerCase());
-    return EXCLUDED_TAGS.some((ex) => lower.includes(ex.toLowerCase()));
+function normalizePhone(phone) {
+    if (!phone) return '';
+    return String(phone).replace(/\D/g, '');
 }
 
-// Segment id format: "1500-2000-2" or "5000-plus-3"
-function parseSegmentId(id) {
-    const parts = id.split('-');
-    if (parts.length !== 3) return null;
-    const minBudget = Number(parts[0]);
-    const maxBudget = parts[1] === 'plus' || parts[1] === 'null' ? null : Number(parts[1]);
-    const minBedrooms = Number(parts[2]);
-    if (!Number.isFinite(minBudget) || !Number.isFinite(minBedrooms)) return null;
-    return { minBudget, maxBudget, minBedrooms };
+// Build the 11 template variables for pdf_apartment_utility.
+// {{1}} Brochure PDF URL, {{2}} Candidate name, {{3}} Address,
+// {{4}} Price, {{5}} Bedrooms, {{6}} Square meters, {{7}} Additional note,
+// {{8}} In-person viewing link, {{9}} Facetime viewing link,
+// {{10}} "I have questions" link, {{11}} Unsubscribe link
+function buildTemplateArgs(apt, recipient, brochureUrl) {
+    return [
+        brochureUrl || '',
+        recipient.name || 'there',
+        apt['Full Address'] || '',
+        apt.rental_price != null ? String(apt.rental_price) : '',
+        apt.bedrooms != null ? String(apt.bedrooms) : '',
+        apt.square_meters != null ? String(apt.square_meters) : '',
+        apt.additional_notes || '',
+        apt.event_link || '',
+        apt.eventlink_video || '',
+        QUESTIONS_LINK,
+        UNSUBSCRIBE_LINK,
+    ];
+}
+
+async function sendOneZokoMessage(apiKey, recipient, templateArgs) {
+    const template = ZOKO_TEMPLATES.pdf_apartment_utility;
+    const normalizedRecipient = normalizePhone(recipient.phone);
+    const payload = {
+        channel: 'whatsapp',
+        recipient: normalizedRecipient,
+        type: template.type,
+        templateId: template.zokoId,
+        templateLanguage: template.language,
+        templateArgs,
+    };
+
+    console.log('[crm/broadcast] sending to Zoko:', JSON.stringify({ recipient: normalizedRecipient, templateId: payload.templateId, argCount: templateArgs.length, args: templateArgs }));
+
+    try {
+        const res = await fetch(ZOKO_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json', apikey: apiKey },
+            body: JSON.stringify(payload),
+        });
+        const text = await res.text();
+        if (!res.ok) {
+            console.error('[crm/broadcast] Zoko send failed for', recipient.phone, res.status, text);
+            return { phone: recipient.phone, ok: false, status: res.status, body: text };
+        }
+        console.log('[crm/broadcast] Zoko send OK for', recipient.phone, text.slice(0, 200));
+        return { phone: recipient.phone, ok: true, body: text };
+    } catch (err) {
+        console.error('[crm/broadcast] Zoko network error for', recipient.phone, err);
+        return { phone: recipient.phone, ok: false, error: String(err) };
+    }
+}
+
+async function sendBatch(apiKey, recipients, apt, brochureUrl, fromIndex) {
+    let sent = 0;
+    let failedCount = 0;
+    for (let i = fromIndex; i < recipients.length; i++) {
+        if (i > fromIndex) await sleep(SEND_DELAY_MS);
+        const recipient = recipients[i];
+        const args = buildTemplateArgs(apt, recipient, brochureUrl);
+        const result = await sendOneZokoMessage(apiKey, recipient, args);
+        if (result.ok) sent++;
+        else failedCount++;
+    }
+    console.log(`[crm/broadcast] background batch complete: sent=${sent}, failed=${failedCount}`);
+    return { sent, failed: failedCount };
 }
 
 export async function POST(request, { params }) {
@@ -44,7 +108,7 @@ export async function POST(request, { params }) {
 
     try {
         const body = await request.json();
-        const { segmentIds, excludeStudents, testPhone } = body || {};
+        const { segmentIds, testPhone } = body || {};
 
         const testPhoneNormalized = testPhone ? String(testPhone).replace(/\D/g, '') : '';
         const hasTestPhone = testPhoneNormalized.length >= 7;
@@ -53,111 +117,104 @@ export async function POST(request, { params }) {
             return NextResponse.json({ success: false, message: 'Select at least one segment or enter a test phone number' }, { status: 400 });
         }
 
+        const apiKey = process.env.ZOKO_API_KEY;
+        if (!apiKey) {
+            return NextResponse.json({ success: false, message: 'ZOKO_API_KEY not configured' }, { status: 500 });
+        }
+
         const supabase = serviceClient();
 
         const { data: apt, error: aptErr } = await supabase.from('apartments').select('*').eq('id', id).maybeSingle();
         if (aptErr) throw aptErr;
         if (!apt) return NextResponse.json({ success: false, message: 'Apartment not found' }, { status: 404 });
 
-        let matchedTenants = [];
+        // Generate a signed URL for the brochure PDF (24h TTL).
+        let brochureUrl = null;
+        const brochure = apt.booking_details?.brochure_pdf;
+        if (brochure?.path) {
+            try {
+                const { data: signed } = await supabase.storage
+                    .from(BROCHURE_BUCKET).createSignedUrl(brochure.path, BROCHURE_TTL);
+                if (signed?.signedUrl) brochureUrl = signed.signedUrl;
+            } catch {
+                // Best-effort — send proceeds without a brochure URL.
+            }
+        }
+
+        let recipients;
 
         if (hasTestPhone) {
-            matchedTenants = [{
+            recipients = [{
                 phone: testPhoneNormalized,
                 name: 'Test recipient',
                 email: null,
-                tags: ['test_broadcast'],
                 zoko_customer_id: null,
             }];
         } else {
-            // Resolve selected segment criteria to actual segment UUIDs.
-            const segmentCriteria = segmentIds.map(parseSegmentId).filter(Boolean);
-            if (segmentCriteria.length === 0) {
-                return NextResponse.json({ success: false, message: 'Invalid segment IDs' }, { status: 400 });
-            }
-
-            const { data: allSegments, error: segErr } = await supabase
+            // segmentIds are Zoko segment UUIDs — resolve to our DB segment UUIDs.
+            const { data: segRows, error: segErr } = await supabase
                 .from('candidate_segments')
-                .select('id, min_budget, max_budget, min_bedrooms');
+                .select('id')
+                .in('zoko_segment_id', segmentIds);
             if (segErr) throw segErr;
 
-            const selectedSegmentIds = new Set();
-            for (const seg of allSegments || []) {
-                for (const crit of segmentCriteria) {
-                    if (
-                        Number(seg.min_budget) === crit.minBudget &&
-                        (seg.max_budget === null ? crit.maxBudget === null : Number(seg.max_budget) === crit.maxBudget) &&
-                        Number(seg.min_bedrooms) === crit.minBedrooms
-                    ) {
-                        selectedSegmentIds.add(seg.id);
-                    }
-                }
-            }
-
-            if (selectedSegmentIds.size === 0) {
+            const dbSegmentIds = (segRows || []).map((s) => s.id);
+            if (dbSegmentIds.length === 0) {
                 return NextResponse.json({ success: false, message: 'No matching segments found' }, { status: 400 });
             }
 
-            // Fetch active members for the selected segments.
             const { data: members, error: memErr } = await supabase
                 .from('candidate_segment_members')
-                .select('phone, name, email, tags, zoko_customer_id')
-                .in('segment_id', Array.from(selectedSegmentIds))
+                .select('phone, name, email, zoko_customer_id')
+                .in('segment_id', dbSegmentIds)
                 .eq('is_archived', false);
             if (memErr) throw memErr;
 
-            const matchedMap = new Map();
+            const deduped = new Map();
             for (const m of members || []) {
-                if (hasExcludedTag(m.tags)) continue;
-                if (excludeStudents && hasStudentTag(m.tags)) continue;
-                const phone = m.phone;
-                if (!phone) continue;
-                if (!matchedMap.has(phone)) {
-                    matchedMap.set(phone, {
+                const phone = normalizePhone(m.phone);
+                if (!phone || phone.length < 7) continue;
+                if (!deduped.has(phone)) {
+                    deduped.set(phone, {
                         phone,
                         name: m.name,
                         email: m.email,
-                        tags: m.tags,
                         zoko_customer_id: m.zoko_customer_id,
                     });
                 }
             }
-
-            matchedTenants = Array.from(matchedMap.values());
+            recipients = Array.from(deduped.values());
         }
 
-        if (matchedTenants.length === 0) {
+        if (recipients.length === 0) {
             return NextResponse.json({ success: false, message: 'No recipients match the selected segments' }, { status: 400 });
         }
 
-        const payload = {
-            event_type: 'status_changed_to_active',
-            trigger_operation: 'UPDATE',
-            apartment: { ...apt },
-            matched_tenants: matchedTenants,
-            matched_tenants_count: matchedTenants.length,
-            timestamp: new Date().toISOString(),
-        };
+        // Hybrid: send the first batch synchronously, rest in background.
+        const syncEnd = Math.min(SYNC_BATCH_SIZE, recipients.length);
+        const syncResults = await sendBatch(apiKey, recipients.slice(0, syncEnd), apt, brochureUrl, 0);
+        let syncSent = syncResults.sent;
+        let syncFailed = syncResults.failed;
 
-        try {
-            const res = await fetch(N8N_WEBHOOK_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
+        if (recipients.length > syncEnd) {
+            // Fire-and-forget the remaining recipients.
+            sendBatch(apiKey, recipients, apt, brochureUrl, syncEnd).catch((err) => {
+                console.error('[crm/broadcast] background batch crashed:', err);
             });
-            if (!res.ok) {
-                console.error('[crm/broadcast] n8n webhook returned', res.status);
-                return NextResponse.json({ success: false, message: `n8n webhook returned ${res.status}` }, { status: 502 });
-            }
-        } catch (webhookErr) {
-            console.error('[crm/broadcast] n8n webhook network error:', webhookErr);
-            return NextResponse.json({ success: false, message: 'Could not reach n8n webhook' }, { status: 502 });
         }
+
+        const totalRecipients = recipients.length;
+        const backgroundCount = Math.max(0, totalRecipients - syncEnd);
 
         return NextResponse.json({
             success: true,
-            recipientCount: matchedTenants.length,
-            message: `Broadcast queued — ${matchedTenants.length} recipients`,
+            recipientCount: totalRecipients,
+            sentSync: syncSent,
+            failedSync: syncFailed,
+            background: backgroundCount,
+            message: backgroundCount > 0
+                ? `Broadcast started — ${syncSent} sent, ${backgroundCount} continuing in background`
+                : `Broadcast complete — ${syncSent} sent, ${syncFailed} failed`,
         });
     } catch (err) {
         return failed('crm/broadcast POST', err, 'Failed to broadcast');

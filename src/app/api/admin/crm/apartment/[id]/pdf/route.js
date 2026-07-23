@@ -4,11 +4,10 @@ import { isUuid, invalidId, failed } from '@/services/crmHttp';
 
 // Apartment brochure / attachment — upload to the private "Apartment Doc"
 // bucket and record its path on the apartment (booking_details.brochure_pdf).
-// GET returns a fresh signed URL. PDF is recommended but any file type is
-// accepted up to 20 MB.
+// GET returns a fresh signed URL. PDF is recommended but any file type / size
+// is accepted.
 
 const BUCKET = 'Apartment Doc';
-const MAX_BYTES = 20 * 1024 * 1024; // 20 MB
 
 export async function GET(request, { params }) {
     const auth = await requirePermission(request, 'apartments');
@@ -45,9 +44,6 @@ export async function POST(request, { params }) {
         const file = form.get('file');
         if (!file || typeof file === 'string') {
             return NextResponse.json({ success: false, message: 'No file uploaded' }, { status: 400 });
-        }
-        if (file.size > MAX_BYTES) {
-            return NextResponse.json({ success: false, message: 'File exceeds 20 MB' }, { status: 400 });
         }
 
         const supabase = serviceClient();

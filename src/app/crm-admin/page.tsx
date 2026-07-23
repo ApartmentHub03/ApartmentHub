@@ -15,7 +15,7 @@ import {
     CollaborationsView, TeamView, DevToolsView, ApplicationDetailView, BusinessPlaceholder,
 } from './views';
 import {
-    MeetingLinksModal, SendSegmentModal, RescheduleModal, DealModal, EditInvoiceModal, CsvUploadModal,
+    MeetingLinksModal, SendSegmentModal, RescheduleModal, DealModal, EditInvoiceModal, CsvUploadModal, UploadDocumentModal,
     type ModalState,
 } from './modals';
 
@@ -364,6 +364,7 @@ function CrmApp({ me, onLogout }: { me: Me; onLogout: (expired?: boolean) => voi
                 onModal={setModal}
                 realEstateAgents={lists.realEstateAgents}
                 crmUsers={lists.crmUsers}
+                reloadSignal={reloadSignal}
             />;
         }
 
@@ -410,7 +411,7 @@ function CrmApp({ me, onLogout }: { me: Me; onLogout: (expired?: boolean) => voi
             case 'deals':
                 return <DealsView wonDeals={lists.wonDeals} onToast={showToast} onModal={setModal} onSaved={bumpReload} />;
             case 'candidates':
-                return <CandidatesView candidates={lists.candidates} />;
+                return <CandidatesView />;
             case 'leads':
                 return <MarketingView />;
             case 'seo':
@@ -525,6 +526,8 @@ function renderModal(modal: ModalState, setModal: (m: ModalState | null) => void
             return <EditInvoiceModal invoiceId={modal.invoiceId} onClose={close} onToast={showToast} onSaved={onSaved} />;
         case 'csvUpload':
             return <CsvUploadModal segmentId={modal.segmentId} segmentName={modal.segmentName} onClose={close} onToast={showToast} onSaved={onSaved} />;
+        case 'uploadDocument':
+            return <UploadDocumentModal accountId={modal.accountId} persoonId={modal.persoonId} persoonName={modal.persoonName} onClose={close} onToast={showToast} onSaved={onSaved} />;
         default:
             return null;
     }

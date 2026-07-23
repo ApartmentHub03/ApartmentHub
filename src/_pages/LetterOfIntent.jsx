@@ -25,6 +25,7 @@ const LetterOfIntent = () => {
     const [isConfirmed, setIsConfirmed] = useState(false);
     const [acceptedAllConditions, setAcceptedAllConditions] = useState(false);
     const [acceptedBrokerFee, setAcceptedBrokerFee] = useState(false);
+    const [signatureSaveError, setSignatureSaveError] = useState('');
 
     // Read LOI data from sessionStorage (stored by Aanvraag page)
     const loiData = typeof window !== 'undefined' ? JSON.parse(sessionStorage.getItem('loiData') || '{}') : {};
@@ -183,29 +184,41 @@ const LetterOfIntent = () => {
             // Persist the signature to Supabase (audit copy in the private
             // dossier-documents bucket + a documenten row on the main tenant).
             // Replaces the Salesforce forward — the dossier/personen/documenten
-            // themselves are already saved at the aanvraag step. Fire-and-forget
-            // so signing UX never blocks.
+            // themselves are already saved at the aanvraag step. Awaited so a
+            // failed save surfaces a real error to the user instead of a false
+            // success screen with a blank signature on the LOI PDF later.
             if (phoneNumber && signatureBase64) {
-                fetch('/api/dossier/signature', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        phone: phoneNumber,
-                        signatureBase64,
-                        signatureDate,
-                    }),
-                })
-                    .then(res => res.json())
-                    .then(result => {
-                        if (result.success) {
-                            console.log('[LOI] ✓ Signature saved to Supabase:', result.path, result.linked ? '(linked to dossier)' : '(audit copy only)');
-                        } else {
-                            console.error('[LOI] ✗ Signature save failed:', result.message);
-                        }
-                    })
-                    .catch(err => console.error('[LOI] ✗ Signature save error:', err));
+                setSignatureSaveError('');
+                try {
+                    const res = await fetch('/api/dossier/signature', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            phone: phoneNumber,
+                            signatureBase64,
+                            signatureDate,
+                        }),
+                    });
+                    const result = await res.json();
+                    if (!res.ok || !result.success) {
+                        throw new Error(result.message || `HTTP ${res.status}`);
+                    }
+                    if (!result.linked) {
+                        // The audit copy is saved but the dossier/person wasn't
+                        // found — warn the user, since the LOI PDF builder needs
+                        // a documenten row OR will fall back to a bucket scan.
+                        console.warn('[LOI] Signature saved as audit copy only (not linked to a dossier):', result.path);
+                        setSignatureSaveError('Signature saved but not linked to your dossier. Please contact support so it can be attached to your application.');
+                    } else {
+                        console.log('[LOI] Signature saved and linked to dossier:', result.path);
+                    }
+                } catch (sigErr) {
+                    console.error('[LOI] Signature save failed:', sigErr);
+                    setSignatureSaveError('Your signature could not be saved. Please try again or contact support.');
+                }
             } else {
                 console.warn('[LOI] Skipping signature save – missing phoneNumber or signature');
+                setSignatureSaveError('Missing phone number or signature — signature not saved.');
             }
 
             setIsConfirmed(true);
@@ -346,6 +359,11 @@ const LetterOfIntent = () => {
                         <h1 className={styles.successTitle}>{texts.successTitle}</h1>
                         <p className={styles.successSubtitle}>{texts.successSubtitle}</p>
                         <p className={styles.responseTime} dangerouslySetInnerHTML={{ __html: texts.responseTime }} />
+                        {signatureSaveError && (
+                            <div style={{ marginTop: 16, padding: '12px 16px', background: '#FFF3CD', border: '1px solid #FFC107', borderRadius: 8, color: '#664D03', fontSize: 14, textAlign: 'left' }}>
+                                {signatureSaveError}
+                            </div>
+                        )}
                         <div className={styles.successDivider}></div>
                         <div className={styles.emailConfirmation}>
                             <p className={styles.emailLabel}>{texts.emailSent}</p>

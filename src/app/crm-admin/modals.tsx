@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { X, Search } from 'lucide-react';
 import styles from './crm.module.css';
 import type { Segment } from './types';
+import { documentTypeLabels } from '../../config/documentRequirements';
 
 type ToastFn = (msg: string) => void;
 
@@ -13,7 +14,8 @@ export type ModalState =
     | { type: 'reschedule'; aptId: string; participants: { name: string; whatsapp_number: string }[] }
     | { type: 'deal'; aptId: string; accountId: string; rentPrice: number | null }
     | { type: 'editInvoice'; invoiceId: string }
-    | { type: 'csvUpload'; segmentId: string; segmentName: string };
+    | { type: 'csvUpload'; segmentId: string; segmentName: string }
+    | { type: 'uploadDocument'; accountId: string; persoonId: string; persoonName: string };
 
 function ModalShell({ title, onClose, children, footer }: {
     title: string;
@@ -190,7 +192,6 @@ export function SendSegmentModal({ aptId, rentalPrice, bedrooms, onClose, onToas
     const [segments, setSegments] = useState<Segment[]>([]);
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [search, setSearch] = useState('');
-    const [excludeStudents, setExcludeStudents] = useState(false);
     const [testMode, setTestMode] = useState(false);
     const [testPhone, setTestPhone] = useState('');
     const [loading, setLoading] = useState(true);
@@ -203,7 +204,7 @@ export function SendSegmentModal({ aptId, rentalPrice, bedrooms, onClose, onToas
         async function load() {
             setLoading(true);
             try {
-                const res = await fetch(`/api/admin/crm/segments?excludeStudents=${excludeStudents}`, {
+                const res = await fetch(`/api/admin/crm/segments`, {
                     headers: { Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
                 });
                 const data = await res.json();
@@ -214,7 +215,13 @@ export function SendSegmentModal({ aptId, rentalPrice, bedrooms, onClose, onToas
                     if (rentalPrice && bedrooms) {
                         const bedNum = Number((bedrooms.match(/\d+/) || [])[0] || 0);
                         const matched = data.segments.find(
-                            (s: Segment) => rentalPrice >= s.min_budget && rentalPrice <= s.max_budget && bedNum === s.min_bedrooms
+                            (s: Segment) =>
+                                s.min_budget !== null &&
+                                s.max_budget !== null &&
+                                s.min_bedrooms !== null &&
+                                rentalPrice >= s.min_budget &&
+                                rentalPrice <= s.max_budget &&
+                                bedNum === s.min_bedrooms
                         );
                         if (matched) {
                             setSelected(new Set([matched.id]));
@@ -229,7 +236,7 @@ export function SendSegmentModal({ aptId, rentalPrice, bedrooms, onClose, onToas
         }
         load();
         return () => { cancelled = true; };
-    }, [excludeStudents, rentalPrice, bedrooms, onToast]);
+    }, [rentalPrice, bedrooms, onToast]);
 
     const totalRecipients = segments
         .filter((s) => selected.has(s.id))
@@ -265,7 +272,7 @@ export function SendSegmentModal({ aptId, rentalPrice, bedrooms, onClose, onToas
         }
         setSending(true);
         try {
-            const payload: Record<string, unknown> = { segmentIds: Array.from(selected), excludeStudents };
+            const payload: Record<string, unknown> = { segmentIds: Array.from(selected) };
             if (testMode) payload.testPhone = normalizedTest;
             const res = await fetch(`/api/admin/crm/apartment/${aptId}/broadcast`, {
                 method: 'POST',
@@ -302,7 +309,7 @@ export function SendSegmentModal({ aptId, rentalPrice, bedrooms, onClose, onToas
             }
         >
             <p style={{ marginBottom: 10 }}>
-                Auto-matched from price + bedrooms · pick another if needed. Each segment shows how many synced Zoko contacts are in it. Archived contacts and excluded cities are not counted. Send broadcasts the apartment + PDF to the selected segment.
+                Auto-matched from price + bedrooms · pick another if needed. Each segment shows how many synced Zoko contacts are in it. Send broadcasts the apartment + PDF to the selected segment.
             </p>
 
             <div style={{ marginBottom: 12, padding: 10, background: '#f3f6f6', borderRadius: 8 }}>
@@ -321,7 +328,7 @@ export function SendSegmentModal({ aptId, rentalPrice, bedrooms, onClose, onToas
                         <input
                             className={styles.inp}
                             type="tel"
-                            placeholder="+31 6 12345678"
+                            placeholder="31612345678"
                             value={testPhone}
                             onChange={(e) => setTestPhone(e.target.value)}
                         />
@@ -383,16 +390,7 @@ export function SendSegmentModal({ aptId, rentalPrice, bedrooms, onClose, onToas
                                 )}
                             </div>
                             <div className={styles.segFooter}>
-                                Standard exclusions: <b>OPT_OUT · ARCHIVED · Almere · Rotterdam</b>.
-                                <label style={{ marginLeft: 12, color: 'var(--ink)' }}>
-                                    <input
-                                        type="checkbox"
-                                        checked={excludeStudents}
-                                        onChange={(e) => setExcludeStudents(e.target.checked)}
-                                        style={{ accentColor: 'var(--teal)' }}
-                                    /> exclude <b>Students</b>
-                                </label>
-                                . Use test mode to send to a single number. Max 1 apartment per segment per day.
+                                Use test mode to send to a single number. Max 1 apartment per segment per day.
                             </div>
                         </div>
                     )}
@@ -913,6 +911,129 @@ export function CsvUploadModal({ segmentId, segmentName, onClose, onToast, onSav
                     Warning: uploading will replace all existing members of this segment.
                 </div>
             )}
+        </ModalShell>
+    );
+}
+
+// --- Upload Document Modal ---
+// Lets an agent manually upload a document (received via WhatsApp or email)
+// to a tenant's dossier. The file is stored in the dossier-documents bucket
+// and a documenten row is inserted, firing the sync trigger so the
+// application detail refreshes with the new document.
+const DOC_TYPE_OPTIONS = Object.entries(documentTypeLabels.nl).map(([key, val]) => ({
+    value: key,
+    label: val.name,
+}));
+
+export function UploadDocumentModal({ accountId, persoonId, persoonName, onClose, onToast, onSaved }: {
+    accountId: string;
+    persoonId: string;
+    persoonName: string;
+    onClose: () => void;
+    onToast: ToastFn;
+    onSaved?: () => void;
+}) {
+    const [docType, setDocType] = useState<string>('');
+    const [customType, setCustomType] = useState<string>('');
+    const [file, setFile] = useState<File | null>(null);
+    const [replace, setReplace] = useState<boolean>(true);
+    const [uploading, setUploading] = useState(false);
+
+    const isCustom = docType === '__custom__';
+    const resolvedType = isCustom ? customType.trim() : docType;
+    const canSubmit = !!resolvedType && !!file && !uploading;
+
+    async function upload() {
+        if (!resolvedType) { onToast('Pick a document type'); return; }
+        if (!file) { onToast('Select a file'); return; }
+        setUploading(true);
+        try {
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('persoonId', persoonId);
+            fd.append('docType', resolvedType);
+            fd.append('replace', String(replace));
+            const res = await fetch(`/api/admin/crm/application/${accountId}/upload-document`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
+                body: fd,
+            });
+            const data = await res.json();
+            if (data.success) {
+                onToast('Document uploaded');
+                onSaved?.();
+                onClose();
+            } else {
+                onToast(data.message || 'Upload failed');
+            }
+        } catch {
+            onToast('Upload failed — check console');
+        } finally {
+            setUploading(false);
+        }
+    }
+
+    return (
+        <ModalShell
+            title={`Upload document · ${persoonName}`}
+            onClose={onClose}
+            footer={
+                <>
+                    <button className={`${styles.btn} ${styles.btnGhost}`} onClick={onClose} disabled={uploading}>Cancel</button>
+                    <button className={`${styles.btn} ${styles.btnOrange}`} onClick={upload} disabled={!canSubmit}>
+                        {uploading ? 'Uploading…' : 'Upload'}
+                    </button>
+                </>
+            }
+        >
+            <label className={styles.fLabel}>Document type</label>
+            <select className={styles.inp} value={docType} onChange={(e) => setDocType(e.target.value)} disabled={uploading}>
+                <option value="">Select a type…</option>
+                {DOC_TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                <option value="__custom__">Other (free text)…</option>
+            </select>
+
+            {isCustom && (
+                <input
+                    className={styles.inp}
+                    style={{ marginTop: 8 }}
+                    placeholder="Custom type label (e.g. WhatsApp loonstrook)"
+                    value={customType}
+                    onChange={(e) => setCustomType(e.target.value)}
+                    disabled={uploading}
+                />
+            )}
+
+            <div
+                className={styles.drop}
+                style={{ cursor: uploading ? 'wait' : 'pointer', marginTop: 12 }}
+                onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = 'var(--teal)'; }}
+                onDragLeave={(e) => { e.currentTarget.style.borderColor = 'var(--line)'; }}
+                onDrop={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.style.borderColor = 'var(--line)';
+                    const f = e.dataTransfer.files?.[0];
+                    if (f) setFile(f);
+                }}
+                onClick={() => document.getElementById('upload-doc-input')?.click()}
+            >
+                <b>{uploading ? 'Uploading…' : file ? file.name : 'Drop file here or click to browse'}</b>
+                <input
+                    id="upload-doc-input"
+                    type="file"
+                    hidden
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) setFile(f); }}
+                    disabled={uploading}
+                />
+            </div>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, cursor: 'pointer', fontSize: 13 }}>
+                <input type="checkbox" checked={replace} onChange={(e) => setReplace(e.target.checked)} disabled={uploading} />
+                Replace existing documents of this type
+            </label>
+            <div className={styles.hint} style={{ marginTop: 6 }}>
+                When checked, any existing documents of this type for {persoonName} are deleted before the new one is saved.
+            </div>
         </ModalShell>
     );
 }

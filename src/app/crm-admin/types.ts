@@ -123,6 +123,28 @@ export interface Candidate {
     created_at: string | null;
 }
 
+export interface CandidateMember {
+    id: string;
+    segment_id: string;
+    phone: string;
+    name: string | null;
+    email: string | null;
+    tags: string[] | null;
+    is_archived: boolean;
+    last_sync_at: string | null;
+    created_at: string | null;
+    segment_name: string | null;
+}
+
+export interface CandidatesResponse {
+    success: boolean;
+    candidates: CandidateMember[];
+    total: number;
+    page: number;
+    pageSize: number;
+    message?: string;
+}
+
 export interface CrmAgent {
     id: string;
     name: string | null;
@@ -177,11 +199,11 @@ export interface RealEstateAgent {
 }
 
 export interface Segment {
-    id: string;
+    id: string;          // Zoko segment UUID
     name: string;
-    min_budget: number;
-    max_budget: number;
-    min_bedrooms: number;
+    min_budget: number | null;
+    max_budget: number | null;
+    min_bedrooms: number | null;
     count: number;
 }
 

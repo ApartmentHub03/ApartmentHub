@@ -2,10 +2,9 @@ import { NextResponse } from 'next/server';
 import { serviceClient, requireCrmUser } from '@/services/crmAuth';
 import { failed } from '@/services/crmHttp';
 
-// Returns candidate segments with live member counts from candidate_segment_members.
-// Counts are fetched via the get_segment_counts() SQL function (aggregate query)
-// to avoid the Supabase 1000-row response cap that broke client-side counting.
-// Excludes archived members and optionally members tagged "student".
+// Returns segments with live member counts from candidate_segment_members.
+// Segments are keyed by zoko_segment_id (the authoritative Zoko UUID).
+// Budget/bedroom fields are parsed from the segment name and may be null.
 
 export async function GET(request) {
     const auth = await requireCrmUser(request);
@@ -14,43 +13,45 @@ export async function GET(request) {
     }
 
     try {
-        const url = new URL(request.url);
-        const excludeStudents = url.searchParams.get('excludeStudents') === 'true';
-
         const supabase = serviceClient();
 
-        // Load canonical segments
+        // Load all segments that have a zoko_segment_id (the direct-API ones).
         const { data: segments, error: segErr } = await supabase
             .from('candidate_segments')
-            .select('id, name, min_budget, max_budget, min_bedrooms')
-            .order('min_budget', { ascending: true })
-            .order('min_bedrooms', { ascending: true });
+            .select('id, name, min_budget, max_budget, min_bedrooms, zoko_segment_id')
+            .not('zoko_segment_id', 'is', null)
+            .order('min_budget', { ascending: true, nullsFirst: false })
+            .order('min_bedrooms', { ascending: true, nullsFirst: false });
         if (segErr) throw segErr;
         if (!segments || segments.length === 0) {
             return NextResponse.json({ success: true, segments: [] });
         }
 
-        // Count active members per segment via SQL function (accurate at any scale).
-        const { data: counts, error: countErr } = await supabase
-            .rpc('get_segment_counts', { exclude_students: excludeStudents });
-        if (countErr) throw countErr;
-
+        // Count active members per segment (per-segment count queries to
+        // avoid the Supabase 1000-row response cap that breaks client-side counting).
         const countMap = new Map();
-        for (const row of counts || []) {
-            countMap.set(row.segment_id, Number(row.member_count) || 0);
+        for (const seg of segments) {
+            const { count, error: cErr } = await supabase
+                .from('candidate_segment_members')
+                .select('id', { count: 'exact', head: true })
+                .eq('segment_id', seg.id)
+                .eq('is_archived', false);
+            if (cErr) {
+                console.error('[crm/segments] count error for', seg.id, cErr);
+                countMap.set(seg.id, 0);
+            } else {
+                countMap.set(seg.id, count || 0);
+            }
         }
 
-        const result = segments.map((seg) => {
-            const maxBudget = seg.max_budget;
-            return {
-                id: `${seg.min_budget}-${maxBudget === null ? 'plus' : maxBudget}-${seg.min_bedrooms}`,
-                name: seg.name,
-                min_budget: Number(seg.min_budget),
-                max_budget: maxBudget === null ? null : Number(maxBudget),
-                min_bedrooms: Number(seg.min_bedrooms),
-                count: countMap.get(seg.id) || 0,
-            };
-        });
+        const result = segments.map((seg) => ({
+            id: seg.zoko_segment_id,
+            name: seg.name,
+            min_budget: seg.min_budget !== null ? Number(seg.min_budget) : null,
+            max_budget: seg.max_budget !== null ? Number(seg.max_budget) : null,
+            min_bedrooms: seg.min_bedrooms !== null ? Number(seg.min_bedrooms) : null,
+            count: countMap.get(seg.id) || 0,
+        }));
 
         return NextResponse.json({ success: true, segments: result });
     } catch (err) {
