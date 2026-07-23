@@ -90,10 +90,17 @@ export async function POST(request) {
         // (common for fresh sessions where Login.jsx's RLS-gated lookup failed).
         const resolvedAccountId = await resolveAccountId(supabase, accountId, phone);
         if (!resolvedAccountId) {
+            // Fresh user: no accounts row yet (OTP login doesn't create one —
+            // /api/dossier/save creates it on form submit, with a real tenant_name
+            // which has a NOT NULL constraint). We can't provision here without
+            // a name, so return a sentinel the client recognizes: it stashes the
+            // selection to localStorage and /api/dossier/save picks it up later
+            // (after it provisions the account).
             return NextResponse.json({
                 success: false,
-                message: 'could not resolve account — no accountId and no accounts row matches phone',
-            }, { status: 400 });
+                code: 'no_account',
+                message: 'no accounts row yet — selection should be stashed client-side and flushed by /api/dossier/save',
+            }, { status: 404 });
         }
 
         // Normalize the entries. Keep only fields we own; drop any client-only
@@ -147,10 +154,14 @@ export async function GET(request) {
         const supabase = admin();
         const resolvedAccountId = await resolveAccountId(supabase, accountId, phone);
         if (!resolvedAccountId) {
+            // No account yet (fresh user, form not submitted). Return a sentinel
+            // so the client knows to fall back to the localStorage stash instead
+            // of treating this as a hard error.
             return NextResponse.json({
                 success: false,
-                message: 'could not resolve account — no accountId and no accounts row matches phone',
-            }, { status: 400 });
+                code: 'no_account',
+                message: 'no accounts row yet',
+            }, { status: 404 });
         }
 
         const { data: acc, error: accErr } = await supabase

@@ -518,7 +518,7 @@ function renderModal(modal: ModalState, setModal: (m: ModalState | null) => void
         case 'sendSegment':
             return <SendSegmentModal aptId={modal.aptId} rentalPrice={modal.rentalPrice} bedrooms={modal.bedrooms} onClose={close} onToast={showToast} />;
         case 'reschedule':
-            return <RescheduleModal onClose={close} onToast={showToast} />;
+            return <RescheduleModal aptId={modal.aptId} participants={modal.participants} onClose={close} onToast={showToast} onSaved={onSaved} />;
         case 'deal':
             return <DealModal aptId={modal.aptId} accountId={modal.accountId} rentPrice={modal.rentPrice} crmUsers={crmUsers} onClose={close} onToast={showToast} onSaved={onSaved} />;
         case 'editInvoice':

@@ -236,6 +236,30 @@ const Aanvraag = ({ preselectedApartmentId }) => {
                     if (offered.length > 0) {
                         setAppliedApartments(offered);
                     }
+                } else if (accRes.status === 404 && accJson?.code === 'no_account') {
+                    // Fresh user — no accounts row yet (OTP login doesn't create
+                    // one; this save call does). AppartementenSelectie stashed the
+                    // selection to localStorage 'pending_apartment_selected' when
+                    // the POST returned no_account; read it here so the form
+                    // still shows the picked apartment before the first submit.
+                    if (typeof window !== 'undefined') {
+                        try {
+                            const stashRaw = localStorage.getItem('pending_apartment_selected');
+                            if (stashRaw) {
+                                const stashed = JSON.parse(stashRaw);
+                                if (Array.isArray(stashed) && stashed.length > 0) {
+                                    panden = stashed
+                                        .filter(a => a && a.apartment_id)
+                                        .map(a => {
+                                            const row = sfApts.get(a.apartment_id);
+                                            return row ? buildPandFromApartment(row) : buildPandFromSavedEntry(a);
+                                        });
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('[Aanvraag] Could not read pending_apartment_selected stash:', e);
+                        }
+                    }
                 }
             } catch (e) {
                 console.warn('[Aanvraag] Could not load apartments from accounts', e);
@@ -1478,6 +1502,12 @@ const Aanvraag = ({ preselectedApartmentId }) => {
                         // The form's personen already carry their grouped
                         // documenten ({ type, files:[{ filePath, fileName }] }).
                         personen: data.personen || [],
+                        // Forward the stashed apartment selection so /api/dossier/save
+                        // can flush it onto the freshly-provisioned account row
+                        // (AppartementenSelectie stashed it when the POST returned
+                        // no_account, because we couldn't provision the account
+                        // there without a tenant_name).
+                        apartmentSelected: (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('pending_apartment_selected') || 'null') : null),
                     }),
                 });
                 const saveJson = await saveRes.json();
@@ -1496,6 +1526,14 @@ const Aanvraag = ({ preselectedApartmentId }) => {
                         if (!stored || stored !== saveJson.accountId) {
                             localStorage.setItem('account_id', saveJson.accountId);
                             console.log('[Aanvraag] ✓ Captured accountId from save response:', saveJson.accountId);
+                        }
+                        // The stash has been flushed onto the account row by
+                        // /api/dossier/save (it received apartmentSelected in
+                        // the body). Clear it so it doesn't overwrite a future
+                        // selection made directly through /api/dossier/select-apartment
+                        // (which writes server-side now that the account exists).
+                        if (localStorage.getItem('pending_apartment_selected')) {
+                            localStorage.removeItem('pending_apartment_selected');
                         }
                     }
                 } else {

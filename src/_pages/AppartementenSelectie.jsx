@@ -101,13 +101,23 @@ const AppartementenSelectie = () => {
                     }),
                 });
                 const selectJson = await selectRes.json();
-                if (!selectRes.ok || !selectJson.success) {
+                if (selectRes.status === 404 && selectJson?.code === 'no_account') {
+                    // Fresh user — no accounts row yet (OTP login doesn't
+                    // create one; /api/dossier/save creates it on form submit
+                    // with a real tenant_name, which has a NOT NULL constraint
+                    // so we can't provision here). Stash the selection to
+                    // localStorage; /api/dossier/save flushes it once the
+                    // account exists. Aanvraag.jsx reads the same stash on
+                    // load when the GET returns no_account.
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem('pending_apartment_selected', JSON.stringify(aptEntries));
+                    }
+                } else if (!selectRes.ok || !selectJson.success) {
                     throw new Error(selectJson?.message || `HTTP ${selectRes.status}`);
-                }
-                // Capture the server-resolved accountId so the rest of the
-                // session (autoSave on /aanvraag, link-offers on submit) uses
-                // the correct id. Mirrors Aanvraag.jsx's post-save write.
-                if (selectJson.accountId && typeof window !== 'undefined') {
+                } else if (selectJson.accountId && typeof window !== 'undefined') {
+                    // Capture the server-resolved accountId so the rest of the
+                    // session (autoSave on /aanvraag, link-offers on submit) uses
+                    // the correct id. Mirrors Aanvraag.jsx's post-save write.
                     const stored = localStorage.getItem('account_id');
                     if (!stored || stored !== selectJson.accountId) {
                         localStorage.setItem('account_id', selectJson.accountId);

@@ -734,7 +734,7 @@ export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast,
                     })()}
                     <button className={`${styles.btn} ${styles.btnGhost}`} onClick={copyViewingLink}>Copy viewing link</button>
                     <button className={`${styles.btn} ${styles.btnOrange}`} onClick={() => onModal({ type: 'sendSegment', aptId, rentalPrice: apt?.rental_price ?? null, bedrooms: apt?.bedrooms ?? null })}>Send via WhatsApp</button>
-                    <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} onClick={() => onModal({ type: 'reschedule' })}>Reschedule</button>
+                    <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} onClick={() => onModal({ type: 'reschedule', aptId, participants: (Array.isArray(apt?.viewing_participants) ? apt.viewing_participants : []).map((p: any) => ({ name: p?.name || '', whatsapp_number: p?.whatsapp_number || '' })) })}>Reschedule</button>
                     {isAdmin && (
                         <button
                             className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`}

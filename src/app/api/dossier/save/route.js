@@ -35,7 +35,7 @@ function splitName(naam) {
 export async function POST(request) {
     try {
         const body = await request.json();
-        const { phone, dossier = {}, personen = [] } = body || {};
+        const { phone, dossier = {}, personen = [], apartmentSelected = null } = body || {};
         const digits = String(phone || '').replace(/\D/g, '');
         if (!digits) {
             return NextResponse.json({ success: false, message: 'phone is required' }, { status: 400 });
@@ -94,6 +94,32 @@ export async function POST(request) {
                 .select('id').single();
             if (accErr) throw new Error('account provision: ' + accErr.message);
             accountId = createdAcc.id;
+        }
+
+        // 0b. Flush the stashed apartment selection (from /appartementen on a
+        // fresh user with no account yet) onto the account row now that it
+        // exists. The client stashes to localStorage 'pending_apartment_selected'
+        // when /api/dossier/select-apartment returns no_account, and forwards
+        // the stash here as `apartmentSelected`. Normalized to the same shape
+        // select-apartment POST uses.
+        if (Array.isArray(apartmentSelected) && apartmentSelected.length > 0) {
+            const normalizedApts = apartmentSelected
+                .filter(a => a && a.apartment_id)
+                .map(a => ({
+                    apartment_id: a.apartment_id,
+                    address: a.address || '',
+                    rental_price: a.rental_price ?? null,
+                    selected_at: a.selected_at || new Date().toISOString(),
+                }));
+            if (normalizedApts.length > 0) {
+                const { error: aptSelErr } = await supabase
+                    .from('accounts')
+                    .update({ apartment_selected: normalizedApts })
+                    .eq('id', accountId);
+                if (aptSelErr) {
+                    console.warn('[dossier/save] could not flush pending apartment_selected:', aptSelErr.message);
+                }
+            }
         }
 
         // 1. Find or create the dossier, keyed on the canonical phone.

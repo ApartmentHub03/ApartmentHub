@@ -10,7 +10,7 @@ type ToastFn = (msg: string) => void;
 export type ModalState =
     | { type: 'meetingLinks'; aptId: string }
     | { type: 'sendSegment'; aptId: string; rentalPrice: number | null; bedrooms: string | null }
-    | { type: 'reschedule' }
+    | { type: 'reschedule'; aptId: string; participants: { name: string; whatsapp_number: string }[] }
     | { type: 'deal'; aptId: string; accountId: string; rentPrice: number | null }
     | { type: 'editInvoice'; invoiceId: string }
     | { type: 'csvUpload'; segmentId: string; segmentName: string };
@@ -410,8 +410,86 @@ export function SendSegmentModal({ aptId, rentalPrice, bedrooms, onClose, onToas
 }
 
 // --- Reschedule Modal ---
-// TODO: Phase 3 — wire to booking_reschedules + Cal.com webhook + Zoko reschedule template
-export function RescheduleModal({ onClose, onToast }: { onClose: () => void; onToast: ToastFn }) {
+// Regenerates the apartment's Cal.com meeting links for a new date/time
+// (POST /api/admin/crm/apartment/[id]/generate-slot) and THEN moves the
+// booked candidate from viewing_participants -> booking_reschedules
+// (POST /api/admin/crm/booking-action { action: 'reschedule' }). The
+// booking-action route reads the freshly updated event_link / eventlink_video
+// off the apartment, so n8n + Zoko notify the candidate with the NEW links.
+export function RescheduleModal({ aptId, participants, onClose, onToast, onSaved }: {
+    aptId: string;
+    participants: { name: string; whatsapp_number: string }[];
+    onClose: () => void;
+    onToast: ToastFn;
+    onSaved?: () => void;
+}) {
+    const [start, setStart] = useState('');
+    const [duration, setDuration] = useState('30');
+    const [slotLength, setSlotLength] = useState('5');
+    const [phone, setPhone] = useState(participants[0]?.whatsapp_number || '');
+    const [loading, setLoading] = useState(false);
+    const selected = participants.find((p) => p.whatsapp_number === phone);
+
+    const viewingEnd = (() => {
+        if (!start) return '';
+        const d = new Date(start);
+        if (isNaN(d.getTime())) return '';
+        d.setMinutes(d.getMinutes() + Number(duration) || 0);
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    })();
+
+    const numSlots = Number(duration) > 0 && Number(slotLength) > 0 ? Math.floor(Number(duration) / Number(slotLength)) : 0;
+
+    async function confirm() {
+        if (!start) { onToast('Pick a new viewing date & time'); return; }
+        if (!viewingEnd) { onToast('Could not compute end time — check duration'); return; }
+        if (participants.length > 0 && !phone) { onToast('Pick a candidate to reschedule'); return; }
+        setLoading(true);
+        try {
+            // 1. Regenerate Cal.com meeting links for the new window.
+            const genRes = await fetch(`/api/admin/crm/apartment/${aptId}/generate-slot`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
+                body: JSON.stringify({ start, end: viewingEnd, slotLengthMinutes: Number(slotLength) }),
+            });
+            const genData = await genRes.json();
+            if (!genData.success) {
+                onToast(genData.message || 'Failed to generate new links');
+                setLoading(false);
+                return;
+            }
+
+            // 2. If a candidate is booked, move them to booking_reschedules and
+            //    fire n8n/Zoko with the freshly updated event_link / eventlink_video.
+            if (participants.length === 0) {
+                onToast('New viewing links generated');
+                onSaved?.();
+                onClose();
+                return;
+            }
+
+            const res = await fetch('/api/admin/crm/booking-action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
+                body: JSON.stringify({ action: 'reschedule', apartmentId: aptId, phone, name: selected?.name || '' }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                onToast(`Rescheduled ${selected?.name || phone} · new links sent`);
+                onSaved?.();
+                onClose();
+            } else {
+                onToast(data.message || 'Failed to reschedule');
+            }
+        } catch (e) {
+            onToast('Failed to reschedule, check console');
+            console.error('reschedule error:', e);
+        } finally {
+            setLoading(false);
+        }
+    }
+
     return (
         <ModalShell
             title="Reschedule viewing"
@@ -419,27 +497,77 @@ export function RescheduleModal({ onClose, onToast }: { onClose: () => void; onT
             footer={
                 <>
                     <button className={`${styles.btn} ${styles.btnGhost}`} onClick={onClose}>Cancel</button>
-                    <button className={styles.btn} onClick={() => { onToast('Viewing rescheduled (demo)'); onClose(); }}>Confirm reschedule</button>
+                    <button className={styles.btn} disabled={loading || !start || (participants.length > 0 && !phone)} onClick={confirm}>
+                        {loading ? 'Rescheduling…' : 'Confirm reschedule'}
+                    </button>
                 </>
             }
         >
-            <p>Pick the new moment and the new schedule. The meeting link updates and a WhatsApp goes to the candidate.</p>
-            <label className={styles.fLabel}>New date &amp; time</label>
-            <input className={styles.inp} type="datetime-local" />
-            <div className={styles.formRow3}>
+            <p>Pick a new viewing window. New Cal.com meeting links are generated for the apartment{participants.length > 0 ? ' and the candidate is notified on WhatsApp with the new slot link' : ''}.</p>
+            {participants.length === 0 && (
+                <p className={styles.hint}>No candidates are currently booked. The new links will be ready for the next booking.</p>
+            )}
+            {participants.length > 0 && (
+                <>
+                    <label className={styles.fLabel}>Candidate</label>
+                    <select
+                        className={styles.inp}
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                    >
+                        {participants.map((p) => (
+                            <option key={p.whatsapp_number} value={p.whatsapp_number}>
+                                {p.name || 'Unknown'} — {p.whatsapp_number}
+                            </option>
+                        ))}
+                    </select>
+                </>
+            )}
+            <div className={styles.formRow} style={{ marginTop: 10 }}>
                 <div>
-                    <label className={styles.fLabel}>Duration (min)</label>
-                    <select className={styles.inp}><option>30</option><option>20</option><option>45</option></select>
+                    <label className={styles.fLabel}>New date & time</label>
+                    <input className={styles.inp} type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} />
                 </div>
                 <div>
-                    <label className={styles.fLabel}>Slot duration (min)</label>
-                    <select className={styles.inp}><option>5</option><option>10</option></select>
+                    <label className={styles.fLabel}>Duration (min)</label>
+                    <input
+                        className={styles.inp}
+                        type="number"
+                        min={1}
+                        step={1}
+                        placeholder="30"
+                        value={duration}
+                        onChange={(e) => setDuration(e.target.value)}
+                    />
+                </div>
+            </div>
+            <div className={styles.formRow3} style={{ marginTop: 10 }}>
+                <div>
+                    <label className={styles.fLabel}>Slot Duration (min)</label>
+                    <input
+                        className={styles.inp}
+                        type="number"
+                        min={1}
+                        step={1}
+                        placeholder="5"
+                        value={slotLength}
+                        onChange={(e) => setSlotLength(e.target.value)}
+                    />
                 </div>
                 <div>
                     <label className={styles.fLabel}>No. of slots</label>
-                    <input className={styles.inp} defaultValue="6" />
+                    <input className={styles.inp} value={numSlots > 0 ? String(numSlots) : '—'} readOnly style={{ color: 'var(--muted)' }} />
+                </div>
+                <div>
+                    <label className={styles.fLabel}>Viewing ends</label>
+                    <input className={styles.inp} value={viewingEnd || '—'} readOnly style={{ color: 'var(--muted)' }} />
                 </div>
             </div>
+            {participants.length > 0 && selected?.name && (
+                <p className={styles.hint} style={{ marginTop: 10 }}>
+                    Rescheduling <b>{selected.name}</b> ({selected.whatsapp_number}). The apartment's Cal.com links are regenerated for the new window before the WhatsApp reschedule notification is sent.
+                </p>
+            )}
         </ModalShell>
     );
 }
