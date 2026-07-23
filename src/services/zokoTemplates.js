@@ -29,7 +29,16 @@ export const ZOKO_TEMPLATES = {
     pdf_apartment_utility: { zokoId: 'pdf_apartment_utility', language: 'en', variableCount: 11, type: 'buttonTemplate', rich: true, verified: true, stage: '1. Listing sent', timing: 'Segment broadcast', label: 'Apartment PDF (segment broadcast)', vars: ['Brochure PDF URL', 'Candidate name', 'Address', 'Price (€/month)', 'Bedrooms', 'Square meters', 'Additional note', 'In-person viewing link', 'Facetime viewing link', '"I have questions" link', 'Unsubscribe link'] },
 
     // --- 2. Booking ---
-    booking_confirmed_sales_force: { zokoId: 'booking_confirmed_sales_force', language: 'en', variableCount: 4, type: 'buttonTemplate', verified: true, stage: '2. Booking', timing: 'Right after booking', label: 'Booking confirmed', vars: ['Candidate name', 'Apartment address', 'Viewing date', 'Viewing time'] },
+    // NOTE: the live Zoko template's "Upload documents" button URL is
+    // registered as https://www.apartmenthub.nl/{{5}} — a static domain
+    // prefix with a dynamic path-suffix variable. {{5}} is a PATH (e.g.
+    // aanvraag?apartment=<id>), not a full URL. The resulting button URL
+    // is https://www.apartmenthub.nl/aanvraag?apartment=<id>, which the
+    // existing /aanvraag?apartment= query-param route handles natively.
+    // Re-approval in Meta is required to add the variable; until that
+    // lands, the send site guards the 5th arg on tpl.variableCount >= 5
+    // so a 4-variable template still receives a safe 4-arg payload.
+    booking_confirmed_sales_force: { zokoId: 'booking_confirmed_sales_force', language: 'en', variableCount: 5, type: 'buttonTemplate', verified: true, stage: '2. Booking', timing: 'Right after booking', label: 'Booking confirmed', vars: ['Candidate name', 'Apartment address', 'Viewing date', 'Viewing time', 'Upload documents button URL path (appended to https://www.apartmenthub.nl/)'] },
 
     // --- 3. Before viewing ---
     sales_force_booking_reminder_2_hours_in_person_viewing: { zokoId: 'sales_force_booking_reminder_2_hours_in_person_viewing', language: 'en', variableCount: 6, type: 'buttonTemplate', verified: true, stage: '3. Before viewing', timing: '2 hours before', label: 'Reminder 2h — in-person', vars: ['Candidate name', 'Apartment address', 'Agent name', 'Agent contact', 'Facetime viewing link', 'Cancel viewing link'] },

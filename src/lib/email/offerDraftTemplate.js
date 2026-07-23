@@ -133,11 +133,11 @@ export function renderOfferDraftEmail({
     Hierbij de voordracht van mijn kandidaat: <b style="color:#497772">${escapeHtml(candidateName)}</b> voor <b>${escapeHtml(apartmentAddress)}</b>.
   </p>
 
-  <table style="font-size:14px;border-collapse:collapse;margin:0 0 16px">
-    <tr><td style="padding:2px 12px 2px 0;color:#46544f">Huur:</td><td><b>${fmtEuro(rent)}</b></td></tr>
-    <tr><td style="padding:2px 12px 2px 0;color:#46544f">Borg:</td><td><b>${fmtEuro(deposit)}</b></td></tr>
-    <tr><td style="padding:2px 12px 2px 0;color:#46544f">Ingangsdatum:</td><td><b>${fmtDate(startDate)}</b></td></tr>
-  </table>
+  <div style="margin:0 0 16px;font-size:14px;line-height:1.8">
+    <div><span style="color:#46544f;display:inline-block;width:110px">Huur:</span><b>${fmtEuro(rent)}</b></div>
+    <div><span style="color:#46544f;display:inline-block;width:110px">Borg:</span><b>${fmtEuro(deposit)}</b></div>
+    <div><span style="color:#46544f;display:inline-block;width:110px">Ingangsdatum:</span><b>${fmtDate(startDate)}</b></div>
+  </div>
 
   <p style="margin:0 0 16px;font-size:14px">Type kandidaat: <b>${escapeHtml(candidateType)}</b></p>
 

@@ -97,16 +97,24 @@ async function findApartmentForBooking(supabase, payload) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Send the "upload your documents" WhatsApp template directly to Zoko */
+/* Send the "booking confirmed" WhatsApp template directly to Zoko.   */
+/* The 5th arg (uploadPath) is only appended when the live Zoko       */
+/* template exposes a dynamic {{5}} button URL variable. The template */
+/* button is registered as https://www.apartmenthub.nl/{{5}}, so the  */
+/* 5th arg is a PATH suffix (e.g. aanvraag?apartment=<id>), not a     */
+/* full URL. Until Meta re-approves that edit, the catalog may         */
+/* temporarily still report variableCount: 4, in which case we send a */
+/* safe 4-arg body.                                                    */
 /* ------------------------------------------------------------------ */
-async function sendUploadDocsWhatsApp(recipient, name, uploadUrl) {
-    const tpl = ZOKO_TEMPLATES.new_flow_upload_documents;
+async function sendBookingConfirmedWhatsApp(recipient, name, apartmentAddress, viewingDate, viewingTime, uploadPath) {
+    const tpl = ZOKO_TEMPLATES.booking_confirmed_sales_force;
     const apiKey = process.env.ZOKO_API_KEY;
     if (!tpl?.verified || !tpl?.zokoId) return { sent: false, reason: 'template_not_verified' };
     if (!apiKey) return { sent: false, reason: 'no_api_key' };
     if (!recipient) return { sent: false, reason: 'no_recipient' };
 
-    const args = [name || '', uploadUrl || ''];
+    const args = [name || '', apartmentAddress || '', viewingDate || '', viewingTime || ''];
+    if (tpl.variableCount >= 5) args.push(uploadPath || '');
     try {
         const res = await fetch('https://chat.zoko.io/v2/message', {
             method: 'POST',
@@ -243,20 +251,29 @@ export async function POST(request) {
                     }
                 }
 
-                // WhatsApp: "upload your documents" — fires immediately after
-                // booking, complementing the existing 24h-before pg_cron
-                // reminder. Only sent for valid phone numbers (not email
-                // fallbacks) and never blocks the DB write or the 200 response.
+                // WhatsApp: "booking confirmed" — fires right after the
+                // candidate books a viewing via Cal.com. Sends the
+                // booking_confirmed_sales_force template with a dynamic
+                // upload-documents button URL ({{5}}) that carries the booked
+                // apartment id so /aanvraag pre-selects it after login. The
+                // template's button URL is registered as
+                // https://www.apartmenthub.nl/{{5}}, so {{5}} is a PATH suffix
+                // (e.g. aanvraag?apartment=<id>) — NOT a full URL. Only sent
+                // for valid phone numbers (not email fallbacks) and never
+                // blocks the DB write or the 200 response.
                 if (normalizedPhone && /^\d{7,15}$/.test(normalizedPhone)) {
                     const apartment = await findApartmentForBooking(supabase, body.payload);
-                    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://apartmenthub.nl';
-                    const uploadUrl = apartment
-                        ? `${siteUrl}/aanvraag?apartment=${apartment.id}`
-                        : `${siteUrl}/aanvraag`;
+                    const uploadPath = apartment
+                        ? `aanvraag?apartment=${apartment.id}`
+                        : 'aanvraag';
                     const displayName = name || lead.full_name || '';
+                    const apartmentAddress = apartment?.['Full Address'] || '';
+                    const startMs = body.payload.startTime ? new Date(body.payload.startTime).getTime() : Date.now();
+                    const viewingDate = new Date(startMs).toLocaleDateString('nl-NL');
+                    const viewingTime = new Date(startMs).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
                     try {
-                        results.whatsapp = await sendUploadDocsWhatsApp(normalizedPhone, displayName, uploadUrl);
-                        console.log('[webhook/calcom] WhatsApp upload-docs:', results.whatsapp);
+                        results.whatsapp = await sendBookingConfirmedWhatsApp(normalizedPhone, displayName, apartmentAddress, viewingDate, viewingTime, uploadPath);
+                        console.log('[webhook/calcom] WhatsApp booking-confirmed:', results.whatsapp);
                     } catch (err) {
                         console.error('[webhook/calcom] WhatsApp send error:', err);
                         results.whatsapp = { sent: false, reason: 'exception' };

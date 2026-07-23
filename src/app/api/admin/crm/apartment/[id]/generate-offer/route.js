@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import { serviceClient, requirePermission } from '@/services/crmAuth';
 import { isUuid, invalidId, failed } from '@/services/crmHttp';
 import { phoneCandidates } from '@/services/crmApplications';
-import { createDraft } from '@/lib/gmail/client';
+import { createDraft, createDraftWithAttachments } from '@/lib/gmail/client';
 import { renderOfferDraftEmail, deriveCandidateType } from '@/lib/email/offerDraftTemplate';
 import { analyzeCandidateProfile } from '@/app/lib/candidate-profile';
+import { buildApplicationZip } from '@/services/crmApplications';
 
 // "Generate Offer" — creates a Gmail draft in the LOGGED-IN agent's mailbox,
 // addressed to the apartment's real estate agent, presenting the candidate
@@ -331,9 +332,50 @@ export async function POST(request, { params }) {
         };
         const { to, subject, html } = renderOfferDraftEmail(emailArgs);
 
+        // 9. Build a ZIP of the applicant's uploaded documents and attach it
+        //    to the Gmail draft. Best-effort: if the ZIP build fails or the
+        //    archive exceeds Gmail's 25MB message limit (we cap at 20MB to
+        //    leave room for the HTML body + base64 inflation), the draft is
+        //    still created without an attachment. Never block the draft on
+        //    the attachment.
+        let attachments = [];
+        let zipSkipReason = null;
+        let zipFileCount = 0;
+        try {
+            const zipResult = await buildApplicationZip(supabase, account.id, { apartmentId: id });
+            if (zipResult) {
+                const zipBytes = zipResult.buffer.byteLength;
+                zipFileCount = zipResult.fileCount;
+                // Base64 encoding inflates by ~33%, so a 20MB ZIP becomes
+                // ~27MB in the raw message. Gmail's total message limit is
+                // 25MB, so cap the ZIP at 18MB to stay safely under.
+                const ZIP_MAX_BYTES = 18 * 1024 * 1024;
+                if (zipBytes > ZIP_MAX_BYTES) {
+                    zipSkipReason = `ZIP too large (${(zipBytes / 1024 / 1024).toFixed(1)}MB > 18MB limit)`;
+                    console.warn('[generate-offer] Skipping attachment:', zipSkipReason);
+                } else {
+                    attachments = [{
+                        filename: zipResult.filename,
+                        contentType: 'application/zip',
+                        content: zipResult.buffer,
+                    }];
+                    console.log('[generate-offer] Attached ZIP:', zipResult.filename, `(${zipResult.fileCount} files, ${(zipBytes / 1024 / 1024).toFixed(1)}MB)`);
+                }
+            } else {
+                zipSkipReason = 'no downloadable files';
+            }
+        } catch (zipErr) {
+            zipSkipReason = zipErr?.message || 'build failed';
+            console.warn('[generate-offer] ZIP build failed, continuing without attachment:', zipErr);
+        }
+
         let draft;
         try {
-            draft = await createDraft(crm.email, { to, subject, html });
+            if (attachments.length > 0) {
+                draft = await createDraftWithAttachments(crm.email, { to, subject, html, attachments });
+            } else {
+                draft = await createDraft(crm.email, { to, subject, html });
+            }
         } catch (gmailErr) {
             console.error('[generate-offer] Gmail draft creation failed:', gmailErr);
             const msg = gmailErr?.errors?.[0]?.message || gmailErr?.message || 'Gmail API error';
@@ -355,6 +397,9 @@ export async function POST(request, { params }) {
             recipient_source: recipientSource,
             recipient_name: agent?.contact_person_name || agent?.name || '',
             ai_profile: aiProfileData,
+            attachment: attachments.length > 0
+                ? { filename: attachments[0].filename, file_count: zipFileCount }
+                : { skipped: true, reason: zipSkipReason },
         });
     } catch (err) {
         return failed('crm/generate-offer POST', err, 'Failed to generate offer draft');

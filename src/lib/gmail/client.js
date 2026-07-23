@@ -86,3 +86,60 @@ export async function createDraft(userEmail, { to, cc, bcc, subject, html }) {
     });
     return { id: data.id, threadId: data.threadId };
 }
+
+// Build a Gmail draft message (RFC 2822) as base64url, with the HTML body
+// and one or more file attachments encoded as a multipart/mixed message.
+// Each attachment is { filename, contentType, content: Buffer | ArrayBuffer }.
+export function buildDraftRawWithAttachments({ to, cc, bcc, subject, html, attachments }) {
+    const toList = Array.isArray(to) ? to.join(', ') : to;
+    const ccList = Array.isArray(cc) ? cc.join(', ') : cc;
+    const bccList = Array.isArray(bcc) ? bcc.join(', ') : bcc;
+
+    const boundary = 'ahub_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+
+    const headers = [
+        toList ? `To: ${toList}` : null,
+        ccList ? `Cc: ${ccList}` : null,
+        bccList ? `Bcc: ${bccList}` : null,
+        subject ? `Subject: ${subject}` : null,
+        'MIME-Version: 1.0',
+        `Content-Type: multipart/mixed; boundary="${boundary}"`,
+    ].filter(Boolean);
+
+    const parts = [`\r\n--${boundary}\r\nContent-Type: text/html; charset=utf-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n${html}`];
+
+    for (const att of (attachments || [])) {
+        const buf = Buffer.isBuffer(att.content) ? att.content : Buffer.from(att.content);
+        const b64 = buf.toString('base64');
+        const filename = att.filename || 'attachment';
+        const contentType = att.contentType || 'application/octet-stream';
+        parts.push(
+            `\r\n--${boundary}\r\n`
+            + `Content-Type: ${contentType}; name="${filename}"\r\n`
+            + `Content-Transfer-Encoding: base64\r\n`
+            + `Content-Disposition: attachment; filename="${filename}"\r\n\r\n`
+            + b64
+        );
+    }
+
+    parts.push(`\r\n--${boundary}--\r\n`);
+
+    const rfc2822 = `${headers.join('\r\n')}\r\n${parts.join('')}`;
+    return Buffer.from(rfc2822, 'utf8').toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+}
+
+// Create a draft with file attachments in the impersonated user's Gmail.
+// `attachments` is an array of { filename, contentType, content: Buffer | ArrayBuffer }.
+// Returns { id, threadId }.
+export async function createDraftWithAttachments(userEmail, { to, cc, bcc, subject, html, attachments }) {
+    const gmail = createGmailClient(userEmail);
+    const raw = buildDraftRawWithAttachments({ to, cc, bcc, subject, html, attachments });
+    const { data } = await gmail.users.drafts.create({
+        userId: 'me',
+        requestBody: { message: { raw } },
+    });
+    return { id: data.id, threadId: data.threadId };
+}
