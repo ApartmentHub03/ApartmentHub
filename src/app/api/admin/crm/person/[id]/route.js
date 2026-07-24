@@ -37,7 +37,7 @@ export async function DELETE(request, { params }) {
         // 1. Fetch the person and verify they're not a main tenant.
         const { data: person, error: personErr } = await supabase
             .from('personen')
-            .select('id, dossier_id, rol, type, telefoon, voornaam, achternaam, naam')
+            .select('id, dossier_id, rol, type, telefoon, voornaam, achternaam')
             .eq('id', id)
             .maybeSingle();
 
@@ -88,7 +88,7 @@ export async function DELETE(request, { params }) {
         //       account and matches this person's role → unlink.
         //    b) Remove this person from the main tenant's co_tenants JSONB.
         const personPhone = person.telefoon || null;
-        const personName = [person.voornaam, person.achternaam].filter(Boolean).join(' ').trim() || person.naam || null;
+        const personName = [person.voornaam, person.achternaam].filter(Boolean).join(' ').trim() || null;
 
         // Find the main tenant's dossier owner account.
         const { data: dossier } = await supabase
