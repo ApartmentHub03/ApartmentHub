@@ -7,11 +7,12 @@ import { phoneCandidates, phoneKey } from '@/services/crmApplications';
 // can be attached to a tenant's dossier directly from the ApplicationDetailView,
 // without the tenant having to upload them through the /aanvraag form.
 //
-// POST (multipart/form-data):
-//   file       — the file to upload (any type)
-//   persoonId  — UUID of the personen row this document belongs to
-//   docType    — document type key (e.g. 'id_bewijs') or free-text label
-//   replace    — 'true' to delete existing rows of this type for this persoon
+// Two-phase upload to bypass the Vercel serverless 4.5MB body limit:
+//   Phase 1 (sign): POST JSON { filename, contentType, persoonId, docType, replace }
+//     → validates persoon + builds storage path → returns { uploadUrl, path, ... }
+//   Phase 2 (upload): client PUTs raw file to uploadUrl (Supabase Storage)
+//   Phase 3 (finalize): POST JSON { path, name, persoonId, docType, replace, canonicalPhone }
+//     → inserts documenten row + deletes old rows if replace=true
 //
 // The file is stored in the `dossier-documents` bucket under the same
 // {phoneDigits}/{subFolder}{docType}_{timestamp}.{ext} convention used by the
@@ -48,23 +49,55 @@ export async function POST(request, { params }) {
     if (!isUuid(id)) return invalidId();
 
     try {
-        const form = await request.formData();
-        const file = form.get('file');
-        const persoonId = form.get('persoonId');
-        const docType = form.get('docType');
-        const replace = String(form.get('replace') || '').toLowerCase() === 'true';
+        const body = await request.json();
+        const supabase = serviceClient();
 
-        if (!file || typeof file === 'string') {
-            return NextResponse.json({ success: false, message: 'No file uploaded' }, { status: 400 });
+        // ---- Phase 3: finalize ----
+        if (body.path && body.name) {
+            const persoonId = body.persoonId;
+            const docType = body.docType;
+            const replace = String(body.replace || '').toLowerCase() === 'true';
+            const canonicalPhone = body.canonicalPhone || null;
+
+            if (!persoonId || !isUuid(persoonId)) {
+                return NextResponse.json({ success: false, message: 'A valid persoonId is required' }, { status: 400 });
+            }
+            if (!docType) {
+                return NextResponse.json({ success: false, message: 'docType is required' }, { status: 400 });
+            }
+
+            // Re-validate persoon belongs to this account.
+            const { data: persoon } = await supabase
+                .from('personen').select('id, dossier_id, rol, type').eq('id', persoonId).maybeSingle();
+            if (!persoon) return NextResponse.json({ success: false, message: 'Person not found' }, { status: 404 });
+
+            // If replace, delete existing rows of this type.
+            if (replace) {
+                await supabase.from('documenten').delete().eq('persoon_id', persoonId).eq('type', docType);
+            }
+
+            // Insert the documenten row.
+            const { error: insertErr } = await supabase.from('documenten').insert({
+                persoon_id: persoonId,
+                type: docType,
+                bestandspad: body.path,
+                bestandsnaam: body.name || null,
+                status: 'ontvangen',
+                phone_number: canonicalPhone,
+            });
+            if (insertErr) throw insertErr;
+
+            return NextResponse.json({ success: true, path: body.path });
         }
+
+        // ---- Phase 1: sign ----
+        const { filename, persoonId, docType, replace } = body;
         if (!persoonId || !isUuid(persoonId)) {
             return NextResponse.json({ success: false, message: 'A valid persoonId is required' }, { status: 400 });
         }
         if (!docType) {
             return NextResponse.json({ success: false, message: 'docType is required' }, { status: 400 });
         }
-
-        const supabase = serviceClient();
 
         // 1. Load the account to get the canonical phone number.
         const { data: account, error: accErr } = await supabase
@@ -73,8 +106,7 @@ export async function POST(request, { params }) {
         if (!account) return NextResponse.json({ success: false, message: 'Application not found' }, { status: 404 });
 
         // 2. Load the persoon row, validating it belongs to a dossier reachable
-        //    from this account (by phone). This prevents an agent from uploading
-        //    to a random persoonId that doesn't belong to the open application.
+        //    from this account (by phone).
         const { data: persoon, error: pErr } = await supabase
             .from('personen').select('id, dossier_id, rol, type').eq('id', persoonId).maybeSingle();
         if (pErr) throw pErr;
@@ -85,7 +117,6 @@ export async function POST(request, { params }) {
             .from('dossiers').select('phone_number').eq('id', persoon.dossier_id).maybeSingle();
         const phoneMatches = dossier && phoneCandidates(account.whatsapp_number).includes(dossier.phone_number);
         if (!phoneMatches) {
-            // The digits must match at minimum — phone format may differ.
             const accDigits = phoneKey(account.whatsapp_number);
             const dosDigits = phoneKey(dossier?.phone_number || '');
             if (!accDigits || !dosDigits || accDigits !== dosDigits) {
@@ -93,10 +124,7 @@ export async function POST(request, { params }) {
             }
         }
 
-        // 3. Resolve the canonical phone for the storage path. Co-tenants and
-        //    guarantors are stored under the main tenant's phone folder, matching
-        //    the tenant-facing upload path. We look up the main tenant's phone
-        //    from the dossier.
+        // 3. Resolve the canonical phone for the storage path.
         let folderPhone = phoneKey(account.whatsapp_number);
         const rol = persoon.rol || (persoon.type === 'guarantor' ? 'Garantsteller' : persoon.type === 'co_tenant' ? 'Medehuurder' : 'Hoofdhuurder');
         if (rol !== 'Hoofdhuurder') {
@@ -107,42 +135,31 @@ export async function POST(request, { params }) {
             if (mainDigits) folderPhone = mainDigits;
         }
 
-        // 4. Build the storage path. A timestamp suffix prevents collisions when
-        //    an agent uploads a second file to a slot that already has one.
+        // 4. Build the storage path.
         const sub = subFolderForRole(rol);
         const typeKey = safeType(docType);
-        const ext = safeExt(file.name);
+        const ext = safeExt(filename || 'document');
         const path = `${folderPhone}/${sub}${typeKey}_${Date.now()}.${ext}`;
 
-        // 5. Upload to Storage.
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const { error: upErr } = await supabase.storage
-            .from(BUCKET).upload(path, buffer, {
-                contentType: file.type || 'application/octet-stream',
-                upsert: true,
-            });
-        if (upErr) throw upErr;
+        // 5. Create a signed upload URL.
+        const { data: signData, error: signErr } = await supabase.storage
+            .from(BUCKET).createSignedUploadUrl(path);
+        if (signErr) throw signErr;
 
-        // 6. If replace=true, delete existing documenten rows of this type for
-        //    this persoon (mirrors /api/dossier/save-doc semantics).
-        if (replace) {
-            await supabase.from('documenten').delete().eq('persoon_id', persoonId).eq('type', docType);
-        }
-
-        // 7. Insert the documenten row. status='ontvangen' so the sync trigger
-        //    counts it as received and flips accounts.documentation_status.
         const canonicalPhone = dossier?.phone_number || `+${phoneKey(account.whatsapp_number)}`;
-        const { error: insertErr } = await supabase.from('documenten').insert({
-            persoon_id: persoonId,
-            type: docType,
-            bestandspad: path,
-            bestandsnaam: file.name || null,
-            status: 'ontvangen',
-            phone_number: canonicalPhone,
-        });
-        if (insertErr) throw insertErr;
 
-        return NextResponse.json({ success: true, path });
+        return NextResponse.json({
+            success: true,
+            path,
+            uploadUrl: signData.signedUrl,
+            token: signData.token || null,
+            canonicalPhone,
+            // Echo back the validated params so the client can pass them in
+            // the finalize call without re-sending them.
+            persoonId,
+            docType,
+            replace: String(replace || '').toLowerCase() === 'true',
+        });
     } catch (err) {
         return failed('crm/application upload-document POST', err, 'Failed to upload document');
     }

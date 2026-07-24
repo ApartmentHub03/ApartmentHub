@@ -314,14 +314,31 @@ export function ApartmentRecordView({ aptId, onBack, onOpenApplication, onToast,
     async function uploadPdf(file: File) {
         setPdfLoading(true);
         try {
-            const fd = new FormData();
-            fd.append('file', file);
-            const res = await fetch(`/api/admin/crm/apartment/${aptId}/pdf`, {
+            const authHdr = { Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` };
+            // 1. Get a signed upload URL from the API (small JSON request).
+            const signRes = await fetch(`/api/admin/crm/apartment/${aptId}/pdf`, {
                 method: 'POST',
-                headers: { Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
-                body: fd,
+                headers: { 'Content-Type': 'application/json', ...authHdr },
+                body: JSON.stringify({ filename: file.name, contentType: file.type }),
             });
-            const data = await res.json();
+            const signData = await signRes.json();
+            if (!signData.success) { onToast(signData.message || 'Upload failed'); return; }
+
+            // 2. Upload directly to Supabase Storage (bypasses Vercel body limit).
+            const upRes = await fetch(signData.uploadUrl, {
+                method: 'PUT',
+                headers: { 'Content-Type': file.type || 'application/octet-stream' },
+                body: file,
+            });
+            if (!upRes.ok) { onToast('Storage upload failed'); return; }
+
+            // 3. Finalize — record the path on the apartment.
+            const finRes = await fetch(`/api/admin/crm/apartment/${aptId}/pdf`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...authHdr },
+                body: JSON.stringify({ path: signData.path, name: file.name }),
+            });
+            const data = await finRes.json();
             if (data.success) { setPdf(data.pdf); onToast('Brochure PDF uploaded'); }
             else onToast(data.message || 'Upload failed');
         } catch { onToast('Upload failed'); }

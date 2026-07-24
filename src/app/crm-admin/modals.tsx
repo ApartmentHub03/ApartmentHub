@@ -948,17 +948,46 @@ export function UploadDocumentModal({ accountId, persoonId, persoonName, onClose
         if (!file) { onToast('Select a file'); return; }
         setUploading(true);
         try {
-            const fd = new FormData();
-            fd.append('file', file);
-            fd.append('persoonId', persoonId);
-            fd.append('docType', resolvedType);
-            fd.append('replace', String(replace));
-            const res = await fetch(`/api/admin/crm/application/${accountId}/upload-document`, {
+            const authHdr = { Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` };
+            const jsonHdr = { 'Content-Type': 'application/json', ...authHdr };
+
+            // 1. Get a signed upload URL from the API (small JSON request).
+            const signRes = await fetch(`/api/admin/crm/application/${accountId}/upload-document`, {
                 method: 'POST',
-                headers: { Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
-                body: fd,
+                headers: jsonHdr,
+                body: JSON.stringify({
+                    filename: file.name,
+                    contentType: file.type,
+                    persoonId,
+                    docType: resolvedType,
+                    replace,
+                }),
             });
-            const data = await res.json();
+            const signData = await signRes.json();
+            if (!signData.success) { onToast(signData.message || 'Upload failed'); return; }
+
+            // 2. Upload directly to Supabase Storage (bypasses Vercel body limit).
+            const upRes = await fetch(signData.uploadUrl, {
+                method: 'PUT',
+                headers: { 'Content-Type': file.type || 'application/octet-stream' },
+                body: file,
+            });
+            if (!upRes.ok) { onToast('Storage upload failed'); return; }
+
+            // 3. Finalize — insert the documenten row.
+            const finRes = await fetch(`/api/admin/crm/application/${accountId}/upload-document`, {
+                method: 'POST',
+                headers: jsonHdr,
+                body: JSON.stringify({
+                    path: signData.path,
+                    name: file.name,
+                    persoonId: signData.persoonId,
+                    docType: signData.docType,
+                    replace: signData.replace,
+                    canonicalPhone: signData.canonicalPhone,
+                }),
+            });
+            const data = await finRes.json();
             if (data.success) {
                 onToast('Document uploaded');
                 onSaved?.();
