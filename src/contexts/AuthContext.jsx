@@ -143,9 +143,12 @@ export const AuthProvider = ({ children }) => {
 
         // Clear the in-progress aanvraag draft so a stale draft from this
         // session can't resurrect deleted/unsubmitted personen on the next
-        // login. Keyed by phone — only this user's draft is cleared.
-        if (authState.phoneNumber) {
-            clearAanvraagDraft(authState.phoneNumber);
+        // login. Read the phone from localStorage (not authState) because the
+        // useCallback closure captures authState from the first render, when
+        // phoneNumber is still null — the closure value never updates.
+        const storedPhone = localStorage.getItem('auth_phone');
+        if (storedPhone) {
+            clearAanvraagDraft(storedPhone);
         }
 
         // Clear localStorage
@@ -157,6 +160,12 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('auth_last_name');
         localStorage.removeItem('auth_user_role');
         localStorage.removeItem('auth_persoon_id');
+        localStorage.removeItem('pending_apartment_selected');
+        localStorage.removeItem('invite_dossier_id');
+        localStorage.removeItem('invite_role');
+        localStorage.removeItem('invite_persoon_id');
+        localStorage.removeItem('invite_token');
+        sessionStorage.removeItem('loiData');
 
         // Clear state
         setAuthState({
