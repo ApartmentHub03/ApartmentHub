@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { ChevronDown, ChevronUp, CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
 import { translations } from '../../data/translations';
@@ -15,6 +15,8 @@ const GuarantorCard = ({
     onSendWhatsAppLink,
     onRemove,
     onFormDataChange,
+    isPhoneDuplicate,
+    getPhoneConflict,
     readOnly = false,
     hideIncome = false
 }) => {
@@ -57,6 +59,22 @@ const GuarantorCard = ({
     const isComplete = totalDocsCount > 0 ? completedDocsCount === totalDocsCount : true;
     const progress = totalDocsCount > 0 ? Math.round((completedDocsCount / totalDocsCount) * 100) : 100;
 
+    const calculateFormProgress = useCallback(() => {
+        const requiredFields = [
+            { key: 'naam', filled: formData.naam.trim() !== '' },
+            { key: 'email', filled: formData.email.trim() !== '' },
+            { key: 'telefoon', filled: formData.telefoon.trim() !== '' },
+            { key: 'workStatus', filled: workStatus !== null },
+        ];
+        if (!hideIncome) {
+            requiredFields.push({ key: 'inkomen', filled: formData.inkomen.toString().trim() !== '' });
+        }
+        const filledCount = requiredFields.filter(f => f.filled).length;
+        return Math.round((filledCount / requiredFields.length) * 100);
+    }, [formData.naam, formData.email, formData.telefoon, formData.inkomen, workStatus, hideIncome]);
+
+    const formProgress = calculateFormProgress();
+
     // Notify parent of both form fields and document completion status.
     const onFormDataChangeRef = useRef(onFormDataChange);
     onFormDataChangeRef.current = onFormDataChange;
@@ -74,12 +92,13 @@ const GuarantorCard = ({
                 workStatus,
                 overallProgress: progress,
                 isDocsComplete: isComplete,
+                isFormComplete: formProgress === 100,
             });
         }
     }, [
         formData.naam, formData.email, formData.telefoon, formData.adres,
         formData.postcode, formData.woonplaats, formData.inkomen,
-        workStatus, progress, isComplete, persoon.persoonId,
+        workStatus, progress, isComplete, formProgress, persoon.persoonId,
     ]);
 
     const handleWorkStatusChange = (status) => {
@@ -165,6 +184,41 @@ const GuarantorCard = ({
                                 onChange={(e) => handleInputChange('email', e.target.value)}
                                 disabled={readOnly}
                             />
+                        </div>
+
+                        <div className={styles.formItem}>
+                            <label className={styles.label}>
+                                {currentLang === 'en' ? 'Phone number' : 'Telefoonnummer'} *
+                            </label>
+                            <input
+                                type="tel"
+                                className={`${styles.input} ${isPhoneDuplicate && formData.telefoon && isPhoneDuplicate(formData.telefoon, persoon.persoonId) ? styles.inputError : ''}`}
+                                placeholder="+31 6 12345678"
+                                value={formData.telefoon}
+                                onChange={(e) => handleInputChange('telefoon', e.target.value)}
+                                disabled={readOnly}
+                            />
+                            {isPhoneDuplicate && formData.telefoon && isPhoneDuplicate(formData.telefoon, persoon.persoonId) && (
+                                <p className={styles.fieldError}>
+                                    {(() => {
+                                        const en = currentLang === 'en';
+                                        const roleLabels = en
+                                            ? { Hoofdhuurder: 'main tenant', Medehuurder: 'co-tenant', Garantsteller: 'guarantor' }
+                                            : { Hoofdhuurder: 'hoofdhuurder', Medehuurder: 'medehuurder', Garantsteller: 'garantsteller' };
+                                        const conflict = getPhoneConflict ? getPhoneConflict(formData.telefoon, persoon.persoonId) : null;
+                                        if (conflict) {
+                                            const label = roleLabels[conflict.rol] || conflict.rol;
+                                            const namePart = conflict.naam ? ` (${conflict.naam})` : '';
+                                            return en
+                                                ? `This phone number is already used as ${label}${namePart} in this application. Each person can only have one role per application.`
+                                                : `Dit telefoonnummer wordt al gebruikt als ${label}${namePart} in deze aanvraag. Elke persoon kan maar één rol per aanvraag hebben.`;
+                                        }
+                                        return en
+                                            ? 'This phone number is already used by another person in this application'
+                                            : 'Dit telefoonnummer wordt al gebruikt door een andere persoon in deze aanvraag';
+                                    })()}
+                                </p>
+                            )}
                         </div>
 
                         <div className={styles.grid}>
@@ -287,6 +341,8 @@ const GuarantorFormSection = ({
     onAddGuarantor,
     onRemove,
     onFormDataChange,
+    isPhoneDuplicate,
+    getPhoneConflict,
     readOnly = false,
     hideIncome = false
 }) => {
@@ -301,6 +357,8 @@ const GuarantorFormSection = ({
                     onSendWhatsAppLink={onSendWhatsAppLink}
                     onRemove={onRemove}
                     onFormDataChange={onFormDataChange}
+                    isPhoneDuplicate={isPhoneDuplicate}
+                    getPhoneConflict={getPhoneConflict}
                     readOnly={readOnly}
                     hideIncome={hideIncome}
                 />

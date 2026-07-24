@@ -182,6 +182,21 @@
     width: 100%;
 }
 
+.inputError {
+    border-color: #ef4444;
+}
+
+.inputError:focus {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+.fieldError {
+    font-size: 0.75rem;
+    color: #ef4444;
+    margin: 0.25rem 0 0;
+}
+
 .inputWrapper {
     position: relative;
     display: flex;

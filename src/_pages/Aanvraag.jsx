@@ -1989,6 +1989,8 @@ const Aanvraag = ({ preselectedApartmentId }) => {
                                                             onFormDataChange={handleFormDataChange}
                                                             readOnly={gReadOnly}
                                                             hideIncome={!gIsself}
+                                                            isPhoneDuplicate={isPhoneDuplicate}
+                                                            getPhoneConflict={getPhoneConflict}
                                                         />
                                                     </div>
                                                 );
