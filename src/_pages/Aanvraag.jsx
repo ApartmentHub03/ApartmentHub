@@ -8,7 +8,7 @@ import { LogOut, CheckCircle, Plus, AlertCircle } from 'lucide-react';
 import { translations } from '../data/translations';
 import { useAuth } from '../contexts/AuthContext';
 import { loadAanvraagDataFromSupabase, deletePersonFromSupabase } from '../services/aanvraagDataService';
-import { saveAanvraagDraft, loadAanvraagDraft, mergePersonenWithDraft } from '../services/aanvraagDraft';
+import { saveAanvraagDraft, loadAanvraagDraft, mergePersonenWithDraft, clearAanvraagDraft } from '../services/aanvraagDraft';
 import { uploadDocument, deleteDocument } from '../services/documentStorageService';
 import { getRequiredDocuments } from '../utils/documentRequirements';
 import { sendTenantDataEvent, sendDocumentUploadEvent, sendMultipleDocumentsEvent } from '../services/webhookService';
@@ -1514,6 +1514,10 @@ const Aanvraag = ({ preselectedApartmentId }) => {
                 dossierSaved = !!saveJson.success;
                 if (dossierSaved) {
                     console.log('[Aanvraag] ✓ Dossier saved to Supabase:', saveJson.dossierId, '→ documentation_status', saveJson.documentation_status);
+                    // Clear the local draft so a stale draft can never resurrect
+                    // deleted/unsubmitted personen on the next visit. Supabase is
+                    // now canonical for everything in the dossier.
+                    clearAanvraagDraft(phoneNumber);
                     // Capture the server-resolved accountId. Login.jsx's browser-side
                     // lookup often fails for freshly-provisioned accounts (the accounts
                     // row may not exist at login time), so accountId can be null in

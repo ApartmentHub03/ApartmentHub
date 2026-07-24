@@ -59,11 +59,18 @@ export function clearAanvraagDraft(phone) {
 // personIds are not stable (SF assigns p1..pN by order; the draft keeps its
 // own), so match on role + phone, falling back to name when phone is absent
 // (guarantors often have neither a phone nor a name yet).
-const personKey = (p) => {
-    const rol = p?.rol || 'Hoofdhuurder';
-    const phone = digits(p?.telefoon);
-    const name = String(p?.naam || '').trim().toLowerCase();
-    return `${rol}|${phone || name}`;
+//
+// We build TWO indexes so a person who has a phone in one source but only a
+// name in the other still matches (instead of being treated as a different
+// person and duplicated).
+const roleOf = (p) => p?.rol || 'Hoofdhuurder';
+const phoneKeyPart = (p) => {
+    const d = digits(p?.telefoon);
+    return d || null;
+};
+const nameKeyPart = (p) => {
+    const n = String(p?.naam || '').trim().toLowerCase();
+    return n || null;
 };
 
 // Union a person's documenten by type: keep the Salesforce entry when present
@@ -79,25 +86,45 @@ function mergeDocumenten(sfDocs, draftDocs) {
 const isEmpty = (v) => v == null || v === '';
 
 /**
- * Merge the Salesforce-derived personen list with the locally saved draft.
- * SF wins for any field it provides; the draft fills empty fields, restores
- * the tenant<->guarantor link, and re-adds whole people SF didn't return
- * (the guarantor-with-no-documents case).
+ * Merge the Supabase-derived personen list with the locally saved draft.
+ * Supabase wins for any field it provides; the draft fills empty fields,
+ * restores the tenant<->guarantor link, and re-adds whole people Supabase
+ * didn't return (the guarantor-with-no-documents case).
+ *
+ * A Hoofdhuurder is never re-added from the draft — Supabase is canonical for
+ * the main tenant and there must be exactly one per dossier.
  */
 export function mergePersonenWithDraft(sfPersonen, draftPersonen) {
     if (!Array.isArray(draftPersonen) || draftPersonen.length === 0) {
         return sfPersonen;
     }
     const result = (sfPersonen || []).map((p) => ({ ...p }));
-    const indexByKey = new Map();
-    result.forEach((p, i) => indexByKey.set(personKey(p), i));
+
+    // Build two lookup indexes for the existing (Supabase) personen so a
+    // draft person can match by phone OR name even when only one source has it.
+    const byPhone = new Map();   // `${rol}|${digits}` → index
+    const byName = new Map();    // `${rol}|${name}`    → index
+    result.forEach((p, i) => {
+        const rol = roleOf(p);
+        const ph = phoneKeyPart(p);
+        const nm = nameKeyPart(p);
+        if (ph) byPhone.set(`${rol}|${ph}`, i);
+        if (nm) byName.set(`${rol}|${nm}`, i);
+    });
 
     for (const dp of draftPersonen) {
-        const k = personKey(dp);
-        if (indexByKey.has(k)) {
-            const i = indexByKey.get(k);
-            const sp = result[i];
-            result[i] = {
+        const rol = roleOf(dp);
+        const dpPhone = phoneKeyPart(dp);
+        const dpName = nameKeyPart(dp);
+
+        // Try to match: first by phone, then by name.
+        let matchIdx = -1;
+        if (dpPhone) matchIdx = byPhone.get(`${rol}|${dpPhone}`) ?? -1;
+        if (matchIdx === -1 && dpName) matchIdx = byName.get(`${rol}|${dpName}`) ?? -1;
+
+        if (matchIdx >= 0) {
+            const sp = result[matchIdx];
+            result[matchIdx] = {
                 ...sp,
                 naam: isEmpty(sp.naam) ? (dp.naam || '') : sp.naam,
                 email: isEmpty(sp.email) ? (dp.email || '') : sp.email,
@@ -111,8 +138,13 @@ export function mergePersonenWithDraft(sfPersonen, draftPersonen) {
                 documenten: mergeDocumenten(sp.documenten, dp.documenten),
             };
         } else {
-            // SF didn't return this person (e.g. a guarantor added but with no
-            // documents yet). Re-add them from the draft so they don't vanish.
+            // Supabase didn't return this person (e.g. a guarantor added but
+            // with no documents yet). Re-add them from the draft so they don't
+            // vanish — but NEVER re-add a Hoofdhuurder: Supabase is canonical
+            // for the main tenant and there must be exactly one per dossier.
+            // A stale draft Hoofdhuurder from a previous session (or after CRM
+            // deletion) would otherwise create a duplicate.
+            if (rol === 'Hoofdhuurder') continue;
             result.push({ ...dp });
         }
     }

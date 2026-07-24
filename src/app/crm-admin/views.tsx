@@ -3132,8 +3132,6 @@ export function DevToolsView({ onToast, onSaved, onModal, reloadSignal }: { onTo
     const [result, setResult] = useState<{ deleted: Record<string, number>; storageErrors?: string[]; warnings?: { step: string; message: string }[]; phone?: string; lsCleared?: number } | null>(null);
     const [segments, setSegments] = useState<Segment[]>([]);
     const [segLoading, setSegLoading] = useState(true);
-    const [zokoRefreshing, setZokoRefreshing] = useState(false);
-    const [zokoProgress, setZokoProgress] = useState<{ current: number; total: number; name: string } | null>(null);
 
     const digits = (s: string) => s.replace(/\D/g, '');
 
@@ -3160,73 +3158,6 @@ export function DevToolsView({ onToast, onSaved, onModal, reloadSignal }: { onTo
         loadSegments();
         return () => { cancelled = true; };
     }, [onToast, reloadSignal]);
-
-    async function refreshFromZoko() {
-        if (zokoRefreshing) return;
-        setZokoRefreshing(true);
-        setZokoProgress({ current: 0, total: 0, name: 'Fetching segment list…' });
-        try {
-            const token = sessionStorage.getItem('crm_token');
-            const listRes = await fetch('/api/admin/crm/sync/zoko-segments', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            const listData = await listRes.json();
-            if (!listData.success || !Array.isArray(listData.segments)) {
-                onToast(listData.message || 'Failed to list Zoko segments');
-                setZokoRefreshing(false);
-                setZokoProgress(null);
-                return;
-            }
-
-            const zokoSegments = listData.segments;
-            const batchId = `zoko-${Date.now()}`;
-            let totalMembers = 0;
-
-            for (let i = 0; i < zokoSegments.length; i++) {
-                if (i > 0) await new Promise((r) => setTimeout(r, 5200)); // respect Zoko 1 req / 5 sec rate limit
-                const seg = zokoSegments[i];
-                setZokoProgress({ current: i + 1, total: zokoSegments.length, name: seg.name || seg.id });
-                try {
-                    const syncRes = await fetch('/api/admin/crm/sync/zoko-segments', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                        body: JSON.stringify({
-                            zokoSegmentId: seg.id,
-                            zokoSegmentName: seg.name,
-                            zokoCreatedAt: seg.createdAt,
-                            batchId,
-                            finalize: i === zokoSegments.length - 1,
-                        }),
-                    });
-                    const syncData = await syncRes.json();
-                    if (syncData.success) {
-                        totalMembers += syncData.memberCount || 0;
-                    } else {
-                        console.error('[refreshFromZoko] segment sync failed:', seg.name, syncData.message);
-                    }
-                } catch (err) {
-                    console.error('[refreshFromZoko] segment sync error:', seg.name, err);
-                }
-            }
-
-            onToast(`Synced ${zokoSegments.length} segments, ${totalMembers} total members`);
-            // Reload segment counts.
-            setSegLoading(true);
-            const segRes = await fetch('/api/admin/crm/segments', {
-                headers: { Authorization: `Bearer ${sessionStorage.getItem('crm_token')}` },
-            });
-            const segData = await segRes.json();
-            if (segData.success && Array.isArray(segData.segments)) {
-                setSegments(segData.segments);
-            }
-        } catch (err) {
-            console.error('[refreshFromZoko] error:', err);
-            onToast('Failed to refresh from Zoko');
-        } finally {
-            setZokoRefreshing(false);
-            setZokoProgress(null);
-        }
-    }
 
     async function doPreview() {
         const trimmed = phone.trim();
@@ -3445,42 +3376,6 @@ export function DevToolsView({ onToast, onSaved, onModal, reloadSignal }: { onTo
                             Safety: the route refuses to run if a phone matches more than 5 accounts or 3 dossiers (a test dossier never should). Every DELETE is scoped to resolved ids only.
                         </p>
                     </div>
-                </div>
-            </div>
-
-            <div className={styles.card} style={{ marginTop: 16 }}>
-                <div className={styles.cardHead}>
-                    <h3>Refresh segments from Zoko</h3>
-                    <span className={`${styles.hint} ${styles.cardHeadSp}`}>pulls live segments + members via Zoko API</span>
-                </div>
-                <div className={styles.cardBody}>
-                    <p style={{ marginTop: 0, fontSize: 13, lineHeight: 1.6 }}>
-                        Fetches all segments and their members directly from the Zoko Segments API.
-                        Each segment replaces its current member list. Takes ~5 seconds per segment
-                        due to the Zoko rate limit.
-                    </p>
-                    <button
-                        className={`${styles.btn} ${styles.btnOrange} ${styles.btnSm}`}
-                        onClick={refreshFromZoko}
-                        disabled={zokoRefreshing}
-                    >
-                        {zokoRefreshing ? 'Syncing…' : 'Refresh from Zoko'}
-                    </button>
-                    {zokoProgress && (
-                        <div style={{ marginTop: 10, fontSize: 13, color: 'var(--muted)' }}>
-                            {zokoProgress.current} / {zokoProgress.total} — {zokoProgress.name}
-                            {zokoProgress.total > 0 && (
-                                <div style={{ marginTop: 6, height: 4, background: '#e0e6e6', borderRadius: 2, overflow: 'hidden' }}>
-                                    <div style={{
-                                        height: '100%',
-                                        width: `${(zokoProgress.current / zokoProgress.total) * 100}%`,
-                                        background: 'var(--teal)',
-                                        transition: 'width 0.3s',
-                                    }} />
-                                </div>
-                            )}
-                        </div>
-                    )}
                 </div>
             </div>
         </>

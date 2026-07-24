@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { getOrCreateDossier } from '../services/userDataService';
 import { sendLoginEvent } from '../services/webhookService';
 import { sendReminderRegistration } from '../services/reminderService';
+import { clearAanvraagDraft } from '../services/aanvraagDraft';
 
 const AuthContext = createContext(undefined);
 
@@ -66,6 +67,7 @@ export const AuthProvider = ({ children }) => {
                 } else if (storedToken) {
                     // Token expired, clear storage
                     console.log('[Auth] Token expired, clearing session');
+                    if (storedPhone) clearAanvraagDraft(storedPhone);
                     localStorage.removeItem('auth_token');
                     localStorage.removeItem('auth_phone');
                     localStorage.removeItem('dossier_id');
@@ -138,6 +140,13 @@ export const AuthProvider = ({ children }) => {
      */
     const logout = useCallback(() => {
         console.log('[Auth] Logging out');
+
+        // Clear the in-progress aanvraag draft so a stale draft from this
+        // session can't resurrect deleted/unsubmitted personen on the next
+        // login. Keyed by phone — only this user's draft is cleared.
+        if (authState.phoneNumber) {
+            clearAanvraagDraft(authState.phoneNumber);
+        }
 
         // Clear localStorage
         localStorage.removeItem('auth_token');
