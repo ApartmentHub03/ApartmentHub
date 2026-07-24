@@ -22,6 +22,7 @@ const TenantFormSection = ({
     readOnly = false,
     hideIncome = false,
     isPhoneDuplicate,
+    getPhoneConflict,
     isOwnCard = false
 }) => {
     const currentLang = useSelector((state) => state.ui.language);
@@ -249,9 +250,23 @@ const TenantFormSection = ({
                             />
                             {isPhoneDuplicate && formData.telefoon && isPhoneDuplicate(formData.telefoon, persoon.persoonId) && (
                                 <p className={styles.fieldError}>
-                                    {currentLang === 'en'
-                                        ? 'This phone number is already used by another person in this application'
-                                        : 'Dit telefoonnummer wordt al gebruikt door een andere persoon in deze aanvraag'}
+                                    {(() => {
+                                        const en = currentLang === 'en';
+                                        const roleLabels = en
+                                            ? { Hoofdhuurder: 'main tenant', Medehuurder: 'co-tenant', Garantsteller: 'guarantor' }
+                                            : { Hoofdhuurder: 'hoofdhuurder', Medehuurder: 'medehuurder', Garantsteller: 'garantsteller' };
+                                        const conflict = getPhoneConflict ? getPhoneConflict(formData.telefoon, persoon.persoonId) : null;
+                                        if (conflict) {
+                                            const label = roleLabels[conflict.rol] || conflict.rol;
+                                            const namePart = conflict.naam ? ` (${conflict.naam})` : '';
+                                            return en
+                                                ? `This phone number is already used as ${label}${namePart} in this application. Each person can only have one role per application.`
+                                                : `Dit telefoonnummer wordt al gebruikt als ${label}${namePart} in deze aanvraag. Elke persoon kan maar één rol per aanvraag hebben.`;
+                                        }
+                                        return en
+                                            ? 'This phone number is already used by another person in this application'
+                                            : 'Dit telefoonnummer wordt al gebruikt door een andere persoon in deze aanvraag';
+                                    })()}
                                 </p>
                             )}
                         </div>

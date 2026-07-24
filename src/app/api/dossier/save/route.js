@@ -40,6 +40,31 @@ export async function POST(request) {
         if (!digits) {
             return NextResponse.json({ success: false, message: 'phone is required' }, { status: 400 });
         }
+
+        // Validate personen: no duplicate phones, no cross-role phone conflicts.
+        // Skip entries with null/empty telefoon (e.g. guarantors without a phone).
+        const phoneRoleMap = new Map();
+        for (const p of personen) {
+            const pDigits = String(p.telefoon || '').replace(/\D/g, '');
+            if (!pDigits) continue;
+            const existing = phoneRoleMap.get(pDigits);
+            if (existing) {
+                if (existing.rol !== (p.rol || null)) {
+                    const roleLabels = { Hoofdhuurder: 'main tenant', Medehuurder: 'co-tenant', Garantsteller: 'guarantor' };
+                    const r1 = roleLabels[existing.rol] || existing.rol || 'unknown';
+                    const r2 = roleLabels[p.rol] || p.rol || 'unknown';
+                    return NextResponse.json({
+                        success: false,
+                        message: `Phone number ${p.telefoon} is used as both ${r1} and ${r2}. Each person can only have one role per application.`
+                    }, { status: 400 });
+                }
+                return NextResponse.json({
+                    success: false,
+                    message: `Phone number ${p.telefoon} is duplicated. Remove the duplicate person.`
+                }, { status: 400 });
+            }
+            phoneRoleMap.set(pDigits, { rol: p.rol || null });
+        }
         const supabase = admin();
         const candidates = [...new Set([phone, `+${digits}`, digits, String(phone).replace(/\s+/g, '')])].filter(Boolean);
 

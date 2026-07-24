@@ -760,8 +760,8 @@ const Aanvraag = ({ preselectedApartmentId }) => {
     const hasPhoneDuplicates = () => {
         if (!data?.personen) return false;
         const phones = data.personen
-            .map(p => (p.telefoon || '').replace(/\s+/g, ''))
-            .filter(p => p && p !== '+');
+            .map(p => (p.telefoon || '').replace(/\D/g, ''))
+            .filter(p => p);
         return new Set(phones).size !== phones.length;
     };
 
@@ -1209,29 +1209,43 @@ const Aanvraag = ({ preselectedApartmentId }) => {
     // Check if a phone number is already used by another person in this dossier
     const isPhoneDuplicate = useCallback((phone, excludePersoonId = null) => {
         if (!phone || !data?.personen) return false;
-        const normalized = phone.replace(/\s+/g, '');
-        if (!normalized || normalized === '+') return false;
+        const normalized = phone.replace(/\D/g, '');
+        if (!normalized) return false;
         return data.personen.some(p => {
             if (excludePersoonId && p.persoonId === excludePersoonId) return false;
-            const pPhone = (p.telefoon || '').replace(/\s+/g, '');
-            return pPhone && (pPhone === normalized || pPhone === phone);
+            const pPhone = (p.telefoon || '').replace(/\D/g, '');
+            return pPhone && pPhone === normalized;
         });
+    }, [data?.personen]);
+
+    // Returns the conflicting person's { rol, naam } if the phone is already used
+    // by another person in this dossier, or null if no conflict.
+    const getPhoneConflict = useCallback((phone, excludePersoonId = null) => {
+        if (!phone || !data?.personen) return null;
+        const normalized = phone.replace(/\D/g, '');
+        if (!normalized) return null;
+        const conflict = data.personen.find(p => {
+            if (excludePersoonId && p.persoonId === excludePersoonId) return false;
+            const pPhone = (p.telefoon || '').replace(/\D/g, '');
+            return pPhone && pPhone === normalized;
+        });
+        if (!conflict) return null;
+        return { rol: conflict.rol, naam: conflict.naam || '' };
     }, [data?.personen]);
 
     // Also check against the logged-in user's phone
     const isPhoneDuplicateWithAuth = useCallback((phone, excludePersoonId = null) => {
         if (!phone) return false;
-        const normalized = phone.replace(/\s+/g, '');
-        if (!normalized || normalized === '+') return false;
+        const normalized = phone.replace(/\D/g, '');
+        if (!normalized) return false;
         // Check against all existing personen
         if (isPhoneDuplicate(phone, excludePersoonId)) return true;
         // Check against the auth phone (main tenant's login phone)
-        const authPhone = (phoneNumber || '').replace(/\s+/g, '');
+        const authPhone = (phoneNumber || '').replace(/\D/g, '');
         if (authPhone && authPhone === normalized) {
             // Only flag as duplicate if excluding self — the main tenant's phone IS expected on their card
             const mainTenant = data?.personen?.find(p => p.rol === 'Hoofdhuurder');
             if (excludePersoonId && mainTenant?.persoonId === excludePersoonId) return false;
-            if (!excludePersoonId) return true;
             return true;
         }
         return false;
@@ -1240,9 +1254,19 @@ const Aanvraag = ({ preselectedApartmentId }) => {
     const handleAddPersonSubmit = async (name, whatsapp) => {
         // Validate: no duplicate phone numbers
         if (isPhoneDuplicateWithAuth(whatsapp)) {
-            alert(currentLang === 'en'
-                ? 'This phone number is already used by another person in this application. Each person must have a unique phone number.'
-                : 'Dit telefoonnummer wordt al gebruikt door een andere persoon in deze aanvraag. Elke persoon moet een uniek telefoonnummer hebben.');
+            const en = currentLang === 'en';
+            const roleLabels = en
+                ? { Hoofdhuurder: 'main tenant', Medehuurder: 'co-tenant', Garantsteller: 'guarantor' }
+                : { Hoofdhuurder: 'hoofdhuurder', Medehuurder: 'medehuurder', Garantsteller: 'garantsteller' };
+            const conflict = getPhoneConflict(whatsapp)
+                || (phoneNumber && whatsapp.replace(/\D/g, '') === (phoneNumber || '').replace(/\D/g, '')
+                    ? { rol: 'Hoofdhuurder', naam: '' }
+                    : null);
+            const conflictLabel = conflict ? roleLabels[conflict.rol] || conflict.rol : '';
+            const conflictName = conflict?.naam ? ` (${conflict.naam})` : '';
+            alert(en
+                ? `This phone number is already used${conflictLabel ? ` as ${conflictLabel}${conflictName}` : ' by another person'} in this application. Each person can only have one role per application.`
+                : `Dit telefoonnummer wordt al gebruikt${conflictLabel ? ` als ${conflictLabel}${conflictName}` : ' door een andere persoon'} in deze aanvraag. Elke persoon kan maar één rol per aanvraag hebben.`);
             return;
         }
 
@@ -1944,6 +1968,7 @@ const Aanvraag = ({ preselectedApartmentId }) => {
                                                 readOnly={huurderReadOnly}
                                                 hideIncome={!isViewingOwnTenantCard}
                                                 isPhoneDuplicate={isPhoneDuplicate}
+                                                getPhoneConflict={getPhoneConflict}
                                                 isOwnCard={isOwnCard}
                                             />
 
